@@ -1,0 +1,29 @@
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Manrope', ui-sans-serif, system-ui;
+  color: #102c25;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(214, 240, 231, 0.8), transparent 40%),
+    radial-gradient(circle at 85% 0%, rgba(160, 222, 196, 0.6), transparent 45%),
+    #f7fcfa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
