@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { EmptyState } from '../components/empty-state';
 import { Modal } from '../components/modal';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
@@ -181,7 +182,7 @@ export function StaffPage() {
       ) : null}
 
       {!invitesQuery.isPending && !invitesQuery.isError && !filteredInvites.length ? (
-        <p className="rounded-lg bg-brand-50 p-3 text-sm text-brand-700">No staff invites found.</p>
+        <EmptyState message="No staff invites found." />
       ) : null}
 
       {!invitesQuery.isPending && !invitesQuery.isError && filteredInvites.length ? (

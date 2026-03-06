@@ -4,6 +4,7 @@ import { ReactNode, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { EmptyState } from '../components/empty-state';
 import { Modal } from '../components/modal';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
@@ -1257,7 +1258,7 @@ function SimpleTable({
   emptyMessage: string;
 }) {
   if (!rows.length) {
-    return <p className="rounded-lg bg-brand-50 p-3 text-sm text-brand-700">{emptyMessage}</p>;
+    return <EmptyState message={emptyMessage} />;
   }
 
   return (
