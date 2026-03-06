@@ -7,6 +7,7 @@ import { RequirePermission } from '../components/require-permission';
 import { RequireSetupComplete } from '../components/require-setup-complete';
 import { AcademicYearsPage } from '../pages/academic-years-page';
 import { AcceptInvitePage } from '../pages/accept-invite-page';
+import { AttendancePage } from '../pages/attendance-page';
 import { ClassesPage } from '../pages/classes-page';
 import { DashboardPage } from '../pages/dashboard-page';
 import { LoginPage } from '../pages/login-page';
@@ -53,6 +54,9 @@ export function AppRoutes() {
             <Route element={<RequirePermission permission="class_room.manage" />}>
               <Route path="/admin/classes" element={<ClassesPage />} />
             </Route>
+            <Route element={<RequirePermission permission="attendance.read" />}>
+              <Route path="/admin/attendance" element={<AttendancePage />} />
+            </Route>
             <Route element={<RequirePermission permission="students.read" />}>
               <Route path="/admin/students" element={<StudentsPage />} />
             </Route>
@@ -80,6 +84,7 @@ export function AppRoutes() {
 
           <Route path="/setup" element={<Navigate to="/admin/setup" replace />} />
           <Route path="/academics" element={<Navigate to="/admin/academic-years" replace />} />
+          <Route path="/attendance" element={<Navigate to="/admin/attendance" replace />} />
           <Route path="/students" element={<Navigate to="/admin/students" replace />} />
           <Route path="/parents" element={<Navigate to="/admin/parents" replace />} />
           <Route path="/staff" element={<Navigate to="/admin/staff" replace />} />
