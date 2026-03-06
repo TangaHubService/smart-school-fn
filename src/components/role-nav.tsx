@@ -61,6 +61,14 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
+    key: 'students',
+    label: 'Students',
+    to: '/admin/students',
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['students.read'],
+    setupState: 'COMPLETE',
+  },
+  {
     key: 'subjects',
     label: 'Subjects',
     to: '/admin/subjects',
@@ -69,11 +77,27 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
+    key: 'parents',
+    label: 'Parents',
+    to: '/admin/parents',
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['parents.manage'],
+    setupState: 'ANY',
+  },
+  {
     key: 'staff',
     label: 'Staff',
     to: '/admin/staff',
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['staff.invite'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'my-children',
+    label: 'My Children',
+    to: '/parent/my-children',
+    roles: ['PARENT'],
+    requiredPermissions: ['parents.my_children.read'],
     setupState: 'ANY',
   },
 ];

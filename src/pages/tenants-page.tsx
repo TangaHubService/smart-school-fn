@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
@@ -81,7 +82,7 @@ export function TenantsPage() {
       ) : null}
 
       {!tenantsQuery.isPending && !tenantsQuery.isError && !tenants.length ? (
-        <StateView
+        <EmptyState
           title="No tenants yet"
           message="Create your first school tenant to start onboarding schools."
           action={

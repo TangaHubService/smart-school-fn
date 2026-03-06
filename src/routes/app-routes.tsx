@@ -10,8 +10,11 @@ import { AcceptInvitePage } from '../pages/accept-invite-page';
 import { ClassesPage } from '../pages/classes-page';
 import { DashboardPage } from '../pages/dashboard-page';
 import { LoginPage } from '../pages/login-page';
+import { ParentMyChildrenPage } from '../pages/parent-my-children-page';
+import { ParentsPage } from '../pages/parents-page';
 import { SetupWizardPage } from '../pages/setup-wizard-page';
 import { StaffPage } from '../pages/staff-page';
+import { StudentsPage } from '../pages/students-page';
 import { SubjectsPage } from '../pages/subjects-page';
 import { TenantCreatePage } from '../pages/tenant-create-page';
 import { TenantsPage } from '../pages/tenants-page';
@@ -50,9 +53,20 @@ export function AppRoutes() {
             <Route element={<RequirePermission permission="class_room.manage" />}>
               <Route path="/admin/classes" element={<ClassesPage />} />
             </Route>
+            <Route element={<RequirePermission permission="students.read" />}>
+              <Route path="/admin/students" element={<StudentsPage />} />
+            </Route>
             <Route element={<RequirePermission permission="subject.manage" />}>
               <Route path="/admin/subjects" element={<SubjectsPage />} />
             </Route>
+          </Route>
+
+          <Route element={<RequirePermission permission="parents.manage" />}>
+            <Route path="/admin/parents" element={<ParentsPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="parents.my_children.read" />}>
+            <Route path="/parent/my-children" element={<ParentMyChildrenPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="staff.invite" />}>
@@ -66,6 +80,8 @@ export function AppRoutes() {
 
           <Route path="/setup" element={<Navigate to="/admin/setup" replace />} />
           <Route path="/academics" element={<Navigate to="/admin/academic-years" replace />} />
+          <Route path="/students" element={<Navigate to="/admin/students" replace />} />
+          <Route path="/parents" element={<Navigate to="/admin/parents" replace />} />
           <Route path="/staff" element={<Navigate to="/admin/staff" replace />} />
           <Route path="/tenants/new" element={<Navigate to="/super-admin/tenants/new" replace />} />
         </Route>

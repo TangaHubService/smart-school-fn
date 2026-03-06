@@ -29,6 +29,10 @@ export function getDefaultLandingPath(me: MeResponse | null | undefined): string
     return isSchoolSetupComplete(me) ? '/admin/academic-years' : '/admin/setup';
   }
 
+  if (hasPermission(me, 'parents.my_children.read')) {
+    return '/parent/my-children';
+  }
+
   if (hasPermission(me, 'users.read')) {
     return '/users';
   }
