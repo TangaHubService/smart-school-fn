@@ -13,6 +13,7 @@ import { ApiClientError } from '../types/api';
 const acceptInviteSchema = z.object({
   firstName: z.string().trim().min(2).max(80),
   lastName: z.string().trim().min(2).max(80),
+  phone: z.string().trim().min(7).max(30),
   password: z.string().min(8).max(128),
 });
 
@@ -29,6 +30,7 @@ export function AcceptInvitePage() {
     defaultValues: {
       firstName: '',
       lastName: '',
+      phone: '',
       password: '',
     },
   });
@@ -46,7 +48,7 @@ export function AcceptInvitePage() {
         message: 'Sign in with your school code and credentials.',
       });
       navigate(
-        `/login?tenantCode=${encodeURIComponent((result as any).tenantCode)}`,
+        `/login?tenantCode=${encodeURIComponent((result as any).tenantCode)}&email=${encodeURIComponent((result as any).email)}`,
         { replace: true },
       );
     },
@@ -72,14 +74,27 @@ export function AcceptInvitePage() {
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
       <section className="w-full max-w-md rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
-        <h1 className="text-xl font-bold text-brand-900">Accept staff invite</h1>
-        <p className="mt-1 text-sm text-brand-700">Create your account to join the school.</p>
+        <h1 className="text-xl font-bold text-slate-900">Accept staff invite</h1>
+        <p className="mt-1 text-sm text-slate-700">Create your account to join the school.</p>
 
         <form className="mt-4 grid gap-3" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
-          <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="First name" {...form.register('firstName')} />
-          <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="Last name" {...form.register('lastName')} />
-          <input type="password" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="Password" {...form.register('password')} />
-          <button className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white" type="submit" disabled={mutation.isPending}>
+          <div className="grid gap-1">
+            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="First name" {...form.register('firstName')} />
+            {form.formState.errors.firstName ? <p className="text-xs text-red-700">{form.formState.errors.firstName.message}</p> : null}
+          </div>
+          <div className="grid gap-1">
+            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="Last name" {...form.register('lastName')} />
+            {form.formState.errors.lastName ? <p className="text-xs text-red-700">{form.formState.errors.lastName.message}</p> : null}
+          </div>
+          <div className="grid gap-1">
+            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="Phone number" {...form.register('phone')} />
+            {form.formState.errors.phone ? <p className="text-xs text-red-700">{form.formState.errors.phone.message}</p> : null}
+          </div>
+          <div className="grid gap-1">
+            <input type="password" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="Password" {...form.register('password')} />
+            {form.formState.errors.password ? <p className="text-xs text-red-700">{form.formState.errors.password.message}</p> : null}
+          </div>
+          <button className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white" type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Accepting...' : 'Accept invite'}
           </button>
         </form>

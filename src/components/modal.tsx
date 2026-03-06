@@ -55,17 +55,17 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 w-full max-w-xl rounded-2xl border border-brand-200 bg-white shadow-soft"
+        className="relative z-10 w-full max-w-xl rounded-xl bg-white"
       >
         <header className="flex items-start justify-between gap-3 border-b border-brand-100 px-4 py-3 sm:px-5">
           <div>
-            <h3 className="text-base font-bold text-brand-900">{title}</h3>
-            {description ? <p className="text-sm text-brand-700">{description}</p> : null}
+            <h3 className="text-base font-bold text-slate-900">{title}</h3>
+            {description ? <p className="text-sm text-slate-700">{description}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-2 py-1 text-sm font-semibold text-brand-700"
+            className="rounded-md border border-brand-200 bg-brand-50 px-2.5 py-1 text-sm font-semibold text-slate-700"
           >
             Close
           </button>

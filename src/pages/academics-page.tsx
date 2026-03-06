@@ -553,7 +553,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
               <button
                 type="button"
                 onClick={openAddYear}
-                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
               >
                 Add academic year
               </button>
@@ -575,7 +575,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
                   <button
                     type="button"
                     onClick={() => void yearsQuery.refetch()}
-                    className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                    className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
                   >
                     Retry
                   </button>
@@ -608,7 +608,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
               <button
                 type="button"
                 onClick={openAddTerm}
-                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
               >
                 Add term
               </button>
@@ -630,7 +630,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
                   <button
                     type="button"
                     onClick={() => void termsQuery.refetch()}
-                    className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                    className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
                   >
                     Retry
                   </button>
@@ -668,7 +668,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
               <button
                 type="button"
                 onClick={openAddGradeLevel}
-                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
               >
                 Add grade level
               </button>
@@ -690,7 +690,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
                   <button
                     type="button"
                     onClick={() => void gradeLevelsQuery.refetch()}
-                    className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                    className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
                   >
                     Retry
                   </button>
@@ -722,7 +722,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
               <button
                 type="button"
                 onClick={openAddClass}
-                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
               >
                 Add class
               </button>
@@ -744,7 +744,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
                   <button
                     type="button"
                     onClick={() => void classRoomsQuery.refetch()}
-                    className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                    className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
                   >
                     Retry
                   </button>
@@ -780,7 +780,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             <button
               type="button"
               onClick={openAddSubject}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
             >
               Add subject
             </button>
@@ -802,7 +802,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
                 <button
                   type="button"
                   onClick={() => void subjectsQuery.refetch()}
-                  className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                  className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
                 >
                   Retry
                 </button>
@@ -856,24 +856,24 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             }
           })}
         >
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Name
             <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...yearForm.register('name')} />
           </label>
           <FieldError message={yearForm.formState.errors.name?.message} />
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Start date
               <input type="date" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...yearForm.register('startDate')} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               End date
               <input type="date" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...yearForm.register('endDate')} />
             </label>
           </div>
 
-          <label className="inline-flex items-center gap-2 text-sm font-semibold text-brand-800">
+          <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
             <input type="checkbox" {...yearForm.register('isCurrent')} /> Mark as current year
           </label>
 
@@ -913,7 +913,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             }
           })}
         >
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Academic year
             <select className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('academicYearId')}>
               <option value="">Select year</option>
@@ -925,22 +925,22 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           <FieldError message={termForm.formState.errors.academicYearId?.message} />
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Name
               <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('name')} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Sequence
               <input type="number" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('sequence', { valueAsNumber: true })} />
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Start date
               <input type="date" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('startDate')} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               End date
               <input type="date" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('endDate')} />
             </label>
@@ -983,16 +983,16 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           })}
         >
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Code
               <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...gradeForm.register('code')} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Name
               <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...gradeForm.register('name')} />
             </label>
           </div>
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Rank
             <input type="number" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...gradeForm.register('rank', { valueAsNumber: true })} />
           </label>
@@ -1033,7 +1033,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             }
           })}
         >
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Grade level
             <select className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...classForm.register('gradeLevelId')}>
               <option value="">Select grade level</option>
@@ -1045,17 +1045,17 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           <FieldError message={classForm.formState.errors.gradeLevelId?.message} />
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Code
               <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...classForm.register('code')} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Name
               <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...classForm.register('name')} />
             </label>
           </div>
 
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Capacity
             <input type="number" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...classForm.register('capacity', { valueAsNumber: true })} />
           </label>
@@ -1097,17 +1097,17 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           })}
         >
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Code
               <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...subjectForm.register('code')} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Name
               <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...subjectForm.register('name')} />
             </label>
           </div>
 
-          <label className="inline-flex items-center gap-2 text-sm font-semibold text-brand-800">
+          <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
             <input type="checkbox" {...subjectForm.register('isCore')} /> Core subject
           </label>
 
@@ -1125,7 +1125,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         title="Confirm Delete"
         description="This will soft delete the record. You can no longer see it in active lists."
       >
-        <p className="text-sm text-brand-800">
+        <p className="text-sm text-slate-800">
           Are you sure you want to delete <strong>{deleteTarget?.label}</strong>?
         </p>
         {deleteError ? <p className="mt-2 text-xs text-red-700">{deleteError}</p> : null}
@@ -1134,7 +1134,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           <button
             type="button"
             onClick={() => setDeleteTarget(null)}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
           >
             Cancel
           </button>
@@ -1158,7 +1158,7 @@ function ActionButtons({ onEdit, onDelete }: { onEdit: () => void; onDelete: () 
       <button
         type="button"
         onClick={onEdit}
-        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700"
+        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
       >
         Update
       </button>
@@ -1233,14 +1233,14 @@ function ModalActions({
       <button
         type="button"
         onClick={onCancel}
-        className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+        className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
       >
         Cancel
       </button>
       <button
         type="submit"
         disabled={isSubmitting}
-        className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+        className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
       >
         {isSubmitting ? 'Saving...' : submitLabel}
       </button>
@@ -1265,7 +1265,7 @@ function SimpleTable({
     <div className="overflow-x-auto rounded-xl border border-brand-100">
       <table className="w-full table-auto text-left text-sm">
         <thead>
-          <tr className="border-b border-brand-100 text-brand-700">
+          <tr className="border-b border-brand-100 text-slate-700">
             <th className="px-2 py-2 font-semibold">#</th>
             {columns.map((column) => (
               <th key={column} className="px-2 py-2 font-semibold">{column}</th>
@@ -1275,7 +1275,7 @@ function SimpleTable({
         <tbody>
           {rows.map((row, index) => (
             <tr key={index} className="border-b border-brand-50">
-              <td className="px-2 py-2 align-middle text-brand-600">{index + 1}</td>
+              <td className="px-2 py-2 align-middle text-slate-600">{index + 1}</td>
               {row.map((cell, cellIndex) => (
                 <td key={cellIndex} className="px-2 py-2 align-middle">{cell}</td>
               ))}

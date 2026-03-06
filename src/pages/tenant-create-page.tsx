@@ -71,7 +71,7 @@ export function TenantCreatePage() {
         className="grid gap-3"
         onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
       >
-        <label className="grid gap-1 text-sm font-semibold text-brand-800">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Tenant code
           <input
             className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
@@ -81,7 +81,7 @@ export function TenantCreatePage() {
         </label>
         <FieldError message={form.formState.errors.code?.message} />
 
-        <label className="grid gap-1 text-sm font-semibold text-brand-800">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Tenant name
           <input
             className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
@@ -91,7 +91,7 @@ export function TenantCreatePage() {
         </label>
         <FieldError message={form.formState.errors.name?.message} />
 
-        <label className="grid gap-1 text-sm font-semibold text-brand-800">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Domain (optional)
           <input
             className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
@@ -100,7 +100,7 @@ export function TenantCreatePage() {
           />
         </label>
 
-        <label className="grid gap-1 text-sm font-semibold text-brand-800">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
           School display name
           <input
             className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
@@ -111,14 +111,14 @@ export function TenantCreatePage() {
         <FieldError message={form.formState.errors.schoolDisplayName?.message} />
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Admin first name
             <input
               className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
               {...form.register('adminFirstName')}
             />
           </label>
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Admin last name
             <input
               className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
@@ -129,7 +129,7 @@ export function TenantCreatePage() {
         <FieldError message={form.formState.errors.adminFirstName?.message} />
         <FieldError message={form.formState.errors.adminLastName?.message} />
 
-        <label className="grid gap-1 text-sm font-semibold text-brand-800">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Admin email
           <input
             type="email"
@@ -139,7 +139,7 @@ export function TenantCreatePage() {
         </label>
         <FieldError message={form.formState.errors.adminEmail?.message} />
 
-        <label className="grid gap-1 text-sm font-semibold text-brand-800">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Admin password
           <input
             type="password"
@@ -156,7 +156,7 @@ export function TenantCreatePage() {
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
         >
           {mutation.isPending ? 'Creating tenant...' : 'Create tenant'}
         </button>

@@ -4,18 +4,23 @@ export interface CreateTenantPayload {
   code: string;
   name: string;
   domain?: string;
-  school: {
+  school?: {
     displayName: string;
     registrationNumber?: string;
     email?: string;
     phone?: string;
     addressLine1?: string;
+    addressLine2?: string;
+    province?: string;
     city?: string;
     district?: string;
+    sector?: string;
+    cell?: string;
+    village?: string;
     country?: string;
     timezone?: string;
   };
-  schoolAdmin: {
+  schoolAdmin?: {
     email: string;
     firstName: string;
     lastName: string;
@@ -41,14 +46,61 @@ export interface TenantListItem {
   } | null;
 }
 
+export interface SchoolDetail {
+  id: string;
+  code: string;
+  name: string;
+  domain: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  activeUsers: number;
+  school: {
+    id: string;
+    displayName: string;
+    registrationNumber: string | null;
+    email: string | null;
+    phone: string | null;
+    addressLine1: string | null;
+    addressLine2: string | null;
+    province: string | null;
+    city: string | null;
+    district: string | null;
+    sector: string | null;
+    cell: string | null;
+    village: string | null;
+    country: string;
+    timezone: string;
+    setupCompletedAt: string | null;
+  } | null;
+  pendingInvites: Array<{
+    id: string;
+    email: string;
+    roleName: string;
+    expiresAt: string;
+  }>;
+  users: Array<{
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    status: string;
+  }>;
+}
+
 export interface CompleteSetupPayload {
   school?: {
     displayName: string;
     email?: string;
     phone?: string;
     addressLine1?: string;
+    addressLine2?: string;
+    province?: string;
     city?: string;
     district?: string;
+    sector?: string;
+    cell?: string;
+    village?: string;
     country?: string;
     timezone?: string;
   };
@@ -88,6 +140,53 @@ export function createTenantApi(accessToken: string, payload: CreateTenantPayloa
     method: 'POST',
     accessToken,
     body: payload,
+  });
+}
+
+export function inviteTenantAdminApi(
+  accessToken: string,
+  tenantId: string,
+  payload: { email: string; expiresInDays?: number },
+) {
+  return apiRequest(`/tenants/${tenantId}/admin-invite`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function getTenantDetailApi(accessToken: string, tenantId: string) {
+  return apiRequest<SchoolDetail>(`/tenants/${tenantId}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function updateTenantApi(
+  accessToken: string,
+  tenantId: string,
+  payload: {
+    code: string;
+    name: string;
+    domain?: string | null;
+    school: {
+      displayName: string;
+      email?: string | null;
+      phone?: string | null;
+    };
+  },
+) {
+  return apiRequest(`/tenants/${tenantId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function deleteTenantApi(accessToken: string, tenantId: string) {
+  return apiRequest(`/tenants/${tenantId}`, {
+    method: 'DELETE',
+    accessToken,
   });
 }
 
@@ -152,6 +251,7 @@ export function acceptInviteApi(payload: {
   token: string;
   firstName: string;
   lastName: string;
+  phone?: string;
   password: string;
 }) {
   return apiRequest('/staff/accept-invite', {

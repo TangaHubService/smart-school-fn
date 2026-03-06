@@ -62,9 +62,9 @@ export function useToast() {
 
 function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: () => void }) {
   const styleByType: Record<ToastType, string> = {
-    success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
-    error: 'border-red-200 bg-red-50 text-red-900',
-    info: 'border-brand-200 bg-white text-brand-900',
+    success: 'border-success-100 bg-success-50 text-success-700',
+    error: 'border-danger-100 bg-danger-50 text-danger-700',
+    info: 'border-brand-200 bg-white text-slate-900',
   };
 
   return (

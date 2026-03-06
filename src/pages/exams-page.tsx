@@ -62,6 +62,15 @@ const defaultBands = [
   { min: 0, max: 49, grade: 'F', remark: 'Needs improvement' },
 ];
 
+const inputClassName =
+  'h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400';
+const textareaClassName =
+  'rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400';
+const secondaryButtonClassName =
+  'inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60';
+const primaryButtonClassName =
+  'inline-flex items-center gap-2 rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60';
+
 export function ExamsPage() {
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -329,7 +338,7 @@ export function ExamsPage() {
             <button
               type="button"
               onClick={() => setIsSchemeModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className={secondaryButtonClassName}
             >
               <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
               Grading scheme
@@ -337,7 +346,7 @@ export function ExamsPage() {
             <button
               type="button"
               onClick={openExamModal}
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+              className={primaryButtonClassName}
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               New exam
@@ -346,8 +355,8 @@ export function ExamsPage() {
         }
       >
         <div className="grid gap-4">
-          <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 xl:grid-cols-[minmax(0,1fr)_220px_220px_220px] xl:items-end">
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <div className="grid gap-3 rounded-xl bg-brand-50/75 p-4 xl:grid-cols-[minmax(0,1fr)_220px_220px_220px] xl:items-end">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Search exams</span>
               <input
                 type="search"
@@ -357,11 +366,11 @@ export function ExamsPage() {
                   setSearch(event.target.value);
                 }}
                 placeholder="Search by exam, class, or subject"
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className={inputClassName}
               />
             </label>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Term</span>
               <select
                 value={termFilter}
@@ -369,7 +378,7 @@ export function ExamsPage() {
                   setPage(1);
                   setTermFilter(event.target.value);
                 }}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className={inputClassName}
               >
                 <option value="">All terms</option>
                 {terms.map((term) => (
@@ -380,7 +389,7 @@ export function ExamsPage() {
               </select>
             </label>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Class</span>
               <select
                 value={classFilter}
@@ -388,7 +397,7 @@ export function ExamsPage() {
                   setPage(1);
                   setClassFilter(event.target.value);
                 }}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className={inputClassName}
               >
                 <option value="">All classes</option>
                 {classRooms.map((classRoom) => (
@@ -399,7 +408,7 @@ export function ExamsPage() {
               </select>
             </label>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Subject</span>
               <select
                 value={subjectFilter}
@@ -407,7 +416,7 @@ export function ExamsPage() {
                   setPage(1);
                   setSubjectFilter(event.target.value);
                 }}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className={inputClassName}
               >
                 <option value="">All subjects</option>
                 {subjects.map((subject) => (
@@ -419,13 +428,13 @@ export function ExamsPage() {
             </label>
           </div>
 
-          <div className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-4 shadow-soft lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div className="grid gap-3 rounded-xl bg-brand-50/55 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div className="grid gap-1">
-              <p className="text-sm font-semibold text-brand-900">Results control</p>
-              <p className="text-sm text-brand-600">
+              <p className="text-sm font-semibold text-slate-900">Results control</p>
+              <p className="text-sm text-slate-600">
                 Select a term and class, then lock or publish report cards for that scope.
               </p>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 Current scope status: {currentScopeStatus}
               </p>
             </div>
@@ -434,7 +443,7 @@ export function ExamsPage() {
                 type="button"
                 onClick={() => lockMutation.mutate()}
                 disabled={!canManageResults || lockMutation.isPending}
-                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 disabled:opacity-60"
+                className={secondaryButtonClassName}
               >
                 <FileLock2 className="h-4 w-4" aria-hidden="true" />
                 Lock
@@ -443,7 +452,7 @@ export function ExamsPage() {
                 type="button"
                 onClick={() => publishMutation.mutate()}
                 disabled={!canManageResults || publishMutation.isPending}
-                className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className={primaryButtonClassName}
               >
                 Publish
               </button>
@@ -451,7 +460,7 @@ export function ExamsPage() {
                 type="button"
                 onClick={() => unlockMutation.mutate()}
                 disabled={!canManageResults || unlockMutation.isPending}
-                className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 disabled:opacity-60"
               >
                 <RefreshCcw className="h-4 w-4" aria-hidden="true" />
                 Unlock
@@ -460,7 +469,7 @@ export function ExamsPage() {
           </div>
 
           {examsQuery.isPending ? (
-            <div className="h-64 animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
+            <div className="h-64 animate-pulse rounded-xl bg-brand-50" />
           ) : null}
 
           {examsQuery.isError ? (
@@ -471,7 +480,7 @@ export function ExamsPage() {
                 <button
                   type="button"
                   onClick={() => void examsQuery.refetch()}
-                  className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                  className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                 >
                   Retry
                 </button>
@@ -481,10 +490,10 @@ export function ExamsPage() {
 
           {!examsQuery.isPending && !examsQuery.isError ? (
             exams.length ? (
-              <div className="overflow-x-auto rounded-2xl border border-brand-100 bg-white shadow-soft">
-                <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-brand-800">
+              <div className="overflow-x-auto rounded-xl bg-white/88">
+                <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
                   <thead>
-                    <tr className="text-xs uppercase tracking-[0.14em] text-brand-500">
+                    <tr className="bg-brand-50/80 text-xs uppercase tracking-[0.14em] text-slate-500">
                       <th className="border-b border-brand-100 px-3 py-3">#</th>
                       <th className="border-b border-brand-100 px-3 py-3">Exam</th>
                       <th className="border-b border-brand-100 px-3 py-3">Term</th>
@@ -500,15 +509,15 @@ export function ExamsPage() {
                       <tr key={exam.id}>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">{(pagination?.pageSize ?? 20) * ((pagination?.page ?? 1) - 1) + index + 1}</td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">
-                          <p className="font-semibold text-brand-900">{exam.name}</p>
-                          <p className="text-xs text-brand-600">{exam.totalMarks} total · weight {exam.weight}</p>
+                          <p className="font-semibold text-slate-900">{exam.name}</p>
+                          <p className="text-xs text-slate-600">{exam.totalMarks} total · weight {exam.weight}</p>
                         </td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.term.name}</td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.classRoom.name}</td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.subject.name}</td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.marksEnteredCount}</td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">
-                          <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                          <span className="rounded-md bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                             {exam.resultStatus}
                           </span>
                         </td>
@@ -516,7 +525,7 @@ export function ExamsPage() {
                           <button
                             type="button"
                             onClick={() => setMarksExamId(exam.id)}
-                            className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-xs font-semibold text-brand-700"
+                            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-slate-700"
                           >
                             Enter marks
                           </button>
@@ -543,7 +552,7 @@ export function ExamsPage() {
             <button
               type="button"
               onClick={() => setIsExamModalOpen(false)}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
@@ -551,7 +560,7 @@ export function ExamsPage() {
               type="button"
               onClick={examForm.handleSubmit((values) => createExamMutation.mutate(values))}
               disabled={createExamMutation.isPending}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               Save exam
             </button>
@@ -560,36 +569,36 @@ export function ExamsPage() {
       >
         <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Term</span>
-              <select {...examForm.register('termId')} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400">
+              <select {...examForm.register('termId')} className={inputClassName}>
                 <option value="">Select term</option>
                 {terms.map((term) => (
                   <option key={term.id} value={term.id}>{term.name}</option>
                 ))}
               </select>
             </label>
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Class</span>
-              <select {...examForm.register('classRoomId')} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400">
+              <select {...examForm.register('classRoomId')} className={inputClassName}>
                 <option value="">Select class</option>
                 {classRooms.map((classRoom) => (
                   <option key={classRoom.id} value={classRoom.id}>{classRoom.name}</option>
                 ))}
               </select>
             </label>
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Subject</span>
-              <select {...examForm.register('subjectId')} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400">
+              <select {...examForm.register('subjectId')} className={inputClassName}>
                 <option value="">Select subject</option>
                 {subjects.map((subject) => (
                   <option key={subject.id} value={subject.id}>{subject.name}</option>
                 ))}
               </select>
             </label>
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Grading scheme</span>
-              <select {...examForm.register('gradingSchemeId')} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400">
+              <select {...examForm.register('gradingSchemeId')} className={inputClassName}>
                 <option value="">Use default scheme</option>
                 {schemes.map((scheme) => (
                   <option key={scheme.id} value={scheme.id}>{scheme.name} v{scheme.version}</option>
@@ -598,28 +607,28 @@ export function ExamsPage() {
             </label>
           </div>
 
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Exam name</span>
-            <input {...examForm.register('name')} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400" placeholder="Mid-term mathematics" />
+            <input {...examForm.register('name')} className={inputClassName} placeholder="Mid-term mathematics" />
           </label>
 
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Description</span>
-            <textarea {...examForm.register('description')} rows={3} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-brand-900 outline-none focus:border-brand-400" placeholder="Optional notes about the exam scope." />
+            <textarea {...examForm.register('description')} rows={3} className={textareaClassName} placeholder="Optional notes about the exam scope." />
           </label>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Total marks</span>
-              <input type="number" min={1} max={500} {...examForm.register('totalMarks')} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400" />
+              <input type="number" min={1} max={500} {...examForm.register('totalMarks')} className={inputClassName} />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Weight</span>
-              <input type="number" min={1} max={500} {...examForm.register('weight')} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400" />
+              <input type="number" min={1} max={500} {...examForm.register('weight')} className={inputClassName} />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Exam date</span>
-              <input type="datetime-local" {...examForm.register('examDate')} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400" />
+              <input type="datetime-local" {...examForm.register('examDate')} className={inputClassName} />
             </label>
           </div>
         </form>
@@ -632,32 +641,32 @@ export function ExamsPage() {
         onClose={() => setIsSchemeModalOpen(false)}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <button type="button" onClick={() => setIsSchemeModalOpen(false)} className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700">Cancel</button>
-            <button type="button" onClick={() => createSchemeMutation.mutate()} disabled={createSchemeMutation.isPending} className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save scheme</button>
+            <button type="button" onClick={() => setIsSchemeModalOpen(false)} className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+            <button type="button" onClick={() => createSchemeMutation.mutate()} disabled={createSchemeMutation.isPending} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save scheme</button>
           </div>
         }
       >
         <div className="grid gap-4">
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Name</span>
-            <input value={schemeName} onChange={(event) => setSchemeName(event.target.value)} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400" />
+            <input value={schemeName} onChange={(event) => setSchemeName(event.target.value)} className={inputClassName} />
           </label>
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Description</span>
-            <textarea value={schemeDescription} onChange={(event) => setSchemeDescription(event.target.value)} rows={2} className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-brand-900 outline-none focus:border-brand-400" />
+            <textarea value={schemeDescription} onChange={(event) => setSchemeDescription(event.target.value)} rows={2} className={textareaClassName} />
           </label>
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-brand-700">
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
             <input type="checkbox" checked={schemeIsDefault} onChange={(event) => setSchemeIsDefault(event.target.checked)} />
             Set as default scheme
           </label>
 
           <div className="grid gap-3">
             {schemeBands.map((band, index) => (
-              <div key={`${band.grade}-${index}`} className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-3 md:grid-cols-[1fr_110px_110px_1.2fr]">
-                <input value={band.grade} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, grade: event.target.value } : item))} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400" placeholder="Grade" />
-                <input type="number" min={0} max={100} value={band.min} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, min: Number(event.target.value) } : item))} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400" placeholder="Min" />
-                <input type="number" min={0} max={100} value={band.max} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, max: Number(event.target.value) } : item))} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400" placeholder="Max" />
-                <input value={band.remark} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, remark: event.target.value } : item))} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400" placeholder="Remark" />
+              <div key={`${band.grade}-${index}`} className="grid gap-3 rounded-xl bg-brand-50/70 p-3 md:grid-cols-[1fr_110px_110px_1.2fr]">
+                <input value={band.grade} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, grade: event.target.value } : item))} className={inputClassName} placeholder="Grade" />
+                <input type="number" min={0} max={100} value={band.min} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, min: Number(event.target.value) } : item))} className={inputClassName} placeholder="Min" />
+                <input type="number" min={0} max={100} value={band.max} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, max: Number(event.target.value) } : item))} className={inputClassName} placeholder="Max" />
+                <input value={band.remark} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, remark: event.target.value } : item))} className={inputClassName} placeholder="Remark" />
               </div>
             ))}
           </div>
@@ -671,50 +680,50 @@ export function ExamsPage() {
         onClose={() => setMarksExamId('')}
         footer={
           <div className="flex items-center justify-between gap-3">
-            <div className="text-sm text-brand-600">
+            <div className="text-sm text-slate-600">
               {examDetailQuery.data?.warnings.missingCount ? (
-                <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+                <span className="inline-flex items-center gap-2 rounded-md bg-amber-100 px-3 py-1 text-amber-900">
                   <AlertTriangle className="h-4 w-4" aria-hidden="true" />
                   {examDetailQuery.data.warnings.missingCount} students missing marks
                 </span>
               ) : null}
             </div>
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setMarksExamId('')} className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700">Close</button>
-              <button type="button" onClick={() => saveMarksMutation.mutate()} disabled={saveMarksMutation.isPending || !examDetailQuery.data} className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save marks</button>
+              <button type="button" onClick={() => setMarksExamId('')} className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700">Close</button>
+              <button type="button" onClick={() => saveMarksMutation.mutate()} disabled={saveMarksMutation.isPending || !examDetailQuery.data} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save marks</button>
             </div>
           </div>
         }
       >
         {examDetailQuery.isPending ? (
-          <div className="h-64 animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
+          <div className="h-64 animate-pulse rounded-xl bg-brand-50" />
         ) : examDetailQuery.isError || !examDetailQuery.data ? (
-          <StateView title="Could not load exam" message="Retry to load the marks grid." action={<button type="button" onClick={() => void examDetailQuery.refetch()} className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Retry</button>} />
+          <StateView title="Could not load exam" message="Retry to load the marks grid." action={<button type="button" onClick={() => void examDetailQuery.refetch()} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white">Retry</button>} />
         ) : (
           <div className="grid gap-4">
-            <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 md:grid-cols-4">
+            <div className="grid gap-3 rounded-xl bg-brand-50/70 p-4 md:grid-cols-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Class</p>
-                <p className="mt-2 text-sm font-semibold text-brand-900">{examDetailQuery.data.classRoom.name}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Class</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{examDetailQuery.data.classRoom.name}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Subject</p>
-                <p className="mt-2 text-sm font-semibold text-brand-900">{examDetailQuery.data.subject.name}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Subject</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{examDetailQuery.data.subject.name}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Total marks</p>
-                <p className="mt-2 text-sm font-semibold text-brand-900">{examDetailQuery.data.totalMarks}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Total marks</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{examDetailQuery.data.totalMarks}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Result status</p>
-                <p className="mt-2 text-sm font-semibold text-brand-900">{examDetailQuery.data.resultStatus}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Result status</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{examDetailQuery.data.resultStatus}</p>
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-brand-100 bg-white">
-              <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-brand-800">
+            <div className="overflow-x-auto rounded-xl bg-white/92">
+              <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
                 <thead>
-                  <tr className="text-xs uppercase tracking-[0.14em] text-brand-500">
+                  <tr className="bg-brand-50/80 text-xs uppercase tracking-[0.14em] text-slate-500">
                     <th className="border-b border-brand-100 px-3 py-3">#</th>
                     <th className="border-b border-brand-100 px-3 py-3">Student</th>
                     <th className="border-b border-brand-100 px-3 py-3">Code</th>
@@ -725,14 +734,14 @@ export function ExamsPage() {
                   {examDetailQuery.data.students.map((student, index) => (
                     <tr key={student.id}>
                       <td className="border-b border-brand-100 px-3 py-3 align-top">{index + 1}</td>
-                      <td className="border-b border-brand-100 px-3 py-3 align-top font-medium text-brand-900">{student.firstName} {student.lastName}</td>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top font-medium text-slate-900">{student.firstName} {student.lastName}</td>
                       <td className="border-b border-brand-100 px-3 py-3 align-top">{student.studentCode}</td>
                       <td className="border-b border-brand-100 px-3 py-3 align-top">
                         <input
                           value={marksDraft[student.id] ?? ''}
                           onChange={(event) => handleMarkChange(student.id, event.target.value)}
                           inputMode="numeric"
-                          className="h-11 w-32 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                          className="h-10 w-28 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                           placeholder="0"
                         />
                       </td>

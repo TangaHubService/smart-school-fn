@@ -22,13 +22,13 @@ export function ReportCardVerificationPage() {
         <section className="rounded-[28px] border border-brand-100 bg-white p-6 shadow-soft sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="grid gap-3">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-brand-700">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-700">
                 <FileBadge2 className="h-4 w-4" aria-hidden="true" />
                 Report Card Verification
               </div>
               <div className="grid gap-1">
-                <h1 className="text-3xl font-black text-brand-950">Smart School Rwanda</h1>
-                <p className="max-w-2xl text-sm text-brand-700 sm:text-base">
+                <h1 className="text-3xl font-black text-slate-950">Smart School Rwanda</h1>
+                <p className="max-w-2xl text-sm text-slate-700 sm:text-base">
                   Scan results from the QR code land here. This page only confirms whether a
                   published report card is authentic.
                 </p>
@@ -36,7 +36,7 @@ export function ReportCardVerificationPage() {
             </div>
             <Link
               to="/login"
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-brand-200 bg-white px-4 text-sm font-semibold text-brand-800"
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-brand-200 bg-white px-4 text-sm font-semibold text-slate-800"
             >
               Back to login
             </Link>
@@ -54,8 +54,8 @@ export function ReportCardVerificationPage() {
                 <ShieldAlert className="h-8 w-8" aria-hidden="true" />
               </div>
               <div className="grid gap-1">
-                <h2 className="text-2xl font-black text-brand-950">Verification failed</h2>
-                <p className="text-sm text-brand-700 sm:text-base">
+                <h2 className="text-2xl font-black text-slate-950">Verification failed</h2>
+                <p className="text-sm text-slate-700 sm:text-base">
                   This report card could not be verified. Check that the QR code is complete or ask
                   the school to regenerate the document.
                 </p>
@@ -73,36 +73,36 @@ export function ReportCardVerificationPage() {
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">
                     Verified
                   </p>
-                  <h2 className="text-2xl font-black text-brand-950">This report card is authentic</h2>
+                  <h2 className="text-2xl font-black text-slate-950">This report card is authentic</h2>
                 </div>
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">Student</p>
-                  <p className="mt-2 text-lg font-bold text-brand-950">{data.student.name}</p>
-                  <p className="text-sm text-brand-700">{data.student.studentCode}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Student</p>
+                  <p className="mt-2 text-lg font-bold text-slate-950">{data.student.name}</p>
+                  <p className="text-sm text-slate-700">{data.student.studentCode}</p>
                 </div>
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">School</p>
-                  <p className="mt-2 text-lg font-bold text-brand-950">{data.school.name}</p>
-                  <p className="text-sm text-brand-700">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">School</p>
+                  <p className="mt-2 text-lg font-bold text-slate-950">{data.school.name}</p>
+                  <p className="text-sm text-slate-700">
                     {data.school.code ? `Code ${data.school.code}` : 'School code unavailable'}
                   </p>
                 </div>
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">Scope</p>
-                  <p className="mt-2 text-lg font-bold text-brand-950">{data.term.name}</p>
-                  <p className="text-sm text-brand-700">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Scope</p>
+                  <p className="mt-2 text-lg font-bold text-slate-950">{data.term.name}</p>
+                  <p className="text-sm text-slate-700">
                     {data.classRoom.name} · {data.academicYear.name}
                   </p>
                 </div>
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">Result</p>
-                  <p className="mt-2 text-lg font-bold text-brand-950">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Result</p>
+                  <p className="mt-2 text-lg font-bold text-slate-950">
                     {data.totals.averagePercentage.toFixed(1)}% · {data.totals.grade}
                   </p>
-                  <p className="text-sm text-brand-700">
+                  <p className="text-sm text-slate-700">
                     Position {data.totals.position} / {data.totals.classSize}
                   </p>
                 </div>
@@ -116,19 +116,19 @@ export function ReportCardVerificationPage() {
                   <span className="text-sm font-semibold">{data.message}</span>
                 </div>
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/70 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
                     Verification Code
                   </p>
-                  <p className="mt-2 text-lg font-black text-brand-950">{data.verificationCode}</p>
+                  <p className="mt-2 text-lg font-black text-slate-950">{data.verificationCode}</p>
                 </div>
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/70 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
                     Issued
                   </p>
-                  <p className="mt-2 text-base font-semibold text-brand-900">
+                  <p className="mt-2 text-base font-semibold text-slate-900">
                     {new Date(data.issuedAt).toLocaleString('en-RW')}
                   </p>
-                  <p className="text-sm text-brand-700">
+                  <p className="text-sm text-slate-700">
                     District: {data.school.district ?? 'Not specified'}
                   </p>
                 </div>

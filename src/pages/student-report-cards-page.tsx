@@ -91,16 +91,16 @@ export function StudentReportCardsPage() {
       >
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[220px_auto] lg:items-end">
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Term</span>
-              <select value={termId} onChange={(event) => setTermId(event.target.value)} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400">
+              <select value={termId} onChange={(event) => setTermId(event.target.value)} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400">
                 <option value="">All terms</option>
                 {terms.map((term) => (
                   <option key={term.id} value={term.id}>{term.name}</option>
                 ))}
               </select>
             </label>
-            <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-brand-700">
+            <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
               {student ? `${student.firstName} ${student.lastName} · ${student.studentCode}` : 'Student'}
             </div>
           </div>
@@ -111,27 +111,27 @@ export function StudentReportCardsPage() {
             <StateView
               title="Could not load report cards"
               message="Retry to load your report cards."
-              action={<button type="button" onClick={() => void reportCardsQuery.refetch()} className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Retry</button>}
+              action={<button type="button" onClick={() => void reportCardsQuery.refetch()} className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white">Retry</button>}
             />
           ) : reportCards.length ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {reportCards.map((item) => (
                 <article key={item.id} className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
                   <div className="grid gap-1">
-                    <p className="text-lg font-bold text-brand-900">{item.term.name}</p>
-                    <p className="text-sm text-brand-600">{item.classRoom.name} · {item.academicYear.name}</p>
+                    <p className="text-lg font-bold text-slate-900">{item.term.name}</p>
+                    <p className="text-sm text-slate-600">{item.classRoom.name} · {item.academicYear.name}</p>
                   </div>
-                  <div className="grid gap-2 text-sm text-brand-700">
-                    <p>Average: <span className="font-semibold text-brand-900">{item.totals.averagePercentage.toFixed(2)}%</span></p>
-                    <p>Grade: <span className="font-semibold text-brand-900">{item.totals.grade}</span></p>
-                    <p>Position: <span className="font-semibold text-brand-900">{item.totals.position}/{item.totals.classSize}</span></p>
+                  <div className="grid gap-2 text-sm text-slate-700">
+                    <p>Average: <span className="font-semibold text-slate-900">{item.totals.averagePercentage.toFixed(2)}%</span></p>
+                    <p>Grade: <span className="font-semibold text-slate-900">{item.totals.grade}</span></p>
+                    <p>Position: <span className="font-semibold text-slate-900">{item.totals.position}/{item.totals.classSize}</span></p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => previewMutation.mutate(item.id)} className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700">
+                    <button type="button" onClick={() => previewMutation.mutate(item.id)} className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
                       <Eye className="h-4 w-4" aria-hidden="true" />
                       View PDF
                     </button>
-                    <button type="button" onClick={() => downloadMutation.mutate({ id: item.id, termName: item.term.name })} className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white">
+                    <button type="button" onClick={() => downloadMutation.mutate({ id: item.id, termName: item.term.name })} className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white">
                       <FileDown className="h-4 w-4" aria-hidden="true" />
                       Download
                     </button>
@@ -161,7 +161,7 @@ export function StudentReportCardsPage() {
                 URL.revokeObjectURL(previewUrl);
               }
               setPreviewUrl('');
-            }} className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700">Close</button>
+            }} className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Close</button>
           </div>
         }
       >

@@ -139,7 +139,7 @@ function AttachmentLink({
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-100"
+      className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-brand-100"
     >
       <ExternalLink className="h-4 w-4" aria-hidden="true" />
       {label}
@@ -406,7 +406,7 @@ export function CoursesPage() {
             <button
               type="button"
               onClick={() => setSelectedCourseId('')}
-              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-brand-50"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
               Back to courses
@@ -415,7 +415,7 @@ export function CoursesPage() {
             <button
               type="button"
               onClick={openCreateCourse}
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Create course
@@ -427,19 +427,19 @@ export function CoursesPage() {
           {!selectedCourseId ? (
             <>
               <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[minmax(0,1fr)_220px_220px] lg:items-end">
-                <label className="grid gap-1 text-sm font-medium text-brand-700">
+                <label className="grid gap-1 text-sm font-medium text-slate-700">
                   <span>Search courses</span>
                   <input
                     type="search"
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search by title, class, or subject"
-                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-brand-900 outline-none placeholder:text-brand-400 focus:border-brand-400"
+                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
                     aria-label="Search courses"
                   />
                 </label>
 
-                <label className="grid gap-1 text-sm font-medium text-brand-700">
+                <label className="grid gap-1 text-sm font-medium text-slate-700">
                   <span>Academic year</span>
                   <select
                     value={yearFilter}
@@ -447,7 +447,7 @@ export function CoursesPage() {
                       setYearFilter(event.target.value);
                       setPage(1);
                     }}
-                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-brand-900 outline-none focus:border-brand-400"
+                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
                   >
                     <option value="">All years</option>
                     {academicYears.map((item) => (
@@ -458,7 +458,7 @@ export function CoursesPage() {
                   </select>
                 </label>
 
-                <label className="grid gap-1 text-sm font-medium text-brand-700">
+                <label className="grid gap-1 text-sm font-medium text-slate-700">
                   <span>Class</span>
                   <select
                     value={classFilter}
@@ -466,7 +466,7 @@ export function CoursesPage() {
                       setClassFilter(event.target.value);
                       setPage(1);
                     }}
-                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-brand-900 outline-none focus:border-brand-400"
+                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
                   >
                     <option value="">All classes</option>
                     {classRooms.map((item) => (
@@ -498,7 +498,7 @@ export function CoursesPage() {
                       <button
                         type="button"
                         onClick={() => void coursesQuery.refetch()}
-                        className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                        className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                       >
                         Retry
                       </button>
@@ -509,12 +509,12 @@ export function CoursesPage() {
                 {!coursesQuery.isPending && !coursesQuery.isError ? (
                   visibleCourses.length ? (
                     <div className="grid gap-3">
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-brand-700">
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-slate-700">
                         <div>
-                          <span className="font-medium text-brand-800">
+                          <span className="font-medium text-slate-800">
                             {coursesQuery.data?.pagination.totalItems ?? visibleCourses.length} courses
                           </span>
-                          <span className="ml-2 text-xs uppercase tracking-[0.16em] text-brand-500">
+                          <span className="ml-2 text-xs uppercase tracking-[0.16em] text-slate-500">
                             Filtered view
                           </span>
                         </div>
@@ -557,20 +557,20 @@ export function CoursesPage() {
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <p className="flex items-center gap-2 text-sm font-bold text-brand-900">
-                                  <BookOpen className="h-4 w-4 text-brand-600" aria-hidden="true" />
+                                <p className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                                  <BookOpen className="h-4 w-4 text-slate-600" aria-hidden="true" />
                                   {course.title}
                                 </p>
-                                <p className="mt-1 text-sm text-brand-600">
+                                <p className="mt-1 text-sm text-slate-600">
                                   {course.classRoom.name} · {course.academicYear.name}
                                 </p>
                               </div>
-                              <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                              <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                                 {course.counts.lessons} lessons
                               </span>
                             </div>
                             {course.subject ? (
-                              <p className="mt-3 text-xs uppercase tracking-[0.16em] text-brand-500">
+                              <p className="mt-3 text-xs uppercase tracking-[0.16em] text-slate-500">
                                 {course.subject.name}
                               </p>
                             ) : null}
@@ -586,7 +586,7 @@ export function CoursesPage() {
                         <button
                           type="button"
                           onClick={openCreateCourse}
-                          className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                         >
                           Create course
                         </button>
@@ -613,7 +613,7 @@ export function CoursesPage() {
                     <button
                       type="button"
                       onClick={() => void courseDetailQuery.refetch()}
-                      className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                      className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                     >
                       Retry
                     </button>
@@ -630,7 +630,7 @@ export function CoursesPage() {
                       <button
                         type="button"
                         onClick={openCreateLesson}
-                        className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+                        className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
                       >
                         <FilePlus2 className="h-4 w-4" aria-hidden="true" />
                         Add lesson
@@ -651,7 +651,7 @@ export function CoursesPage() {
                       />
                     </div>
                     {selectedCourse.description ? (
-                      <p className="mt-4 text-sm leading-6 text-brand-700">
+                      <p className="mt-4 text-sm leading-6 text-slate-700">
                         {selectedCourse.description}
                       </p>
                     ) : null}
@@ -670,7 +670,7 @@ export function CoursesPage() {
                           >
                             <div className="flex flex-wrap items-start justify-between gap-3">
                               <div>
-                                <p className="text-sm font-bold text-brand-900">
+                                <p className="text-sm font-bold text-slate-900">
                                   {lesson.sequence}. {lesson.title}
                                 </p>
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -678,7 +678,7 @@ export function CoursesPage() {
                                     label={lesson.isPublished ? 'Published' : 'Draft'}
                                     tone={lesson.isPublished ? 'published' : 'draft'}
                                   />
-                                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500">
+                                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                                     {lesson.contentType}
                                   </span>
                                 </div>
@@ -691,18 +691,18 @@ export function CoursesPage() {
                                     isPublished: !lesson.isPublished,
                                   })
                                 }
-                                className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+                                className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
                               >
                                 {lesson.isPublished ? 'Move to draft' : 'Publish'}
                               </button>
                             </div>
                             {lesson.summary ? (
-                              <p className="mt-3 text-sm text-brand-700">{lesson.summary}</p>
+                              <p className="mt-3 text-sm text-slate-700">{lesson.summary}</p>
                             ) : null}
                             {lesson.body ? (
                               <RichContent
                                 html={lesson.body}
-                                className="rich-content mt-3 rounded-xl bg-brand-50 p-3 text-sm leading-6 text-brand-800"
+                                className="rich-content mt-3 rounded-xl bg-brand-50 p-3 text-sm leading-6 text-slate-800"
                               />
                             ) : null}
                             <div className="mt-3 flex flex-wrap gap-2">
@@ -719,7 +719,7 @@ export function CoursesPage() {
                                 />
                               ) : null}
                             </div>
-                            <p className="mt-3 text-xs text-brand-500">
+                            <p className="mt-3 text-xs text-slate-500">
                               Published: {formatDateTime(lesson.publishedAt)}
                             </p>
                           </article>
@@ -732,7 +732,7 @@ export function CoursesPage() {
                           <button
                             type="button"
                             onClick={openCreateLesson}
-                            className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                            className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                           >
                             Add lesson
                           </button>
@@ -836,14 +836,14 @@ export function CoursesPage() {
             <button
               type="button"
               onClick={() => setIsCreateCourseOpen(false)}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createCourseMutation.isPending || isCourseSetupLookupError || isCourseSetupMissing}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {createCourseMutation.isPending ? 'Saving...' : 'Create course'}
             </button>
@@ -932,7 +932,7 @@ export function CoursesPage() {
                 setLessonFile(event.target.files?.[0] ?? null);
                 setLessonFileError(null);
               }}
-              className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-brand-700"
+              className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-slate-700"
             />
           </FormField>
 
@@ -940,14 +940,14 @@ export function CoursesPage() {
             <button
               type="button"
               onClick={() => setIsCreateLessonOpen(false)}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createLessonMutation.isPending}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {createLessonMutation.isPending ? 'Saving...' : 'Save lesson'}
             </button>
@@ -969,7 +969,7 @@ function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <label className="grid gap-1.5 text-sm font-medium text-brand-700">
+    <label className="grid gap-1.5 text-sm font-medium text-slate-700">
       <span>{label}</span>
       {children}
       {error ? <span className="text-xs text-red-600">{error}</span> : null}
@@ -986,8 +986,8 @@ function InfoBox({
 }) {
   return (
     <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-500">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-brand-900">{value}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-slate-900">{value}</p>
     </div>
   );
 }

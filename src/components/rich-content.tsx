@@ -15,7 +15,7 @@ export function RichContent({
 
   return (
     <div
-      className={className ?? 'rich-content text-sm text-brand-800'}
+      className={className ?? 'rich-content text-sm text-slate-800'}
       dangerouslySetInnerHTML={{ __html: sanitized }}
     />
   );

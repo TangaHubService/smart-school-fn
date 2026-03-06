@@ -28,7 +28,6 @@ import { SubjectsPage } from '../pages/subjects-page';
 import { StudentAssessmentDetailPage } from '../pages/student-assessment-detail-page';
 import { StudentAssessmentAttemptPage } from '../pages/student-assessment-attempt-page';
 import { StudentAssessmentsPage } from '../pages/student-assessments-page';
-import { TenantCreatePage } from '../pages/tenant-create-page';
 import { TenantsPage } from '../pages/tenants-page';
 import { UnauthorizedPage } from '../pages/unauthorized-page';
 import { UsersPage } from '../pages/users-page';
@@ -50,11 +49,13 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
 
           <Route element={<RequirePermission permission="tenants.read" />}>
+            <Route path="/super-admin/schools" element={<TenantsPage />} />
             <Route path="/super-admin/tenants" element={<TenantsPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="tenants.create" />}>
-            <Route path="/super-admin/tenants/new" element={<TenantCreatePage />} />
+            <Route path="/super-admin/tenants/new" element={<Navigate to="/super-admin/schools?create=1" replace />} />
+            <Route path="/super-admin/schools/new" element={<Navigate to="/super-admin/schools?create=1" replace />} />
           </Route>
 
           <Route element={<RequirePermission permission="school.setup.manage" />}>
@@ -145,7 +146,7 @@ export function AppRoutes() {
           <Route path="/parent-results" element={<Navigate to="/parent/report-cards" replace />} />
           <Route path="/parents" element={<Navigate to="/admin/parents" replace />} />
           <Route path="/staff" element={<Navigate to="/admin/staff" replace />} />
-          <Route path="/tenants/new" element={<Navigate to="/super-admin/tenants/new" replace />} />
+          <Route path="/tenants/new" element={<Navigate to="/super-admin/schools?create=1" replace />} />
         </Route>
       </Route>
 

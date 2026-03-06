@@ -275,14 +275,14 @@ export function StudentAssessmentAttemptPage() {
             <button
               type="button"
               onClick={() => navigate(`/student/assessments/${assessmentId}`)}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Back to test
             </button>
             <button
               type="button"
               onClick={() => void attemptQuery.refetch()}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
             >
               Retry
             </button>
@@ -302,7 +302,7 @@ export function StudentAssessmentAttemptPage() {
             <button
               type="button"
               onClick={() => navigate(`/student/assessments/${assessmentId}`)}
-              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               Back to test
@@ -318,26 +318,26 @@ export function StudentAssessmentAttemptPage() {
                     ? 'Responses submitted successfully'
                     : 'Test finished successfully'}
                 </div>
-                <h2 className="text-2xl font-bold text-brand-900">
+                <h2 className="text-2xl font-bold text-slate-900">
                   {attempt.assessment.type === 'GENERAL' || attempt.assessment.type === 'PSYCHOMETRIC'
                     ? `Score ${attempt.score}/${attempt.maxScore ?? 0}`
                     : attempt.manualScore !== null
                       ? `Reviewed score ${attempt.score}/${attempt.maxScore ?? 0}`
                       : 'Responses submitted'}
                 </h2>
-                <p className="text-sm text-brand-700">Submitted on {formatAssessmentDateTime(attempt.submittedAt)}</p>
+                <p className="text-sm text-slate-700">Submitted on {formatAssessmentDateTime(attempt.submittedAt)}</p>
                 {attempt.assessment.type === 'OPENENDED' || attempt.assessment.type === 'INTERVIEW' ? (
-                  <p className="text-sm text-brand-700">
+                  <p className="text-sm text-slate-700">
                     {attempt.manualScore !== null ? 'Your teacher review is available below.' : 'Your teacher will review the written responses next.'}
                   </p>
                 ) : null}
                 {attempt.manualFeedback ? (
-                  <p className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-brand-800">
+                  <p className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-800">
                     {attempt.manualFeedback}
                   </p>
                 ) : null}
               </div>
-              <div className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-brand-900 shadow-soft">
+              <div className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-soft">
                 <Trophy className="h-5 w-5 text-amber-500" aria-hidden="true" />
                 Attempt #{attempt.attemptNumber}
               </div>
@@ -348,15 +348,15 @@ export function StudentAssessmentAttemptPage() {
                 <article key={question.id} className="rounded-2xl border border-brand-100 bg-white p-4 shadow-soft">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold text-brand-900">
+                      <p className="text-sm font-bold text-slate-900">
                         Question {question.sequence} · {question.type === 'OPEN_TEXT' && question.manualPointsAwarded === null
                           ? 'Awaiting review'
                           : `${question.effectivePointsAwarded ?? 0}/${question.points}`}
                       </p>
-                      <p className="mt-2 text-sm text-brand-900">{question.prompt}</p>
+                      <p className="mt-2 text-sm text-slate-900">{question.prompt}</p>
                     </div>
                     {question.type === 'OPEN_TEXT' ? (
-                      <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800">
+                      <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-800">
                         {question.manualPointsAwarded !== null ? 'Reviewed' : 'Awaiting review'}
                       </span>
                     ) : (
@@ -374,7 +374,7 @@ export function StudentAssessmentAttemptPage() {
 
                   <div className="mt-3 grid gap-2">
                     {question.type === 'OPEN_TEXT' ? (
-                      <div className="rounded-xl border border-brand-100 bg-brand-50/70 px-3 py-3 text-sm text-brand-800">
+                      <div className="rounded-xl border border-brand-100 bg-brand-50/70 px-3 py-3 text-sm text-slate-800">
                         {question.textResponse?.trim() || 'No answer submitted.'}
                       </div>
                     ) : (
@@ -392,8 +392,8 @@ export function StudentAssessmentAttemptPage() {
                                 : showWrong
                                   ? 'flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-900'
                                   : selected
-                                    ? 'flex items-start gap-3 rounded-xl border border-brand-300 bg-brand-50 px-3 py-3 text-sm text-brand-900'
-                                    : 'flex items-start gap-3 rounded-xl border border-brand-100 bg-white px-3 py-3 text-sm text-brand-800'
+                                    ? 'flex items-start gap-3 rounded-xl border border-brand-300 bg-brand-50 px-3 py-3 text-sm text-slate-900'
+                                    : 'flex items-start gap-3 rounded-xl border border-brand-100 bg-white px-3 py-3 text-sm text-slate-800'
                             }
                           >
                             <span className="flex-1">{option.label}</span>
@@ -406,7 +406,7 @@ export function StudentAssessmentAttemptPage() {
                   </div>
 
                   {question.explanation ? (
-                    <p className="mt-3 text-sm text-brand-600">Explanation: {question.explanation}</p>
+                    <p className="mt-3 text-sm text-slate-600">Explanation: {question.explanation}</p>
                   ) : null}
                 </article>
               ))}
@@ -426,7 +426,7 @@ export function StudentAssessmentAttemptPage() {
           <button
             type="button"
             onClick={() => navigate(`/student/assessments/${assessmentId}`)}
-            className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+            className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Leave test
@@ -436,7 +436,7 @@ export function StudentAssessmentAttemptPage() {
         <div className="grid gap-5">
           <div className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div className="grid gap-3">
-              <div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700">
+              <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">
                   {formatAssessmentTypeLabel(attempt.assessment.type)}
                 </span>
@@ -450,7 +450,7 @@ export function StudentAssessmentAttemptPage() {
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-brand-100">
                 <div
-                  className="h-full rounded-full bg-brand-600 transition-all"
+                  className="h-full rounded-full bg-brand-500 transition-all"
                   style={{ width: `${((currentQuestionIndex + 1) / Math.max(attempt.questions.length, 1)) * 100}%` }}
                 />
               </div>
@@ -461,10 +461,10 @@ export function StudentAssessmentAttemptPage() {
               ) : null}
             </div>
 
-            <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-brand-700">
+            <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-slate-700">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Save status</p>
-                <p className="mt-2 font-semibold text-brand-900">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Save status</p>
+                <p className="mt-2 font-semibold text-slate-900">
                   {saveState === 'saving'
                     ? 'Saving...'
                     : saveState === 'saved'
@@ -475,13 +475,13 @@ export function StudentAssessmentAttemptPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Due</p>
-                <p className="mt-2 font-semibold text-brand-900">{formatAssessmentDateTime(attempt.assessment.dueAt)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Due</p>
+                <p className="mt-2 font-semibold text-slate-900">{formatAssessmentDateTime(attempt.assessment.dueAt)}</p>
               </div>
               {remainingTime !== null ? (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Time left</p>
-                  <p className="mt-2 inline-flex items-center gap-2 font-semibold text-brand-900">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Time left</p>
+                  <p className="mt-2 inline-flex items-center gap-2 font-semibold text-slate-900">
                     <Clock3 className="h-4 w-4" aria-hidden="true" />
                     {formatTimer(remainingTime)}
                   </p>
@@ -493,11 +493,11 @@ export function StudentAssessmentAttemptPage() {
           {currentQuestion ? (
             <div className="grid gap-5 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
               <div className="grid gap-2">
-                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand-500">
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
                   Question {currentQuestion.sequence}
                 </p>
-                <h2 className="text-2xl font-bold text-brand-900">{currentQuestion.prompt}</h2>
-                <p className="text-sm text-brand-600">
+                <h2 className="text-2xl font-bold text-slate-900">{currentQuestion.prompt}</h2>
+                <p className="text-sm text-slate-600">
                   {currentQuestion.type === 'OPEN_TEXT'
                     ? `Write your answer before you continue. This question is worth ${currentQuestion.points} point${currentQuestion.points === 1 ? '' : 's'}.`
                     : `Choose one answer to continue. This question is worth ${currentQuestion.points} point${currentQuestion.points === 1 ? '' : 's'}.`}
@@ -519,7 +519,7 @@ export function StudentAssessmentAttemptPage() {
                     }
                     rows={8}
                     placeholder="Write your answer here"
-                    className="w-full rounded-2xl border border-brand-200 bg-white px-4 py-3 text-base text-brand-900 outline-none focus:border-brand-400"
+                    className="w-full rounded-2xl border border-brand-200 bg-white px-4 py-3 text-base text-slate-900 outline-none focus:border-brand-400"
                   />
                 ) : (
                   currentQuestion.options.map((option) => {
@@ -539,15 +539,15 @@ export function StudentAssessmentAttemptPage() {
                         }
                         className={
                           selected
-                            ? 'flex items-start gap-3 rounded-2xl border border-brand-300 bg-brand-50 px-4 py-4 text-left text-brand-900 shadow-soft'
-                            : 'flex items-start gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-4 text-left text-brand-800 transition hover:border-brand-200 hover:bg-brand-50/60'
+                            ? 'flex items-start gap-3 rounded-2xl border border-brand-300 bg-brand-50 px-4 py-4 text-left text-slate-900 shadow-soft'
+                            : 'flex items-start gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-4 text-left text-slate-800 transition hover:border-brand-200 hover:bg-brand-50/60'
                         }
                       >
                         <span
                           className={
                             selected
-                              ? 'mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white'
-                              : 'mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700'
+                              ? 'mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-xs font-bold text-white'
+                              : 'mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-slate-700'
                           }
                         >
                           {String.fromCharCode(65 + option.sequence - 1)}
@@ -564,7 +564,7 @@ export function StudentAssessmentAttemptPage() {
                   type="button"
                   onClick={() => setCurrentQuestionIndex((current) => Math.max(0, current - 1))}
                   disabled={currentQuestionIndex === 0}
-                  className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
                 >
                   <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   Previous
@@ -575,7 +575,7 @@ export function StudentAssessmentAttemptPage() {
                     type="button"
                     onClick={handleFinish}
                     disabled={!currentQuestionAnswered || submitAttemptMutation.isPending || saveAnswersMutation.isPending}
-                    className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                   >
                     {submitAttemptMutation.isPending ? (
                       <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -589,7 +589,7 @@ export function StudentAssessmentAttemptPage() {
                     type="button"
                     onClick={() => setCurrentQuestionIndex((current) => Math.min(attempt.questions.length - 1, current + 1))}
                     disabled={!currentQuestionAnswered}
-                    className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                   >
                     Next question
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />

@@ -318,14 +318,14 @@ export function AssessmentDetailPage() {
             <button
               type="button"
               onClick={() => navigate('/admin/assessments')}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Back to assessments
             </button>
             <button
               type="button"
               onClick={() => void assessmentDetailQuery.refetch()}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
             >
               Retry
             </button>
@@ -345,7 +345,7 @@ export function AssessmentDetailPage() {
             <button
               type="button"
               onClick={() => navigate('/admin/assessments')}
-              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               Back to list
@@ -355,7 +355,7 @@ export function AssessmentDetailPage() {
               onClick={() => openQuestionModal()}
               disabled={questionEditingLocked}
               title={questionEditingLocked ? 'Questions are locked after publish or after students start attempting' : undefined}
-              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Add question
@@ -364,7 +364,7 @@ export function AssessmentDetailPage() {
               type="button"
               onClick={() => publishAssessmentMutation.mutate(!assessment.isPublished)}
               disabled={publishAssessmentMutation.isPending}
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               {assessment.isPublished ? 'Unpublish' : 'Publish'}
@@ -377,20 +377,20 @@ export function AssessmentDetailPage() {
             <div className="grid gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <AssessmentStatusPill isPublished={assessment.isPublished} />
-                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                   {formatAssessmentTypeLabel(assessment.type)}
                 </span>
-                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                   {assessment.counts.questions} questions
                 </span>
-                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                   {assessment.counts.attempts} attempts
                 </span>
               </div>
-              <p className="text-sm text-brand-700">
+              <p className="text-sm text-slate-700">
                 {assessment.course.title} · {assessment.course.classRoom.name} · {assessment.course.academicYear.name}
               </p>
-              <div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700">
+              <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">
                   {assessment.maxAttempts} max attempts
                 </span>
@@ -404,7 +404,7 @@ export function AssessmentDetailPage() {
             </div>
 
             {questionEditingLocked ? (
-              <p className="max-w-sm text-sm text-brand-600">
+              <p className="max-w-sm text-sm text-slate-600">
                 Questions are locked once the assessment is published or after students start attempting it.
               </p>
             ) : null}
@@ -412,7 +412,7 @@ export function AssessmentDetailPage() {
 
           {assessment.instructions ? (
             <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4">
-              <h3 className="text-sm font-bold text-brand-900">Instructions</h3>
+              <h3 className="text-sm font-bold text-slate-900">Instructions</h3>
               <div className="mt-3">
                 <RichContent html={assessment.instructions} />
               </div>
@@ -421,8 +421,8 @@ export function AssessmentDetailPage() {
 
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
             <div className="flex items-center gap-2">
-              <BookCheck className="h-5 w-5 text-brand-600" aria-hidden="true" />
-              <h3 className="text-base font-bold text-brand-900">Questions</h3>
+              <BookCheck className="h-5 w-5 text-slate-600" aria-hidden="true" />
+              <h3 className="text-base font-bold text-slate-900">Questions</h3>
             </div>
 
             {assessment.questions.length ? (
@@ -430,17 +430,17 @@ export function AssessmentDetailPage() {
                 <article key={question.id} className="rounded-2xl border border-brand-100 bg-brand-50/50 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="grid gap-2">
-                      <p className="text-sm font-bold text-brand-900">
+                      <p className="text-sm font-bold text-slate-900">
                         Question {question.sequence} · {question.type === 'OPEN_TEXT' ? 'Open text' : 'MCQ'} · {question.points} pt{question.points === 1 ? '' : 's'}
                       </p>
-                      <p className="text-sm text-brand-900">{question.prompt}</p>
+                      <p className="text-sm text-slate-900">{question.prompt}</p>
                     </div>
                     {!questionEditingLocked ? (
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => openQuestionModal(question)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700"
+                          className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
                         >
                           <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                           Edit
@@ -465,7 +465,7 @@ export function AssessmentDetailPage() {
 
                   <div className="mt-3 grid gap-2">
                     {question.type === 'OPEN_TEXT' ? (
-                      <div className="rounded-xl border border-dashed border-brand-200 bg-white px-3 py-3 text-sm text-brand-700">
+                      <div className="rounded-xl border border-dashed border-brand-200 bg-white px-3 py-3 text-sm text-slate-700">
                         Students will type a free-text answer for this question.
                       </div>
                     ) : (
@@ -475,7 +475,7 @@ export function AssessmentDetailPage() {
                           className={
                             option.isCorrect
                               ? 'rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-900'
-                              : 'rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-brand-800'
+                              : 'rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-slate-800'
                           }
                         >
                           {option.label}
@@ -485,7 +485,7 @@ export function AssessmentDetailPage() {
                   </div>
 
                   {question.explanation ? (
-                    <p className="mt-3 text-sm text-brand-600">Explanation: {question.explanation}</p>
+                    <p className="mt-3 text-sm text-slate-600">Explanation: {question.explanation}</p>
                   ) : null}
                 </article>
               ))
@@ -499,8 +499,8 @@ export function AssessmentDetailPage() {
 
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
             <div className="flex items-center gap-2">
-              <Clock3 className="h-5 w-5 text-brand-600" aria-hidden="true" />
-              <h3 className="text-base font-bold text-brand-900">Results</h3>
+              <Clock3 className="h-5 w-5 text-slate-600" aria-hidden="true" />
+              <h3 className="text-base font-bold text-slate-900">Results</h3>
             </div>
 
             {resultsQuery.isPending ? (
@@ -513,7 +513,7 @@ export function AssessmentDetailPage() {
                   <button
                     type="button"
                     onClick={() => void resultsQuery.refetch()}
-                    className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                    className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                   >
                     Retry
                   </button>
@@ -521,9 +521,9 @@ export function AssessmentDetailPage() {
               />
             ) : resultRows.length ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-brand-800">
+                <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
                   <thead>
-                    <tr className="text-xs uppercase tracking-[0.14em] text-brand-500">
+                    <tr className="text-xs uppercase tracking-[0.14em] text-slate-500">
                       <th className="border-b border-brand-100 px-3 py-3">Student</th>
                       <th className="border-b border-brand-100 px-3 py-3">Attempt</th>
                       <th className="border-b border-brand-100 px-3 py-3">Score</th>
@@ -534,7 +534,7 @@ export function AssessmentDetailPage() {
                   <tbody>
                     {resultRows.map((attempt) => (
                       <tr key={attempt.id}>
-                        <td className="border-b border-brand-100 px-3 py-3 font-medium text-brand-900">
+                        <td className="border-b border-brand-100 px-3 py-3 font-medium text-slate-900">
                           {attempt.student.firstName} {attempt.student.lastName}
                         </td>
                         <td className="border-b border-brand-100 px-3 py-3">#{attempt.attemptNumber}</td>
@@ -561,7 +561,7 @@ export function AssessmentDetailPage() {
                           <button
                             type="button"
                             onClick={() => openReviewModal(attempt.id)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700"
+                            className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
                           >
                             <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                             Review
@@ -589,7 +589,7 @@ export function AssessmentDetailPage() {
             <button
               type="button"
               onClick={closeQuestionModal}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
@@ -599,7 +599,7 @@ export function AssessmentDetailPage() {
                 editingQuestionId ? updateQuestionMutation.mutate(values) : addQuestionMutation.mutate(values),
               )}
               disabled={addQuestionMutation.isPending || updateQuestionMutation.isPending}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {editingQuestionId ? 'Save changes' : 'Save question'}
             </button>
@@ -607,51 +607,51 @@ export function AssessmentDetailPage() {
         }
       >
         <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Question prompt</span>
             <textarea
               {...questionForm.register('prompt')}
               rows={3}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-brand-900 outline-none focus:border-brand-400"
+              className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"
             />
           </label>
 
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Explanation (optional)</span>
             <textarea
               {...questionForm.register('explanation')}
               rows={2}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-brand-900 outline-none focus:border-brand-400"
+              className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"
               placeholder="Shown after submission to explain the answer."
             />
           </label>
 
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Question type</span>
             <select
               {...questionForm.register('type')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
             >
               <option value="MCQ_SINGLE">Multiple choice</option>
               <option value="OPEN_TEXT">Open text</option>
             </select>
           </label>
 
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Points</span>
             <input
               type="number"
               min={1}
               max={100}
               {...questionForm.register('points')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
             />
           </label>
 
           {selectedQuestionType === 'MCQ_SINGLE' ? (
             <div className="grid gap-3">
               {(['optionA', 'optionB', 'optionC', 'optionD'] as const).map((fieldName, index) => (
-                <label key={fieldName} className="grid gap-1 text-sm font-medium text-brand-700">
+                <label key={fieldName} className="grid gap-1 text-sm font-medium text-slate-700">
                   <span>Option {String.fromCharCode(65 + index)}</span>
                   <div className="flex items-center gap-3">
                     <input
@@ -663,14 +663,14 @@ export function AssessmentDetailPage() {
                     />
                     <input
                       {...questionForm.register(fieldName)}
-                      className="h-11 flex-1 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                      className="h-11 flex-1 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                     />
                   </div>
                 </label>
               ))}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/70 px-3 py-3 text-sm text-brand-700">
+            <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/70 px-3 py-3 text-sm text-slate-700">
               Students will see a text box and answer this question in their own words.
             </div>
           )}
@@ -687,7 +687,7 @@ export function AssessmentDetailPage() {
             <button
               type="button"
               onClick={() => setQuestionToDelete(null)}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
@@ -702,7 +702,7 @@ export function AssessmentDetailPage() {
           </div>
         }
       >
-        <p className="text-sm text-brand-700">
+        <p className="text-sm text-slate-700">
           Question {questionToDelete?.sequence}: {questionToDelete?.prompt}
         </p>
       </Modal>
@@ -717,7 +717,7 @@ export function AssessmentDetailPage() {
             <button
               type="button"
               onClick={closeRegradeModal}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Close
             </button>
@@ -725,7 +725,7 @@ export function AssessmentDetailPage() {
               type="button"
               onClick={handleSaveRegrade}
               disabled={!selectedAttempt || regradeAttemptMutation.isPending || reviewAttemptQuery.isPending}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               Save manual score
             </button>
@@ -745,7 +745,7 @@ export function AssessmentDetailPage() {
               <button
                 type="button"
                 onClick={() => void reviewAttemptQuery.refetch()}
-                className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
               >
                 Retry
               </button>
@@ -755,14 +755,14 @@ export function AssessmentDetailPage() {
           <div className="grid gap-4">
             <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 md:grid-cols-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Student</p>
-                <p className="mt-2 text-sm font-semibold text-brand-900">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Student</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
                   {selectedAttempt.student?.firstName} {selectedAttempt.student?.lastName}
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Score</p>
-                <p className="mt-2 text-sm font-semibold text-brand-900">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Score</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
                   {selectedAttempt.assessment.type === 'GENERAL' || selectedAttempt.assessment.type === 'PSYCHOMETRIC'
                     ? `${selectedAttempt.score}/${selectedAttempt.maxScore ?? 0}`
                     : selectedAttempt.manualScore !== null
@@ -771,18 +771,18 @@ export function AssessmentDetailPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Submitted</p>
-                <p className="mt-2 text-sm font-semibold text-brand-900">{formatAssessmentDateTime(selectedAttempt.submittedAt)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Submitted</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{formatAssessmentDateTime(selectedAttempt.submittedAt)}</p>
               </div>
             </div>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Teacher feedback</span>
               <textarea
                 value={regradeFeedback}
                 onChange={(event) => setRegradeFeedback(event.target.value)}
                 rows={3}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"
                 placeholder="Optional feedback about the manual review."
               />
             </label>
@@ -792,12 +792,12 @@ export function AssessmentDetailPage() {
                 <article key={question.id} className="rounded-2xl border border-brand-100 bg-white p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold text-brand-900">
+                      <p className="text-sm font-bold text-slate-900">
                         Question {question.sequence} · max {question.points}
                       </p>
-                      <p className="mt-2 text-sm text-brand-800">{question.prompt}</p>
+                      <p className="mt-2 text-sm text-slate-800">{question.prompt}</p>
                     </div>
-                    <label className="grid gap-1 text-sm font-medium text-brand-700">
+                    <label className="grid gap-1 text-sm font-medium text-slate-700">
                       <span>Manual points</span>
                       <input
                         type="number"
@@ -810,14 +810,14 @@ export function AssessmentDetailPage() {
                             [question.id]: event.target.value,
                           }))
                         }
-                        className="h-11 w-28 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                        className="h-11 w-28 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                       />
                     </label>
                   </div>
 
                   <div className="mt-3 grid gap-2">
                     {question.type === 'OPEN_TEXT' ? (
-                      <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-3 py-3 text-sm text-brand-800">
+                      <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-3 py-3 text-sm text-slate-800">
                         {question.textResponse?.trim() || 'No answer submitted.'}
                       </div>
                     ) : (
@@ -826,8 +826,8 @@ export function AssessmentDetailPage() {
                           key={option.id}
                           className={
                             option.id === question.selectedOptionId
-                              ? 'rounded-xl border border-brand-300 bg-brand-50 px-3 py-2 text-sm text-brand-900'
-                              : 'rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-brand-700'
+                              ? 'rounded-xl border border-brand-300 bg-brand-50 px-3 py-2 text-sm text-slate-900'
+                              : 'rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-slate-700'
                           }
                         >
                           <span className="font-medium">{option.label}</span>
@@ -837,7 +837,7 @@ export function AssessmentDetailPage() {
                             </span>
                           ) : null}
                           {option.id === question.selectedOptionId ? (
-                            <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-800">
+                            <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-slate-800">
                               Selected
                             </span>
                           ) : null}
@@ -846,7 +846,7 @@ export function AssessmentDetailPage() {
                     )}
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-brand-700">
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
                     <span className="rounded-full bg-brand-100 px-2.5 py-1">
                       Auto {question.pointsAwarded ?? 0}/{question.points}
                     </span>

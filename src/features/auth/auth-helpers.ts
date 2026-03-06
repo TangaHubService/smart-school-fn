@@ -22,7 +22,7 @@ export function getDefaultLandingPath(me: MeResponse | null | undefined): string
   }
 
   if (isSuperAdmin(me)) {
-    return '/super-admin/tenants';
+    return '/super-admin/schools';
   }
 
   if (hasPermission(me, 'school.setup.manage')) {
