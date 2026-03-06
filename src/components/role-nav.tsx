@@ -2,39 +2,136 @@ import clsx from 'clsx';
 import { NavLink } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
+import {
+  hasPermission,
+  hasRole,
+  isSchoolSetupComplete,
+} from '../features/auth/auth-helpers';
 
-const navItems = [
-  { label: 'Dashboard', path: '/', permission: null },
-  { label: 'Users', path: '/users', permission: 'users.read' },
-  { label: 'Roles', path: '/roles', permission: 'roles.read' },
+type SetupState = 'ANY' | 'INCOMPLETE' | 'COMPLETE';
+
+interface NavItem {
+  key: string;
+  label: string;
+  to: string;
+  roles: string[];
+  requiredPermissions: string[];
+  setupState: SetupState;
+}
+
+export const NAV_ITEMS: NavItem[] = [
+  {
+    key: 'dashboard',
+    label: 'Dashboard',
+    to: '/admin',
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
+    requiredPermissions: [],
+    setupState: 'ANY',
+  },
+  {
+    key: 'tenants',
+    label: 'Tenants',
+    to: '/super-admin/tenants',
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['tenants.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'setup',
+    label: 'Setup Wizard',
+    to: '/admin/setup',
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['school.setup.manage'],
+    setupState: 'INCOMPLETE',
+  },
+  {
+    key: 'years',
+    label: 'Academic Years',
+    to: '/admin/academic-years',
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['academic_year.manage'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'classes',
+    label: 'Classes',
+    to: '/admin/classes',
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['class_room.manage'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'subjects',
+    label: 'Subjects',
+    to: '/admin/subjects',
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['subject.manage'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'staff',
+    label: 'Staff',
+    to: '/admin/staff',
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['staff.invite'],
+    setupState: 'ANY',
+  },
 ];
 
-export function RoleNav() {
-  const auth = useAuth();
+interface RoleNavProps {
+  onNavigate?: () => void;
+}
 
-  const items = navItems.filter((item) => {
-    if (!item.permission) {
+export function RoleNav({ onNavigate }: RoleNavProps) {
+  const auth = useAuth();
+  const setupComplete = isSchoolSetupComplete(auth.me);
+  const superAdmin = hasRole(auth.me, 'SUPER_ADMIN');
+
+  const items = NAV_ITEMS.filter((item) => {
+    if (superAdmin) {
       return true;
     }
-    return auth.me?.permissions.includes(item.permission) ?? false;
+
+    const hasAllowedRole = item.roles.some((role) => hasRole(auth.me, role));
+    if (!hasAllowedRole) {
+      return false;
+    }
+
+    const hasAllPermissions = item.requiredPermissions.every((permission) =>
+      hasPermission(auth.me, permission),
+    );
+    if (!hasAllPermissions) {
+      return false;
+    }
+
+    if (item.setupState === 'INCOMPLETE' && setupComplete) {
+      return false;
+    }
+
+    if (item.setupState === 'COMPLETE' && !setupComplete) {
+      return false;
+    }
+
+    return true;
   });
 
   return (
     <nav aria-label="Primary" className="grid gap-2">
       {items.map((item) => (
         <NavLink
-          key={item.path}
-          to={item.path}
+          key={item.key}
+          to={item.to}
+          onClick={onNavigate}
           className={({ isActive }) =>
             clsx(
-              'rounded-xl px-4 py-2 text-sm font-semibold transition',
+              'group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-base font-semibold transition',
               isActive
-                ? 'bg-brand-600 text-white shadow-soft'
-                : 'bg-brand-50 text-brand-700 hover:bg-brand-100',
+                ? 'border-brand-300 bg-brand-500/90 text-white shadow-soft'
+                : 'border-transparent bg-transparent text-brand-600 hover:border-brand-100 hover:bg-brand-50 hover:text-brand-800',
             )
           }
         >
-          {item.label}
+          <span>{item.label}</span>
         </NavLink>
       ))}
     </nav>
