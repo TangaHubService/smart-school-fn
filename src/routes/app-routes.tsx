@@ -5,10 +5,15 @@ import { DefaultLandingRoute } from '../components/default-landing-route';
 import { ProtectedRoute } from '../components/protected-route';
 import { RequirePermission } from '../components/require-permission';
 import { RequireSetupComplete } from '../components/require-setup-complete';
+import { assessmentsFeatureEnabled } from '../features/assessments/feature';
 import { AcademicYearsPage } from '../pages/academic-years-page';
 import { AcceptInvitePage } from '../pages/accept-invite-page';
+import { AssessmentDetailPage } from '../pages/assessment-detail-page';
+import { AssessmentsPage } from '../pages/assessments-page';
 import { AttendancePage } from '../pages/attendance-page';
+import { AssignmentsPage } from '../pages/assignments-page';
 import { ClassesPage } from '../pages/classes-page';
+import { CoursesPage } from '../pages/courses-page';
 import { DashboardPage } from '../pages/dashboard-page';
 import { LoginPage } from '../pages/login-page';
 import { ParentMyChildrenPage } from '../pages/parent-my-children-page';
@@ -17,10 +22,14 @@ import { SetupWizardPage } from '../pages/setup-wizard-page';
 import { StaffPage } from '../pages/staff-page';
 import { StudentsPage } from '../pages/students-page';
 import { SubjectsPage } from '../pages/subjects-page';
+import { StudentAssessmentDetailPage } from '../pages/student-assessment-detail-page';
+import { StudentAssessmentAttemptPage } from '../pages/student-assessment-attempt-page';
+import { StudentAssessmentsPage } from '../pages/student-assessments-page';
 import { TenantCreatePage } from '../pages/tenant-create-page';
 import { TenantsPage } from '../pages/tenants-page';
 import { UnauthorizedPage } from '../pages/unauthorized-page';
 import { UsersPage } from '../pages/users-page';
+import { StudentCoursesPage } from '../pages/student-courses-page';
 
 export function AppRoutes() {
   return (
@@ -57,6 +66,18 @@ export function AppRoutes() {
             <Route element={<RequirePermission permission="attendance.read" />}>
               <Route path="/admin/attendance" element={<AttendancePage />} />
             </Route>
+            <Route element={<RequirePermission permission="courses.read" />}>
+              <Route path="/admin/courses" element={<CoursesPage />} />
+            </Route>
+            <Route element={<RequirePermission permission="courses.read" />}>
+              <Route path="/admin/assignments" element={<AssignmentsPage />} />
+            </Route>
+            {assessmentsFeatureEnabled ? (
+              <Route element={<RequirePermission permission="assessments.read" />}>
+                <Route path="/admin/assessments" element={<AssessmentsPage />} />
+                <Route path="/admin/assessments/:assessmentId" element={<AssessmentDetailPage />} />
+              </Route>
+            ) : null}
             <Route element={<RequirePermission permission="students.read" />}>
               <Route path="/admin/students" element={<StudentsPage />} />
             </Route>
@@ -73,6 +94,20 @@ export function AppRoutes() {
             <Route path="/parent/my-children" element={<ParentMyChildrenPage />} />
           </Route>
 
+          <Route element={<RequirePermission permission="students.my_courses.read" />}>
+            <Route path="/student/courses" element={<StudentCoursesPage />} />
+          </Route>
+          {assessmentsFeatureEnabled ? (
+            <Route element={<RequirePermission permission="assessments.submit" />}>
+              <Route path="/student/assessments" element={<StudentAssessmentsPage />} />
+              <Route path="/student/assessments/:assessmentId" element={<StudentAssessmentDetailPage />} />
+              <Route
+                path="/student/assessments/:assessmentId/attempts/:attemptId"
+                element={<StudentAssessmentAttemptPage />}
+              />
+            </Route>
+          ) : null}
+
           <Route element={<RequirePermission permission="staff.invite" />}>
             <Route path="/admin/staff" element={<StaffPage />} />
           </Route>
@@ -85,6 +120,11 @@ export function AppRoutes() {
           <Route path="/setup" element={<Navigate to="/admin/setup" replace />} />
           <Route path="/academics" element={<Navigate to="/admin/academic-years" replace />} />
           <Route path="/attendance" element={<Navigate to="/admin/attendance" replace />} />
+          <Route path="/courses" element={<Navigate to="/admin/courses" replace />} />
+          <Route path="/assignments" element={<Navigate to="/admin/assignments" replace />} />
+          {assessmentsFeatureEnabled ? (
+            <Route path="/assessments" element={<Navigate to="/admin/assessments" replace />} />
+          ) : null}
           <Route path="/students" element={<Navigate to="/admin/students" replace />} />
           <Route path="/parents" element={<Navigate to="/admin/parents" replace />} />
           <Route path="/staff" element={<Navigate to="/admin/staff" replace />} />

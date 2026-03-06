@@ -29,6 +29,14 @@ export function getDefaultLandingPath(me: MeResponse | null | undefined): string
     return isSchoolSetupComplete(me) ? '/admin/academic-years' : '/admin/setup';
   }
 
+  if (hasPermission(me, 'students.my_courses.read')) {
+    return '/student/courses';
+  }
+
+  if (hasRole(me, 'TEACHER') && hasPermission(me, 'courses.read')) {
+    return '/admin/courses';
+  }
+
   if (hasPermission(me, 'attendance.read')) {
     return '/admin/attendance';
   }

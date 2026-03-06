@@ -35,3 +35,75 @@ body {
 ::selection {
   background: rgba(47, 143, 113, 0.2);
 }
+
+.rich-editor-content p.is-editor-empty:first-child::before {
+  color: #8aa79e;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.rich-editor-content > *:first-child,
+.rich-content > *:first-child {
+  margin-top: 0;
+}
+
+.rich-editor-content > *:last-child,
+.rich-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.rich-editor-content p,
+.rich-content p {
+  margin: 0.65rem 0;
+  line-height: 1.7;
+}
+
+.rich-editor-content h1,
+.rich-content h1 {
+  margin: 0.9rem 0 0.5rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.rich-editor-content h2,
+.rich-content h2 {
+  margin: 0.85rem 0 0.45rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.rich-editor-content h3,
+.rich-content h3 {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.rich-editor-content ul,
+.rich-editor-content ol,
+.rich-content ul,
+.rich-content ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.rich-editor-content li,
+.rich-content li {
+  margin: 0.35rem 0;
+}
+
+.rich-editor-content blockquote,
+.rich-content blockquote {
+  margin: 0.9rem 0;
+  border-left: 3px solid rgba(47, 143, 113, 0.35);
+  padding-left: 0.9rem;
+  color: #34584f;
+}
+
+.rich-content a {
+  color: #1f7a61;
+  font-weight: 600;
+  text-decoration: underline;
+}

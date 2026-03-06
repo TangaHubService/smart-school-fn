@@ -32,6 +32,24 @@ export interface MeResponse {
   lastName: string;
   roles: string[];
   permissions: string[];
+  student: {
+    id: string;
+    studentCode: string;
+    firstName: string;
+    lastName: string;
+    currentEnrollment: {
+      id: string;
+      academicYear: {
+        id: string;
+        name: string;
+      };
+      classRoom: {
+        id: string;
+        code: string;
+        name: string;
+      };
+    } | null;
+  } | null;
 }
 
 export interface LoginResponse {

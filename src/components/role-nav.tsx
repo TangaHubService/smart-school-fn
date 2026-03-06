@@ -1,7 +1,25 @@
 import clsx from 'clsx';
+import {
+  BadgeCheck,
+  ClipboardCheck,
+  BookOpen,
+  Building2,
+  CalendarDays,
+  ClipboardList,
+  GraduationCap,
+  Home,
+  LayoutTemplate,
+  School,
+  Shapes,
+  ShieldCheck,
+  Users,
+  UserSquare2,
+  type LucideIcon,
+} from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
+import { assessmentsFeatureEnabled } from '../features/assessments/feature';
 import {
   hasPermission,
   hasRole,
@@ -14,6 +32,7 @@ interface NavItem {
   key: string;
   label: string;
   to: string;
+  icon: LucideIcon;
   roles: string[];
   requiredPermissions: string[];
   setupState: SetupState;
@@ -24,6 +43,7 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'dashboard',
     label: 'Dashboard',
     to: '/admin',
+    icon: Home,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
     requiredPermissions: [],
     setupState: 'ANY',
@@ -32,6 +52,7 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'tenants',
     label: 'Tenants',
     to: '/super-admin/tenants',
+    icon: Building2,
     roles: ['SUPER_ADMIN'],
     requiredPermissions: ['tenants.read'],
     setupState: 'ANY',
@@ -40,6 +61,7 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'setup',
     label: 'Setup Wizard',
     to: '/admin/setup',
+    icon: LayoutTemplate,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['school.setup.manage'],
     setupState: 'INCOMPLETE',
@@ -48,6 +70,7 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'years',
     label: 'Academic Years',
     to: '/admin/academic-years',
+    icon: CalendarDays,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['academic_year.manage'],
     setupState: 'COMPLETE',
@@ -56,6 +79,7 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'classes',
     label: 'Classes',
     to: '/admin/classes',
+    icon: School,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['class_room.manage'],
     setupState: 'COMPLETE',
@@ -64,6 +88,7 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'students',
     label: 'Students',
     to: '/admin/students',
+    icon: GraduationCap,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['students.read'],
     setupState: 'COMPLETE',
@@ -72,14 +97,43 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'attendance',
     label: 'Attendance',
     to: '/admin/attendance',
+    icon: ClipboardList,
     roles: ['SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissions: ['attendance.read'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'courses',
+    label: 'Courses',
+    to: '/admin/courses',
+    icon: BookOpen,
+    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['courses.read'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'assignments',
+    label: 'Assignments',
+    to: '/admin/assignments',
+    icon: ClipboardCheck,
+    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['courses.read'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'assessments',
+    label: 'Assessments',
+    to: '/admin/assessments',
+    icon: BadgeCheck,
+    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['assessments.read'],
     setupState: 'COMPLETE',
   },
   {
     key: 'subjects',
     label: 'Subjects',
     to: '/admin/subjects',
+    icon: Shapes,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['subject.manage'],
     setupState: 'COMPLETE',
@@ -88,6 +142,7 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'parents',
     label: 'Parents',
     to: '/admin/parents',
+    icon: Users,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['parents.manage'],
     setupState: 'ANY',
@@ -96,6 +151,7 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'staff',
     label: 'Staff',
     to: '/admin/staff',
+    icon: ShieldCheck,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['staff.invite'],
     setupState: 'ANY',
@@ -104,8 +160,27 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'my-children',
     label: 'My Children',
     to: '/parent/my-children',
+    icon: Users,
     roles: ['PARENT'],
     requiredPermissions: ['parents.my_children.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'student-courses',
+    label: 'My Courses',
+    to: '/student/courses',
+    icon: UserSquare2,
+    roles: ['STUDENT'],
+    requiredPermissions: ['students.my_courses.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'student-assessments',
+    label: 'My Tests',
+    to: '/student/assessments',
+    icon: BadgeCheck,
+    roles: ['STUDENT'],
+    requiredPermissions: ['assessments.submit'],
     setupState: 'ANY',
   },
 ];
@@ -120,6 +195,10 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
   const superAdmin = hasRole(auth.me, 'SUPER_ADMIN');
 
   const items = NAV_ITEMS.filter((item) => {
+    if (!assessmentsFeatureEnabled && ['assessments', 'student-assessments'].includes(item.key)) {
+      return false;
+    }
+
     if (superAdmin) {
       return true;
     }
@@ -163,6 +242,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
             )
           }
         >
+          <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>{item.label}</span>
         </NavLink>
       ))}
