@@ -1,0 +1,474 @@
+import { apiRequest } from '../../api/client';
+
+export type LessonContentType = 'TEXT' | 'PDF' | 'VIDEO' | 'LINK';
+export type SubmissionStatus = 'SUBMITTED' | 'GRADED';
+export type FileAssetResourceType = 'IMAGE' | 'VIDEO' | 'RAW';
+
+export interface FileAsset {
+  id: string;
+  secureUrl: string;
+  originalName: string;
+  format: string | null;
+  mimeType: string | null;
+  resourceType: FileAssetResourceType;
+  bytes: number | null;
+}
+
+export interface CourseSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  academicYear: {
+    id: string;
+    name: string;
+  };
+  classRoom: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  subject: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
+  teacher: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+export interface LessonItem {
+  id: string;
+  title: string;
+  summary: string | null;
+  contentType: LessonContentType;
+  body: string | null;
+  externalUrl: string | null;
+  sequence: number;
+  isPublished: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  fileAsset: FileAsset | null;
+}
+
+export interface SubmissionItem {
+  id: string;
+  textAnswer: string | null;
+  linkUrl: string | null;
+  status: SubmissionStatus;
+  submittedAt: string;
+  gradedAt: string | null;
+  gradePoints: number | null;
+  feedback: string | null;
+  createdAt: string;
+  updatedAt: string;
+  student: {
+    id: string;
+    studentCode: string;
+    firstName: string;
+    lastName: string;
+  };
+  fileAsset: FileAsset | null;
+  gradedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+}
+
+export interface AssignmentItem {
+  id: string;
+  title: string;
+  instructions: string;
+  dueAt: string | null;
+  maxPoints: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lesson: {
+    id: string;
+    title: string;
+  } | null;
+  course?: {
+    id: string;
+    title: string;
+    classRoom: {
+      id: string;
+      code: string;
+      name: string;
+    };
+    academicYear: {
+      id: string;
+      name: string;
+    };
+  } | null;
+  attachmentAsset: FileAsset | null;
+  submissionCount: number;
+  mySubmission?: SubmissionItem | null;
+}
+
+export interface CourseListResponse {
+  items: Array<
+    CourseSummary & {
+      counts: {
+        lessons: number;
+        assignments: number;
+      };
+    }
+  >;
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface CourseDetailResponse {
+  course: CourseSummary;
+  lessons: {
+    items: LessonItem[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      totalItems: number;
+      totalPages: number;
+    };
+  };
+  assignments: AssignmentItem[];
+}
+
+export interface AssignmentSubmissionsResponse {
+  assignment: {
+    id: string;
+    title: string;
+    maxPoints: number;
+  };
+  items: SubmissionItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface AssignmentListResponse {
+  items: AssignmentItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface MyCoursesResponse {
+  student: {
+    id: string;
+    studentCode: string;
+    firstName: string;
+    lastName: string;
+  };
+  items: Array<
+    CourseSummary & {
+      lessons: LessonItem[];
+      assignments: Array<AssignmentItem & { mySubmission: SubmissionItem | null }>;
+    }
+  >;
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface SignedUploadResponse {
+  cloudName: string;
+  apiKey: string;
+  timestamp: number;
+  folder: string;
+  signature: string;
+  uploadUrl: string;
+}
+
+export interface UploadedAssetPayload {
+  publicId: string;
+  secureUrl: string;
+  originalName: string;
+  bytes?: number;
+  format?: string;
+  mimeType?: string;
+  resourceType: FileAssetResourceType;
+}
+
+export function listCoursesApi(
+  accessToken: string,
+  params: {
+    classId?: string;
+    academicYearId?: string;
+    page?: number;
+    pageSize?: number;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.classId) {
+    query.set('classId', params.classId);
+  }
+  if (params.academicYearId) {
+    query.set('academicYearId', params.academicYearId);
+  }
+  if (params.page) {
+    query.set('page', String(params.page));
+  }
+  if (params.pageSize) {
+    query.set('pageSize', String(params.pageSize));
+  }
+
+  return apiRequest<CourseListResponse>(`/courses${query.toString() ? `?${query.toString()}` : ''}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function getCourseDetailApi(
+  accessToken: string,
+  courseId: string,
+  params: {
+    lessonsPage?: number;
+    lessonsPageSize?: number;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.lessonsPage) {
+    query.set('lessonsPage', String(params.lessonsPage));
+  }
+  if (params.lessonsPageSize) {
+    query.set('lessonsPageSize', String(params.lessonsPageSize));
+  }
+
+  return apiRequest<CourseDetailResponse>(
+    `/courses/${courseId}${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export function createCourseApi(
+  accessToken: string,
+  payload: {
+    academicYearId: string;
+    classRoomId: string;
+    subjectId?: string;
+    title: string;
+    description?: string;
+  },
+) {
+  return apiRequest<CourseSummary>('/courses', {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function createLessonApi(
+  accessToken: string,
+  courseId: string,
+  payload: {
+    title: string;
+    summary?: string;
+    contentType: LessonContentType;
+    body?: string;
+    externalUrl?: string;
+    sequence?: number;
+    asset?: UploadedAssetPayload;
+  },
+) {
+  return apiRequest<LessonItem>(`/courses/${courseId}/lessons`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function publishLessonApi(
+  accessToken: string,
+  lessonId: string,
+  isPublished: boolean,
+) {
+  return apiRequest<LessonItem>(`/lessons/${lessonId}/publish`, {
+    method: 'PATCH',
+    accessToken,
+    body: {
+      isPublished,
+    },
+  });
+}
+
+export function createAssignmentApi(
+  accessToken: string,
+  payload: {
+    courseId: string;
+    lessonId?: string;
+    title: string;
+    instructions: string;
+    dueAt?: string;
+    maxPoints: number;
+    isPublished?: boolean;
+    asset?: UploadedAssetPayload;
+  },
+) {
+  return apiRequest<AssignmentItem>('/assignments', {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function listAssignmentsApi(
+  accessToken: string,
+  params: {
+    courseId?: string;
+    classId?: string;
+    academicYearId?: string;
+    q?: string;
+    page?: number;
+    pageSize?: number;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.courseId) {
+    query.set('courseId', params.courseId);
+  }
+  if (params.classId) {
+    query.set('classId', params.classId);
+  }
+  if (params.academicYearId) {
+    query.set('academicYearId', params.academicYearId);
+  }
+  if (params.q?.trim()) {
+    query.set('q', params.q.trim());
+  }
+  if (params.page) {
+    query.set('page', String(params.page));
+  }
+  if (params.pageSize) {
+    query.set('pageSize', String(params.pageSize));
+  }
+
+  return apiRequest<AssignmentListResponse>(
+    `/assignments${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export function listAssignmentSubmissionsApi(
+  accessToken: string,
+  assignmentId: string,
+  params: {
+    page?: number;
+    pageSize?: number;
+    status?: SubmissionStatus;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.page) {
+    query.set('page', String(params.page));
+  }
+  if (params.pageSize) {
+    query.set('pageSize', String(params.pageSize));
+  }
+  if (params.status) {
+    query.set('status', params.status);
+  }
+
+  return apiRequest<AssignmentSubmissionsResponse>(
+    `/assignments/${assignmentId}/submissions${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export function submitAssignmentApi(
+  accessToken: string,
+  assignmentId: string,
+  payload: {
+    textAnswer?: string;
+    linkUrl?: string;
+    asset?: UploadedAssetPayload;
+  },
+) {
+  return apiRequest<SubmissionItem>(`/assignments/${assignmentId}/submissions`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function gradeSubmissionApi(
+  accessToken: string,
+  submissionId: string,
+  payload: {
+    gradePoints: number;
+    feedback?: string;
+  },
+) {
+  return apiRequest<SubmissionItem>(`/submissions/${submissionId}/grade`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function listMyCoursesApi(
+  accessToken: string,
+  params: {
+    page?: number;
+    pageSize?: number;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.page) {
+    query.set('page', String(params.page));
+  }
+  if (params.pageSize) {
+    query.set('pageSize', String(params.pageSize));
+  }
+
+  return apiRequest<MyCoursesResponse>(
+    `/students/me/courses${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export function signUploadApi(
+  accessToken: string,
+  payload: {
+    purpose: 'lesson' | 'assignment' | 'submission';
+    fileName: string;
+  },
+) {
+  return apiRequest<SignedUploadResponse>('/files/sign-upload', {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}

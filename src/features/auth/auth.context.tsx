@@ -46,7 +46,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
   });
 
   useEffect(() => {
-    if (!meQuery.error || !refreshToken || hasRetriedRefresh.current) {
+    if (!meQuery.error) {
+      return;
+    }
+
+    if (!refreshToken) {
+      clearSession();
+      return;
+    }
+
+    if (hasRetriedRefresh.current) {
+      clearSession();
       return;
     }
 
@@ -69,7 +79,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
       });
   }, [meQuery.error, refreshToken, queryClient]);
 
+  useEffect(() => {
+    if (meQuery.data) {
+      hasRetriedRefresh.current = false;
+    }
+  }, [meQuery.data]);
+
   function clearSession() {
+    hasRetriedRefresh.current = false;
     setAccessToken(null);
     setRefreshToken(null);
     localStorage.removeItem(ACCESS_TOKEN_KEY);
