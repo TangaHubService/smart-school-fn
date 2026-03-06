@@ -101,6 +101,60 @@ export interface MyChildrenResponse {
         name: string;
       };
     } | null;
+    attendanceLast30Days: {
+      total: number;
+      present: number;
+      absent: number;
+      late: number;
+      excused: number;
+      lastMarkedDate: string | null;
+    };
+  }>;
+}
+
+export interface MyChildAttendanceHistoryResponse {
+  student: {
+    id: string;
+    studentCode: string;
+    firstName: string;
+    lastName: string;
+    currentEnrollment: {
+      id: string;
+      enrolledAt: string;
+      academicYear: {
+        id: string;
+        name: string;
+      };
+      classRoom: {
+        id: string;
+        code: string;
+        name: string;
+      };
+    } | null;
+  };
+  range: {
+    from: string;
+    to: string;
+  };
+  summary: {
+    total: number;
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  };
+  records: Array<{
+    id: string;
+    date: string;
+    status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+    remarks: string | null;
+    classRoom: {
+      id: string;
+      code: string;
+      name: string;
+    };
+    markedAt: string;
+    updatedAt: string;
   }>;
 }
 
@@ -376,4 +430,30 @@ export function listMyChildrenApi(accessToken: string) {
     method: 'GET',
     accessToken,
   });
+}
+
+export function listMyChildAttendanceApi(
+  accessToken: string,
+  studentId: string,
+  params?: {
+    from?: string;
+    to?: string;
+  },
+) {
+  const query = new URLSearchParams();
+
+  if (params?.from) {
+    query.set('from', params.from);
+  }
+  if (params?.to) {
+    query.set('to', params.to);
+  }
+
+  return apiRequest<MyChildAttendanceHistoryResponse>(
+    `/parents/me/students/${studentId}/attendance${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
 }

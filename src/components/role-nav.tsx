@@ -69,6 +69,14 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
+    key: 'attendance',
+    label: 'Attendance',
+    to: '/admin/attendance',
+    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['attendance.read'],
+    setupState: 'COMPLETE',
+  },
+  {
     key: 'subjects',
     label: 'Subjects',
     to: '/admin/subjects',
