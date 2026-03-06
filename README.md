@@ -14,5 +14,10 @@
 ## Core routes
 - `/login`
 - `/`
-- `/users` (permission-gated placeholder)
+- `/tenants/new` (SuperAdmin)
+- `/setup` (SchoolAdmin setup wizard)
+- `/academics` (SchoolAdmin academics CRUD)
+- `/staff` (SchoolAdmin invites)
+- `/accept-invite` (public invite accept)
+- `/users`
 - `/unauthorized`

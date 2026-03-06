@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ApiClientError } from '../types/api';
 import { useAuth } from '../features/auth/auth.context';
@@ -9,16 +10,29 @@ import { LoginFormValues, loginFormSchema } from '../features/auth/auth.schema';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const auth = useAuth();
+
+  const tenantCodeFromQuery = searchParams.get('tenantCode') ?? '';
+  const emailFromQuery = searchParams.get('email') ?? '';
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
-      tenantCode: '',
-      email: '',
+      tenantCode: tenantCodeFromQuery,
+      email: emailFromQuery,
       password: '',
     },
   });
+
+  useEffect(() => {
+    if (tenantCodeFromQuery) {
+      form.setValue('tenantCode', tenantCodeFromQuery);
+    }
+    if (emailFromQuery) {
+      form.setValue('email', emailFromQuery);
+    }
+  }, [tenantCodeFromQuery, emailFromQuery, form]);
 
   const loginMutation = useMutation({
     mutationFn: (payload: LoginFormValues) => auth.login(payload),
@@ -43,11 +57,13 @@ export function LoginPage() {
           <div>
             <label htmlFor="tenantCode" className="mb-1 block text-sm font-semibold text-brand-800">
               School Code
+              <span className="ml-1 text-xs font-medium text-brand-500">(optional for SuperAdmin)</span>
             </label>
             <input
               id="tenantCode"
               type="text"
               autoComplete="organization"
+              placeholder="e.g. gs-rwanda (leave blank for SuperAdmin)"
               className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
               {...form.register('tenantCode')}
             />

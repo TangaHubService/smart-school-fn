@@ -10,9 +10,9 @@
   font-family: 'Manrope', ui-sans-serif, system-ui;
   color: #102c25;
   background:
-    radial-gradient(circle at 10% 10%, rgba(214, 240, 231, 0.8), transparent 40%),
-    radial-gradient(circle at 85% 0%, rgba(160, 222, 196, 0.6), transparent 45%),
-    #f7fcfa;
+    radial-gradient(circle at 10% 0%, rgba(112, 196, 166, 0.25), transparent 40%),
+    radial-gradient(circle at 90% 5%, rgba(38, 143, 112, 0.2), transparent 45%),
+    linear-gradient(145deg, #f9fcfb 0%, #f2f8f6 45%, #edf5f2 100%);
 }
 
 * {
@@ -22,8 +22,16 @@
 body {
   margin: 0;
   min-height: 100vh;
+  color: #102c25;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(47, 143, 113, 0.08), transparent 35%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8));
 }
 
 #root {
   min-height: 100vh;
+}
+
+::selection {
+  background: rgba(47, 143, 113, 0.2);
 }
