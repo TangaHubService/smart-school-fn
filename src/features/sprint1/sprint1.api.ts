@@ -247,6 +247,73 @@ export function listInvitesApi(accessToken: string) {
   });
 }
 
+export interface StaffMember {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  createdAt: string;
+  updatedAt: string;
+  roles: string[];
+}
+
+export function listStaffMembersApi(
+  accessToken: string,
+  params: { q?: string; roleName?: string; status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' } = {},
+) {
+  const query = new URLSearchParams();
+
+  if (params.q?.trim()) {
+    query.set('q', params.q.trim());
+  }
+
+  if (params.roleName?.trim()) {
+    query.set('roleName', params.roleName.trim());
+  }
+
+  if (params.status) {
+    query.set('status', params.status);
+  }
+
+  return apiRequest<StaffMember[]>(`/staff/members${query.toString() ? `?${query.toString()}` : ''}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function getStaffMemberApi(accessToken: string, memberId: string) {
+  return apiRequest<StaffMember>(`/staff/members/${memberId}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function updateStaffMemberApi(
+  accessToken: string,
+  memberId: string,
+  payload: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string | null;
+    status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  },
+) {
+  return apiRequest<StaffMember>(`/staff/members/${memberId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function deleteStaffMemberApi(accessToken: string, memberId: string) {
+  return apiRequest<{ deleted: boolean }>(`/staff/members/${memberId}`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}
+
 export function acceptInviteApi(payload: {
   token: string;
   firstName: string;

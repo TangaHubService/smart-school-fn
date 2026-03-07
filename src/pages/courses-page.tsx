@@ -20,16 +20,17 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { hasRole } from '../features/auth/auth-helpers';
 import {
   listAcademicYearsApi,
   listClassRoomsApi,
-  listSubjectsApi,
 } from '../features/sprint1/sprint1.api';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import {
   createCourseApi,
   createLessonApi,
   getCourseDetailApi,
+  listCourseSubjectOptionsApi,
   listCoursesApi,
   LessonContentType,
   publishLessonApi,
@@ -172,6 +173,10 @@ export function CoursesPage() {
   const auth = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const isTeacherOnly =
+    hasRole(auth.me, 'TEACHER') &&
+    !hasRole(auth.me, 'SCHOOL_ADMIN') &&
+    !hasRole(auth.me, 'SUPER_ADMIN');
 
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
@@ -204,8 +209,8 @@ export function CoursesPage() {
   });
 
   const subjectsQuery = useQuery({
-    queryKey: ['subjects'],
-    queryFn: () => listSubjectsApi(auth.accessToken!),
+    queryKey: ['course-subject-options'],
+    queryFn: () => listCourseSubjectOptionsApi(auth.accessToken!),
   });
 
   const coursesQuery = useQuery({
@@ -318,9 +323,12 @@ export function CoursesPage() {
   const academicYears = ((yearsQuery.data as AcademicYearOption[] | undefined) ?? []).slice();
   const classRooms = ((classesQuery.data as ClassRoomOption[] | undefined) ?? []).slice();
   const subjects = ((subjectsQuery.data as SubjectOption[] | undefined) ?? []).slice();
+  const selectedCourseSubjectId = courseForm.watch('subjectId');
+  const isTeacherSubjectMissing = isTeacherOnly && !selectedCourseSubjectId?.trim();
   const isCourseSetupLookupError =
     yearsQuery.isError || classesQuery.isError || subjectsQuery.isError;
-  const isCourseSetupMissing = !academicYears.length || !classRooms.length;
+  const isCourseSetupMissing =
+    !academicYears.length || !classRooms.length || (isTeacherOnly && !subjects.length);
 
   const visibleCourses = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -359,6 +367,18 @@ export function CoursesPage() {
       subjectId: subjects[0]?.id || '',
     });
     setIsCreateCourseOpen(true);
+  }
+
+  function submitCourse(values: CourseFormValues) {
+    if (isTeacherOnly && !values.subjectId?.trim()) {
+      courseForm.setError('subjectId', {
+        type: 'manual',
+        message: 'Subject is required for teacher-created courses',
+      });
+      return;
+    }
+
+    createCourseMutation.mutate(values);
   }
 
   function openCreateLesson() {
@@ -564,6 +584,9 @@ export function CoursesPage() {
                                 <p className="mt-1 text-sm text-slate-600">
                                   {course.classRoom.name} · {course.academicYear.name}
                                 </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Teacher: {course.teacher.firstName} {course.teacher.lastName}
+                                </p>
                               </div>
                               <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                                 {course.counts.lessons} lessons
@@ -753,10 +776,7 @@ export function CoursesPage() {
         description="Set the class, academic year, and subject first."
         onClose={() => setIsCreateCourseOpen(false)}
       >
-        <form
-          className="grid gap-4"
-          onSubmit={courseForm.handleSubmit((values) => createCourseMutation.mutate(values))}
-        >
+        <form className="grid gap-4" onSubmit={courseForm.handleSubmit(submitCourse)}>
           {isCourseSetupLookupError ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               Could not load academic years, classes, or subjects. Refresh the page and try
@@ -766,7 +786,9 @@ export function CoursesPage() {
 
           {!isCourseSetupLookupError && isCourseSetupMissing ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Create at least one academic year and one class before creating a course.
+              {isTeacherOnly && !subjects.length
+                ? 'No subject is assigned to your teaching load yet. Ask an administrator to assign at least one subject.'
+                : 'Create at least one academic year and one class before creating a course.'}
             </div>
           ) : null}
 
@@ -823,7 +845,7 @@ export function CoursesPage() {
               {...courseForm.register('subjectId')}
               className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
             >
-              <option value="">No subject</option>
+              {isTeacherOnly ? <option value="">Select subject</option> : <option value="">No subject</option>}
               {subjects.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
@@ -842,7 +864,12 @@ export function CoursesPage() {
             </button>
             <button
               type="submit"
-              disabled={createCourseMutation.isPending || isCourseSetupLookupError || isCourseSetupMissing}
+              disabled={
+                createCourseMutation.isPending ||
+                isCourseSetupLookupError ||
+                isCourseSetupMissing ||
+                isTeacherSubjectMissing
+              }
               className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {createCourseMutation.isPending ? 'Saving...' : 'Create course'}

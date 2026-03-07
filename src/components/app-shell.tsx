@@ -9,10 +9,12 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  User,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
+import nbgLogo from '../asset/nbglogo.png';
 import { useAuth } from '../features/auth/auth.context';
 import {
   hasPermission,
@@ -25,9 +27,15 @@ export function AppShell() {
   const auth = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isDesktopSidebarVisible, setIsDesktopSidebarVisible] = useState(true);
+  const [brandLogoError, setBrandLogoError] = useState(false);
 
   const setupComplete = isSchoolSetupComplete(auth.me);
   const schoolAdmin = hasPermission(auth.me, 'school.setup.manage') && !isSuperAdmin(auth.me);
+  const userDisplayName =
+    `${auth.me?.firstName ?? ''} ${auth.me?.lastName ?? ''}`.trim() ||
+    auth.me?.email ||
+    'Signed-in user';
+  const userDisplayEmail = auth.me?.email ?? 'No email';
 
   function closeMobileNav() {
     setIsMobileNavOpen(false);
@@ -44,17 +52,14 @@ export function AppShell() {
         />
       ) : null}
 
-      <div
-        className={clsx(
-          'relative h-full p-2 md:grid md:gap-2 md:p-3',
-          isDesktopSidebarVisible ? 'md:grid-cols-[320px_1fr]' : 'md:grid-cols-[1fr]',
-        )}
-      >
+      <div className="relative h-full p-2 md:flex md:gap-2 md:p-3">
         <aside
           className={clsx(
-            'fixed inset-y-0 left-0 z-40 flex w-[300px] flex-col overflow-hidden rounded-r-xl border border-brand-600 bg-brand-500 text-white transition-transform md:sticky md:top-3 md:h-[calc(100vh-1.5rem)] md:w-auto md:rounded-xl',
+            'fixed inset-y-0 left-0 z-40 flex w-[300px] flex-col overflow-hidden rounded-r-xl border border-brand-600 bg-brand-500 text-white md:sticky md:top-3 md:h-[calc(100vh-1.5rem)] md:w-[300px] md:shrink-0 md:rounded-xl',
             isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
-            isDesktopSidebarVisible ? 'md:flex md:translate-x-0' : 'md:hidden',
+            isDesktopSidebarVisible
+              ? 'md:translate-x-0'
+              : 'md:hidden',
           )}
           aria-label="Sidebar"
         >
@@ -74,8 +79,19 @@ export function AppShell() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-brand-300 to-brand-500 text-xs font-bold text-white">
-                SS
+              <div className="grid h-10 w-10 overflow-hidden rounded-full border border-white/25 bg-white/10">
+                {!brandLogoError ? (
+                  <img
+                    src={nbgLogo}
+                    alt="Smart School Rwanda"
+                    className="h-full w-full object-cover"
+                    onError={() => setBrandLogoError(true)}
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-300 to-brand-500 text-xs font-bold text-white">
+                    SS
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-xl font-bold tracking-tight text-white">
@@ -114,7 +130,7 @@ export function AppShell() {
           </div>
         </aside>
 
-        <section className="flex h-[calc(100vh-1rem)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white md:h-[calc(100vh-1.5rem)]">
+        <section className="flex h-[calc(100vh-1rem)] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white md:h-[calc(100vh-1.5rem)]">
           <header className="sticky top-0 z-20 shrink-0 border-b border-brand-600 bg-brand-500 p-3">
             <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-brand-600/70 px-3 py-2.5">
               <button
@@ -157,18 +173,27 @@ export function AppShell() {
                   <Building2 className="h-4 w-4" aria-hidden="true" />
                   {auth.me?.tenant.name ?? 'Tenant'}
                 </button>
-                <button className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white">
+                <button
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-white"
+                  aria-label="Notifications"
+                >
                   <Bell className="h-4 w-4" aria-hidden="true" />
-                  Alerts
                 </button>
-                <div className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-right">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">
-                    {auth.me?.roles[0] ?? 'ROLE'}
-                  </p>
-                  <p className="text-xs font-semibold text-white">{auth.me?.tenant.code}</p>
+                <div className="hidden min-w-[220px] items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-left sm:flex">
+                  <div className="grid h-8 w-8 place-items-center rounded-full bg-white text-brand-600">
+                    <User className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold text-white">{userDisplayName}</p>
+                    <p className="truncate text-[11px] text-white/75">{userDisplayEmail}</p>
+                  </div>
                 </div>
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-white text-xs font-bold text-brand-600">
-                  {`${auth.me?.firstName?.[0] ?? 'U'}${auth.me?.lastName?.[0] ?? 'S'}`}
+                <div
+                  className="grid h-10 w-10 place-items-center rounded-lg bg-white text-brand-600 sm:hidden"
+                  title={userDisplayName}
+                  aria-label={`Logged in as ${userDisplayName}`}
+                >
+                  <User className="h-5 w-5" aria-hidden="true" />
                 </div>
               </div>
             </div>

@@ -6,6 +6,8 @@ import { ProtectedRoute } from '../components/protected-route';
 import { RequirePermission } from '../components/require-permission';
 import { RequireSetupComplete } from '../components/require-setup-complete';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
+import { conductFeatureEnabled } from '../features/conduct/feature';
+import { govAuditingFeatureEnabled } from '../features/gov/feature';
 import { AcademicYearsPage } from '../pages/academic-years-page';
 import { AcceptInvitePage } from '../pages/accept-invite-page';
 import { AssessmentDetailPage } from '../pages/assessment-detail-page';
@@ -13,9 +15,18 @@ import { AssessmentsPage } from '../pages/assessments-page';
 import { AttendancePage } from '../pages/attendance-page';
 import { AssignmentsPage } from '../pages/assignments-page';
 import { ClassesPage } from '../pages/classes-page';
+import { ConductCreateIncidentPage } from '../pages/conduct-create-incident-page';
+import { ConductIncidentDetailPage } from '../pages/conduct-incident-detail-page';
+import { ConductIncidentsPage } from '../pages/conduct-incidents-page';
 import { CoursesPage } from '../pages/courses-page';
 import { DashboardPage } from '../pages/dashboard-page';
 import { ExamsPage } from '../pages/exams-page';
+import { GovAuditorsPage } from '../pages/gov-auditors-page';
+import { GovDashboardPage } from '../pages/gov-dashboard-page';
+import { GovIncidentDetailPage } from '../pages/gov-incident-detail-page';
+import { GovIncidentsPage } from '../pages/gov-incidents-page';
+import { GovSchoolDetailPage } from '../pages/gov-school-detail-page';
+import { GovSchoolsPage } from '../pages/gov-schools-page';
 import { LoginPage } from '../pages/login-page';
 import { ParentMyChildrenPage } from '../pages/parent-my-children-page';
 import { ParentReportCardsPage } from '../pages/parent-report-cards-page';
@@ -33,6 +44,7 @@ import { UnauthorizedPage } from '../pages/unauthorized-page';
 import { UsersPage } from '../pages/users-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
+import { StudentConductProfilePage } from '../pages/student-conduct-profile-page';
 
 export function AppRoutes() {
   return (
@@ -62,6 +74,25 @@ export function AppRoutes() {
             <Route path="/admin/setup" element={<SetupWizardPage />} />
           </Route>
 
+          {govAuditingFeatureEnabled ? (
+            <>
+              <Route element={<RequirePermission permission="gov.dashboard.read" />}>
+                <Route path="/gov" element={<GovDashboardPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="gov.schools.read" />}>
+                <Route path="/gov/schools" element={<GovSchoolsPage />} />
+                <Route path="/gov/schools/:tenantId" element={<GovSchoolDetailPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="gov.incidents.read" />}>
+                <Route path="/gov/incidents" element={<GovIncidentsPage />} />
+                <Route path="/gov/incidents/:incidentId" element={<GovIncidentDetailPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="gov.auditors.manage" />}>
+                <Route path="/gov/admin/auditors" element={<GovAuditorsPage />} />
+              </Route>
+            </>
+          ) : null}
+
           <Route element={<RequireSetupComplete />}>
             <Route element={<RequirePermission permission="academic_year.manage" />}>
               <Route path="/admin/academic-years" element={<AcademicYearsPage />} />
@@ -86,6 +117,18 @@ export function AppRoutes() {
                 <Route path="/admin/assessments" element={<AssessmentsPage />} />
                 <Route path="/admin/assessments/:assessmentId" element={<AssessmentDetailPage />} />
               </Route>
+            ) : null}
+            {conductFeatureEnabled ? (
+              <>
+                <Route element={<RequirePermission permission="conduct.read" />}>
+                  <Route path="/admin/conduct" element={<ConductIncidentsPage />} />
+                  <Route path="/admin/conduct/students/:studentId" element={<StudentConductProfilePage />} />
+                  <Route path="/admin/conduct/:incidentId" element={<ConductIncidentDetailPage />} />
+                </Route>
+                <Route element={<RequirePermission permission="conduct.manage" />}>
+                  <Route path="/admin/conduct/new" element={<ConductCreateIncidentPage />} />
+                </Route>
+              </>
             ) : null}
             <Route element={<RequirePermission permission="students.read" />}>
               <Route path="/admin/students" element={<StudentsPage />} />
@@ -140,6 +183,9 @@ export function AppRoutes() {
           <Route path="/assignments" element={<Navigate to="/admin/assignments" replace />} />
           {assessmentsFeatureEnabled ? (
             <Route path="/assessments" element={<Navigate to="/admin/assessments" replace />} />
+          ) : null}
+          {conductFeatureEnabled ? (
+            <Route path="/conduct" element={<Navigate to="/admin/conduct" replace />} />
           ) : null}
           <Route path="/students" element={<Navigate to="/admin/students" replace />} />
           <Route path="/student-results" element={<Navigate to="/student/report-cards" replace />} />

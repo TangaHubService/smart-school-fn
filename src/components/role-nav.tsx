@@ -21,6 +21,8 @@ import { NavLink } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
+import { conductFeatureEnabled } from '../features/conduct/feature';
+import { govAuditingFeatureEnabled } from '../features/gov/feature';
 import {
   hasPermission,
   hasRole,
@@ -92,6 +94,15 @@ export const NAV_ITEMS: NavItem[] = [
     icon: GraduationCap,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['students.read'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'conduct',
+    label: 'Discipline / Conduct',
+    to: '/admin/conduct',
+    icon: ClipboardList,
+    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['conduct.read'],
     setupState: 'COMPLETE',
   },
   {
@@ -185,6 +196,42 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'gov-dashboard',
+    label: 'Gov Dashboard',
+    to: '/gov',
+    icon: Home,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.dashboard.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-schools',
+    label: 'Gov Schools',
+    to: '/gov/schools',
+    icon: Building2,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.schools.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-incidents',
+    label: 'Gov Incidents',
+    to: '/gov/incidents',
+    icon: FileBarChart2,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.incidents.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-auditors',
+    label: 'Auditor Admin',
+    to: '/gov/admin/auditors',
+    icon: ShieldCheck,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['gov.auditors.manage'],
+    setupState: 'ANY',
+  },
+  {
     key: 'student-courses',
     label: 'My Courses',
     to: '/student/courses',
@@ -224,6 +271,14 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
 
   const items = NAV_ITEMS.filter((item) => {
     if (!assessmentsFeatureEnabled && ['assessments', 'student-assessments'].includes(item.key)) {
+      return false;
+    }
+
+    if (!conductFeatureEnabled && item.key === 'conduct') {
+      return false;
+    }
+
+    if (!govAuditingFeatureEnabled && item.key.startsWith('gov-')) {
       return false;
     }
 

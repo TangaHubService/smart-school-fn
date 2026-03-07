@@ -43,6 +43,19 @@ export interface CourseSummary {
   };
 }
 
+export interface CourseTeacherOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface CourseSubjectOption {
+  id: string;
+  code: string;
+  name: string;
+}
+
 export interface LessonItem {
   id: string;
   title: string;
@@ -215,6 +228,7 @@ export function listCoursesApi(
   params: {
     classId?: string;
     academicYearId?: string;
+    teacherUserId?: string;
     page?: number;
     pageSize?: number;
   } = {},
@@ -225,6 +239,9 @@ export function listCoursesApi(
   }
   if (params.academicYearId) {
     query.set('academicYearId', params.academicYearId);
+  }
+  if (params.teacherUserId) {
+    query.set('teacherUserId', params.teacherUserId);
   }
   if (params.page) {
     query.set('page', String(params.page));
@@ -264,18 +281,89 @@ export function getCourseDetailApi(
   );
 }
 
+export function listCourseTeacherOptionsApi(
+  accessToken: string,
+  params: {
+    q?: string;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.q?.trim()) {
+    query.set('q', params.q.trim());
+  }
+
+  return apiRequest<CourseTeacherOption[]>(
+    `/courses/teacher-options${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export function listCourseSubjectOptionsApi(
+  accessToken: string,
+  params: {
+    q?: string;
+  } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.q?.trim()) {
+    query.set('q', params.q.trim());
+  }
+
+  return apiRequest<CourseSubjectOption[]>(
+    `/courses/subject-options${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
 export function createCourseApi(
   accessToken: string,
   payload: {
     academicYearId: string;
     classRoomId: string;
     subjectId?: string;
+    teacherUserId?: string;
     title: string;
     description?: string;
   },
 ) {
   return apiRequest<CourseSummary>('/courses', {
     method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function assignCourseTeacherApi(
+  accessToken: string,
+  courseId: string,
+  payload: {
+    teacherUserId: string;
+  },
+) {
+  return apiRequest<CourseSummary>(`/courses/${courseId}/teacher`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function assignTeacherBySubjectApi(
+  accessToken: string,
+  payload: {
+    teacherUserId: string;
+    academicYearId: string;
+    classRoomId: string;
+    subjectId: string;
+  },
+) {
+  return apiRequest<CourseSummary>('/courses/assign-by-subject', {
+    method: 'PATCH',
     accessToken,
     body: payload,
   });

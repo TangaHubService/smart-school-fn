@@ -11,6 +11,8 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { hasRole } from '../features/auth/auth-helpers';
+import { listCourseSubjectOptionsApi } from '../features/sprint4/lms.api';
 import {
   bulkSaveExamMarksApi,
   createExamApi,
@@ -24,7 +26,6 @@ import {
 } from '../features/sprint5/exams.api';
 import {
   listClassRoomsApi,
-  listSubjectsApi,
   listTermsApi,
 } from '../features/sprint1/sprint1.api';
 
@@ -75,6 +76,10 @@ export function ExamsPage() {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const isTeacherOnly =
+    hasRole(auth.me, 'TEACHER') &&
+    !hasRole(auth.me, 'SCHOOL_ADMIN') &&
+    !hasRole(auth.me, 'SUPER_ADMIN');
 
   const [search, setSearch] = useState('');
   const [termFilter, setTermFilter] = useState('');
@@ -106,8 +111,8 @@ export function ExamsPage() {
     queryFn: () => listClassRoomsApi(auth.accessToken!),
   });
   const subjectsQuery = useQuery({
-    queryKey: ['subjects'],
-    queryFn: () => listSubjectsApi(auth.accessToken!),
+    queryKey: ['course-subject-options'],
+    queryFn: () => listCourseSubjectOptionsApi(auth.accessToken!),
   });
   const schemesQuery = useQuery({
     queryKey: ['grading-schemes'],
@@ -304,6 +309,8 @@ export function ExamsPage() {
   const terms = (termsQuery.data as any[]) ?? [];
   const classRooms = (classesQuery.data as any[]) ?? [];
   const subjects = (subjectsQuery.data as any[]) ?? [];
+  const selectedExamSubjectId = examForm.watch('subjectId');
+  const isTeacherExamSubjectMissing = isTeacherOnly && !selectedExamSubjectId?.trim();
   const schemes = schemesQuery.data ?? [];
 
   const currentScopeStatus = useMemo(() => exams[0]?.resultStatus ?? 'UNLOCKED', [exams]);
@@ -346,6 +353,7 @@ export function ExamsPage() {
             <button
               type="button"
               onClick={openExamModal}
+              disabled={isTeacherOnly && !subjects.length}
               className={primaryButtonClassName}
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
@@ -559,7 +567,7 @@ export function ExamsPage() {
             <button
               type="button"
               onClick={examForm.handleSubmit((values) => createExamMutation.mutate(values))}
-              disabled={createExamMutation.isPending}
+              disabled={createExamMutation.isPending || isTeacherExamSubjectMissing}
               className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               Save exam
@@ -568,6 +576,13 @@ export function ExamsPage() {
         }
       >
         <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
+          {isTeacherOnly && !subjects.length ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              No subject is assigned to your teaching load yet. Ask an administrator to assign at
+              least one subject before creating exams.
+            </div>
+          ) : null}
+
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Term</span>

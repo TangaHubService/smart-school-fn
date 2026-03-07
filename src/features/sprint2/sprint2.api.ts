@@ -163,6 +163,19 @@ export interface LinkableStudentOption {
   studentCode: string;
   firstName: string;
   lastName: string;
+  currentEnrollment: {
+    id: string;
+    enrolledAt: string;
+    academicYear: {
+      id: string;
+      name: string;
+    };
+    classRoom: {
+      id: string;
+      code: string;
+      name: string;
+    };
+  } | null;
 }
 
 export function createStudentApi(
@@ -387,12 +400,16 @@ export function updateParentApi(
 export function listLinkableStudentsApi(
   accessToken: string,
   params?: {
+    classId?: string;
     q?: string;
     pageSize?: number;
   },
 ) {
   const query = new URLSearchParams();
 
+  if (params?.classId) {
+    query.set('classId', params.classId);
+  }
   if (params?.q?.trim()) {
     query.set('q', params.q.trim());
   }

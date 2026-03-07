@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -10,6 +10,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import {
   createParentApi,
   listLinkableStudentsApi,
@@ -55,6 +56,18 @@ const defaultLinkForm: LinkForm = {
   isPrimary: false,
 };
 
+interface ClassRoomOption {
+  id: string;
+  code: string;
+  name: string;
+  gradeLevel?: {
+    id: string;
+    code: string;
+    name: string;
+    rank: number;
+  };
+}
+
 export function ParentsPage() {
   const auth = useAuth();
   const { showToast } = useToast();
@@ -68,6 +81,7 @@ export function ParentsPage() {
   const [editingParent, setEditingParent] = useState<any | null>(null);
   const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null);
   const [linkSearch, setLinkSearch] = useState('');
+  const [linkClassId, setLinkClassId] = useState('');
 
   const createForm = useForm<CreateParentForm>({
     resolver: zodResolver(createParentSchema),
@@ -90,12 +104,19 @@ export function ParentsPage() {
   });
 
   const studentsForLinkQuery = useQuery({
-    queryKey: ['parents-linkable-students', linkSearch],
+    queryKey: ['parents-linkable-students', { q: linkSearch, classId: linkClassId }],
     queryFn: () =>
       listLinkableStudentsApi(auth.accessToken!, {
+        classId: linkClassId || undefined,
         q: linkSearch || undefined,
         pageSize: 50,
       }),
+    enabled: Boolean(linkTarget),
+  });
+
+  const classesQuery = useQuery({
+    queryKey: ['parent-link-classes'],
+    queryFn: () => listClassRoomsApi(auth.accessToken!),
     enabled: Boolean(linkTarget),
   });
 
@@ -169,6 +190,8 @@ export function ParentsPage() {
       queryClient.invalidateQueries({ queryKey: ['parents'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       setLinkTarget(null);
+      setLinkSearch('');
+      setLinkClassId('');
       linkForm.reset(defaultLinkForm);
       showToast({ type: 'success', title: 'Student linked to parent' });
     },
@@ -192,6 +215,23 @@ export function ParentsPage() {
     } as const);
 
   const studentOptions = studentsForLinkQuery.data ?? [];
+  const classOptions = ((classesQuery.data as ClassRoomOption[] | undefined) ?? []) as ClassRoomOption[];
+
+  useEffect(() => {
+    if (!linkTarget) {
+      return;
+    }
+
+    const selectedStudentId = linkForm.getValues('studentId');
+    if (!selectedStudentId) {
+      return;
+    }
+
+    const selectedStillVisible = studentOptions.some((student) => student.id === selectedStudentId);
+    if (!selectedStillVisible) {
+      linkForm.setValue('studentId', '');
+    }
+  }, [linkTarget, studentOptions, linkForm]);
 
   function openCreateModal() {
     createForm.reset(defaultCreateParentForm);
@@ -219,10 +259,8 @@ export function ParentsPage() {
       name: `${parent.firstName} ${parent.lastName}`,
     });
     setLinkSearch('');
-    linkForm.reset({
-      ...defaultLinkForm,
-      studentId: studentOptions[0]?.id ?? '',
-    });
+    setLinkClassId('');
+    linkForm.reset(defaultLinkForm);
   }
 
   return (
@@ -495,6 +533,9 @@ export function ParentsPage() {
         open={Boolean(linkTarget)}
         onClose={() => {
           setLinkTarget(null);
+          setLinkSearch('');
+          setLinkClassId('');
+          linkForm.reset(defaultLinkForm);
           linkMutation.reset();
         }}
         title="Link Student"
@@ -511,6 +552,32 @@ export function ParentsPage() {
           })}
         >
           <input type="hidden" {...linkForm.register('studentId')} />
+          <div className="grid gap-1 text-sm font-semibold text-slate-800">
+            <label htmlFor="student-class-filter">Class</label>
+            <select
+              id="student-class-filter"
+              value={linkClassId}
+              onChange={(event) => {
+                setLinkClassId(event.target.value);
+                linkForm.setValue('studentId', '');
+              }}
+              disabled={classesQuery.isPending || classesQuery.isError}
+              className="rounded-lg border border-brand-200 px-3 py-2 disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              <option value="">All classes</option>
+              {classOptions.map((classRoom) => (
+                <option key={classRoom.id} value={classRoom.id}>
+                  {classRoom.name} ({classRoom.code})
+                </option>
+              ))}
+            </select>
+          </div>
+          {classesQuery.isPending ? (
+            <p className="text-xs text-slate-600">Loading classes...</p>
+          ) : null}
+          {classesQuery.isError ? (
+            <p className="text-xs text-red-700">Could not load classes. You can retry by reopening this dialog.</p>
+          ) : null}
           <div className="grid gap-1 text-sm font-semibold text-slate-800">
             <label htmlFor="student-lookup-input">Student Lookup</label>
             <input
@@ -544,9 +611,19 @@ export function ParentsPage() {
                         ].join(' ')}
                       >
                         <span>
-                          {student.firstName} {student.lastName}
+                          <span className="block">
+                            {student.firstName} {student.lastName}
+                          </span>
+                          <span className="block text-xs text-slate-600">
+                            {student.currentEnrollment?.classRoom.name ?? 'No active class'}
+                          </span>
                         </span>
-                        <span className="text-xs text-slate-600">{student.studentCode}</span>
+                        <span className="text-right text-xs text-slate-600">
+                          <span className="block">{student.studentCode}</span>
+                          <span className="block">
+                            {student.currentEnrollment?.classRoom.code ?? '-'}
+                          </span>
+                        </span>
                       </button>
                     );
                   })}

@@ -25,6 +25,10 @@ export function getDefaultLandingPath(me: MeResponse | null | undefined): string
     return '/super-admin/schools';
   }
 
+  if (hasPermission(me, 'gov.dashboard.read')) {
+    return '/gov';
+  }
+
   if (hasPermission(me, 'school.setup.manage')) {
     return isSchoolSetupComplete(me) ? '/admin/academic-years' : '/admin/setup';
   }
