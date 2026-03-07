@@ -82,14 +82,14 @@ export function StudentAssessmentDetailPage() {
             <button
               type="button"
               onClick={() => navigate('/student/assessments')}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Back to tests
             </button>
             <button
               type="button"
               onClick={() => void assessmentQuery.refetch()}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
             >
               Retry
             </button>
@@ -108,7 +108,7 @@ export function StudentAssessmentDetailPage() {
           <button
             type="button"
             onClick={() => navigate('/student/assessments')}
-            className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+            className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Back to tests
@@ -118,7 +118,7 @@ export function StudentAssessmentDetailPage() {
         <div className="grid gap-5">
           <div className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="grid gap-3">
-              <div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700">
+              <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">{formatAssessmentTypeLabel(assessment.type)}</span>
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.counts.questions} questions</span>
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.maxAttempts} attempts</span>
@@ -126,12 +126,12 @@ export function StudentAssessmentDetailPage() {
                   {assessment.timeLimitMinutes ? `${assessment.timeLimitMinutes} min timer` : 'No timer'}
                 </span>
               </div>
-              <p className="text-sm text-brand-700">
+              <p className="text-sm text-slate-700">
                 {assessment.course.title} · {assessment.course.classRoom.name} · {assessment.course.academicYear.name}
               </p>
               {assessment.instructions ? (
                 <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4">
-                  <h3 className="text-sm font-bold text-brand-900">Instructions</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Instructions</h3>
                   <div className="mt-3">
                     <RichContent html={assessment.instructions} />
                   </div>
@@ -141,14 +141,14 @@ export function StudentAssessmentDetailPage() {
               )}
             </div>
 
-            <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-brand-700">
+            <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-slate-700">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Due</p>
-                <p className="mt-2 font-semibold text-brand-900">{formatAssessmentDateTime(assessment.dueAt)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Due</p>
+                <p className="mt-2 font-semibold text-slate-900">{formatAssessmentDateTime(assessment.dueAt)}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Latest result</p>
-                <p className="mt-2 font-semibold text-brand-900">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Latest result</p>
+                <p className="mt-2 font-semibold text-slate-900">
                   {assessment.latestAttempt?.status === 'SUBMITTED'
                     ? assessment.type === 'GENERAL' || assessment.type === 'PSYCHOMETRIC'
                       ? `${assessment.latestAttempt.score}/${assessment.latestAttempt.maxScore ?? 0}`
@@ -161,8 +161,8 @@ export function StudentAssessmentDetailPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">Student</p>
-                <p className="mt-2 font-semibold text-brand-900">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Student</p>
+                <p className="mt-2 font-semibold text-slate-900">
                   {assessment.student.firstName} {assessment.student.lastName}
                 </p>
               </div>
@@ -174,7 +174,7 @@ export function StudentAssessmentDetailPage() {
               <button
                 type="button"
                 onClick={() => navigate(`/student/assessments/${assessment.id}/attempts/${assessment.latestAttempt!.id}`)}
-                className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
               >
                 <PlayCircle className="h-4 w-4" aria-hidden="true" />
                 Continue test
@@ -183,7 +183,7 @@ export function StudentAssessmentDetailPage() {
               <button
                 type="button"
                 onClick={openStartModal}
-                className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 <PlayCircle className="h-4 w-4" aria-hidden="true" />
                 {assessment.latestAttempt?.status === 'SUBMITTED' ? 'Start another attempt' : 'Start test'}
@@ -194,7 +194,7 @@ export function StudentAssessmentDetailPage() {
               <button
                 type="button"
                 onClick={() => navigate(`/student/assessments/${assessment.id}/attempts/${assessment.latestAttempt!.id}`)}
-                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
               >
                 <Trophy className="h-4 w-4" aria-hidden="true" />
                 Review result
@@ -218,7 +218,7 @@ export function StudentAssessmentDetailPage() {
             <button
               type="button"
               onClick={closeStartModal}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
@@ -226,7 +226,7 @@ export function StudentAssessmentDetailPage() {
               <button
                 type="button"
                 onClick={() => setStartStep(1)}
-                className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
               >
                 Next
               </button>
@@ -235,7 +235,7 @@ export function StudentAssessmentDetailPage() {
                 type="button"
                 onClick={() => startAttemptMutation.mutate()}
                 disabled={startAttemptMutation.isPending}
-                className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {startAttemptMutation.isPending ? (
                   <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -249,8 +249,8 @@ export function StudentAssessmentDetailPage() {
         }
       >
         {startStep === 0 ? (
-          <div className="grid gap-4 text-sm text-brand-700">
-            <div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700">
+          <div className="grid gap-4 text-sm text-slate-700">
+            <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
               <span className="rounded-full bg-brand-100 px-2.5 py-1">{formatAssessmentTypeLabel(assessment.type)}</span>
               <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.counts.questions} questions</span>
               <span className="rounded-full bg-brand-100 px-2.5 py-1">
@@ -267,9 +267,9 @@ export function StudentAssessmentDetailPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-3 text-sm text-brand-700">
+          <div className="grid gap-3 text-sm text-slate-700">
             <p>Make sure you have enough time and a stable connection before you begin.</p>
-            <ul className="grid gap-2 text-brand-700">
+            <ul className="grid gap-2 text-slate-700">
               <li>Questions are shown one at a time.</li>
               <li>Your answers save automatically while you work.</li>
               <li>Use Next to move forward until you reach Finish test.</li>

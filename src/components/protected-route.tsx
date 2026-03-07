@@ -9,7 +9,7 @@ export function ProtectedRoute() {
   if (auth.isLoadingSession) {
     return (
       <main className="flex min-h-screen items-center justify-center p-6">
-        <p className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-brand-700 shadow-soft">
+        <p className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow-soft">
           Loading your session...
         </p>
       </main>

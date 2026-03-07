@@ -46,8 +46,8 @@ export function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-8">
       <section className="w-full max-w-md rounded-3xl border border-brand-100 bg-white/90 p-6 shadow-soft sm:p-8">
-        <h1 className="text-2xl font-bold text-brand-900">Smart School Rwanda</h1>
-        <p className="mt-2 text-sm text-brand-700">Sign in to your school workspace.</p>
+        <h1 className="text-2xl font-bold text-slate-900">Smart School Rwanda</h1>
+        <p className="mt-2 text-sm text-slate-700">Sign in to your school workspace.</p>
 
         <form
           className="mt-6 space-y-4"
@@ -55,9 +55,9 @@ export function LoginPage() {
           noValidate
         >
           <div>
-            <label htmlFor="tenantCode" className="mb-1 block text-sm font-semibold text-brand-800">
+            <label htmlFor="tenantCode" className="mb-1 block text-sm font-semibold text-slate-800">
               School Code
-              <span className="ml-1 text-xs font-medium text-brand-500">(optional for SuperAdmin)</span>
+              <span className="ml-1 text-xs font-medium text-slate-500">(optional for SuperAdmin)</span>
             </label>
             <input
               id="tenantCode"
@@ -75,7 +75,7 @@ export function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-semibold text-brand-800">
+            <label htmlFor="email" className="mb-1 block text-sm font-semibold text-slate-800">
               Email
             </label>
             <input
@@ -93,7 +93,7 @@ export function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-semibold text-brand-800">
+            <label htmlFor="password" className="mb-1 block text-sm font-semibold text-slate-800">
               Password
             </label>
             <input
@@ -119,7 +119,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={loginMutation.isPending}
-            className="w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loginMutation.isPending ? 'Signing in...' : 'Sign in'}
           </button>

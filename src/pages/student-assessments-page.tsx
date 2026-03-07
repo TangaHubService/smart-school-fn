@@ -36,7 +36,7 @@ export function StudentAssessmentsPage() {
       >
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Search tests</span>
               <input
                 type="search"
@@ -46,11 +46,11 @@ export function StudentAssessmentsPage() {
                   setSearch(event.target.value);
                 }}
                 placeholder="Search by title or course"
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none placeholder:text-brand-400 focus:border-brand-400"
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
               />
             </label>
 
-            <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-brand-700">
+            <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
               {myAssessmentsQuery.data?.student.firstName ?? 'Student'} · {myAssessmentsQuery.data?.student.studentCode ?? 'No code'}
             </div>
           </div>
@@ -71,7 +71,7 @@ export function StudentAssessmentsPage() {
                 <button
                   type="button"
                   onClick={() => void myAssessmentsQuery.refetch()}
-                  className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                  className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                 >
                   Retry
                 </button>
@@ -91,25 +91,25 @@ export function StudentAssessmentsPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-lg font-bold text-brand-900">{assessment.title}</p>
-                        <p className="mt-1 text-sm text-brand-600">{assessment.course.title}</p>
+                        <p className="truncate text-lg font-bold text-slate-900">{assessment.title}</p>
+                        <p className="mt-1 text-sm text-slate-600">{assessment.course.title}</p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                        <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                           {assessment.counts.questions} Qs
                         </span>
-                        <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                        <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                           {formatAssessmentTypeLabel(assessment.type)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="grid gap-2 text-sm text-brand-700">
+                    <div className="grid gap-2 text-sm text-slate-700">
                       <p>{assessment.course.classRoom.name}</p>
                       <p>{formatAssessmentDateTime(assessment.dueAt)}</p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700">
+                    <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
                       <span className="rounded-full bg-brand-100 px-2.5 py-1">
                         {assessment.timeLimitMinutes ? `${assessment.timeLimitMinutes} min` : 'No timer'}
                       </span>
@@ -135,7 +135,7 @@ export function StudentAssessmentsPage() {
                       ) : null}
                     </div>
 
-                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700">
+                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
                       Open test
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </div>

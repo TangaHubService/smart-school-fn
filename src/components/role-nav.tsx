@@ -21,6 +21,8 @@ import { NavLink } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
+import { conductFeatureEnabled } from '../features/conduct/feature';
+import { govAuditingFeatureEnabled } from '../features/gov/feature';
 import {
   hasPermission,
   hasRole,
@@ -51,8 +53,8 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'tenants',
-    label: 'Tenants',
-    to: '/super-admin/tenants',
+    label: 'Schools',
+    to: '/super-admin/schools',
     icon: Building2,
     roles: ['SUPER_ADMIN'],
     requiredPermissions: ['tenants.read'],
@@ -60,7 +62,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'setup',
-    label: 'Setup Wizard',
+    label: 'School Profile',
     to: '/admin/setup',
     icon: LayoutTemplate,
     roles: ['SCHOOL_ADMIN'],
@@ -95,6 +97,15 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
+    key: 'conduct',
+    label: 'Discipline / Conduct',
+    to: '/admin/conduct',
+    icon: ClipboardList,
+    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['conduct.read'],
+    setupState: 'COMPLETE',
+  },
+  {
     key: 'attendance',
     label: 'Attendance',
     to: '/admin/attendance',
@@ -104,12 +115,12 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
-    key: 'exams',
-    label: 'Exams',
-    to: '/admin/exams',
-    icon: FileBarChart2,
-    roles: ['SCHOOL_ADMIN', 'TEACHER'],
-    requiredPermissions: ['exams.read'],
+    key: 'subjects',
+    label: 'Subjects',
+    to: '/admin/subjects',
+    icon: Shapes,
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['subject.manage'],
     setupState: 'COMPLETE',
   },
   {
@@ -117,15 +128,6 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Courses',
     to: '/admin/courses',
     icon: BookOpen,
-    roles: ['SCHOOL_ADMIN', 'TEACHER'],
-    requiredPermissions: ['courses.read'],
-    setupState: 'COMPLETE',
-  },
-  {
-    key: 'assignments',
-    label: 'Assignments',
-    to: '/admin/assignments',
-    icon: ClipboardCheck,
     roles: ['SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissions: ['courses.read'],
     setupState: 'COMPLETE',
@@ -140,12 +142,21 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
-    key: 'subjects',
-    label: 'Subjects',
-    to: '/admin/subjects',
-    icon: Shapes,
-    roles: ['SCHOOL_ADMIN'],
-    requiredPermissions: ['subject.manage'],
+    key: 'assignments',
+    label: 'Assignments',
+    to: '/admin/assignments',
+    icon: ClipboardCheck,
+    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['courses.read'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'exams',
+    label: 'Exams',
+    to: '/admin/exams',
+    icon: FileBarChart2,
+    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['exams.read'],
     setupState: 'COMPLETE',
   },
   {
@@ -182,6 +193,42 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FileBarChart2,
     roles: ['PARENT'],
     requiredPermissions: ['report_cards.my_read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-dashboard',
+    label: 'Gov Dashboard',
+    to: '/gov',
+    icon: Home,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.dashboard.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-schools',
+    label: 'Gov Schools',
+    to: '/gov/schools',
+    icon: Building2,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.schools.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-incidents',
+    label: 'Gov Incidents',
+    to: '/gov/incidents',
+    icon: FileBarChart2,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.incidents.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-auditors',
+    label: 'Auditor Admin',
+    to: '/gov/admin/auditors',
+    icon: ShieldCheck,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['gov.auditors.manage'],
     setupState: 'ANY',
   },
   {
@@ -227,6 +274,14 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
       return false;
     }
 
+    if (!conductFeatureEnabled && item.key === 'conduct') {
+      return false;
+    }
+
+    if (!govAuditingFeatureEnabled && item.key.startsWith('gov-')) {
+      return false;
+    }
+
     if (superAdmin) {
       return true;
     }
@@ -255,18 +310,19 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
   });
 
   return (
-    <nav aria-label="Primary" className="grid gap-2">
+    <nav aria-label="Primary" className="grid gap-1.5">
       {items.map((item) => (
         <NavLink
           key={item.key}
           to={item.to}
+          end={item.key === 'dashboard'}
           onClick={onNavigate}
           className={({ isActive }) =>
             clsx(
-              'group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-base font-semibold transition',
+              'group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-[15px] font-semibold transition',
               isActive
-                ? 'border-brand-300 bg-brand-500/90 text-white shadow-soft'
-                : 'border-transparent bg-transparent text-brand-600 hover:border-brand-100 hover:bg-brand-50 hover:text-brand-800',
+                ? 'bg-white text-brand-600 shadow-soft'
+                : 'text-white/80 hover:bg-white/10 hover:text-white',
             )
           }
         >

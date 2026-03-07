@@ -376,14 +376,14 @@ export function AttendancePage() {
           <button
             type="button"
             onClick={() => applyBulkStatus('PRESENT')}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
           >
             Mark All Present
           </button>
           <button
             type="button"
             onClick={() => applyBulkStatus('ABSENT')}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
           >
             Mark All Absent
           </button>
@@ -391,7 +391,7 @@ export function AttendancePage() {
             type="button"
             onClick={() => void handleSaveAttendance()}
             disabled={saveAttendanceMutation.isPending || classAttendanceQuery.isPending}
-            className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             {saveAttendanceMutation.isPending ? 'Saving...' : 'Save Attendance'}
           </button>
@@ -432,7 +432,7 @@ export function AttendancePage() {
       </div>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-[220px_180px_1fr_auto]">
-        <label className="grid gap-1 text-sm font-semibold text-brand-800">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Class
           <select
             value={selectedClassId}
@@ -449,7 +449,7 @@ export function AttendancePage() {
           </select>
         </label>
 
-        <label className="grid gap-1 text-sm font-semibold text-brand-800">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Date
           <input
             type="date"
@@ -460,7 +460,7 @@ export function AttendancePage() {
           />
         </label>
 
-        <label className="grid gap-1 text-sm font-semibold text-brand-800">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Search
           <input
             value={search}
@@ -474,7 +474,7 @@ export function AttendancePage() {
         <button
           type="button"
           onClick={() => void classAttendanceQuery.refetch()}
-          className="mt-auto h-10 rounded-lg border border-brand-200 bg-brand-50 px-3 text-sm font-semibold text-brand-700"
+          className="mt-auto h-10 rounded-lg border border-brand-200 bg-brand-50 px-3 text-sm font-semibold text-slate-700"
         >
           Refresh
         </button>
@@ -501,7 +501,7 @@ export function AttendancePage() {
             <button
               type="button"
               onClick={() => void classesQuery.refetch()}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
             >
               Retry
             </button>
@@ -526,7 +526,7 @@ export function AttendancePage() {
             <button
               type="button"
               onClick={() => void classAttendanceQuery.refetch()}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
             >
               Retry
             </button>
@@ -553,8 +553,8 @@ export function AttendancePage() {
       classAttendanceQuery.data ? (
         <>
           <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-brand-800">
-              <p className="text-xs uppercase tracking-[0.14em] text-brand-500">Total</p>
+            <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-slate-800">
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Total</p>
               <p className="text-lg font-bold">{classAttendanceQuery.data.summary.total}</p>
             </div>
             <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
@@ -578,7 +578,7 @@ export function AttendancePage() {
           <div className="overflow-x-auto rounded-xl border border-brand-100">
             <table className="w-full table-auto text-left text-sm">
               <thead>
-                <tr className="border-b border-brand-100 text-brand-700">
+                <tr className="border-b border-brand-100 text-slate-700">
                   <th className="px-2 py-2 font-semibold">#</th>
                   <th className="px-2 py-2 font-semibold">Code</th>
                   <th className="px-2 py-2 font-semibold">Student</th>
@@ -590,8 +590,8 @@ export function AttendancePage() {
               <tbody>
                 {filteredRows.map((row, index) => (
                   <tr key={row.studentId} className="border-b border-brand-50">
-                    <td className="px-2 py-2 align-middle text-brand-600">{index + 1}</td>
-                    <td className="px-2 py-2 align-middle font-semibold text-brand-800">{row.studentCode}</td>
+                    <td className="px-2 py-2 align-middle text-slate-600">{index + 1}</td>
+                    <td className="px-2 py-2 align-middle font-semibold text-slate-800">{row.studentCode}</td>
                     <td className="px-2 py-2 align-middle">
                       {row.firstName} {row.lastName}
                     </td>
@@ -633,7 +633,7 @@ export function AttendancePage() {
                             fullName: `${row.firstName} ${row.lastName}`,
                           })
                         }
-                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700"
+                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
                       >
                         View
                       </button>
@@ -653,7 +653,7 @@ export function AttendancePage() {
         description={selectedHistoryStudent?.fullName}
       >
         <div className="mb-3 grid gap-2 sm:grid-cols-2">
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             From
             <input
               type="date"
@@ -662,7 +662,7 @@ export function AttendancePage() {
               className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
             />
           </label>
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             To
             <input
               type="date"
@@ -688,7 +688,7 @@ export function AttendancePage() {
               <button
                 type="button"
                 onClick={() => void studentHistoryQuery.refetch()}
-                className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
               >
                 Retry
               </button>
@@ -701,8 +701,8 @@ export function AttendancePage() {
         studentHistoryQuery.data ? (
           <div className="grid gap-3">
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-              <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-brand-800">
-                <p className="text-xs uppercase tracking-[0.14em] text-brand-500">Total</p>
+              <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-slate-800">
+                <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Total</p>
                 <p className="text-lg font-bold">{studentHistoryQuery.data.summary.total}</p>
               </div>
               <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
@@ -729,7 +729,7 @@ export function AttendancePage() {
               <div className="overflow-x-auto rounded-xl border border-brand-100">
                 <table className="w-full table-auto text-left text-sm">
                   <thead>
-                    <tr className="border-b border-brand-100 text-brand-700">
+                    <tr className="border-b border-brand-100 text-slate-700">
                       <th className="px-2 py-2 font-semibold">Date</th>
                       <th className="px-2 py-2 font-semibold">Status</th>
                       <th className="px-2 py-2 font-semibold">Class</th>

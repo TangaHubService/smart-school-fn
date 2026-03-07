@@ -16,6 +16,7 @@ export async function refreshApi(refreshToken: string): Promise<{
   return apiRequest('/auth/refresh', {
     method: 'POST',
     body: { refreshToken },
+    skipAuthRefresh: true,
   });
 }
 

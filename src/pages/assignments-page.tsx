@@ -108,7 +108,7 @@ function AttachmentLink({ label, url }: { label: string; url: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-100"
+      className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-brand-100"
     >
       <ExternalLink className="h-4 w-4" aria-hidden="true" />
       {label}
@@ -126,7 +126,7 @@ function StatusPill({
   const toneClass: Record<typeof tone, string> = {
     draft: 'border-amber-200 bg-amber-50 text-amber-800',
     published: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    graded: 'border-brand-200 bg-brand-100 text-brand-800',
+    graded: 'border-brand-200 bg-brand-100 text-slate-800',
     submitted: 'border-sky-200 bg-sky-50 text-sky-800',
   };
 
@@ -307,7 +307,7 @@ export function AssignmentsPage() {
           <button
             type="button"
             onClick={openCreate}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Create assignment
@@ -316,7 +316,7 @@ export function AssignmentsPage() {
       >
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[minmax(0,1fr)_220px_220px_220px] lg:items-end">
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Search assignments</span>
               <input
                 type="search"
@@ -326,11 +326,11 @@ export function AssignmentsPage() {
                   setPage(1);
                 }}
                 placeholder="Search by title, instruction, or course"
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-brand-900 outline-none placeholder:text-brand-400 focus:border-brand-400"
+                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
               />
             </label>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Academic year</span>
               <select
                 value={yearFilter}
@@ -339,7 +339,7 @@ export function AssignmentsPage() {
                   setCourseFilter('');
                   setPage(1);
                 }}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
               >
                 <option value="">All years</option>
                 {academicYears.map((item) => (
@@ -350,7 +350,7 @@ export function AssignmentsPage() {
               </select>
             </label>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Class</span>
               <select
                 value={classFilter}
@@ -359,7 +359,7 @@ export function AssignmentsPage() {
                   setCourseFilter('');
                   setPage(1);
                 }}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
               >
                 <option value="">All classes</option>
                 {classRooms.map((item) => (
@@ -370,7 +370,7 @@ export function AssignmentsPage() {
               </select>
             </label>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Course</span>
               <select
                 value={courseFilter}
@@ -378,7 +378,7 @@ export function AssignmentsPage() {
                   setCourseFilter(event.target.value);
                   setPage(1);
                 }}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
               >
                 <option value="">All courses</option>
                 {courseOptions.map((item) => (
@@ -406,7 +406,7 @@ export function AssignmentsPage() {
                 <button
                   type="button"
                   onClick={() => void assignmentsQuery.refetch()}
-                  className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                  className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                 >
                   Retry
                 </button>
@@ -417,8 +417,8 @@ export function AssignmentsPage() {
           {!assignmentsQuery.isPending && !assignmentsQuery.isError ? (
             visibleAssignments.length ? (
               <div className="grid gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-brand-700">
-                  <span className="font-medium text-brand-800">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-slate-700">
+                  <span className="font-medium text-slate-800">
                     {assignmentsQuery.data?.pagination.totalItems ?? visibleAssignments.length} assignments
                   </span>
                   {assignmentsQuery.data?.pagination.totalPages &&
@@ -456,8 +456,8 @@ export function AssignmentsPage() {
                   <article key={assignment.id} className="rounded-2xl border border-brand-100 bg-white p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-bold text-brand-900">{assignment.title}</p>
-                        <p className="mt-1 text-sm text-brand-600">
+                        <p className="text-sm font-bold text-slate-900">{assignment.title}</p>
+                        <p className="mt-1 text-sm text-slate-600">
                           {assignment.course?.title ?? 'Course'} · {assignment.course?.classRoom.name ?? 'Class'} ·{' '}
                           {formatDateTime(assignment.dueAt)}
                         </p>
@@ -470,7 +470,7 @@ export function AssignmentsPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedAssignment(assignment)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+                          className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
                         >
                           <Eye className="h-4 w-4" aria-hidden="true" />
                           View submissions ({assignment.submissionCount})
@@ -480,15 +480,15 @@ export function AssignmentsPage() {
 
                     <RichContent
                       html={assignment.instructions}
-                      className="rich-content mt-3 text-sm leading-6 text-brand-700"
+                      className="rich-content mt-3 text-sm leading-6 text-slate-700"
                     />
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-600">
+                      <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-slate-600">
                         {assignment.maxPoints} pts
                       </span>
                       {assignment.lesson ? (
-                        <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-600">
+                        <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-slate-600">
                           Lesson: {assignment.lesson.title}
                         </span>
                       ) : null}
@@ -510,7 +510,7 @@ export function AssignmentsPage() {
                   <button
                     type="button"
                     onClick={openCreate}
-                    className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                    className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                   >
                     <FilePlus2 className="h-4 w-4" aria-hidden="true" />
                     Create assignment
@@ -609,11 +609,11 @@ export function AssignmentsPage() {
             <input
               type="file"
               onChange={(event) => setAttachmentFile(event.target.files?.[0] ?? null)}
-              className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-brand-700"
+              className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-slate-700"
             />
           </FormField>
 
-          <label className="flex items-center gap-2 text-sm font-medium text-brand-700">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
             <input type="checkbox" {...assignmentForm.register('isPublished')} />
             Publish immediately
           </label>
@@ -622,14 +622,14 @@ export function AssignmentsPage() {
             <button
               type="button"
               onClick={() => setIsCreateOpen(false)}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createAssignmentMutation.isPending}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {createAssignmentMutation.isPending ? 'Saving...' : 'Create assignment'}
             </button>
@@ -659,7 +659,7 @@ export function AssignmentsPage() {
               <button
                 type="button"
                 onClick={() => void submissionsQuery.refetch()}
-                className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
               >
                 Retry
               </button>
@@ -674,10 +674,10 @@ export function AssignmentsPage() {
                 <article key={submission.id} className="rounded-2xl border border-brand-100 bg-white p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold text-brand-900">
+                      <p className="text-sm font-bold text-slate-900">
                         {submission.student.firstName} {submission.student.lastName}
                       </p>
-                      <p className="text-xs uppercase tracking-[0.16em] text-brand-500">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
                         {submission.student.studentCode}
                       </p>
                     </div>
@@ -696,14 +696,14 @@ export function AssignmentsPage() {
                             feedback: submission.feedback ?? '',
                           });
                         }}
-                        className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+                        className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
                       >
                         Grade
                       </button>
                     </div>
                   </div>
 
-                  <div className="mt-3 grid gap-2 text-sm text-brand-700">
+                  <div className="mt-3 grid gap-2 text-sm text-slate-700">
                     {submission.textAnswer ? <p className="whitespace-pre-wrap">{submission.textAnswer}</p> : null}
                     {submission.linkUrl ? (
                       <AttachmentLink label="Open submitted link" url={submission.linkUrl} />
@@ -755,14 +755,14 @@ export function AssignmentsPage() {
             <button
               type="button"
               onClick={() => setGradingSubmissionId(null)}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={gradeSubmissionMutation.isPending}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {gradeSubmissionMutation.isPending ? 'Saving...' : 'Save grade'}
             </button>
@@ -783,7 +783,7 @@ function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <label className="grid gap-1.5 text-sm font-medium text-brand-700">
+    <label className="grid gap-1.5 text-sm font-medium text-slate-700">
       <span>{label}</span>
       {children}
       {error ? <span className="text-xs text-red-600">{error}</span> : null}

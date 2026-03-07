@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -10,6 +10,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import {
   createParentApi,
   listLinkableStudentsApi,
@@ -55,6 +56,18 @@ const defaultLinkForm: LinkForm = {
   isPrimary: false,
 };
 
+interface ClassRoomOption {
+  id: string;
+  code: string;
+  name: string;
+  gradeLevel?: {
+    id: string;
+    code: string;
+    name: string;
+    rank: number;
+  };
+}
+
 export function ParentsPage() {
   const auth = useAuth();
   const { showToast } = useToast();
@@ -68,6 +81,7 @@ export function ParentsPage() {
   const [editingParent, setEditingParent] = useState<any | null>(null);
   const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null);
   const [linkSearch, setLinkSearch] = useState('');
+  const [linkClassId, setLinkClassId] = useState('');
 
   const createForm = useForm<CreateParentForm>({
     resolver: zodResolver(createParentSchema),
@@ -90,12 +104,19 @@ export function ParentsPage() {
   });
 
   const studentsForLinkQuery = useQuery({
-    queryKey: ['parents-linkable-students', linkSearch],
+    queryKey: ['parents-linkable-students', { q: linkSearch, classId: linkClassId }],
     queryFn: () =>
       listLinkableStudentsApi(auth.accessToken!, {
+        classId: linkClassId || undefined,
         q: linkSearch || undefined,
         pageSize: 50,
       }),
+    enabled: Boolean(linkTarget),
+  });
+
+  const classesQuery = useQuery({
+    queryKey: ['parent-link-classes'],
+    queryFn: () => listClassRoomsApi(auth.accessToken!),
     enabled: Boolean(linkTarget),
   });
 
@@ -169,6 +190,8 @@ export function ParentsPage() {
       queryClient.invalidateQueries({ queryKey: ['parents'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       setLinkTarget(null);
+      setLinkSearch('');
+      setLinkClassId('');
       linkForm.reset(defaultLinkForm);
       showToast({ type: 'success', title: 'Student linked to parent' });
     },
@@ -192,6 +215,23 @@ export function ParentsPage() {
     } as const);
 
   const studentOptions = studentsForLinkQuery.data ?? [];
+  const classOptions = ((classesQuery.data as ClassRoomOption[] | undefined) ?? []) as ClassRoomOption[];
+
+  useEffect(() => {
+    if (!linkTarget) {
+      return;
+    }
+
+    const selectedStudentId = linkForm.getValues('studentId');
+    if (!selectedStudentId) {
+      return;
+    }
+
+    const selectedStillVisible = studentOptions.some((student) => student.id === selectedStudentId);
+    if (!selectedStillVisible) {
+      linkForm.setValue('studentId', '');
+    }
+  }, [linkTarget, studentOptions, linkForm]);
 
   function openCreateModal() {
     createForm.reset(defaultCreateParentForm);
@@ -219,10 +259,8 @@ export function ParentsPage() {
       name: `${parent.firstName} ${parent.lastName}`,
     });
     setLinkSearch('');
-    linkForm.reset({
-      ...defaultLinkForm,
-      studentId: studentOptions[0]?.id ?? '',
-    });
+    setLinkClassId('');
+    linkForm.reset(defaultLinkForm);
   }
 
   return (
@@ -233,7 +271,7 @@ export function ParentsPage() {
         <button
           type="button"
           onClick={openCreateModal}
-          className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
         >
           Add parent
         </button>
@@ -254,7 +292,7 @@ export function ParentsPage() {
         <button
           type="button"
           onClick={() => void parentsQuery.refetch()}
-          className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+          className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
         >
           Refresh
         </button>
@@ -276,7 +314,7 @@ export function ParentsPage() {
             <button
               type="button"
               onClick={() => void parentsQuery.refetch()}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
             >
               Retry
             </button>
@@ -292,7 +330,7 @@ export function ParentsPage() {
         <div className="overflow-x-auto rounded-xl border border-brand-100">
           <table className="w-full table-auto text-left text-sm">
             <thead>
-              <tr className="border-b border-brand-100 text-brand-700">
+              <tr className="border-b border-brand-100 text-slate-700">
                 <th className="px-2 py-2 font-semibold">#</th>
                 <th className="px-2 py-2 font-semibold">Parent</th>
                 <th className="px-2 py-2 font-semibold">Contact</th>
@@ -304,23 +342,23 @@ export function ParentsPage() {
             <tbody>
               {parents.map((parent, index) => (
                 <tr key={parent.id} className="border-b border-brand-50">
-                  <td className="px-2 py-2 align-middle text-brand-600">
+                  <td className="px-2 py-2 align-middle text-slate-600">
                     {(page - 1) * pageSize + index + 1}
                   </td>
                   <td className="px-2 py-2 align-middle">
-                    <p className="font-semibold text-brand-800">
+                    <p className="font-semibold text-slate-800">
                       {parent.firstName} {parent.lastName}
                     </p>
-                    {parent.parentCode ? <p className="text-xs text-brand-500">{parent.parentCode}</p> : null}
+                    {parent.parentCode ? <p className="text-xs text-slate-500">{parent.parentCode}</p> : null}
                   </td>
                   <td className="px-2 py-2 align-middle">
                     <p>{parent.email ?? '-'}</p>
-                    <p className="text-xs text-brand-600">{parent.phone ?? '-'}</p>
+                    <p className="text-xs text-slate-600">{parent.phone ?? '-'}</p>
                   </td>
                   <td className="px-2 py-2 align-middle">
                     <p>{parent.linkedStudentsCount}</p>
                     {parent.linkedStudents.length ? (
-                      <p className="text-xs text-brand-600">
+                      <p className="text-xs text-slate-600">
                         {parent.linkedStudents
                           .slice(0, 2)
                           .map((student) => `${student.studentCode}`)
@@ -335,7 +373,7 @@ export function ParentsPage() {
                         Enabled
                       </span>
                     ) : (
-                      <span className="rounded-full bg-brand-100 px-2 py-1 text-xs font-semibold text-brand-700">
+                      <span className="rounded-full bg-brand-100 px-2 py-1 text-xs font-semibold text-slate-700">
                         No login
                       </span>
                     )}
@@ -345,14 +383,14 @@ export function ParentsPage() {
                       <button
                         type="button"
                         onClick={() => openEditModal(parent)}
-                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700"
+                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
                       >
                         Edit
                       </button>
                       <button
                         type="button"
                         onClick={() => openLinkModal(parent)}
-                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700"
+                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
                       >
                         Link student
                       </button>
@@ -366,7 +404,7 @@ export function ParentsPage() {
       ) : null}
 
       {!parentsQuery.isPending && !parentsQuery.isError ? (
-        <div className="mt-3 flex items-center justify-between text-sm text-brand-700">
+        <div className="mt-3 flex items-center justify-between text-sm text-slate-700">
           <p>
             Showing page {pagination.page} of {Math.max(1, pagination.totalPages)} ({pagination.totalItems} parents)
           </p>
@@ -420,39 +458,39 @@ export function ParentsPage() {
           })}
         >
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               First Name
               <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('firstName')} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Last Name
               <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('lastName')} />
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Parent Code (optional)
               <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('parentCode')} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Phone (optional)
               <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('phone')} />
             </label>
           </div>
 
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Email (optional)
             <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('email')} />
           </label>
 
-          <label className="flex items-center gap-2 text-sm font-semibold text-brand-800">
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
             <input type="checkbox" {...createForm.register('createLogin')} />
             Enable parent portal login
           </label>
 
           {createForm.watch('createLogin') ? (
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Initial Password
               <input type="password" className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('password')} />
             </label>
@@ -472,14 +510,14 @@ export function ParentsPage() {
                 setIsCreateModalOpen(false);
                 setEditingParent(null);
               }}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createParentMutation.isPending || updateParentMutation.isPending}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {createParentMutation.isPending || updateParentMutation.isPending
                 ? 'Saving...'
@@ -495,6 +533,9 @@ export function ParentsPage() {
         open={Boolean(linkTarget)}
         onClose={() => {
           setLinkTarget(null);
+          setLinkSearch('');
+          setLinkClassId('');
+          linkForm.reset(defaultLinkForm);
           linkMutation.reset();
         }}
         title="Link Student"
@@ -511,7 +552,33 @@ export function ParentsPage() {
           })}
         >
           <input type="hidden" {...linkForm.register('studentId')} />
-          <div className="grid gap-1 text-sm font-semibold text-brand-800">
+          <div className="grid gap-1 text-sm font-semibold text-slate-800">
+            <label htmlFor="student-class-filter">Class</label>
+            <select
+              id="student-class-filter"
+              value={linkClassId}
+              onChange={(event) => {
+                setLinkClassId(event.target.value);
+                linkForm.setValue('studentId', '');
+              }}
+              disabled={classesQuery.isPending || classesQuery.isError}
+              className="rounded-lg border border-brand-200 px-3 py-2 disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              <option value="">All classes</option>
+              {classOptions.map((classRoom) => (
+                <option key={classRoom.id} value={classRoom.id}>
+                  {classRoom.name} ({classRoom.code})
+                </option>
+              ))}
+            </select>
+          </div>
+          {classesQuery.isPending ? (
+            <p className="text-xs text-slate-600">Loading classes...</p>
+          ) : null}
+          {classesQuery.isError ? (
+            <p className="text-xs text-red-700">Could not load classes. You can retry by reopening this dialog.</p>
+          ) : null}
+          <div className="grid gap-1 text-sm font-semibold text-slate-800">
             <label htmlFor="student-lookup-input">Student Lookup</label>
             <input
               id="student-lookup-input"
@@ -522,7 +589,7 @@ export function ParentsPage() {
             />
           </div>
           {studentsForLinkQuery.isPending ? (
-            <p className="text-xs text-brand-600">Loading students...</p>
+            <p className="text-xs text-slate-600">Loading students...</p>
           ) : null}
           {studentsForLinkQuery.isError ? (
             <p className="text-xs text-red-700">Could not load students. Try searching again.</p>
@@ -540,19 +607,29 @@ export function ParentsPage() {
                         onClick={() => linkForm.setValue('studentId', student.id, { shouldValidate: true })}
                         className={[
                           'flex items-center justify-between border-b border-brand-50 px-3 py-2 text-left text-sm',
-                          isSelected ? 'bg-brand-100 text-brand-900' : 'bg-white text-brand-800 hover:bg-brand-50',
+                          isSelected ? 'bg-brand-100 text-slate-900' : 'bg-white text-slate-800 hover:bg-brand-50',
                         ].join(' ')}
                       >
                         <span>
-                          {student.firstName} {student.lastName}
+                          <span className="block">
+                            {student.firstName} {student.lastName}
+                          </span>
+                          <span className="block text-xs text-slate-600">
+                            {student.currentEnrollment?.classRoom.name ?? 'No active class'}
+                          </span>
                         </span>
-                        <span className="text-xs text-brand-600">{student.studentCode}</span>
+                        <span className="text-right text-xs text-slate-600">
+                          <span className="block">{student.studentCode}</span>
+                          <span className="block">
+                            {student.currentEnrollment?.classRoom.code ?? '-'}
+                          </span>
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <p className="px-3 py-2 text-sm text-brand-600">No students match your search.</p>
+                <p className="px-3 py-2 text-sm text-slate-600">No students match your search.</p>
               )}
             </div>
           ) : null}
@@ -560,7 +637,7 @@ export function ParentsPage() {
             <p className="text-xs text-red-700">{linkForm.formState.errors.studentId.message}</p>
           ) : null}
 
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Relationship
             <select className="rounded-lg border border-brand-200 px-3 py-2" {...linkForm.register('relationship')}>
               <option value="MOTHER">Mother</option>
@@ -570,7 +647,7 @@ export function ParentsPage() {
             </select>
           </label>
 
-          <label className="flex items-center gap-2 text-sm font-semibold text-brand-800">
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
             <input type="checkbox" {...linkForm.register('isPrimary')} />
             Mark as primary contact for this student
           </label>
@@ -583,14 +660,14 @@ export function ParentsPage() {
             <button
               type="button"
               onClick={() => setLinkTarget(null)}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={linkMutation.isPending}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {linkMutation.isPending ? 'Linking...' : 'Link student'}
             </button>

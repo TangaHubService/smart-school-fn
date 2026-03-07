@@ -4,18 +4,23 @@ export interface CreateTenantPayload {
   code: string;
   name: string;
   domain?: string;
-  school: {
+  school?: {
     displayName: string;
     registrationNumber?: string;
     email?: string;
     phone?: string;
     addressLine1?: string;
+    addressLine2?: string;
+    province?: string;
     city?: string;
     district?: string;
+    sector?: string;
+    cell?: string;
+    village?: string;
     country?: string;
     timezone?: string;
   };
-  schoolAdmin: {
+  schoolAdmin?: {
     email: string;
     firstName: string;
     lastName: string;
@@ -41,14 +46,61 @@ export interface TenantListItem {
   } | null;
 }
 
+export interface SchoolDetail {
+  id: string;
+  code: string;
+  name: string;
+  domain: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  activeUsers: number;
+  school: {
+    id: string;
+    displayName: string;
+    registrationNumber: string | null;
+    email: string | null;
+    phone: string | null;
+    addressLine1: string | null;
+    addressLine2: string | null;
+    province: string | null;
+    city: string | null;
+    district: string | null;
+    sector: string | null;
+    cell: string | null;
+    village: string | null;
+    country: string;
+    timezone: string;
+    setupCompletedAt: string | null;
+  } | null;
+  pendingInvites: Array<{
+    id: string;
+    email: string;
+    roleName: string;
+    expiresAt: string;
+  }>;
+  users: Array<{
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    status: string;
+  }>;
+}
+
 export interface CompleteSetupPayload {
   school?: {
     displayName: string;
     email?: string;
     phone?: string;
     addressLine1?: string;
+    addressLine2?: string;
+    province?: string;
     city?: string;
     district?: string;
+    sector?: string;
+    cell?: string;
+    village?: string;
     country?: string;
     timezone?: string;
   };
@@ -88,6 +140,53 @@ export function createTenantApi(accessToken: string, payload: CreateTenantPayloa
     method: 'POST',
     accessToken,
     body: payload,
+  });
+}
+
+export function inviteTenantAdminApi(
+  accessToken: string,
+  tenantId: string,
+  payload: { email: string; expiresInDays?: number },
+) {
+  return apiRequest(`/tenants/${tenantId}/admin-invite`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function getTenantDetailApi(accessToken: string, tenantId: string) {
+  return apiRequest<SchoolDetail>(`/tenants/${tenantId}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function updateTenantApi(
+  accessToken: string,
+  tenantId: string,
+  payload: {
+    code: string;
+    name: string;
+    domain?: string | null;
+    school: {
+      displayName: string;
+      email?: string | null;
+      phone?: string | null;
+    };
+  },
+) {
+  return apiRequest(`/tenants/${tenantId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function deleteTenantApi(accessToken: string, tenantId: string) {
+  return apiRequest(`/tenants/${tenantId}`, {
+    method: 'DELETE',
+    accessToken,
   });
 }
 
@@ -148,10 +247,78 @@ export function listInvitesApi(accessToken: string) {
   });
 }
 
+export interface StaffMember {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  createdAt: string;
+  updatedAt: string;
+  roles: string[];
+}
+
+export function listStaffMembersApi(
+  accessToken: string,
+  params: { q?: string; roleName?: string; status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' } = {},
+) {
+  const query = new URLSearchParams();
+
+  if (params.q?.trim()) {
+    query.set('q', params.q.trim());
+  }
+
+  if (params.roleName?.trim()) {
+    query.set('roleName', params.roleName.trim());
+  }
+
+  if (params.status) {
+    query.set('status', params.status);
+  }
+
+  return apiRequest<StaffMember[]>(`/staff/members${query.toString() ? `?${query.toString()}` : ''}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function getStaffMemberApi(accessToken: string, memberId: string) {
+  return apiRequest<StaffMember>(`/staff/members/${memberId}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function updateStaffMemberApi(
+  accessToken: string,
+  memberId: string,
+  payload: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string | null;
+    status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  },
+) {
+  return apiRequest<StaffMember>(`/staff/members/${memberId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function deleteStaffMemberApi(accessToken: string, memberId: string) {
+  return apiRequest<{ deleted: boolean }>(`/staff/members/${memberId}`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}
+
 export function acceptInviteApi(payload: {
   token: string;
   firstName: string;
   lastName: string;
+  phone?: string;
   password: string;
 }) {
   return apiRequest('/staff/accept-invite', {

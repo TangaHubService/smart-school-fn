@@ -60,7 +60,7 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class: clsx(
-          'rich-editor-content rounded-b-2xl px-4 py-3 text-sm text-brand-900 focus:outline-none',
+          'rich-editor-content rounded-b-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none',
           minHeightClassName,
         ),
       },
@@ -216,8 +216,8 @@ function ToolbarButton({
       className={clsx(
         'rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition',
         active
-          ? 'border-brand-300 bg-white text-brand-800 shadow-sm'
-          : 'border-brand-200 bg-transparent text-brand-700 hover:bg-white',
+          ? 'border-brand-300 bg-white text-slate-800 shadow-sm'
+          : 'border-brand-200 bg-transparent text-slate-700 hover:bg-white',
         disabled && 'cursor-not-allowed opacity-40',
       )}
     >

@@ -160,7 +160,7 @@ export function AssessmentsPage() {
           <button
             type="button"
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             New assessment
@@ -169,7 +169,7 @@ export function AssessmentsPage() {
       >
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[minmax(0,1fr)_220px_220px_220px] lg:items-end">
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Search assessments</span>
               <input
                 type="search"
@@ -179,11 +179,11 @@ export function AssessmentsPage() {
                   setSearch(event.target.value);
                 }}
                 placeholder="Search by title or course"
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none placeholder:text-brand-400 focus:border-brand-400"
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
               />
             </label>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Academic year</span>
               <select
                 value={yearFilter}
@@ -191,7 +191,7 @@ export function AssessmentsPage() {
                   setPage(1);
                   setYearFilter(event.target.value);
                 }}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               >
                 <option value="">All years</option>
                 {academicYears.map((year) => (
@@ -202,7 +202,7 @@ export function AssessmentsPage() {
               </select>
             </label>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Class</span>
               <select
                 value={classFilter}
@@ -210,7 +210,7 @@ export function AssessmentsPage() {
                   setPage(1);
                   setClassFilter(event.target.value);
                 }}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               >
                 <option value="">All classes</option>
                 {classRooms.map((classRoom) => (
@@ -221,7 +221,7 @@ export function AssessmentsPage() {
               </select>
             </label>
 
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Course</span>
               <select
                 value={courseFilter}
@@ -229,7 +229,7 @@ export function AssessmentsPage() {
                   setPage(1);
                   setCourseFilter(event.target.value);
                 }}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               >
                 <option value="">All courses</option>
                 {courseOptions.map((course) => (
@@ -257,7 +257,7 @@ export function AssessmentsPage() {
                 <button
                   type="button"
                   onClick={() => void assessmentsQuery.refetch()}
-                  className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                  className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                 >
                   Retry
                 </button>
@@ -277,29 +277,29 @@ export function AssessmentsPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-lg font-bold text-brand-900">{assessment.title}</p>
-                        <p className="mt-1 text-sm text-brand-600">{assessment.course.title}</p>
+                        <p className="truncate text-lg font-bold text-slate-900">{assessment.title}</p>
+                        <p className="mt-1 text-sm text-slate-600">{assessment.course.title}</p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <AssessmentStatusPill isPublished={assessment.isPublished} />
-                        <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                        <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                           {formatAssessmentTypeLabel(assessment.type)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 text-xs font-semibold text-brand-700">
+                    <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
                       <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.counts.questions} questions</span>
                       <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.counts.attempts} attempts</span>
                       <span className="rounded-full bg-brand-100 px-2.5 py-1">{formatAssessmentDateTime(assessment.dueAt)}</span>
                     </div>
 
-                    <div className="grid gap-1 text-sm text-brand-700">
+                    <div className="grid gap-1 text-sm text-slate-700">
                       <p>{assessment.course.classRoom.name}</p>
                       <p>{assessment.course.academicYear.name}</p>
                     </div>
 
-                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-brand-700">
+                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
                       Open assessment
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </div>
@@ -314,7 +314,7 @@ export function AssessmentsPage() {
                   <button
                     type="button"
                     onClick={openCreateModal}
-                    className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+                    className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                   >
                     Create assessment
                   </button>
@@ -335,7 +335,7 @@ export function AssessmentsPage() {
             <button
               type="button"
               onClick={() => setIsCreateOpen(false)}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
@@ -343,7 +343,7 @@ export function AssessmentsPage() {
               type="button"
               onClick={assessmentForm.handleSubmit((values) => createAssessmentMutation.mutate(values))}
               disabled={createAssessmentMutation.isPending}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               Save assessment
             </button>
@@ -351,11 +351,11 @@ export function AssessmentsPage() {
         }
       >
         <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Course</span>
             <select
               {...assessmentForm.register('courseId')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
             >
               <option value="">Select course</option>
               {courseOptions.map((course) => (
@@ -369,11 +369,11 @@ export function AssessmentsPage() {
             ) : null}
           </label>
 
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Test type</span>
             <select
               {...assessmentForm.register('type')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
             >
               {assessmentTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -383,11 +383,11 @@ export function AssessmentsPage() {
             </select>
           </label>
 
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Lesson (optional)</span>
             <select
               {...assessmentForm.register('lessonId')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
             >
               <option value="">Course-level assessment</option>
               {lessonsForCreate.map((lesson) => (
@@ -398,11 +398,11 @@ export function AssessmentsPage() {
             </select>
           </label>
 
-          <label className="grid gap-1 text-sm font-medium text-brand-700">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Assessment title</span>
             <input
               {...assessmentForm.register('title')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               placeholder="End of unit quick check"
             />
             {assessmentForm.formState.errors.title ? (
@@ -414,7 +414,7 @@ export function AssessmentsPage() {
             control={assessmentForm.control}
             name="instructions"
             render={({ field }) => (
-              <div className="grid gap-1 text-sm font-medium text-brand-700">
+              <div className="grid gap-1 text-sm font-medium text-slate-700">
                 <span>Instructions</span>
                 <RichTextEditor
                   value={field.value ?? '<p></p>'}
@@ -427,32 +427,32 @@ export function AssessmentsPage() {
           />
 
           <div className="grid gap-4 md:grid-cols-3">
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Due at</span>
               <input
                 type="datetime-local"
                 {...assessmentForm.register('dueAt')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Timer (minutes)</span>
               <input
                 type="number"
                 min={1}
                 max={240}
                 {...assessmentForm.register('timeLimitMinutes')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               />
             </label>
-            <label className="grid gap-1 text-sm font-medium text-brand-700">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Max attempts</span>
               <input
                 type="number"
                 min={1}
                 max={5}
                 {...assessmentForm.register('maxAttempts')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-brand-900 outline-none focus:border-brand-400"
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               />
             </label>
           </div>

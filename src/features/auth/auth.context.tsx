@@ -5,15 +5,19 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 
-import { loginApi, logoutApi, meApi, refreshApi } from './auth.api';
+import { loginApi, logoutApi, meApi } from './auth.api';
 import { LoginFormValues, MeResponse } from './auth.schema';
-
-const ACCESS_TOKEN_KEY = 'ssr_access_token';
-const REFRESH_TOKEN_KEY = 'ssr_refresh_token';
+import {
+  clearSessionTokens,
+  getSessionRefreshToken,
+  getSessionTokens,
+  refreshSessionTokens,
+  setSessionTokens,
+  subscribeToSession,
+} from './auth.session';
 
 interface AuthContextValue {
   accessToken: string | null;
@@ -29,85 +33,70 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
-  const [accessToken, setAccessToken] = useState<string | null>(() =>
-    localStorage.getItem(ACCESS_TOKEN_KEY),
+  const [session, setSession] = useState(getSessionTokens);
+  const [isBootstrappingSession, setIsBootstrappingSession] = useState(
+    () => !getSessionTokens().accessToken && Boolean(getSessionTokens().refreshToken),
   );
-  const [refreshToken, setRefreshToken] = useState<string | null>(() =>
-    localStorage.getItem(REFRESH_TOKEN_KEY),
-  );
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const hasRetriedRefresh = useRef(false);
+
+  const accessToken = session.accessToken;
+  const refreshToken = session.refreshToken;
 
   const meQuery = useQuery({
-    queryKey: ['me', accessToken],
+    queryKey: ['me'],
     queryFn: () => meApi(accessToken as string),
     enabled: Boolean(accessToken),
     retry: false,
   });
 
   useEffect(() => {
-    if (!meQuery.error) {
+    return subscribeToSession(setSession);
+  }, []);
+
+  useEffect(() => {
+    if (accessToken || !refreshToken) {
+      setIsBootstrappingSession(false);
       return;
     }
 
-    if (!refreshToken) {
-      clearSession();
-      return;
-    }
+    let isCancelled = false;
+    setIsBootstrappingSession(true);
 
-    if (hasRetriedRefresh.current) {
-      clearSession();
-      return;
-    }
-
-    hasRetriedRefresh.current = true;
-    setIsRefreshing(true);
-
-    void refreshApi(refreshToken)
-      .then((refreshResult) => {
-        setAccessToken(refreshResult.accessToken);
-        setRefreshToken(refreshResult.refreshToken);
-        localStorage.setItem(ACCESS_TOKEN_KEY, refreshResult.accessToken);
-        localStorage.setItem(REFRESH_TOKEN_KEY, refreshResult.refreshToken);
-        return queryClient.invalidateQueries({ queryKey: ['me'] });
-      })
+    void refreshSessionTokens()
       .catch(() => {
         clearSession();
       })
       .finally(() => {
-        setIsRefreshing(false);
+        if (!isCancelled) {
+          setIsBootstrappingSession(false);
+        }
       });
-  }, [meQuery.error, refreshToken, queryClient]);
 
-  useEffect(() => {
-    if (meQuery.data) {
-      hasRetriedRefresh.current = false;
-    }
-  }, [meQuery.data]);
+    return () => {
+      isCancelled = true;
+    };
+  }, [accessToken, refreshToken]);
 
   function clearSession() {
-    hasRetriedRefresh.current = false;
-    setAccessToken(null);
-    setRefreshToken(null);
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    clearSessionTokens();
     queryClient.removeQueries({ queryKey: ['me'] });
   }
 
   async function login(payload: LoginFormValues): Promise<void> {
     const result = await loginApi(payload);
-    setAccessToken(result.accessToken);
-    setRefreshToken(result.refreshToken);
-    localStorage.setItem(ACCESS_TOKEN_KEY, result.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, result.refreshToken);
-    hasRetriedRefresh.current = false;
-    await queryClient.invalidateQueries({ queryKey: ['me'] });
+    queryClient.removeQueries({ queryKey: ['me'] });
+    setSessionTokens({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
   }
 
   async function logout(): Promise<void> {
-    if (accessToken && refreshToken) {
+    const currentAccessToken = accessToken;
+    const currentRefreshToken = refreshToken ?? getSessionRefreshToken();
+
+    if (currentAccessToken && currentRefreshToken) {
       try {
-        await logoutApi(accessToken, refreshToken);
+        await logoutApi(currentAccessToken, currentRefreshToken);
       } catch (_error) {
         // Ignore backend logout failure and clear local session.
       }
@@ -122,11 +111,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       refreshToken,
       me: meQuery.data ?? null,
       isAuthenticated: Boolean(accessToken && meQuery.data),
-      isLoadingSession: (Boolean(accessToken) && meQuery.isLoading) || isRefreshing,
+      isLoadingSession: (Boolean(accessToken) && meQuery.isLoading) || isBootstrappingSession,
       login,
       logout,
     }),
-    [accessToken, refreshToken, meQuery.data, meQuery.isLoading, isRefreshing],
+    [accessToken, refreshToken, meQuery.data, meQuery.isLoading, isBootstrappingSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

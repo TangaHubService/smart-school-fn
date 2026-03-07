@@ -299,28 +299,28 @@ export function StudentsPage() {
           <button
             type="button"
             onClick={() => exportMutation.mutate()}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
           >
             {exportMutation.isPending ? 'Exporting...' : 'Export CSV'}
           </button>
           <button
             type="button"
             onClick={openCsvPicker}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
           >
             Upload CSV
           </button>
           <button
             type="button"
             onClick={downloadTemplate}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
           >
             Template CSV
           </button>
           <button
             type="button"
             onClick={openCreateStudent}
-            className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+            className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
           >
             Add student
           </button>
@@ -376,7 +376,7 @@ export function StudentsPage() {
         <button
           type="button"
           onClick={() => void studentsQuery.refetch()}
-          className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+          className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
         >
           Refresh
         </button>
@@ -398,7 +398,7 @@ export function StudentsPage() {
             <button
               type="button"
               onClick={() => void studentsQuery.refetch()}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white"
+              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
             >
               Retry
             </button>
@@ -414,7 +414,7 @@ export function StudentsPage() {
         <div className="overflow-x-auto rounded-xl border border-brand-100">
           <table className="w-full table-auto text-left text-sm">
             <thead>
-              <tr className="border-b border-brand-100 text-brand-700">
+              <tr className="border-b border-brand-100 text-slate-700">
                 <th className="px-2 py-2 font-semibold">#</th>
                 <th className="px-2 py-2 font-semibold">Code</th>
                 <th className="px-2 py-2 font-semibold">Student</th>
@@ -427,10 +427,10 @@ export function StudentsPage() {
             <tbody>
               {students.map((student, index) => (
                 <tr key={student.id} className="border-b border-brand-50">
-                  <td className="px-2 py-2 align-middle text-brand-600">
+                  <td className="px-2 py-2 align-middle text-slate-600">
                     {(page - 1) * pageSize + index + 1}
                   </td>
-                  <td className="px-2 py-2 align-middle font-semibold text-brand-800">{student.studentCode}</td>
+                  <td className="px-2 py-2 align-middle font-semibold text-slate-800">{student.studentCode}</td>
                   <td className="px-2 py-2 align-middle">
                     {student.firstName} {student.lastName}
                   </td>
@@ -446,7 +446,7 @@ export function StudentsPage() {
                       <button
                         type="button"
                         onClick={() => openEditStudent(student)}
-                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700"
+                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
                       >
                         Edit
                       </button>
@@ -472,7 +472,7 @@ export function StudentsPage() {
       ) : null}
 
       {!studentsQuery.isPending && !studentsQuery.isError ? (
-        <div className="mt-3 flex items-center justify-between text-sm text-brand-700">
+        <div className="mt-3 flex items-center justify-between text-sm text-slate-700">
           <p>
             Showing page {pagination.page} of {Math.max(1, pagination.totalPages)} ({pagination.totalItems} students)
           </p>
@@ -518,7 +518,7 @@ export function StudentsPage() {
             createStudentMutation.mutate(values);
           })}
         >
-          <label className="grid gap-1 text-sm font-semibold text-brand-800">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Student Code
             <input className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('studentCode')} />
           </label>
@@ -527,18 +527,18 @@ export function StudentsPage() {
           ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               First Name
               <input className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('firstName')} />
             </label>
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Last Name
               <input className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('lastName')} />
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Gender
               <select className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('gender')}>
                 <option value="">Not set</option>
@@ -549,14 +549,14 @@ export function StudentsPage() {
               </select>
             </label>
 
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Date of Birth
               <input type="date" className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('dateOfBirth')} />
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Academic Year
               <select className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('academicYearId')}>
                 <option value="">Select year</option>
@@ -568,7 +568,7 @@ export function StudentsPage() {
               </select>
             </label>
 
-            <label className="grid gap-1 text-sm font-semibold text-brand-800">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Class
               <select className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('classRoomId')}>
                 <option value="">Select class</option>
@@ -595,14 +595,14 @@ export function StudentsPage() {
                 setIsStudentModalOpen(false);
                 setEditingStudent(null);
               }}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createStudentMutation.isPending || updateStudentMutation.isPending}
-              className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {createStudentMutation.isPending || updateStudentMutation.isPending
                 ? 'Saving...'
@@ -621,7 +621,7 @@ export function StudentsPage() {
         description="This action will archive the student and remove active enrollment links."
       >
         <div className="grid gap-3">
-          <p className="text-sm text-brand-800">
+          <p className="text-sm text-slate-800">
             Are you sure you want to delete{' '}
             <span className="font-semibold">{studentToDelete?.name}</span>?
           </p>
@@ -629,7 +629,7 @@ export function StudentsPage() {
             <button
               type="button"
               onClick={() => setStudentToDelete(null)}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
