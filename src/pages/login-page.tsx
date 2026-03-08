@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -12,6 +12,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const auth = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
 
   const tenantCodeFromQuery = searchParams.get('tenantCode') ?? '';
   const emailFromQuery = searchParams.get('email') ?? '';
@@ -96,13 +97,24 @@ export function LoginPage() {
             <label htmlFor="password" className="mb-1 block text-sm font-semibold text-slate-800">
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
-              {...form.register('password')}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                className="w-full rounded-xl border border-brand-200 px-3 py-2 pr-16 text-sm outline-none ring-brand-400 transition focus:ring"
+                {...form.register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded px-1 text-xs font-semibold text-brand-600 transition hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
             {form.formState.errors.password ? (
               <p className="mt-1 text-xs text-red-700" aria-live="polite">
                 {form.formState.errors.password.message}
