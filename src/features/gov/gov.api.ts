@@ -4,6 +4,7 @@ import {
   ConductIncidentListResponse,
   ConductIncidentStatus,
   ConductSeverity,
+  ConductFeedbackAuthorType,
 } from '../conduct/conduct.api';
 
 export type GovScopeLevel = 'SECTOR' | 'DISTRICT' | 'PROVINCE' | 'COUNTRY';
@@ -82,6 +83,76 @@ export interface GovSchoolDetailResponse {
   recentIncidents: ConductIncident[];
 }
 
+export interface GovConductMark {
+  id: string;
+  tenantId: string;
+  score: number;
+  maxScore: number;
+  isLocked: boolean;
+  computedFromIncidents: boolean;
+  overrideReason: string | null;
+  lockedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  school: {
+    id: string;
+    tenantId: string;
+    code: string;
+    displayName: string;
+    province: string | null;
+    district: string | null;
+    sector: string | null;
+    country: string | null;
+  } | null;
+  student: {
+    id: string;
+    studentCode: string;
+    firstName: string;
+    lastName: string;
+  };
+  term: {
+    id: string;
+    name: string;
+    sequence: number;
+    academicYear: {
+      id: string;
+      name: string;
+    };
+  };
+  updatedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  lockedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  feedback: Array<{
+    id: string;
+    authorType: ConductFeedbackAuthorType;
+    body: string;
+    createdAt: string;
+    updatedAt: string;
+    author: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    };
+  }>;
+}
+
+export interface GovConductMarkListResponse {
+  items: GovConductMark[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
 export function createGovAuditorApi(
   accessToken: string,
   payload: {
@@ -92,7 +163,7 @@ export function createGovAuditorApi(
     phone?: string;
   },
 ) {
-  return apiRequest<GovAuditor>('/gov/admin/auditors', {
+  return apiRequest<GovAuditor>('/gov/auditors', {
     method: 'POST',
     accessToken,
     body: payload,
@@ -109,7 +180,7 @@ export function listGovAuditorsApi(
   }
 
   return apiRequest<{ items: GovAuditor[] }>(
-    `/gov/admin/auditors${query.toString() ? `?${query.toString()}` : ''}`,
+    `/gov/auditors${query.toString() ? `?${query.toString()}` : ''}`,
     {
       method: 'GET',
       accessToken,
@@ -119,7 +190,7 @@ export function listGovAuditorsApi(
 
 export function listGovAuditorScopesApi(accessToken: string, auditorUserId: string) {
   return apiRequest<{ items: GovAuditorScope[] }>(
-    `/gov/admin/auditors/${auditorUserId}/scopes`,
+    `/gov/auditors/${auditorUserId}/scopes`,
     {
       method: 'GET',
       accessToken,
@@ -141,7 +212,7 @@ export function assignGovAuditorScopeApi(
     endsAt?: string;
   },
 ) {
-  return apiRequest<GovAuditorScope>(`/gov/admin/auditors/${auditorUserId}/scopes`, {
+  return apiRequest<GovAuditorScope>(`/gov/auditors/${auditorUserId}/scopes`, {
     method: 'POST',
     accessToken,
     body: payload,
@@ -223,6 +294,8 @@ export function listGovIncidentsApi(
   accessToken: string,
   params?: {
     tenantId?: string;
+    schoolId?: string;
+    termId?: string;
     status?: ConductIncidentStatus;
     severity?: ConductSeverity;
     q?: string;
@@ -233,6 +306,12 @@ export function listGovIncidentsApi(
   const query = new URLSearchParams();
   if (params?.tenantId) {
     query.set('tenantId', params.tenantId);
+  }
+  if (params?.schoolId) {
+    query.set('schoolId', params.schoolId);
+  }
+  if (params?.termId) {
+    query.set('termId', params.termId);
   }
   if (params?.status) {
     query.set('status', params.status);
@@ -251,7 +330,7 @@ export function listGovIncidentsApi(
   }
 
   return apiRequest<ConductIncidentListResponse>(
-    `/gov/incidents${query.toString() ? `?${query.toString()}` : ''}`,
+    `/gov/conduct/incidents${query.toString() ? `?${query.toString()}` : ''}`,
     {
       method: 'GET',
       accessToken,
@@ -260,7 +339,7 @@ export function listGovIncidentsApi(
 }
 
 export function getGovIncidentDetailApi(accessToken: string, incidentId: string) {
-  return apiRequest<ConductIncident>(`/gov/incidents/${incidentId}`, {
+  return apiRequest<ConductIncident>(`/gov/conduct/incidents/${incidentId}`, {
     method: 'GET',
     accessToken,
   });
@@ -271,7 +350,53 @@ export function addGovIncidentFeedbackApi(
   incidentId: string,
   payload: { body: string },
 ) {
-  return apiRequest<ConductIncident>(`/gov/incidents/${incidentId}/feedback`, {
+  return apiRequest<ConductIncident>(`/gov/conduct/incidents/${incidentId}/feedback`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function listGovConductMarksApi(
+  accessToken: string,
+  params?: {
+    tenantId?: string;
+    schoolId?: string;
+    termId?: string;
+    severity?: ConductSeverity;
+    from?: string;
+    to?: string;
+    q?: string;
+    page?: number;
+    pageSize?: number;
+  },
+) {
+  const query = new URLSearchParams();
+  if (params?.tenantId) query.set('tenantId', params.tenantId);
+  if (params?.schoolId) query.set('schoolId', params.schoolId);
+  if (params?.termId) query.set('termId', params.termId);
+  if (params?.severity) query.set('severity', params.severity);
+  if (params?.from) query.set('from', params.from);
+  if (params?.to) query.set('to', params.to);
+  if (params?.q?.trim()) query.set('q', params.q.trim());
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+
+  return apiRequest<GovConductMarkListResponse>(
+    `/gov/conduct/marks${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export function addGovConductMarkFeedbackApi(
+  accessToken: string,
+  markId: string,
+  payload: { body: string },
+) {
+  return apiRequest<GovConductMark>(`/gov/conduct/marks/${markId}/feedback`, {
     method: 'POST',
     accessToken,
     body: payload,

@@ -84,14 +84,22 @@ export function ConductIncidentsPage() {
       title="Discipline / Conduct"
       subtitle="Track incidents, follow-up actions, and school responses without affecting existing student workflows."
       action={
-        canManage ? (
+        <div className="flex flex-wrap gap-2">
           <Link
-            to="/admin/conduct/new"
-            className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+            to="/admin/conduct/marks"
+            className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
           >
-            Record incident
+            Term conduct sheet
           </Link>
-        ) : null
+          {canManage ? (
+            <Link
+              to="/admin/conduct/new"
+              className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+            >
+              Record incident
+            </Link>
+          ) : null}
+        </div>
       }
     >
       <div className="mb-4 grid gap-2 md:grid-cols-[1.2fr_0.8fr_0.8fr]">

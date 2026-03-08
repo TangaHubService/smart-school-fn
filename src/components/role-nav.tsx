@@ -21,8 +21,8 @@ import { NavLink } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
-import { conductFeatureEnabled } from '../features/conduct/feature';
-import { govAuditingFeatureEnabled } from '../features/gov/feature';
+import { conductFeatureEnabled, conductMarksFeatureEnabled } from '../features/conduct/feature';
+import { govAuditingFeatureEnabled, govConductMarksFeatureEnabled } from '../features/gov/feature';
 import {
   hasPermission,
   hasRole,
@@ -101,6 +101,15 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Discipline / Conduct',
     to: '/admin/conduct',
     icon: ClipboardList,
+    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['conduct.read'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'conduct-marks',
+    label: 'Conduct Marks',
+    to: '/admin/conduct/marks',
+    icon: FileBarChart2,
     roles: ['SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissions: ['conduct.read'],
     setupState: 'COMPLETE',
@@ -223,6 +232,15 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'gov-marks',
+    label: 'Gov Marks',
+    to: '/gov/conduct/marks',
+    icon: FileBarChart2,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.incidents.read'],
+    setupState: 'ANY',
+  },
+  {
     key: 'gov-auditors',
     label: 'Auditor Admin',
     to: '/gov/admin/auditors',
@@ -278,7 +296,15 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
       return false;
     }
 
+    if (!conductMarksFeatureEnabled && item.key === 'conduct-marks') {
+      return false;
+    }
+
     if (!govAuditingFeatureEnabled && item.key.startsWith('gov-')) {
+      return false;
+    }
+
+    if (!govConductMarksFeatureEnabled && item.key === 'gov-marks') {
       return false;
     }
 

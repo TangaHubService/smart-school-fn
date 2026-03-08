@@ -65,10 +65,16 @@ export function GovSchoolDetailPage() {
         action={
           <div className="flex flex-wrap gap-2">
             <Link
-              to={`/gov/incidents?tenantId=${detail.school.tenantId}`}
+              to={`/gov/incidents?schoolId=${detail.school.tenantId}`}
               className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
             >
               View incidents
+            </Link>
+            <Link
+              to={`/gov/conduct/marks?schoolId=${detail.school.tenantId}`}
+              className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+            >
+              View marks
             </Link>
             <Link
               to="/gov/schools"

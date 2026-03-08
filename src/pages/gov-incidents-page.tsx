@@ -42,7 +42,7 @@ export function GovIncidentsPage() {
   const [status, setStatus] = useState<ConductIncidentStatus | ''>('');
   const [page, setPage] = useState(1);
   const pageSize = 12;
-  const tenantId = searchParams.get('tenantId') ?? '';
+  const tenantId = searchParams.get('tenantId') ?? searchParams.get('schoolId') ?? '';
 
   const incidentsQuery = useQuery({
     queryKey: ['gov-incidents', { tenantId, search, severity, status, page, pageSize }],
@@ -50,6 +50,7 @@ export function GovIncidentsPage() {
       listGovIncidentsApi(auth.accessToken!, {
         tenantId: tenantId || undefined,
         q: search.trim() || undefined,
+        schoolId: tenantId || undefined,
         severity: severity || undefined,
         status: status || undefined,
         page,
@@ -76,6 +77,7 @@ export function GovIncidentsPage() {
             onClick={() => {
               const next = new URLSearchParams(searchParams);
               next.delete('tenantId');
+              next.delete('schoolId');
               setSearchParams(next);
             }}
             className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"

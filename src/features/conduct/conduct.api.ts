@@ -16,9 +16,16 @@ export interface ConductIncident {
   id: string;
   tenantId: string;
   occurredAt: string;
+  termId: string | null;
+  term: {
+    id: string;
+    name: string;
+    sequence: number;
+  } | null;
   category: string;
   title: string;
   description: string;
+  deductionPoints: number;
   severity: ConductSeverity;
   status: ConductIncidentStatus;
   location: string | null;
@@ -141,7 +148,125 @@ export interface StudentConductProfileResponse {
     resolvedIncidents: number;
     actionItems: number;
   };
+  conductMark: ConductMark | ConductMarkProvisional | null;
+  termMarks: ConductMark[];
   incidents: ConductIncident[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface ConductMark {
+  id: string;
+  tenantId: string;
+  studentId: string;
+  termId: string;
+  score: number;
+  maxScore: number;
+  isLocked: boolean;
+  computedFromIncidents: boolean;
+  overrideReason: string | null;
+  lockedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  student: {
+    id: string;
+    studentCode: string;
+    firstName: string;
+    lastName: string;
+  };
+  term: {
+    id: string;
+    name: string;
+    sequence: number;
+    academicYear: {
+      id: string;
+      name: string;
+    };
+  };
+  updatedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  lockedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+}
+
+export interface ConductMarkProvisional {
+  id: null;
+  tenantId: string;
+  studentId: string;
+  termId: string;
+  score: number;
+  maxScore: number;
+  isLocked: boolean;
+  computedFromIncidents: boolean;
+  overrideReason: null;
+  lockedAt: null;
+  createdAt: null;
+  updatedAt: null;
+  student: {
+    id: string;
+    studentCode: string;
+    firstName: string;
+    lastName: string;
+  };
+  term: {
+    id: string;
+    name: string;
+    sequence: number;
+    academicYear: {
+      id: string;
+      name: string;
+    };
+  } | null;
+  updatedBy: null;
+  lockedBy: null;
+  isProvisional: true;
+  deductionPointsTotal?: number;
+}
+
+export interface ConductMarkSheetResponse {
+  config: {
+    method: 'MANUAL' | 'DEDUCT';
+    maxScore: number;
+  };
+  term: {
+    id: string;
+    name: string;
+    sequence: number;
+  };
+  items: Array<{
+    student: {
+      id: string;
+      studentCode: string;
+      firstName: string;
+      lastName: string;
+    };
+    classRoom: {
+      id: string;
+      code: string;
+      name: string;
+    };
+    academicYear: {
+      id: string;
+      name: string;
+    };
+    term: {
+      id: string;
+      name: string;
+      sequence: number;
+    };
+    deductionPointsTotal: number;
+    mark: ConductMark | ConductMarkProvisional;
+  }>;
   pagination: {
     page: number;
     pageSize: number;
@@ -154,11 +279,13 @@ export function createConductIncidentApi(
   accessToken: string,
   payload: {
     studentId: string;
+    termId?: string;
     classRoomId?: string;
     occurredAt: string;
     category: string;
     title: string;
     description: string;
+    deductionPoints?: number;
     severity?: ConductSeverity;
     location?: string;
     reporterNotes?: string;
@@ -175,7 +302,9 @@ export function listConductIncidentsApi(
   accessToken: string,
   params?: {
     studentId?: string;
+    termId?: string;
     classRoomId?: string;
+    classId?: string;
     status?: ConductIncidentStatus;
     severity?: ConductSeverity;
     q?: string;
@@ -188,8 +317,14 @@ export function listConductIncidentsApi(
   if (params?.studentId) {
     query.set('studentId', params.studentId);
   }
+  if (params?.termId) {
+    query.set('termId', params.termId);
+  }
   if (params?.classRoomId) {
     query.set('classRoomId', params.classRoomId);
+  }
+  if (params?.classId) {
+    query.set('classId', params.classId);
   }
   if (params?.status) {
     query.set('status', params.status);
@@ -227,9 +362,11 @@ export function updateConductIncidentApi(
   accessToken: string,
   incidentId: string,
   payload: {
+    termId?: string | null;
     category?: string;
     title?: string;
     description?: string;
+    deductionPoints?: number;
     severity?: ConductSeverity;
     status?: Exclude<ConductIncidentStatus, 'RESOLVED'>;
     occurredAt?: string;
@@ -280,10 +417,13 @@ export function resolveConductIncidentApi(
 export function getStudentConductProfileApi(
   accessToken: string,
   studentId: string,
-  params?: { page?: number; pageSize?: number },
+  params?: { termId?: string; page?: number; pageSize?: number },
 ) {
   const query = new URLSearchParams();
 
+  if (params?.termId) {
+    query.set('termId', params.termId);
+  }
   if (params?.page) {
     query.set('page', String(params.page));
   }
@@ -298,4 +438,109 @@ export function getStudentConductProfileApi(
       accessToken,
     },
   );
+}
+
+export function getStudentConductApi(
+  accessToken: string,
+  studentId: string,
+  params?: { termId?: string; page?: number; pageSize?: number },
+) {
+  const query = new URLSearchParams();
+
+  if (params?.termId) {
+    query.set('termId', params.termId);
+  }
+  if (params?.page) {
+    query.set('page', String(params.page));
+  }
+  if (params?.pageSize) {
+    query.set('pageSize', String(params.pageSize));
+  }
+
+  return apiRequest<StudentConductProfileResponse>(
+    `/students/${studentId}/conduct${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export function listConductMarksApi(
+  accessToken: string,
+  params?: {
+    termId?: string;
+    classRoomId?: string;
+    classId?: string;
+    studentId?: string;
+    q?: string;
+    page?: number;
+    pageSize?: number;
+  },
+) {
+  const query = new URLSearchParams();
+  if (params?.termId) query.set('termId', params.termId);
+  if (params?.classRoomId) query.set('classRoomId', params.classRoomId);
+  if (params?.classId) query.set('classId', params.classId);
+  if (params?.studentId) query.set('studentId', params.studentId);
+  if (params?.q?.trim()) query.set('q', params.q.trim());
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+
+  return apiRequest<ConductMarkSheetResponse>(
+    `/conduct/marks${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export function updateConductMarkApi(
+  accessToken: string,
+  studentId: string,
+  termId: string,
+  payload: {
+    score: number;
+    maxScore?: number;
+    reason?: string;
+    manualOverride?: boolean;
+  },
+) {
+  return apiRequest<ConductMark>(`/conduct/marks/${studentId}/${termId}`, {
+    method: 'PUT',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function recalculateConductMarkApi(
+  accessToken: string,
+  studentId: string,
+  termId: string,
+  payload?: {
+    maxScore?: number;
+    reason?: string;
+  },
+) {
+  return apiRequest<ConductMark>(`/conduct/marks/${studentId}/${termId}/recalculate`, {
+    method: 'POST',
+    accessToken,
+    body: payload ?? {},
+  });
+}
+
+export function lockConductMarkApi(
+  accessToken: string,
+  studentId: string,
+  termId: string,
+  payload?: {
+    reason?: string;
+  },
+) {
+  return apiRequest<ConductMark>(`/conduct/marks/${studentId}/${termId}/lock`, {
+    method: 'POST',
+    accessToken,
+    body: payload ?? {},
+  });
 }

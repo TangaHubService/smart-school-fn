@@ -66,8 +66,8 @@ export function GovDashboardPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Quick Access" subtitle="Jump directly to the schools and incident queues inside your current assignment scope.">
-        <div className="grid gap-3 md:grid-cols-2">
+      <SectionCard title="Quick Access" subtitle="Jump directly to the schools and conduct queues inside your current assignment scope.">
+        <div className="grid gap-3 md:grid-cols-3">
           <Link
             to="/gov/schools"
             className="rounded-2xl border border-brand-100 bg-white p-4 transition hover:border-brand-300"
@@ -81,6 +81,13 @@ export function GovDashboardPage() {
           >
             <p className="text-base font-bold text-slate-950">Incident queue</p>
             <p className="mt-1 text-sm text-slate-700">Review conduct records and leave contextual feedback where needed.</p>
+          </Link>
+          <Link
+            to="/gov/conduct/marks"
+            className="rounded-2xl border border-brand-100 bg-white p-4 transition hover:border-brand-300"
+          >
+            <p className="text-base font-bold text-slate-950">Conduct marks</p>
+            <p className="mt-1 text-sm text-slate-700">Review term conduct scores and provide mark-level feedback.</p>
           </Link>
         </div>
       </SectionCard>
