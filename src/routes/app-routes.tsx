@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppShell } from '../components/app-shell';
-import { DefaultLandingRoute } from '../components/default-landing-route';
+import { PublicLayout } from '../components/public/public-layout';
 import { ProtectedRoute } from '../components/protected-route';
 import { RequirePermission } from '../components/require-permission';
 import { RequireSetupComplete } from '../components/require-setup-complete';
@@ -45,10 +45,31 @@ import { UsersPage } from '../pages/users-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
 import { StudentConductProfilePage } from '../pages/student-conduct-profile-page';
+import { PublicHomePage } from '../pages/public-home-page';
+import { PublicAboutPage } from '../pages/public-about-page';
+import { PublicContactPage } from '../pages/public-contact-page';
+import { PublicCoursesPage } from '../pages/public-courses-page';
+import { PublicTuitionPage } from '../pages/public-tuition-page';
+import { PublicJobsPage } from '../pages/public-jobs-page';
+import { PublicJobDetailPage } from '../pages/public-job-detail-page';
 
 export function AppRoutes() {
   return (
     <Routes>
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<PublicHomePage />} />
+        <Route path="/platform" element={<Navigate to="/courses" replace />} />
+        <Route path="/about" element={<PublicAboutPage />} />
+        <Route path="/courses" element={<PublicCoursesPage />} />
+        <Route path="/courses/all" element={<PublicCoursesPage />} />
+        <Route path="/courses/categories" element={<PublicCoursesPage />} />
+        <Route path="/courses/category/:categoryId" element={<PublicCoursesPage />} />
+        <Route path="/tuition" element={<PublicTuitionPage />} />
+        <Route path="/job-listing" element={<PublicJobsPage />} />
+        <Route path="/job-listing/:slug" element={<PublicJobDetailPage />} />
+        <Route path="/contact" element={<PublicContactPage />} />
+      </Route>
+
       <Route path="/login" element={<LoginPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
@@ -56,7 +77,6 @@ export function AppRoutes() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
-          <Route index element={<DefaultLandingRoute />} />
           <Route path="/admin" element={<DashboardPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
 
@@ -179,7 +199,6 @@ export function AppRoutes() {
           <Route path="/academics" element={<Navigate to="/admin/academic-years" replace />} />
           <Route path="/attendance" element={<Navigate to="/admin/attendance" replace />} />
           <Route path="/exams" element={<Navigate to="/admin/exams" replace />} />
-          <Route path="/courses" element={<Navigate to="/admin/courses" replace />} />
           <Route path="/assignments" element={<Navigate to="/admin/assignments" replace />} />
           {assessmentsFeatureEnabled ? (
             <Route path="/assessments" element={<Navigate to="/admin/assessments" replace />} />
