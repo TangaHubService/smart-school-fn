@@ -1,12 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { FieldError, useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { ApiClientError } from '../types/api';
 import { useAuth } from '../features/auth/auth.context';
 import { LoginFormValues, loginFormSchema } from '../features/auth/auth.schema';
+import { ApiClientError } from '../types/api';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -14,26 +14,25 @@ export function LoginPage() {
   const auth = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
-  const tenantCodeFromQuery = searchParams.get('tenantCode') ?? '';
   const emailFromQuery = searchParams.get('email') ?? '';
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
-      tenantCode: tenantCodeFromQuery,
+      loginAs: 'staff',
       email: emailFromQuery,
       password: '',
     },
   });
 
+  const loginAs = form.watch('loginAs');
+
   useEffect(() => {
-    if (tenantCodeFromQuery) {
-      form.setValue('tenantCode', tenantCodeFromQuery);
-    }
     if (emailFromQuery) {
+      form.setValue('loginAs', 'staff');
       form.setValue('email', emailFromQuery);
     }
-  }, [tenantCodeFromQuery, emailFromQuery, form]);
+  }, [emailFromQuery, form]);
 
   const loginMutation = useMutation({
     mutationFn: (payload: LoginFormValues) => auth.login(payload),
@@ -43,6 +42,15 @@ export function LoginPage() {
   });
 
   const apiError = loginMutation.error as ApiClientError | null;
+  const formErrors = form.formState.errors as Partial<
+    Record<'email' | 'password' | 'studentId', FieldError>
+  >;
+
+  function switchLoginMode(nextMode: 'staff' | 'student') {
+    form.clearErrors();
+    loginMutation.reset();
+    form.setValue('loginAs', nextMode);
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-8">
@@ -50,80 +58,115 @@ export function LoginPage() {
         <h1 className="text-2xl font-bold text-slate-900">Smart School Rwanda</h1>
         <p className="mt-2 text-sm text-slate-700">Sign in to your school workspace.</p>
 
+        <div className="mt-5 grid grid-cols-2 gap-2 rounded-xl bg-brand-50 p-1">
+          <button
+            type="button"
+            onClick={() => switchLoginMode('staff')}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+              loginAs === 'staff'
+                ? 'bg-white text-brand-700 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            aria-pressed={loginAs === 'staff'}
+          >
+            Staff
+          </button>
+          <button
+            type="button"
+            onClick={() => switchLoginMode('student')}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+              loginAs === 'student'
+                ? 'bg-white text-brand-700 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            aria-pressed={loginAs === 'student'}
+          >
+            Student
+          </button>
+        </div>
+
         <form
           className="mt-6 space-y-4"
           onSubmit={form.handleSubmit((values) => loginMutation.mutate(values))}
           noValidate
         >
-          <div>
-            <label htmlFor="tenantCode" className="mb-1 block text-sm font-semibold text-slate-800">
-              School Code
-              <span className="ml-1 text-xs font-medium text-slate-500">(optional for SuperAdmin)</span>
-            </label>
-            <input
-              id="tenantCode"
-              type="text"
-              autoComplete="organization"
-              placeholder="e.g. gs-rwanda (leave blank for SuperAdmin)"
-              className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
-              {...form.register('tenantCode')}
-            />
-            {form.formState.errors.tenantCode ? (
-              <p className="mt-1 text-xs text-red-700" aria-live="polite">
-                {form.formState.errors.tenantCode.message}
-              </p>
-            ) : null}
-          </div>
+          <input type="hidden" {...form.register('loginAs')} />
 
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-semibold text-slate-800">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
-              {...form.register('email')}
-            />
-            {form.formState.errors.email ? (
-              <p className="mt-1 text-xs text-red-700" aria-live="polite">
-                {form.formState.errors.email.message}
-              </p>
-            ) : null}
-          </div>
+          {loginAs === 'staff' ? (
+            <>
+              <div>
+                <label htmlFor="email" className="mb-1 block text-sm font-semibold text-slate-800">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
+                  {...form.register('email')}
+                />
+                {formErrors.email ? (
+                  <p className="mt-1 text-xs text-red-700" aria-live="polite">
+                    {formErrors.email.message}
+                  </p>
+                ) : null}
+              </div>
 
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-semibold text-slate-800">
-              Password
-            </label>
-            <div className="relative">
+              <div>
+                <label htmlFor="password" className="mb-1 block text-sm font-semibold text-slate-800">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    className="w-full rounded-xl border border-brand-200 px-3 py-2 pr-16 text-sm outline-none ring-brand-400 transition focus:ring"
+                    {...form.register('password')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded px-1 text-xs font-semibold text-brand-600 transition hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                {formErrors.password ? (
+                  <p className="mt-1 text-xs text-red-700" aria-live="polite">
+                    {formErrors.password.message}
+                  </p>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <div>
+              <label htmlFor="studentId" className="mb-1 block text-sm font-semibold text-slate-800">
+                Student ID
+              </label>
               <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                className="w-full rounded-xl border border-brand-200 px-3 py-2 pr-16 text-sm outline-none ring-brand-400 transition focus:ring"
-                {...form.register('password')}
+                id="studentId"
+                type="text"
+                autoComplete="username"
+                placeholder="e.g. STU-001"
+                className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
+                {...form.register('studentId')}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword((current) => !current)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded px-1 text-xs font-semibold text-brand-600 transition hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                aria-pressed={showPassword}
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
+              {formErrors.studentId ? (
+                <p className="mt-1 text-xs text-red-700" aria-live="polite">
+                  {formErrors.studentId.message}
+                </p>
+              ) : null}
             </div>
-            {form.formState.errors.password ? (
-              <p className="mt-1 text-xs text-red-700" aria-live="polite">
-                {form.formState.errors.password.message}
-              </p>
-            ) : null}
-          </div>
+          )}
 
           {apiError ? (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" aria-live="polite">
+            <p
+              className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              aria-live="polite"
+            >
               {apiError.message}
             </p>
           ) : null}

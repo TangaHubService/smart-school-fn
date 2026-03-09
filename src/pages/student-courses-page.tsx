@@ -6,9 +6,6 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
-  FileText,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
@@ -47,6 +44,15 @@ const submissionSchema = z
 
 type SubmissionFormValues = z.infer<typeof submissionSchema>;
 type StudentCourseItem = MyCoursesResponse['items'][number];
+type SubjectCourseGroup = {
+  key: string;
+  id: string | null;
+  name: string;
+  code: string;
+  courses: StudentCourseItem[];
+  totalLessons: number;
+  totalAssignments: number;
+};
 
 const defaultSubmissionForm: SubmissionFormValues = {
   textAnswer: '',
@@ -155,6 +161,10 @@ function getCourseTreeAccent(index: number) {
   return COURSE_TREE_ACCENTS[index % COURSE_TREE_ACCENTS.length];
 }
 
+function getCourseSubjectKey(course: StudentCourseItem) {
+  return course.subject?.id ?? '__general_subject__';
+}
+
 export function StudentCoursesPage() {
   const auth = useAuth();
   const { showToast } = useToast();
@@ -163,11 +173,9 @@ export function StudentCoursesPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selectedCourseId, setSelectedCourseId] = useState('');
-  const [expandedCourseId, setExpandedCourseId] = useState('');
+  const [expandedSubjectKey, setExpandedSubjectKey] = useState('');
   const [selectedLessonId, setSelectedLessonId] = useState('');
-  const [expandedLessonId, setExpandedLessonId] = useState('');
   const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
-  const [isTreeHidden, setIsTreeHidden] = useState(false);
   const [submissionAssignment, setSubmissionAssignment] = useState<AssignmentItem | null>(null);
   const [submissionFile, setSubmissionFile] = useState<File | null>(null);
 
@@ -226,12 +234,58 @@ export function StudentCoursesPage() {
     }
 
     return items.filter((course) =>
-      [course.title, course.classRoom.name, course.academicYear.name, course.subject?.name ?? '']
+      [
+        course.title,
+        course.classRoom.name,
+        course.academicYear.name,
+        course.subject?.name ?? '',
+        course.subject?.code ?? '',
+      ]
         .join(' ')
         .toLowerCase()
         .includes(q),
     );
   }, [myCoursesQuery.data?.items, search]);
+
+  const subjectGroups = useMemo<SubjectCourseGroup[]>(() => {
+    const groups = new Map<string, SubjectCourseGroup>();
+
+    for (const course of visibleCourses) {
+      const key = getCourseSubjectKey(course);
+      const current = groups.get(key);
+      if (!current) {
+        groups.set(key, {
+          key,
+          id: course.subject?.id ?? null,
+          name: course.subject?.name ?? 'General Studies',
+          code: course.subject?.code ?? 'GEN',
+          courses: [course],
+          totalLessons: course.lessons.length,
+          totalAssignments: course.assignments.length,
+        });
+        continue;
+      }
+
+      current.courses.push(course);
+      current.totalLessons += course.lessons.length;
+      current.totalAssignments += course.assignments.length;
+    }
+
+    return [...groups.values()]
+      .map((group) => ({
+        ...group,
+        courses: [...group.courses].sort((a, b) => a.title.localeCompare(b.title)),
+      }))
+      .sort((a, b) => {
+        if (!a.id && b.id) {
+          return 1;
+        }
+        if (a.id && !b.id) {
+          return -1;
+        }
+        return a.name.localeCompare(b.name);
+      });
+  }, [visibleCourses]);
 
   const selectedCourse = visibleCourses.find((course) => course.id === selectedCourseId) ?? null;
   const selectedLesson =
@@ -242,12 +296,37 @@ export function StudentCoursesPage() {
   useEffect(() => {
     if (selectedCourseId && !visibleCourses.some((course) => course.id === selectedCourseId)) {
       setSelectedCourseId('');
-      setExpandedCourseId('');
+      setExpandedSubjectKey('');
       setSelectedLessonId('');
-      setExpandedLessonId('');
       setSelectedAssignmentId('');
     }
   }, [selectedCourseId, visibleCourses]);
+
+  useEffect(() => {
+    if (!selectedCourse) {
+      return;
+    }
+
+    const subjectKey = getCourseSubjectKey(selectedCourse);
+    if (expandedSubjectKey !== subjectKey) {
+      setExpandedSubjectKey(subjectKey);
+    }
+  }, [expandedSubjectKey, selectedCourse]);
+
+  useEffect(() => {
+    if (selectedCourseId) {
+      return;
+    }
+
+    if (!subjectGroups.length) {
+      setExpandedSubjectKey('');
+      return;
+    }
+
+    if (!subjectGroups.some((group) => group.key === expandedSubjectKey)) {
+      setExpandedSubjectKey(subjectGroups[0].key);
+    }
+  }, [expandedSubjectKey, selectedCourseId, subjectGroups]);
 
   useEffect(() => {
     if (
@@ -256,7 +335,6 @@ export function StudentCoursesPage() {
       !selectedCourse.lessons.some((lesson) => lesson.id === selectedLessonId)
     ) {
       setSelectedLessonId('');
-      setExpandedLessonId('');
     }
   }, [selectedCourse, selectedLessonId]);
 
@@ -270,35 +348,39 @@ export function StudentCoursesPage() {
     }
   }, [selectedCourse, selectedAssignmentId]);
 
-  function handleSelectCourse(courseId: string) {
+  function handleSelectCourse(courseId: string, subjectKey?: string) {
     setSelectedCourseId(courseId);
-    setExpandedCourseId((current) => (current === courseId ? '' : courseId));
+    if (subjectKey) {
+      setExpandedSubjectKey(subjectKey);
+    }
     setSelectedLessonId('');
-    setExpandedLessonId('');
     setSelectedAssignmentId('');
   }
 
   function handleSelectLesson(courseId: string, lessonId: string) {
     setSelectedCourseId(courseId);
-    setExpandedCourseId(courseId);
+    const course = visibleCourses.find((item) => item.id === courseId);
+    if (course) {
+      setExpandedSubjectKey(getCourseSubjectKey(course));
+    }
     setSelectedLessonId(lessonId);
-    setExpandedLessonId((current) => (current === lessonId ? '' : lessonId));
     setSelectedAssignmentId('');
   }
 
   function handleSelectAssignment(courseId: string, assignmentId: string, lessonId?: string) {
     setSelectedCourseId(courseId);
-    setExpandedCourseId(courseId);
+    const course = visibleCourses.find((item) => item.id === courseId);
+    if (course) {
+      setExpandedSubjectKey(getCourseSubjectKey(course));
+    }
     setSelectedAssignmentId(assignmentId);
 
     if (lessonId) {
       setSelectedLessonId(lessonId);
-      setExpandedLessonId(lessonId);
       return;
     }
 
     setSelectedLessonId('');
-    setExpandedLessonId('');
   }
 
   function openSubmission(assignment: AssignmentItem) {
@@ -334,7 +416,7 @@ export function StudentCoursesPage() {
           }
         : {
             title: 'Choose a course',
-            subtitle: 'Use the learning tree to open a course, lesson, or test.',
+            subtitle: 'Open a subject card, choose a course, then select a lesson.',
             badge: null,
           };
 
@@ -342,7 +424,7 @@ export function StudentCoursesPage() {
     <div className="grid gap-5">
       <SectionCard
         title="My learning"
-        subtitle="Browse your courses, follow the lesson tree, and open tests from one clean workspace."
+        subtitle="Start with a subject, choose a course, then move through lessons with simple navigation."
       >
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
           <div className="relative">
@@ -350,7 +432,7 @@ export function StudentCoursesPage() {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search course, class, or subject"
+              placeholder="Search subject, course, or class"
               className="h-12 w-full rounded-2xl border border-brand-200 bg-white px-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
               aria-label="Search my courses"
             />
@@ -392,263 +474,18 @@ export function StudentCoursesPage() {
 
       {!myCoursesQuery.isPending && !myCoursesQuery.isError ? (
         visibleCourses.length ? (
-          <div
-            className={clsx(
-              'grid gap-4',
-              !isTreeHidden && 'xl:grid-cols-[340px_minmax(0,1fr)]',
-            )}
-          >
-            {!isTreeHidden ? (
-              <aside className="rounded-2xl border border-brand-100 bg-white shadow-soft xl:sticky xl:top-6 xl:h-[calc(100vh-9rem)] xl:overflow-hidden">
-                <div className="border-b border-brand-100 px-5 py-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-xl font-bold tracking-tight text-slate-900">
-                        Learning tree
-                      </h2>
-                      <p className="mt-1 text-sm leading-6 text-slate-600">
-                        Pick a course, then open the lesson or test you want.
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {visibleCourses.length} courses
-                    </span>
-                  </div>
-                </div>
-
-                <div className="max-h-[calc(100vh-16rem)] overflow-x-hidden overflow-y-auto px-3 py-3 xl:max-h-[calc(100vh-14rem)]">
-                  <div className="grid gap-2">
-                    {visibleCourses.map((course, courseIndex) => {
-                      const isExpanded = expandedCourseId === course.id;
-                      const isSelected = selectedCourseId === course.id;
-                      const generalAssignments = getGeneralAssignments(course);
-                      const accent = getCourseTreeAccent(courseIndex);
-
-                      return (
-                        <div
-                          key={course.id}
-                          className={clsx(
-                            'rounded-3xl border transition',
-                            isSelected
-                              ? 'border-brand-300 bg-brand-50/90 shadow-soft'
-                              : 'border-brand-100 bg-white hover:border-brand-200 hover:bg-brand-50/60',
-                          )}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => handleSelectCourse(course.id)}
-                            className="flex w-full items-center justify-between gap-3 rounded-3xl px-4 py-3.5 text-left"
-                            aria-expanded={isExpanded}
-                            title={course.title}
-                          >
-                            <span className="flex min-w-0 items-center gap-3">
-                              <span
-                                className={clsx(
-                                  'grid h-11 w-11 shrink-0 place-items-center rounded-2xl border',
-                                  accent.icon,
-                                )}
-                              >
-                                <BookOpen className="h-5 w-5" aria-hidden="true" />
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate whitespace-nowrap text-base font-bold leading-6 text-slate-900">
-                                  {course.title}
-                                </span>
-                                <span className="mt-2 flex flex-nowrap gap-2 overflow-hidden">
-                                  <span
-                                    className={clsx(
-                                      'inline-flex shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold',
-                                      accent.badge,
-                                    )}
-                                  >
-                                    {course.lessons.length} lessons
-                                  </span>
-                                  <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                                    {course.assignments.length} tests
-                                  </span>
-                                </span>
-                              </span>
-                            </span>
-                            <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 bg-white text-slate-500">
-                              {isExpanded ? (
-                                <ChevronDown className="h-4 w-4" aria-hidden="true" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                              )}
-                            </span>
-                          </button>
-
-                          {isExpanded ? (
-                            <div className="px-4 pb-4">
-                              <div className={clsx('grid gap-2 border-l pl-4', accent.rail)}>
-                                {course.lessons.length ? (
-                                  course.lessons.map((lesson) => {
-                                    const lessonAssignments = getLessonAssignments(course, lesson.id);
-                                    const lessonExpanded = expandedLessonId === lesson.id;
-                                    const lessonSelected = selectedLessonId === lesson.id;
-
-                                    return (
-                                      <div key={lesson.id} className="grid gap-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleSelectLesson(course.id, lesson.id)}
-                                          className={clsx(
-                                            'flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2.5 text-left transition',
-                                            lessonSelected
-                                              ? 'border-brand-200 bg-white text-slate-900 shadow-sm'
-                                              : 'border-transparent bg-brand-50/70 text-slate-700 hover:border-brand-100 hover:bg-white',
-                                          )}
-                                          aria-expanded={lessonAssignments.length ? lessonExpanded : undefined}
-                                          title={lesson.title}
-                                        >
-                                          <span className="flex min-w-0 flex-1 items-center gap-3">
-                                            <span
-                                              className={clsx(
-                                                'grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold',
-                                                lessonSelected
-                                                  ? 'bg-brand-500 text-white'
-                                                  : 'bg-white text-slate-700 ring-1 ring-brand-200',
-                                              )}
-                                            >
-                                              {lesson.sequence}
-                                            </span>
-                                            <span className="min-w-0 flex-1">
-                                              <span className="block truncate whitespace-nowrap text-sm font-semibold leading-5 text-slate-900">
-                                                {lesson.title}
-                                              </span>
-                                              <span className="mt-1 flex flex-nowrap items-center gap-2 overflow-hidden text-xs text-slate-600">
-                                                <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-white px-2 py-0.5 font-semibold text-slate-700 ring-1 ring-brand-100">
-                                                  {lesson.contentType.toLowerCase()}
-                                                </span>
-                                                <span className="truncate whitespace-nowrap">
-                                                  {lessonAssignments.length
-                                                    ? `${lessonAssignments.length} test${lessonAssignments.length === 1 ? '' : 's'}`
-                                                    : 'No tests yet'}
-                                                </span>
-                                              </span>
-                                            </span>
-                                          </span>
-                                          <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-brand-400 ring-1 ring-brand-100">
-                                            {lessonAssignments.length ? (
-                                              lessonExpanded ? (
-                                                <ChevronDown className="h-4 w-4" aria-hidden="true" />
-                                              ) : (
-                                                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                                              )
-                                            ) : (
-                                              <FileText className="h-4 w-4" aria-hidden="true" />
-                                            )}
-                                          </span>
-                                        </button>
-
-                                        {lessonExpanded && lessonAssignments.length ? (
-                                          <div className="ml-4 grid gap-1 border-l border-brand-100 pl-3">
-                                            {lessonAssignments.map((assignment) => {
-                                              const status = getAssignmentStatus(assignment);
-                                              const isAssignmentSelected =
-                                                selectedAssignmentId === assignment.id;
-
-                                              return (
-                                                <button
-                                                  key={assignment.id}
-                                                  type="button"
-                                                  onClick={() =>
-                                                    handleSelectAssignment(
-                                                      course.id,
-                                                      assignment.id,
-                                                      lesson.id,
-                                                    )
-                                                  }
-                                                  className={clsx(
-                                                    'flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left transition',
-                                                    isAssignmentSelected
-                                                      ? 'border-brand-200 bg-white text-slate-900 shadow-sm'
-                                                      : 'border-transparent bg-white/80 text-slate-700 hover:border-brand-100 hover:bg-white',
-                                                  )}
-                                                  title={assignment.title}
-                                                >
-                                                  <span className="flex min-w-0 flex-1 items-center gap-3">
-                                                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-100 text-slate-700">
-                                                      <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
-                                                    </span>
-                                                    <span className="min-w-0 flex-1">
-                                                      <span className="block truncate whitespace-nowrap text-sm font-medium leading-5 text-slate-900">
-                                                        {assignment.title}
-                                                      </span>
-                                                    </span>
-                                                  </span>
-                                                  <span className="shrink-0 whitespace-nowrap rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-brand-100">
-                                                    {status.label}
-                                                  </span>
-                                                </button>
-                                              );
-                                            })}
-                                          </div>
-                                        ) : null}
-                                      </div>
-                                    );
-                                  })
-                                ) : (
-                                  <p className="rounded-2xl bg-brand-50 px-3 py-3 text-sm text-slate-600">
-                                    This course does not have lessons yet.
-                                  </p>
-                                )}
-
-                                {generalAssignments.length ? (
-                                  <div className="pt-1">
-                                    <p className="px-3 pb-1 text-sm font-semibold text-slate-700">
-                                      Course tests
-                                    </p>
-                                    <div className="ml-4 grid gap-1 border-l border-brand-100 pl-3">
-                                      {generalAssignments.map((assignment) => {
-                                        const status = getAssignmentStatus(assignment);
-                                        const isAssignmentSelected = selectedAssignmentId === assignment.id;
-
-                                        return (
-                                          <button
-                                            key={assignment.id}
-                                            type="button"
-                                            onClick={() =>
-                                              handleSelectAssignment(course.id, assignment.id)
-                                            }
-                                            className={clsx(
-                                              'flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left transition',
-                                              isAssignmentSelected
-                                                ? 'border-brand-200 bg-white text-slate-900 shadow-sm'
-                                                : 'border-transparent bg-white/80 text-slate-700 hover:border-brand-100 hover:bg-white',
-                                            )}
-                                            title={assignment.title}
-                                          >
-                                            <span className="flex min-w-0 flex-1 items-center gap-3">
-                                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-100 text-slate-700">
-                                                <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
-                                              </span>
-                                              <span className="min-w-0 flex-1">
-                                                <span className="block truncate whitespace-nowrap text-sm font-medium leading-5 text-slate-900">
-                                                  {assignment.title}
-                                                </span>
-                                              </span>
-                                            </span>
-                                            <span className="shrink-0 whitespace-nowrap rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-brand-100">
-                                              {status.label}
-                                            </span>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                ) : null}
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </aside>
-            ) : null}
-
+          !selectedCourse ? (
+            <SubjectCourseGallery
+              groups={subjectGroups}
+              expandedSubjectKey={expandedSubjectKey}
+              onToggleSubject={(subjectKey) =>
+                setExpandedSubjectKey((current) => (current === subjectKey ? '' : subjectKey))
+              }
+              onSelectCourse={(courseId, subjectKey) =>
+                handleSelectCourse(courseId, subjectKey)
+              }
+            />
+          ) : (
             <section className="rounded-2xl border border-brand-100 bg-white shadow-soft">
               <div className="flex min-h-[680px] flex-col">
                 <div className="border-b border-brand-100 px-5 py-4">
@@ -656,37 +493,40 @@ export function StudentCoursesPage() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                         <span>Learning workspace</span>
-                        {selectedCourse ? (
-                          <>
-                            <span className="text-brand-300">/</span>
-                            <span>{selectedCourse.classRoom.name}</span>
-                            <span className="text-brand-300">/</span>
-                            <span>{selectedCourse.academicYear.name}</span>
-                          </>
-                        ) : null}
+                        <span className="text-brand-300">/</span>
+                        <span>{selectedCourse.classRoom.name}</span>
+                        <span className="text-brand-300">/</span>
+                        <span>{selectedCourse.academicYear.name}</span>
                       </div>
                       <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900">
                         {readerHeader.title}
                       </h2>
-                      <p className="mt-2 text-sm text-slate-600">
-                        {readerHeader.subtitle}
-                      </p>
+                      <p className="mt-2 text-sm text-slate-600">{readerHeader.subtitle}</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                       {readerHeader.badge}
-                      {selectedCourse ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCourseId('');
+                          setSelectedLessonId('');
+                          setSelectedAssignmentId('');
+                        }}
+                        className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300"
+                      >
+                        Back to courses
+                      </button>
+                      {selectedLesson || selectedAssignment ? (
                         <button
                           type="button"
-                          onClick={() => setIsTreeHidden((current) => !current)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300 hover:bg-brand-100"
+                          onClick={() => {
+                            setSelectedLessonId('');
+                            setSelectedAssignmentId('');
+                          }}
+                          className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300"
                         >
-                          {isTreeHidden ? (
-                            <PanelLeftOpen className="h-4 w-4" aria-hidden="true" />
-                          ) : (
-                            <PanelLeftClose className="h-4 w-4" aria-hidden="true" />
-                          )}
-                          {isTreeHidden ? 'Show tree' : 'Focus mode'}
+                          Back to lessons
                         </button>
                       ) : null}
                     </div>
@@ -694,23 +534,30 @@ export function StudentCoursesPage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
-                  {!selectedCourse ? (
-                    <div className="grid place-items-center rounded-2xl border border-dashed border-brand-200 bg-brand-50/70 px-6 py-16">
-                      <EmptyState
-                        title="Open a course"
-                        message="Choose a course from the learning tree to start reading lessons or taking tests."
-                      />
-                    </div>
+                  {selectedCourse ? (
+                    <CourseLearningNavigator
+                      course={selectedCourse}
+                      selectedLessonId={selectedLessonId}
+                      selectedAssignmentId={selectedAssignmentId}
+                      onOpenOverview={() => {
+                        setSelectedLessonId('');
+                        setSelectedAssignmentId('');
+                      }}
+                      onSelectLesson={(lessonId) =>
+                        handleSelectLesson(selectedCourse.id, lessonId)
+                      }
+                      onSelectAssignment={(assignmentId) =>
+                        handleSelectAssignment(selectedCourse.id, assignmentId)
+                      }
+                    />
                   ) : null}
 
-                  {selectedCourse && selectedAssignment ? (
+                  {selectedAssignment ? (
                     <AssignmentDetailCard
                       assignment={selectedAssignment}
                       onOpenSubmission={openSubmission}
                     />
-                  ) : null}
-
-                  {selectedCourse && !selectedAssignment && selectedLesson ? (
+                  ) : selectedLesson ? (
                     <LessonDetailCard
                       lesson={selectedLesson}
                       assignments={getLessonAssignments(selectedCourse, selectedLesson.id)}
@@ -718,9 +565,7 @@ export function StudentCoursesPage() {
                         handleSelectAssignment(selectedCourse.id, assignmentId, selectedLesson.id)
                       }
                     />
-                  ) : null}
-
-                  {selectedCourse && !selectedAssignment && !selectedLesson ? (
+                  ) : (
                     <CourseOverviewCard
                       course={selectedCourse}
                       onSelectLesson={(lessonId) => handleSelectLesson(selectedCourse.id, lessonId)}
@@ -728,11 +573,11 @@ export function StudentCoursesPage() {
                         handleSelectAssignment(selectedCourse.id, assignmentId)
                       }
                     />
-                  ) : null}
+                  )}
                 </div>
               </div>
             </section>
-          </div>
+          )
         ) : (
           <EmptyState
             title="No courses available"
@@ -863,6 +708,222 @@ function ReaderBlock({
         {action ?? null}
       </div>
       {children}
+    </section>
+  );
+}
+
+function SubjectCourseGallery({
+  groups,
+  expandedSubjectKey,
+  onToggleSubject,
+  onSelectCourse,
+}: {
+  groups: SubjectCourseGroup[];
+  expandedSubjectKey: string;
+  onToggleSubject: (subjectKey: string) => void;
+  onSelectCourse: (courseId: string, subjectKey: string) => void;
+}) {
+  return (
+    <div className="grid gap-4">
+      {groups.map((group, subjectIndex) => {
+        const accent = getCourseTreeAccent(subjectIndex);
+        const isExpanded = expandedSubjectKey === group.key;
+
+        return (
+          <section
+            key={group.key}
+            className="rounded-2xl border border-brand-100 bg-white shadow-soft"
+          >
+            <button
+              type="button"
+              onClick={() => onToggleSubject(group.key)}
+              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+              aria-expanded={isExpanded}
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <span
+                  className={clsx(
+                    'grid h-11 w-11 shrink-0 place-items-center rounded-2xl border',
+                    accent.icon,
+                  )}
+                >
+                  <BookOpen className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block text-lg font-bold text-slate-900">{group.name}</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    {group.code}
+                  </span>
+                </span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  {group.courses.length} courses
+                </span>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                  {group.totalLessons} lessons
+                </span>
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                )}
+              </span>
+            </button>
+
+            {isExpanded ? (
+              <div className="border-t border-brand-100 px-4 py-4">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {group.courses.map((course) => (
+                    <button
+                      key={course.id}
+                      type="button"
+                      onClick={() => onSelectCourse(course.id, group.key)}
+                      className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4 text-left transition hover:border-brand-300 hover:bg-brand-50"
+                    >
+                      <p className="text-base font-bold text-slate-900">{course.title}</p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        {course.classRoom.name} · {course.academicYear.name}
+                      </p>
+                      <div className="mt-3 flex gap-2">
+                        <span className="rounded-full bg-brand-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                          {course.lessons.length} lessons
+                        </span>
+                        <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
+                          {course.assignments.length} tests
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function CourseLearningNavigator({
+  course,
+  selectedLessonId,
+  selectedAssignmentId,
+  onOpenOverview,
+  onSelectLesson,
+  onSelectAssignment,
+}: {
+  course: StudentCourseItem;
+  selectedLessonId: string;
+  selectedAssignmentId: string;
+  onOpenOverview: () => void;
+  onSelectLesson: (lessonId: string) => void;
+  onSelectAssignment: (assignmentId: string) => void;
+}) {
+  const generalAssignments = getGeneralAssignments(course);
+  const selectedLessonIndex = course.lessons.findIndex((lesson) => lesson.id === selectedLessonId);
+  const previousLesson =
+    selectedLessonIndex > 0 ? course.lessons[selectedLessonIndex - 1] : null;
+  const nextLesson =
+    selectedLessonIndex >= 0 && selectedLessonIndex < course.lessons.length - 1
+      ? course.lessons[selectedLessonIndex + 1]
+      : null;
+
+  return (
+    <section className="mb-4 rounded-2xl border border-brand-100 bg-brand-50/60 p-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+            Study path
+          </p>
+          <p className="mt-1 text-sm text-slate-700">
+            Select a lesson in order, or jump to any topic.
+          </p>
+        </div>
+        {selectedLessonId ? (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => previousLesson && onSelectLesson(previousLesson.id)}
+              disabled={!previousLesson}
+              className="rounded-xl border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50"
+            >
+              Previous lesson
+            </button>
+            <button
+              type="button"
+              onClick={() => nextLesson && onSelectLesson(nextLesson.id)}
+              disabled={!nextLesson}
+              className="rounded-xl border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50"
+            >
+              Next lesson
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onOpenOverview}
+          className={clsx(
+            'rounded-xl border px-3 py-2 text-xs font-semibold transition',
+            !selectedLessonId && !selectedAssignmentId
+              ? 'border-brand-300 bg-white text-slate-900'
+              : 'border-brand-200 bg-white/80 text-slate-700 hover:border-brand-300',
+          )}
+        >
+          Course overview
+        </button>
+        {course.lessons.map((lesson) => {
+          const isSelected = selectedLessonId === lesson.id;
+          const assignmentCount = getLessonAssignments(course, lesson.id).length;
+          return (
+            <button
+              key={lesson.id}
+              type="button"
+              onClick={() => onSelectLesson(lesson.id)}
+              className={clsx(
+                'rounded-xl border px-3 py-2 text-xs font-semibold transition',
+                isSelected
+                  ? 'border-brand-300 bg-white text-slate-900'
+                  : 'border-brand-200 bg-white/80 text-slate-700 hover:border-brand-300',
+              )}
+            >
+              Lesson {lesson.sequence}
+              {assignmentCount ? ` · ${assignmentCount} test${assignmentCount === 1 ? '' : 's'}` : ''}
+            </button>
+          );
+        })}
+      </div>
+
+      {generalAssignments.length ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {generalAssignments.map((assignment) => {
+            const isSelected = selectedAssignmentId === assignment.id;
+            const status = getAssignmentStatus(assignment);
+            return (
+              <button
+                key={assignment.id}
+                type="button"
+                onClick={() => onSelectAssignment(assignment.id)}
+                className={clsx(
+                  'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition',
+                  isSelected
+                    ? 'border-brand-300 bg-white text-slate-900'
+                    : 'border-brand-200 bg-white/80 text-slate-700 hover:border-brand-300',
+                )}
+              >
+                <ClipboardCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{assignment.title}</span>
+                <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700">
+                  {status.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
   );
 }

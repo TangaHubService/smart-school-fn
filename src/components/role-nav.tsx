@@ -179,7 +179,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'my-children',
-    label: 'My Children',
+    label: 'Children',
     to: '/parent/my-children',
     icon: Users,
     roles: ['PARENT'],
@@ -233,7 +233,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'student-courses',
-    label: 'My Courses',
+    label: 'Courses',
     to: '/student/courses',
     icon: UserSquare2,
     roles: ['STUDENT'],
@@ -242,7 +242,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'student-report-cards',
-    label: 'My Report Cards',
+    label: 'Report Cards',
     to: '/student/report-cards',
     icon: FileBarChart2,
     roles: ['STUDENT'],
@@ -251,7 +251,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'student-assessments',
-    label: 'My Tests',
+    label: 'Tests',
     to: '/student/assessments',
     icon: BadgeCheck,
     roles: ['STUDENT'],

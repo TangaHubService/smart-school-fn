@@ -1,17 +1,20 @@
 import { z } from 'zod';
 
-export const loginFormSchema = z.object({
-  tenantCode: z
-    .string()
-    .trim()
-    .max(50, 'School code is too long')
-    .refine(
-      (value) => value.length === 0 || value.length >= 2,
-      'School code must be at least 2 characters',
-    ),
+const staffLoginFormSchema = z.object({
+  loginAs: z.literal('staff'),
   email: z.string().trim().email('Enter a valid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
+
+const studentLoginFormSchema = z.object({
+  loginAs: z.literal('student'),
+  studentId: z.string().trim().min(1, 'Student ID is required').max(40, 'Student ID is too long'),
+});
+
+export const loginFormSchema = z.discriminatedUnion('loginAs', [
+  staffLoginFormSchema,
+  studentLoginFormSchema,
+]);
 
 export type LoginFormValues = z.infer<typeof loginFormSchema>;
 

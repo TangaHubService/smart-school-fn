@@ -45,12 +45,11 @@ export function AcceptInvitePage() {
       showToast({
         type: 'success',
         title: 'Invitation accepted',
-        message: 'Sign in with your school code and credentials.',
+        message: 'Sign in with your email and password.',
       });
-      navigate(
-        `/login?tenantCode=${encodeURIComponent((result as any).tenantCode)}&email=${encodeURIComponent((result as any).email)}`,
-        { replace: true },
-      );
+      navigate(`/login?email=${encodeURIComponent((result as any).email)}`, {
+        replace: true,
+      });
     },
     onError: (error) => {
       showToast({
