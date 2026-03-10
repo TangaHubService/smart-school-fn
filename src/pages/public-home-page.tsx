@@ -4,6 +4,7 @@ import { Link, Navigate } from 'react-router-dom';
 import backgroundImage from '../asset/background.jpg';
 import { useAuth } from '../features/auth/auth.context';
 import { getDefaultLandingPath } from '../features/auth/auth-helpers';
+import { PublicCommunityCTA } from '../components/public/public-community-cta';
 
 const programs = [
   {
@@ -72,13 +73,16 @@ export function PublicHomePage() {
             </p>
             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
               <Link
-                to="/login"
+                to="/login?mode=staff"
                 className="group rounded-full bg-brand-500 px-9 py-3 text-[13px] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-brand-600"
               >
-                <span className="inline-flex items-center gap-2">
-                  Get started
-                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-                </span>
+                Staff Login
+              </Link>
+              <Link
+                to="/login?mode=student"
+                className="rounded-full border border-white/40 bg-emerald-600 px-9 py-3 text-[13px] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-emerald-700"
+              >
+                Student Entry
               </Link>
               <Link
                 to="/courses"
@@ -177,6 +181,8 @@ export function PublicHomePage() {
           </div>
         </div>
       </section>
+
+      <PublicCommunityCTA />
 
       <section className="bg-white py-20">
         <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">

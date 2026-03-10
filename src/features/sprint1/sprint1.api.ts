@@ -190,6 +190,18 @@ export function deleteTenantApi(accessToken: string, tenantId: string) {
   });
 }
 
+export function updateTenantStatusApi(
+  accessToken: string,
+  tenantId: string,
+  payload: { isActive: boolean },
+) {
+  return apiRequest(`/tenants/${tenantId}/status`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
 export function listTenantsApi(
   accessToken: string,
   params?: { page?: number; pageSize?: number; search?: string },

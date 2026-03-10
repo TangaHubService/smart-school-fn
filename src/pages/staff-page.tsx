@@ -410,6 +410,32 @@ export function StaffPage() {
     },
   });
 
+  const toggleMemberStatusMutation = useMutation({
+    mutationFn: (input: { member: StaffMember; status: 'ACTIVE' | 'INACTIVE' }) =>
+      updateStaffMemberApi(auth.accessToken!, input.member.id, {
+        status: input.status,
+      }),
+    onSuccess: (updatedMember, input) => {
+      void queryClient.invalidateQueries({ queryKey: ['staff-members'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['staff-member-detail', input.member.id],
+      });
+
+      showToast({
+        type: 'success',
+        title: input.status === 'ACTIVE' ? 'Account activated' : 'Account deactivated',
+        message: `${updatedMember.firstName} ${updatedMember.lastName} is now ${updatedMember.status}.`,
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not update account status',
+        message: error instanceof Error ? error.message : 'Status update failed',
+      });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (target: DeleteTarget) =>
       target.kind === 'MEMBER'
@@ -727,44 +753,82 @@ export function StaffPage() {
                     <td className="px-2 py-2 align-middle">
                       <div className="flex flex-wrap gap-2">
                         {row.kind === 'MEMBER' ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedMemberForView(row.member)}
-                              className="rounded-md border border-brand-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
-                            >
-                              View
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedMemberForEdit(row.member)}
-                              className="rounded-md border border-brand-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
-                            >
-                              Edit
-                            </button>
-                            {isTeacher(row.member) ? (
-                              <button
-                                type="button"
-                                onClick={() => openAssignCourses(row.member)}
-                                className="rounded-md bg-brand-500 px-2 py-1 text-xs font-semibold text-white"
-                              >
-                                Assign subject
-                              </button>
-                            ) : null}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDeleteTarget({
-                                  kind: 'MEMBER',
-                                  id: row.member.id,
-                                  label: formatMemberName(row.member),
-                                })
-                              }
-                              className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
-                            >
-                              Delete
-                            </button>
-                          </>
+                          (() => {
+                            const isSelfMember = row.member.id === auth.me?.id;
+                            const nextStatus: 'ACTIVE' | 'INACTIVE' =
+                              row.member.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+                            const statusActionLabel =
+                              nextStatus === 'ACTIVE' ? 'Activate' : 'Deactivate';
+                            const disableStatusAction =
+                              toggleMemberStatusMutation.isPending ||
+                              (isSelfMember && nextStatus === 'INACTIVE');
+                            const isUpdatingThisMember =
+                              toggleMemberStatusMutation.isPending &&
+                              toggleMemberStatusMutation.variables?.member.id === row.member.id;
+
+                            return (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedMemberForView(row.member)}
+                                  className="rounded-md border border-brand-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedMemberForEdit(row.member)}
+                                  className="rounded-md border border-brand-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={disableStatusAction}
+                                  title={
+                                    isSelfMember && nextStatus === 'INACTIVE'
+                                      ? 'You cannot deactivate your own account'
+                                      : undefined
+                                  }
+                                  onClick={() =>
+                                    toggleMemberStatusMutation.mutate({
+                                      member: row.member,
+                                      status: nextStatus,
+                                    })
+                                  }
+                                  className={
+                                    nextStatus === 'ACTIVE'
+                                      ? 'rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-60'
+                                      : 'rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 disabled:cursor-not-allowed disabled:opacity-60'
+                                  }
+                                >
+                                  {isUpdatingThisMember ? 'Updating...' : statusActionLabel}
+                                </button>
+                                {isTeacher(row.member) ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openAssignCourses(row.member)}
+                                    className="rounded-md bg-brand-500 px-2 py-1 text-xs font-semibold text-white"
+                                  >
+                                    Assign subject
+                                  </button>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDeleteTarget({
+                                      kind: 'MEMBER',
+                                      id: row.member.id,
+                                      label: formatMemberName(row.member),
+                                    })
+                                  }
+                                  className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            );
+                          })()
                         ) : (
                           <button
                             type="button"

@@ -1,5 +1,6 @@
 import { Check, Users, Award, BookOpen, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PublicCommunityCTA } from '../components/public/public-community-cta';
 
 import backgroundImage from '../asset/background.jpg';
 
@@ -139,6 +140,7 @@ export function PublicTuitionPage() {
           </div>
         </div>
       </section>
+      <PublicCommunityCTA />
     </main>
   );
 }

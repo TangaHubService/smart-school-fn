@@ -8,6 +8,7 @@ const staffLoginFormSchema = z.object({
 
 const studentLoginFormSchema = z.object({
   loginAs: z.literal('student'),
+  schoolCode: z.string().trim().min(1, 'School code is required').max(20, 'School code is too long'),
   studentId: z.string().trim().min(1, 'Student ID is required').max(40, 'Student ID is too long'),
 });
 

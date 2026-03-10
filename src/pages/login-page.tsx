@@ -25,14 +25,18 @@ export function LoginPage() {
     },
   });
 
+  const modeFromQuery = searchParams.get('mode') as 'staff' | 'student' | null;
+
   const loginAs = form.watch('loginAs');
 
   useEffect(() => {
     if (emailFromQuery) {
       form.setValue('loginAs', 'staff');
       form.setValue('email', emailFromQuery);
+    } else if (modeFromQuery === 'staff' || modeFromQuery === 'student') {
+      form.setValue('loginAs', modeFromQuery);
     }
-  }, [emailFromQuery, form]);
+  }, [emailFromQuery, modeFromQuery, form]);
 
   const loginMutation = useMutation({
     mutationFn: (payload: LoginFormValues) => auth.login(payload),
@@ -43,7 +47,7 @@ export function LoginPage() {
 
   const apiError = loginMutation.error as ApiClientError | null;
   const formErrors = form.formState.errors as Partial<
-    Record<'email' | 'password' | 'studentId', FieldError>
+    Record<'email' | 'password' | 'studentId' | 'schoolCode', FieldError>
   >;
 
   function switchLoginMode(nextMode: 'staff' | 'student') {
@@ -142,23 +146,44 @@ export function LoginPage() {
               </div>
             </>
           ) : (
-            <div>
-              <label htmlFor="studentId" className="mb-1 block text-sm font-semibold text-slate-800">
-                Student ID
-              </label>
-              <input
-                id="studentId"
-                type="text"
-                autoComplete="username"
-                placeholder="e.g. STU-001"
-                className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
-                {...form.register('studentId')}
-              />
-              {formErrors.studentId ? (
-                <p className="mt-1 text-xs text-red-700" aria-live="polite">
-                  {formErrors.studentId.message}
-                </p>
-              ) : null}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="schoolCode" className="mb-1 block text-sm font-semibold text-slate-800">
+                  School Code
+                </label>
+                <input
+                  id="schoolCode"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="e.g. SMART"
+                  className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
+                  {...form.register('schoolCode')}
+                />
+                {formErrors.schoolCode ? (
+                  <p className="mt-1 text-xs text-red-700" aria-live="polite">
+                    {formErrors.schoolCode.message}
+                  </p>
+                ) : null}
+              </div>
+
+              <div>
+                <label htmlFor="studentId" className="mb-1 block text-sm font-semibold text-slate-800">
+                  Student ID
+                </label>
+                <input
+                  id="studentId"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="e.g. STU-001"
+                  className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
+                  {...form.register('studentId')}
+                />
+                {formErrors.studentId ? (
+                  <p className="mt-1 text-xs text-red-700" aria-live="polite">
+                    {formErrors.studentId.message}
+                  </p>
+                ) : null}
+              </div>
             </div>
           )}
 

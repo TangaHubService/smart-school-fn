@@ -1,5 +1,6 @@
 import { Award, Eye, Heart, Lightbulb, Target, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PublicCommunityCTA } from '../components/public/public-community-cta';
 
 import aboutImage from '../asset/aboutimage.jpg';
 import ceo from '../asset/Picture1.png';
@@ -120,6 +121,8 @@ export function PublicAboutPage() {
           </div>
         </div>
       </section>
+
+      <PublicCommunityCTA />
 
       <section className="bg-white py-20">
         <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">

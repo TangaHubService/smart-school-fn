@@ -13,12 +13,12 @@ import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
   createTenantApi,
-  deleteTenantApi,
   getTenantDetailApi,
   inviteTenantAdminApi,
   listTenantsApi,
   SchoolDetail,
   TenantListItem,
+  updateTenantStatusApi,
   updateTenantApi,
 } from '../features/sprint1/sprint1.api';
 import { ApiClientError } from '../types/api';
@@ -61,7 +61,7 @@ export function TenantsPage() {
   const [createdSchool, setCreatedSchool] = useState<CreatedSchoolState | null>(null);
   const [viewSchoolId, setViewSchoolId] = useState<string | null>(null);
   const [editSchoolId, setEditSchoolId] = useState<string | null>(null);
-  const [deleteSchool, setDeleteSchool] = useState<{ id: string; name: string; isActive: boolean } | null>(null);
+  const [statusTargetSchool, setStatusTargetSchool] = useState<{ id: string; name: string; isActive: boolean } | null>(null);
 
   const isCreateModalOpen = searchParams.get('create') === '1';
 
@@ -186,16 +186,19 @@ export function TenantsPage() {
     },
   });
 
-  const deleteSchoolMutation = useMutation({
-    mutationFn: (tenantId: string) => deleteTenantApi(auth.accessToken!, tenantId),
-    onSuccess: async () => {
+  const updateSchoolStatusMutation = useMutation({
+    mutationFn: (input: { tenantId: string; isActive: boolean }) =>
+      updateTenantStatusApi(auth.accessToken!, input.tenantId, { isActive: input.isActive }),
+    onSuccess: async (_result, input) => {
       await queryClient.invalidateQueries({ queryKey: ['super-admin-tenants'] });
       showToast({
         type: 'success',
-        title: 'School deactivated',
-        message: 'The school is now inactive and pending invites were revoked.',
+        title: input.isActive ? 'School enabled' : 'School disabled',
+        message: input.isActive
+          ? 'The school is now active and can sign in again.'
+          : 'The school is now deactivated, active sessions were revoked, and pending invites were canceled.',
       });
-      setDeleteSchool(null);
+      setStatusTargetSchool(null);
     },
   });
 
@@ -245,8 +248,8 @@ export function TenantsPage() {
   }
 
   function closeDeleteModal() {
-    setDeleteSchool(null);
-    deleteSchoolMutation.reset();
+    setStatusTargetSchool(null);
+    updateSchoolStatusMutation.reset();
   }
 
   function openCreateModal() {
@@ -265,7 +268,7 @@ export function TenantsPage() {
   const inviteError = inviteAdminMutation.error as ApiClientError | null;
   const detailError = schoolDetailQuery.error as ApiClientError | null;
   const updateError = updateSchoolMutation.error as ApiClientError | null;
-  const deleteError = deleteSchoolMutation.error as ApiClientError | null;
+  const updateStatusError = updateSchoolStatusMutation.error as ApiClientError | null;
 
   return (
     <SectionCard
@@ -404,16 +407,19 @@ export function TenantsPage() {
                       <button
                         type="button"
                         onClick={() =>
-                          setDeleteSchool({
+                          setStatusTargetSchool({
                             id: tenant.id,
                             name: tenant.school?.displayName ?? tenant.name,
                             isActive: tenant.isActive,
                           })
                         }
-                        disabled={!tenant.isActive}
-                        className="rounded-lg border border-danger-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-danger-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        className={
+                          tenant.isActive
+                            ? 'rounded-lg border border-danger-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-danger-500'
+                            : 'rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700'
+                        }
                       >
-                        Delete
+                        {tenant.isActive ? 'Deactivate' : 'Reactivate'}
                       </button>
                     </div>
                   </td>
@@ -628,16 +634,32 @@ export function TenantsPage() {
       </Modal>
 
       <Modal
-        open={Boolean(deleteSchool)}
+        open={Boolean(statusTargetSchool)}
         onClose={closeDeleteModal}
-        title="Deactivate School"
-        description="This is a soft delete. The school becomes inactive, active refresh sessions are revoked, and pending invites are canceled."
+        title={statusTargetSchool?.isActive ? 'Deactivate School' : 'Reactivate School'}
+        description={
+          statusTargetSchool?.isActive
+            ? 'Deactivating a school signs out active sessions and revokes pending invites. The school can be reactivated later.'
+            : 'Reactivating a school allows users in this school to sign in again.'
+        }
       >
         <div className="grid gap-3">
-          <div className="rounded-lg border border-danger-100 bg-danger-50 px-3 py-3 text-sm text-danger-700">
-            You are about to deactivate <strong>{deleteSchool?.name}</strong>.
+          <div
+            className={
+              statusTargetSchool?.isActive
+                ? 'rounded-lg border border-danger-100 bg-danger-50 px-3 py-3 text-sm text-danger-700'
+                : 'rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-3 text-sm text-emerald-700'
+            }
+          >
+            {statusTargetSchool?.isActive ? 'You are about to deactivate ' : 'You are about to reactivate '}
+            <strong>{statusTargetSchool?.name}</strong>.
           </div>
-          {deleteError ? <StateView title="Could not deactivate school" message={deleteError.message} /> : null}
+          {updateStatusError ? (
+            <StateView
+              title={statusTargetSchool?.isActive ? 'Could not deactivate school' : 'Could not reactivate school'}
+              message={updateStatusError.message}
+            />
+          ) : null}
           <div className="flex justify-end gap-2">
             <button
               type="button"
@@ -648,17 +670,30 @@ export function TenantsPage() {
             </button>
             <button
               type="button"
-              disabled={!deleteSchool?.id || deleteSchoolMutation.isPending}
+              disabled={!statusTargetSchool?.id || updateSchoolStatusMutation.isPending}
               onClick={() => {
-                if (!deleteSchool?.id) {
+                if (!statusTargetSchool?.id) {
                   return;
                 }
 
-                deleteSchoolMutation.mutate(deleteSchool.id);
+                updateSchoolStatusMutation.mutate({
+                  tenantId: statusTargetSchool.id,
+                  isActive: !statusTargetSchool.isActive,
+                });
               }}
-              className="rounded-lg border border-danger-200 bg-danger-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className={
+                statusTargetSchool?.isActive
+                  ? 'rounded-lg border border-danger-200 bg-danger-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60'
+                  : 'rounded-lg border border-emerald-200 bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60'
+              }
             >
-              {deleteSchoolMutation.isPending ? 'Deactivating...' : 'Deactivate school'}
+              {updateSchoolStatusMutation.isPending
+                ? statusTargetSchool?.isActive
+                  ? 'Deactivating...'
+                  : 'Reactivating...'
+                : statusTargetSchool?.isActive
+                  ? 'Deactivate school'
+                  : 'Reactivate school'}
             </button>
           </div>
         </div>
