@@ -17,6 +17,15 @@ export const loginFormSchema = z.discriminatedUnion('loginAs', [
   studentLoginFormSchema,
 ]);
 
+export const registerFormSchema = z.object({
+  firstName: z.string().trim().min(2, 'First name is too short').max(50),
+  lastName: z.string().trim().min(2, 'Last name is too short').max(50),
+  email: z.string().trim().email('Enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export type RegisterInput = z.infer<typeof registerFormSchema>;
+
 export type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 export interface MeResponse {

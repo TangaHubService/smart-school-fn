@@ -1,8 +1,15 @@
 import { apiRequest } from '../../api/client';
-import { LoginFormValues, LoginResponse, MeResponse } from './auth.schema';
+import { LoginFormValues, LoginResponse, MeResponse, RegisterInput } from './auth.schema';
 
 export async function loginApi(payload: LoginFormValues): Promise<LoginResponse> {
   return apiRequest<LoginResponse>('/auth/login', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export async function registerApi(payload: RegisterInput): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>('/auth/register', {
     method: 'POST',
     body: payload,
   });

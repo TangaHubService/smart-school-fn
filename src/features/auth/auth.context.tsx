@@ -9,13 +9,13 @@ import {
 } from 'react';
 
 import { loginApi, logoutApi, meApi } from './auth.api';
-import { LoginFormValues, MeResponse } from './auth.schema';
+import { LoginFormValues, LoginResponse, MeResponse } from './auth.schema';
 import {
   clearSessionTokens,
   getSessionRefreshToken,
   getSessionTokens,
   refreshSessionTokens,
-  setSessionTokens,
+  setSessionTokens as setTokens,
   subscribeToSession,
 } from './auth.session';
 
@@ -25,7 +25,8 @@ interface AuthContextValue {
   me: MeResponse | null;
   isAuthenticated: boolean;
   isLoadingSession: boolean;
-  login: (payload: LoginFormValues) => Promise<void>;
+  login: (payload: LoginFormValues) => Promise<LoginResponse>;
+  setSessionTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
   logout: () => Promise<void>;
 }
 
@@ -81,13 +82,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
     queryClient.removeQueries({ queryKey: ['me'] });
   }
 
-  async function login(payload: LoginFormValues): Promise<void> {
+  async function login(payload: LoginFormValues): Promise<LoginResponse> {
     const result = await loginApi(payload);
     queryClient.removeQueries({ queryKey: ['me'] });
-    setSessionTokens({
+    setTokens({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
+    return result;
+  }
+
+  function handleSetSessionTokens(tokens: { accessToken: string; refreshToken: string }) {
+    queryClient.removeQueries({ queryKey: ['me'] });
+    setTokens(tokens);
   }
 
   async function logout(): Promise<void> {
@@ -113,6 +120,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isAuthenticated: Boolean(accessToken && meQuery.data),
       isLoadingSession: (Boolean(accessToken) && meQuery.isLoading) || isBootstrappingSession,
       login,
+      setSessionTokens: handleSetSessionTokens,
       logout,
     }),
     [accessToken, refreshToken, meQuery.data, meQuery.isLoading, isBootstrappingSession],

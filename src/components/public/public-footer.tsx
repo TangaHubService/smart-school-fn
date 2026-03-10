@@ -38,6 +38,11 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
+                <Link to="/academy" className="transition-colors hover:text-brand-300">
+                  Professional Academy
+                </Link>
+              </li>
+              <li>
                 <Link to="/tuition" className="transition-colors hover:text-brand-300">
                   Pricing & Tuition
                 </Link>

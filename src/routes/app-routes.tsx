@@ -46,6 +46,7 @@ import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
 import { StudentConductProfilePage } from '../pages/student-conduct-profile-page';
 import { PublicHomePage } from '../pages/public-home-page';
+import { PublicAcademyPage } from '../pages/public-academy-page';
 import { PublicAboutPage } from '../pages/public-about-page';
 import { PublicContactPage } from '../pages/public-contact-page';
 import { PublicCoursesPage } from '../pages/public-courses-page';
@@ -60,6 +61,7 @@ export function AppRoutes() {
         <Route path="/" element={<PublicHomePage />} />
         <Route path="/platform" element={<Navigate to="/courses" replace />} />
         <Route path="/about" element={<PublicAboutPage />} />
+        <Route path="/academy" element={<PublicAcademyPage />} />
         <Route path="/courses" element={<PublicCoursesPage />} />
         <Route path="/courses/all" element={<PublicCoursesPage />} />
         <Route path="/courses/categories" element={<PublicCoursesPage />} />
