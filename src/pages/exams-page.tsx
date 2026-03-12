@@ -14,10 +14,12 @@ import { useAuth } from '../features/auth/auth.context';
 import { hasRole } from '../features/auth/auth-helpers';
 import { listCourseSubjectOptionsApi } from '../features/sprint4/lms.api';
 import {
+  bulkSaveConductGradesApi,
   bulkSaveExamMarksApi,
   createExamApi,
   createGradingSchemeApi,
   getExamDetailApi,
+  listConductGradesForEntryApi,
   listExamsApi,
   listGradingSchemesApi,
   lockResultsApi,
@@ -34,6 +36,7 @@ const examSchema = z.object({
   classRoomId: z.string().min(1, 'Class is required'),
   subjectId: z.string().min(1, 'Subject is required'),
   gradingSchemeId: z.string().optional(),
+  examType: z.enum(['CAT', 'EXAM']).default('EXAM'),
   name: z.string().trim().min(2, 'Exam name is required').max(120),
   description: z.string().trim().max(500).optional(),
   totalMarks: z.coerce.number().int().min(1).max(500),
@@ -48,6 +51,7 @@ const defaultExamForm: ExamFormValues = {
   classRoomId: '',
   subjectId: '',
   gradingSchemeId: '',
+  examType: 'EXAM',
   name: '',
   description: '',
   totalMarks: 100,
@@ -96,6 +100,8 @@ export function ExamsPage() {
 
   const [marksExamId, setMarksExamId] = useState('');
   const [marksDraft, setMarksDraft] = useState<Record<string, string>>({});
+  const [isConductModalOpen, setIsConductModalOpen] = useState(false);
+  const [conductDraft, setConductDraft] = useState<Record<string, { grade: string; remark: string }>>({});
 
   const examForm = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
@@ -138,6 +144,16 @@ export function ExamsPage() {
     queryFn: () => getExamDetailApi(auth.accessToken!, marksExamId),
   });
 
+  const conductQuery = useQuery({
+    queryKey: ['conduct-grades', termFilter, classFilter],
+    enabled: Boolean(termFilter && classFilter && isConductModalOpen),
+    queryFn: () =>
+      listConductGradesForEntryApi(auth.accessToken!, {
+        termId: termFilter,
+        classRoomId: classFilter,
+      }),
+  });
+
   useEffect(() => {
     if (!examDetailQuery.data) {
       return;
@@ -152,6 +168,18 @@ export function ExamsPage() {
       ),
     );
   }, [examDetailQuery.data?.id]);
+
+  useEffect(() => {
+    if (!conductQuery.data?.students) return;
+    setConductDraft(
+      Object.fromEntries(
+        conductQuery.data.students.map((s) => [
+          s.id,
+          { grade: s.grade ?? '', remark: s.remark ?? '' },
+        ]),
+      ),
+    );
+  }, [conductQuery.data?.students]);
 
   const createSchemeMutation = useMutation({
     mutationFn: () =>
@@ -182,6 +210,7 @@ export function ExamsPage() {
         classRoomId: values.classRoomId,
         subjectId: values.subjectId,
         gradingSchemeId: values.gradingSchemeId || undefined,
+        examType: values.examType,
         name: values.name,
         description: values.description || undefined,
         totalMarks: values.totalMarks,
@@ -276,6 +305,39 @@ export function ExamsPage() {
       showToast({
         type: 'error',
         title: 'Could not unlock results',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const saveConductMutation = useMutation({
+    mutationFn: () => {
+      const entries = (conductQuery.data?.students ?? [])
+        .map((s) => ({
+          studentId: s.id,
+          grade: (conductDraft[s.id]?.grade ?? '').trim(),
+          remark: (conductDraft[s.id]?.remark ?? '').trim() || undefined,
+        }))
+        .filter((e) => e.grade.length > 0);
+      if (!entries.length) {
+        throw new Error('Enter at least one conduct grade');
+      }
+      return bulkSaveConductGradesApi(auth.accessToken!, {
+        termId: termFilter,
+        classRoomId: classFilter,
+        entries,
+      });
+    },
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ['conduct-grades', termFilter, classFilter] });
+      void queryClient.invalidateQueries({ queryKey: ['exams'] });
+      setIsConductModalOpen(false);
+      showToast({ type: 'success', title: 'Conduct grades saved', message: `${result.savedCount} students updated.` });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not save conduct grades',
         message: error instanceof Error ? error.message : 'Request failed',
       });
     },
@@ -449,6 +511,15 @@ export function ExamsPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
+                onClick={() => setIsConductModalOpen(true)}
+                disabled={!canManageResults || currentScopeStatus !== 'UNLOCKED'}
+                className={secondaryButtonClassName}
+                title={currentScopeStatus !== 'UNLOCKED' ? 'Unlock results first to edit conduct' : 'Enter conduct grades per term'}
+              >
+                Conduct
+              </button>
+              <button
+                type="button"
                 onClick={() => lockMutation.mutate()}
                 disabled={!canManageResults || lockMutation.isPending}
                 className={secondaryButtonClassName}
@@ -518,7 +589,10 @@ export function ExamsPage() {
                         <td className="border-b border-brand-100 px-3 py-3 align-top">{(pagination?.pageSize ?? 20) * ((pagination?.page ?? 1) - 1) + index + 1}</td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">
                           <p className="font-semibold text-slate-900">{exam.name}</p>
-                          <p className="text-xs text-slate-600">{exam.totalMarks} total · weight {exam.weight}</p>
+                          <p className="text-xs text-slate-600">
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">{exam.examType ?? 'EXAM'}</span>
+                            {' · '}{exam.totalMarks} total · weight {exam.weight}
+                          </p>
                         </td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.term.name}</td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.classRoom.name}</td>
@@ -622,10 +696,19 @@ export function ExamsPage() {
             </label>
           </div>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Exam name</span>
-            <input {...examForm.register('name')} className={inputClassName} placeholder="Mid-term mathematics" />
-          </label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <span>Exam type</span>
+              <select {...examForm.register('examType')} className={inputClassName}>
+                <option value="CAT">CAT (Continuous Assessment)</option>
+                <option value="EXAM">EXAM (End of term)</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <span>Exam name</span>
+              <input {...examForm.register('name')} className={inputClassName} placeholder="Mid-term mathematics" />
+            </label>
+          </div>
 
           <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Description</span>
@@ -758,6 +841,78 @@ export function ExamsPage() {
                           inputMode="numeric"
                           className="h-10 w-28 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                           placeholder="0"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={isConductModalOpen}
+        title="Conduct grades"
+        description="Enter conduct grade per student for the selected term and class. Shown on report cards."
+        onClose={() => setIsConductModalOpen(false)}
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button type="button" onClick={() => setIsConductModalOpen(false)} className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+            <button
+              type="button"
+              onClick={() => saveConductMutation.mutate()}
+              disabled={saveConductMutation.isPending || !conductQuery.data?.students?.length || !(conductQuery.data?.students ?? []).some((s) => (conductDraft[s.id]?.grade ?? '').trim().length > 0)}
+              className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Save conduct
+            </button>
+          </div>
+        }
+      >
+        {!termFilter || !classFilter ? (
+          <p className="text-sm text-slate-600">Select a term and class above to enter conduct grades.</p>
+        ) : conductQuery.isPending ? (
+          <div className="h-64 animate-pulse rounded-xl bg-brand-50" />
+        ) : conductQuery.isError || !conductQuery.data ? (
+          <StateView title="Could not load students" message="Retry to load the conduct grid." action={<button type="button" onClick={() => void conductQuery.refetch()} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white">Retry</button>} />
+        ) : (
+          <div className="grid gap-4">
+            <p className="text-sm text-slate-600">
+              Term: {terms.find((t) => t.id === termFilter)?.name ?? termFilter} · Class: {classRooms.find((c) => c.id === classFilter)?.name ?? classFilter}
+            </p>
+            <div className="overflow-x-auto rounded-xl bg-white/92">
+              <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
+                <thead>
+                  <tr className="bg-brand-50/80 text-xs uppercase tracking-[0.14em] text-slate-500">
+                    <th className="border-b border-brand-100 px-3 py-3">#</th>
+                    <th className="border-b border-brand-100 px-3 py-3">Student</th>
+                    <th className="border-b border-brand-100 px-3 py-3">Code</th>
+                    <th className="border-b border-brand-100 px-3 py-3">Grade</th>
+                    <th className="border-b border-brand-100 px-3 py-3">Remark</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {conductQuery.data.students.map((student, index) => (
+                    <tr key={student.id}>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top">{index + 1}</td>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top font-medium text-slate-900">{student.firstName} {student.lastName}</td>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top">{student.studentCode}</td>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top">
+                        <input
+                          value={conductDraft[student.id]?.grade ?? ''}
+                          onChange={(e) => setConductDraft((prev) => ({ ...prev, [student.id]: { ...(prev[student.id] ?? { grade: '', remark: '' }), grade: e.target.value } }))}
+                          className="h-10 w-24 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+                          placeholder="A"
+                        />
+                      </td>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top">
+                        <input
+                          value={conductDraft[student.id]?.remark ?? ''}
+                          onChange={(e) => setConductDraft((prev) => ({ ...prev, [student.id]: { ...(prev[student.id] ?? { grade: '', remark: '' }), remark: e.target.value } }))}
+                          className="h-10 min-w-[140px] rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+                          placeholder="Optional"
                         />
                       </td>
                     </tr>

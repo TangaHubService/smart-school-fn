@@ -25,6 +25,7 @@ export interface ExamSummary {
   id: string;
   name: string;
   description: string | null;
+  examType?: 'CAT' | 'EXAM';
   totalMarks: number;
   weight: number;
   examDate: string | null;
@@ -224,6 +225,7 @@ export function createExamApi(
     classRoomId: string;
     subjectId: string;
     gradingSchemeId?: string;
+    examType?: 'CAT' | 'EXAM';
     name: string;
     description?: string;
     totalMarks: number;
@@ -288,6 +290,43 @@ export function bulkSaveExamMarksApi(
       missingStudentIds: string[];
     };
   }>(`/exams/${examId}/marks/bulk`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function listConductGradesForEntryApi(
+  accessToken: string,
+  params: { termId: string; classRoomId: string },
+) {
+  const query = new URLSearchParams();
+  query.set('termId', params.termId);
+  query.set('classRoomId', params.classRoomId);
+  return apiRequest<{
+    students: Array<{
+      id: string;
+      studentCode: string;
+      firstName: string;
+      lastName: string;
+      grade: string;
+      remark: string;
+    }>;
+  }>(`/results/conduct?${query.toString()}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function bulkSaveConductGradesApi(
+  accessToken: string,
+  payload: {
+    termId: string;
+    classRoomId: string;
+    entries: Array<{ studentId: string; grade: string; remark?: string }>;
+  },
+) {
+  return apiRequest<{ savedCount: number }>('/results/conduct/bulk', {
     method: 'POST',
     accessToken,
     body: payload,
