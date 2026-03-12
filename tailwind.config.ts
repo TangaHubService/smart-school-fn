@@ -5,6 +5,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        'dashboard-blue': '#173C7F',
+        'content-bg': '#F0F2F5',
         brand: {
           50: '#EFF4FB',
           100: '#DCE7F7',

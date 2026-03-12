@@ -4,17 +4,17 @@ import {
   Bell,
   Building2,
   ChevronLeft,
+  Home,
   LogOut,
+  Mail,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  Search,
   User,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
-import nbgLogo from '../asset/nbglogo.png';
 import { useAuth } from '../features/auth/auth.context';
 import {
   hasPermission,
@@ -27,10 +27,17 @@ export function AppShell() {
   const auth = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isDesktopSidebarVisible, setIsDesktopSidebarVisible] = useState(true);
-  const [brandLogoError, setBrandLogoError] = useState(false);
 
   const setupComplete = isSchoolSetupComplete(auth.me);
   const schoolAdmin = hasPermission(auth.me, 'school.setup.manage') && !isSuperAdmin(auth.me);
+  const superAdmin = isSuperAdmin(auth.me);
+
+  const headerTitle = superAdmin
+    ? 'Super Admin Dashboard'
+    : schoolAdmin
+      ? 'School Administrator Dashboard'
+      : 'Dashboard';
+
   const userDisplayName =
     `${auth.me?.firstName ?? ''} ${auth.me?.lastName ?? ''}`.trim() ||
     auth.me?.email ||
@@ -42,7 +49,7 @@ export function AppShell() {
   }
 
   return (
-    <main className="h-screen overflow-hidden bg-[#F7F9FC] text-slate-900">
+    <main className="h-screen overflow-hidden bg-content-bg text-slate-900">
       {isMobileNavOpen ? (
         <button
           type="button"
@@ -52,10 +59,10 @@ export function AppShell() {
         />
       ) : null}
 
-      <div className="relative h-full p-2 md:flex md:gap-2 md:p-3">
+      <div className="relative h-full md:flex md:gap-0">
         <aside
           className={clsx(
-            'fixed inset-y-0 left-0 z-40 flex w-[300px] flex-col overflow-hidden rounded-r-xl border border-brand-600 bg-brand-500 text-white md:sticky md:top-3 md:h-[calc(100vh-1.5rem)] md:w-[300px] md:shrink-0 md:rounded-xl',
+            'fixed inset-y-0 left-0 z-40 flex w-[240px] flex-col overflow-hidden bg-[#173C7F] text-white md:sticky md:top-0 md:h-screen md:w-[240px] md:shrink-0 md:rounded-none',
             isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
             isDesktopSidebarVisible
               ? 'md:translate-x-0'
@@ -63,8 +70,8 @@ export function AppShell() {
           )}
           aria-label="Sidebar"
         >
-          <div className="border-b border-white/10 p-5">
-            <div className="mb-4 flex items-center justify-between md:hidden">
+          <div className={'border-b border-white/10 px-6 py-5'}>
+            <div className="flex items-center justify-between md:hidden">
               <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
                 Navigation
               </span>
@@ -77,62 +84,50 @@ export function AppShell() {
                 Close
               </button>
             </div>
-
-            <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 overflow-hidden rounded-full border border-white/25 bg-white/10">
-                {!brandLogoError ? (
-                  <img
-                    src={nbgLogo}
-                    alt="Smart School Rwanda"
-                    className="h-full w-full object-cover"
-                    onError={() => setBrandLogoError(true)}
-                  />
-                ) : (
-                  <div className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-300 to-brand-500 text-xs font-bold text-white">
-                    SS
-                  </div>
-                )}
+            <div className="mt-2 flex items-center gap-2 md:mt-0">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20">
+                <span className="text-base">🎓</span>
               </div>
               <div>
-                <p className="text-xl font-bold tracking-tight text-white">
-                  Smart<span className="text-accent-500">School</span>
+                <p className="text-base font-bold tracking-tight text-white">
+                  Smart<span className="text-amber-400">School</span>
                 </p>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
-                  Rwanda Admin OS
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/80">
+                  RWANDA ADMIN OS
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="border-b border-white/10 px-4 py-3">
+          <div className="border-b border-white/10 px-6 py-4">
             <a
-              href="#"
-              className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/20"
+              href="/"
+              className="flex w-full items-center gap-2 rounded-lg bg-white/15 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/25"
             >
-              <ArrowLeft className="h-4 w-4 text-accent-500" aria-hidden="true" />
+              <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               Back to Website
             </a>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
             <RoleNav onNavigate={closeMobileNav} />
           </div>
 
-          <div className="mt-auto shrink-0 border-t border-white/10 px-4 pb-4 pt-3 backdrop-blur">
+          <div className="mt-auto shrink-0 px-6 pb-6 pt-6">
             <button
               type="button"
               onClick={() => void auth.logout()}
-              className="inline-flex w-full items-center gap-2 rounded-lg border border-white/20 bg-white px-4 py-3 text-left text-sm font-semibold text-danger-500 transition hover:bg-white/95"
+              className="inline-flex w-full items-center gap-2 rounded-lg bg-white px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-white/95"
             >
-              <LogOut className="h-4 w-4" aria-hidden="true" />
+              <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
               Logout
             </button>
           </div>
         </aside>
 
-        <section className="flex h-[calc(100vh-1rem)] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white md:h-[calc(100vh-1.5rem)]">
-          <header className="sticky top-0 z-20 shrink-0 border-b border-brand-600 bg-brand-500 p-3">
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-brand-600/70 px-3 py-2.5">
+        <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-white md:h-screen">
+          <header className="sticky top-0 z-20 shrink-0 bg-[#173C7F] px-5 py-3">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsMobileNavOpen(true)}
@@ -156,28 +151,33 @@ export function AppShell() {
                 )}
               </button>
 
-              <div className="relative min-w-[220px] flex-1">
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                  aria-hidden="true"
-                />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="h-10 w-full rounded-lg border border-brand-200 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
-                />
-              </div>
+              <Home className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+              <span className="text-sm font-bold text-white">{headerTitle}</span>
 
               <div className="ml-auto flex items-center gap-2">
-                <button className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white">
-                  <Building2 className="h-4 w-4" aria-hidden="true" />
-                  {auth.me?.tenant.name ?? 'Tenant'}
-                </button>
+                <span className="hidden text-sm font-medium text-white sm:inline">
+                  Hello, {superAdmin ? 'Admin' : (auth.me?.firstName ?? 'Admin')}
+                </span>
+                {!superAdmin ? (
+                  <button className="inline-flex items-center gap-2 rounded border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-medium text-white">
+                    <Building2 className="h-4 w-4" aria-hidden="true" />
+                    {auth.me?.tenant.name ?? 'Tenant'}
+                  </button>
+                ) : null}
                 <button
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-white"
+                  className="relative inline-flex h-9 w-9 items-center justify-center text-white"
                   aria-label="Notifications"
                 >
-                  <Bell className="h-4 w-4" aria-hidden="true" />
+                  <Bell className="h-5 w-5" aria-hidden="true" />
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-[10px] font-bold text-white">
+                    3
+                  </span>
+                </button>
+                <button
+                  className="inline-flex h-9 w-9 items-center justify-center text-white"
+                  aria-label="Messages"
+                >
+                  <Mail className="h-5 w-5" aria-hidden="true" />
                 </button>
                 <div className="hidden min-w-[220px] items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-left sm:flex">
                   <div className="grid h-8 w-8 place-items-center rounded-full bg-white text-brand-600">
@@ -199,7 +199,7 @@ export function AppShell() {
             </div>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-auto bg-[#F7F9FC] px-4 pb-6 pt-4 md:px-5">
+          <div className="min-h-0 flex-1 overflow-auto bg-content-bg px-5 py-5 md:px-6 md:py-6">
             {schoolAdmin && !setupComplete ? (
               <div
                 className="mb-4 rounded-lg border border-accent-100 bg-white px-4 py-3 text-sm text-slate-900"

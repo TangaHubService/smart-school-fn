@@ -22,7 +22,7 @@ export function getDefaultLandingPath(me: MeResponse | null | undefined): string
   }
 
   if (isSuperAdmin(me)) {
-    return '/super-admin/schools';
+    return '/admin';
   }
 
   if (hasPermission(me, 'gov.dashboard.read')) {
@@ -30,19 +30,19 @@ export function getDefaultLandingPath(me: MeResponse | null | undefined): string
   }
 
   if (hasPermission(me, 'school.setup.manage')) {
-    return isSchoolSetupComplete(me) ? '/admin/academic-years' : '/admin/setup';
+    return isSchoolSetupComplete(me) ? '/admin' : '/admin/setup';
   }
 
   if (hasPermission(me, 'students.my_courses.read')) {
-    return '/student/courses';
+    return '/student/academic-year';
   }
 
   if (hasRole(me, 'TEACHER') && hasPermission(me, 'courses.read')) {
-    return '/admin/courses';
+    return '/admin';
   }
 
   if (hasPermission(me, 'attendance.read')) {
-    return '/admin/attendance';
+    return '/admin';
   }
 
   if (hasPermission(me, 'parents.my_children.read')) {

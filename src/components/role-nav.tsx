@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import {
   BadgeCheck,
+  Bell,
   ClipboardCheck,
   BookOpen,
   Building2,
@@ -8,9 +9,11 @@ import {
   ClipboardList,
   FileBarChart2,
   GraduationCap,
+  HelpCircle,
   Home,
   LayoutTemplate,
   School,
+  Settings,
   Shapes,
   ShieldCheck,
   Users,
@@ -41,14 +44,30 @@ interface NavItem {
   setupState: SetupState;
 }
 
+const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
+  dashboard: 'Dashboard',
+  tenants: 'Schools',
+  courses: 'Courses & Subjects',
+  exams: 'Exams & Assessments',
+};
+
 export const NAV_ITEMS: NavItem[] = [
   {
     key: 'dashboard',
     label: 'Dashboard',
     to: '/admin',
     icon: Home,
-    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissions: [],
+    setupState: 'ANY',
+  },
+  {
+    key: 'users',
+    label: 'Users',
+    to: '/users',
+    icon: Users,
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
+    requiredPermissions: ['users.read'],
     setupState: 'ANY',
   },
   {
@@ -68,6 +87,15 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['school.setup.manage'],
     setupState: 'INCOMPLETE',
+  },
+  {
+    key: 'system-settings',
+    label: 'System Settings',
+    to: '/super-admin/settings',
+    icon: Settings,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['tenants.read'],
+    setupState: 'ANY',
   },
   {
     key: 'years',
@@ -128,7 +156,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Courses',
     to: '/admin/courses',
     icon: BookOpen,
-    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissions: ['courses.read'],
     setupState: 'COMPLETE',
   },
@@ -155,7 +183,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Exams',
     to: '/admin/exams',
     icon: FileBarChart2,
-    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissions: ['exams.read'],
     setupState: 'COMPLETE',
   },
@@ -175,6 +203,51 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ShieldCheck,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['staff.invite'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'access-control',
+    label: 'Access Control',
+    to: '/super-admin/access-control',
+    icon: ShieldCheck,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['tenants.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'reports-analytics',
+    label: 'Reports & Analytics',
+    to: '/super-admin/reports',
+    icon: FileBarChart2,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['tenants.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'notifications',
+    label: 'Notifications',
+    to: '/super-admin/notifications',
+    icon: Bell,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['tenants.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'support-center',
+    label: 'Support Center',
+    to: '/super-admin/support',
+    icon: HelpCircle,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['tenants.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'audit-logs',
+    label: 'Audit Logs',
+    to: '/super-admin/audit-logs',
+    icon: ClipboardList,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['tenants.read'],
     setupState: 'ANY',
   },
   {
@@ -232,6 +305,15 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'student-dashboard',
+    label: 'Dashboard',
+    to: '/student/dashboard',
+    icon: Home,
+    roles: ['STUDENT'],
+    requiredPermissions: ['students.my_courses.read'],
+    setupState: 'ANY',
+  },
+  {
     key: 'student-courses',
     label: 'Courses',
     to: '/student/courses',
@@ -268,6 +350,40 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
   const auth = useAuth();
   const setupComplete = isSchoolSetupComplete(auth.me);
   const superAdmin = hasRole(auth.me, 'SUPER_ADMIN');
+  const schoolAdmin = hasPermission(auth.me, 'school.setup.manage') && !superAdmin;
+
+  const getDashboardLabel = () => {
+    if (superAdmin) return 'Super Admin Dashboard';
+    if (schoolAdmin) return 'School Administrator Dashboard';
+    return 'Dashboard';
+  };
+
+  const SUPER_ADMIN_KEYS = new Set([
+    'dashboard',
+    'tenants',
+    'setup',
+    'years',
+    'classes',
+    'students',
+    'conduct',
+    'attendance',
+    'subjects',
+    'courses',
+    'assessments',
+    'assignments',
+    'exams',
+    'parents',
+    'staff',
+    'my-children',
+    'parent-report-cards',
+    'gov-dashboard',
+    'gov-schools',
+    'gov-incidents',
+    'gov-auditors',
+    'student-courses',
+    'student-report-cards',
+    'student-assessments',
+  ]);
 
   const items = NAV_ITEMS.filter((item) => {
     if (!assessmentsFeatureEnabled && ['assessments', 'student-assessments'].includes(item.key)) {
@@ -283,7 +399,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     }
 
     if (superAdmin) {
-      return true;
+      return SUPER_ADMIN_KEYS.has(item.key);
     }
 
     const hasAllowedRole = item.roles.some((role) => hasRole(auth.me, role));
@@ -310,26 +426,39 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
   });
 
   return (
-    <nav aria-label="Primary" className="grid gap-1.5">
-      {items.map((item) => (
-        <NavLink
-          key={item.key}
-          to={item.to}
-          end={item.key === 'dashboard'}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            clsx(
-              'group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-[15px] font-semibold transition',
-              isActive
-                ? 'bg-white text-brand-600 shadow-soft'
-                : 'text-white/80 hover:bg-white/10 hover:text-white',
-            )
-          }
-        >
-          <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>{item.label}</span>
-        </NavLink>
-      ))}
+    <nav aria-label="Primary" className="grid gap-0.5">
+      {items.map((item) => {
+        const label =
+          item.key === 'dashboard' || item.key === 'student-dashboard'
+            ? item.key === 'student-dashboard'
+              ? 'Dashboard'
+              : superAdmin
+                ? 'Dashboard'
+                : getDashboardLabel()
+            : superAdmin && SUPER_ADMIN_NAV_OVERRIDES[item.key]
+              ? SUPER_ADMIN_NAV_OVERRIDES[item.key]
+              : item.label;
+        return (
+          <div key={item.key}>
+            <NavLink
+              to={item.to}
+              end={item.key === 'dashboard' || item.key === 'student-dashboard'}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                clsx(
+                  'group flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition',
+                  isActive
+                    ? 'bg-white text-[#173C7F]'
+                    : 'text-white/90 hover:bg-white/10 hover:text-white',
+                )
+              }
+            >
+              <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{label}</span>
+            </NavLink>
+          </div>
+        );
+      })}
     </nav>
   );
 }

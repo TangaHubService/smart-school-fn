@@ -19,6 +19,8 @@ import { Link } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
 import { StateView } from '../components/state-view';
+import { SchoolAdminDashboardPage } from './school-admin-dashboard-page';
+import { SuperAdminDashboardPage } from './super-admin-dashboard-page';
 import { useAuth } from '../features/auth/auth.context';
 import {
   hasPermission,
@@ -138,6 +140,17 @@ export function DashboardPage() {
   const [summaryDate, setSummaryDate] = useState(getTodayKigaliDate());
 
   const superAdmin = hasRole(auth.me, 'SUPER_ADMIN');
+  const canSchoolDashboard =
+    hasPermission(auth.me, 'school.setup.manage') ||
+    hasPermission(auth.me, 'students.read') ||
+    hasPermission(auth.me, 'attendance.read');
+
+  if (superAdmin) {
+    return <SuperAdminDashboardPage />;
+  }
+  if (canSchoolDashboard && !superAdmin) {
+    return <SchoolAdminDashboardPage />;
+  }
   const canSetup = hasPermission(auth.me, 'school.setup.manage');
   const canAttendance = hasPermission(auth.me, 'attendance.read');
   const canCourses = hasPermission(auth.me, 'courses.read');

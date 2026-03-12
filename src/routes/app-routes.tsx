@@ -41,10 +41,18 @@ import { StudentAssessmentAttemptPage } from '../pages/student-assessment-attemp
 import { StudentAssessmentsPage } from '../pages/student-assessments-page';
 import { TenantsPage } from '../pages/tenants-page';
 import { UnauthorizedPage } from '../pages/unauthorized-page';
+import { AccessControlPage } from '../pages/access-control-page';
+import { AuditLogsPage } from '../pages/audit-logs-page';
+import { NotificationsPage } from '../pages/notifications-page';
+import { ReportsAnalyticsPage } from '../pages/reports-analytics-page';
+import { SupportCenterPage } from '../pages/support-center-page';
+import { SystemSettingsPage } from '../pages/system-settings-page';
 import { UsersPage } from '../pages/users-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
+import { StudentAcademicYearSelectPage } from '../pages/student-academic-year-select-page';
 import { StudentConductProfilePage } from '../pages/student-conduct-profile-page';
+import { StudentDashboardPage } from '../pages/student-dashboard-page';
 import { PublicHomePage } from '../pages/public-home-page';
 import { PublicAcademyPage } from '../pages/public-academy-page';
 import { PublicAboutPage } from '../pages/public-about-page';
@@ -81,10 +89,20 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/admin" element={<DashboardPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route element={<RequirePermission permission="students.my_courses.read" />}>
+            <Route path="/student/academic-year" element={<StudentAcademicYearSelectPage />} />
+            <Route path="/student/dashboard" element={<StudentDashboardPage />} />
+          </Route>
 
           <Route element={<RequirePermission permission="tenants.read" />}>
             <Route path="/super-admin/schools" element={<TenantsPage />} />
             <Route path="/super-admin/tenants" element={<TenantsPage />} />
+            <Route path="/super-admin/reports" element={<ReportsAnalyticsPage />} />
+            <Route path="/super-admin/settings" element={<SystemSettingsPage />} />
+            <Route path="/super-admin/notifications" element={<NotificationsPage />} />
+            <Route path="/super-admin/support" element={<SupportCenterPage />} />
+            <Route path="/super-admin/audit-logs" element={<AuditLogsPage />} />
+            <Route path="/super-admin/access-control" element={<AccessControlPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="tenants.create" />}>
