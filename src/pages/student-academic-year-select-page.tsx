@@ -10,6 +10,13 @@ import { useQuery } from '@tanstack/react-query';
 
 const ACADEMIC_YEAR_STORAGE_KEY = 'smart-school-selected-academic-year-id';
 
+interface AcademicYearItem {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
 export function getStoredAcademicYearId(): string | null {
   return sessionStorage.getItem(ACADEMIC_YEAR_STORAGE_KEY);
 }
@@ -26,16 +33,18 @@ export function StudentAcademicYearSelectPage() {
   const auth = useAuth();
   const navigate = useNavigate();
 
-  const { data: years, isPending, isError, refetch } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['academic-years', 'student'],
     enabled: Boolean(auth.accessToken && hasRole(auth.me, 'STUDENT')),
     queryFn: () => listAcademicYearsApi(auth.accessToken!),
   });
 
+  const years: AcademicYearItem[] = Array.isArray(data) ? (data as AcademicYearItem[]) : [];
+
   useEffect(() => {
     const stored = getStoredAcademicYearId();
-    if (stored && years?.length) {
-      const exists = years.some((y: { id: string }) => y.id === stored);
+    if (stored && years.length) {
+      const exists = years.some((y) => y.id === stored);
       if (exists) {
         navigate('/student/dashboard', { replace: true });
       }
@@ -69,7 +78,7 @@ export function StudentAcademicYearSelectPage() {
     );
   }
 
-  if (isPending || !years) {
+  if (isPending || data === undefined) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-200 border-t-brand-500" />
@@ -107,7 +116,7 @@ export function StudentAcademicYearSelectPage() {
         </div>
 
         <div className="space-y-3">
-          {years.map((year: { id: string; name: string; startDate: string; endDate: string }) => (
+          {years.map((year) => (
             <button
               key={year.id}
               type="button"
