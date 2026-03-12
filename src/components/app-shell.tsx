@@ -18,6 +18,7 @@ import { Outlet } from 'react-router-dom';
 import { useAuth } from '../features/auth/auth.context';
 import {
   hasPermission,
+  hasRole,
   isSchoolSetupComplete,
   isSuperAdmin,
 } from '../features/auth/auth-helpers';
@@ -32,11 +33,20 @@ export function AppShell() {
   const schoolAdmin = hasPermission(auth.me, 'school.setup.manage') && !isSuperAdmin(auth.me);
   const superAdmin = isSuperAdmin(auth.me);
 
+  const isStudent = hasRole(auth.me, 'STUDENT');
+  const isTeacher =
+    hasRole(auth.me, 'TEACHER') &&
+    !hasRole(auth.me, 'SCHOOL_ADMIN') &&
+    !hasRole(auth.me, 'SUPER_ADMIN');
   const headerTitle = superAdmin
     ? 'Super Admin Dashboard'
     : schoolAdmin
       ? 'School Administrator Dashboard'
-      : 'Dashboard';
+      : isStudent
+        ? 'Student Portal'
+        : isTeacher
+          ? 'Teacher Portal'
+          : 'Dashboard';
 
   const userDisplayName =
     `${auth.me?.firstName ?? ''} ${auth.me?.lastName ?? ''}`.trim() ||
@@ -93,7 +103,7 @@ export function AppShell() {
                   Smart<span className="text-amber-400">School</span>
                 </p>
                 <p className="text-[10px] font-medium uppercase tracking-wider text-white/80">
-                  RWANDA ADMIN OS
+                  {isStudent ? 'STUDENT PORTAL' : isTeacher ? 'TEACHER PORTAL' : 'RWANDA ADMIN OS'}
                 </p>
               </div>
             </div>

@@ -95,9 +95,17 @@ export function AttendancePage() {
   });
   const [historyTo, setHistoryTo] = useState(getTodayKigaliDate());
 
+  const isTeacherOnly =
+    auth.me?.roles?.includes('TEACHER') &&
+    !auth.me?.roles?.includes('SCHOOL_ADMIN') &&
+    !auth.me?.roles?.includes('SUPER_ADMIN');
+
   const classesQuery = useQuery({
-    queryKey: ['attendance', 'classes'],
-    queryFn: () => listAttendanceClassesApi(auth.accessToken!),
+    queryKey: ['attendance', 'classes', isTeacherOnly],
+    queryFn: () =>
+      listAttendanceClassesApi(auth.accessToken!, {
+        teacherOnly: isTeacherOnly || undefined,
+      }),
   });
 
   const classAttendanceQuery = useQuery({

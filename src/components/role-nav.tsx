@@ -116,6 +116,15 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
+    key: 'teacher-my-classes',
+    label: 'My Classes',
+    to: '/admin/my-classes',
+    icon: School,
+    roles: ['TEACHER'],
+    requiredPermissions: ['courses.read'],
+    setupState: 'COMPLETE',
+  },
+  {
     key: 'students',
     label: 'Students',
     to: '/admin/students',
@@ -185,6 +194,24 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FileBarChart2,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissions: ['exams.read'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'timetable',
+    label: 'Timetable',
+    to: '/admin/timetable',
+    icon: CalendarDays,
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['timetable.read'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'announcements',
+    label: 'Announcements',
+    to: '/admin/announcements',
+    icon: Bell,
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissions: ['announcements.read'],
     setupState: 'COMPLETE',
   },
   {
@@ -323,6 +350,15 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'student-assignments',
+    label: 'Assignments',
+    to: '/student/assignments',
+    icon: ClipboardCheck,
+    roles: ['STUDENT'],
+    requiredPermissions: ['students.my_courses.read'],
+    setupState: 'ANY',
+  },
+  {
     key: 'student-report-cards',
     label: 'Report Cards',
     to: '/student/report-cards',
@@ -338,6 +374,24 @@ export const NAV_ITEMS: NavItem[] = [
     icon: BadgeCheck,
     roles: ['STUDENT'],
     requiredPermissions: ['assessments.submit'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'student-conduct',
+    label: 'Conduct',
+    to: '/student/conduct',
+    icon: ClipboardList,
+    roles: ['STUDENT'],
+    requiredPermissions: ['conduct.my_read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'student-announcements',
+    label: 'Announcements',
+    to: '/student/announcements',
+    icon: Bell,
+    roles: ['STUDENT'],
+    requiredPermissions: ['announcements.my_read'],
     setupState: 'ANY',
   },
 ];
@@ -364,6 +418,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     'setup',
     'years',
     'classes',
+    'teacher-my-classes',
     'students',
     'conduct',
     'attendance',
@@ -381,8 +436,13 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     'gov-incidents',
     'gov-auditors',
     'student-courses',
+    'student-assignments',
     'student-report-cards',
     'student-assessments',
+    'student-conduct',
+    'student-announcements',
+    'timetable',
+    'announcements',
   ]);
 
   const items = NAV_ITEMS.filter((item) => {
@@ -390,7 +450,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
       return false;
     }
 
-    if (!conductFeatureEnabled && item.key === 'conduct') {
+    if (!conductFeatureEnabled && ['conduct', 'student-conduct'].includes(item.key)) {
       return false;
     }
 

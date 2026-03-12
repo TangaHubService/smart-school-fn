@@ -376,11 +376,18 @@ export function updateAcademicYearApi(
   });
 }
 
-export function listTermsApi(accessToken: string) {
-  return apiRequest('/terms', {
-    method: 'GET',
-    accessToken,
-  });
+export function listTermsApi(
+  accessToken: string,
+  params?: { academicYearId?: string },
+) {
+  const query = new URLSearchParams();
+  if (params?.academicYearId) {
+    query.set('academicYearId', params.academicYearId);
+  }
+  return apiRequest(
+    `/terms${query.toString() ? `?${query.toString()}` : ''}`,
+    { method: 'GET', accessToken },
+  );
 }
 
 export function createTermApi(

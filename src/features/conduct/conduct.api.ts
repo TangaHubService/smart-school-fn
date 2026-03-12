@@ -176,6 +176,7 @@ export function listConductIncidentsApi(
   params?: {
     studentId?: string;
     classRoomId?: string;
+    teacherOnly?: boolean;
     status?: ConductIncidentStatus;
     severity?: ConductSeverity;
     q?: string;
@@ -190,6 +191,9 @@ export function listConductIncidentsApi(
   }
   if (params?.classRoomId) {
     query.set('classRoomId', params.classRoomId);
+  }
+  if (params?.teacherOnly) {
+    query.set('teacherOnly', 'true');
   }
   if (params?.status) {
     query.set('status', params.status);
@@ -293,6 +297,28 @@ export function getStudentConductProfileApi(
 
   return apiRequest<StudentConductProfileResponse>(
     `/conduct/students/${studentId}/profile${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    },
+  );
+}
+
+export function getMyConductProfileApi(
+  accessToken: string,
+  params?: { page?: number; pageSize?: number },
+) {
+  const query = new URLSearchParams();
+
+  if (params?.page) {
+    query.set('page', String(params.page ?? 1));
+  }
+  if (params?.pageSize) {
+    query.set('pageSize', String(params.pageSize ?? 10));
+  }
+
+  return apiRequest<StudentConductProfileResponse>(
+    `/conduct/me${query.toString() ? `?${query.toString()}` : ''}`,
     {
       method: 'GET',
       accessToken,

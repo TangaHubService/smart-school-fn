@@ -21,6 +21,7 @@ import { EmptyState } from '../components/empty-state';
 import { StateView } from '../components/state-view';
 import { SchoolAdminDashboardPage } from './school-admin-dashboard-page';
 import { SuperAdminDashboardPage } from './super-admin-dashboard-page';
+import { TeacherDashboardPage } from './teacher-dashboard-page';
 import { useAuth } from '../features/auth/auth.context';
 import {
   hasPermission,
@@ -145,8 +146,16 @@ export function DashboardPage() {
     hasPermission(auth.me, 'students.read') ||
     hasPermission(auth.me, 'attendance.read');
 
+  const isTeacherOnly =
+    hasRole(auth.me, 'TEACHER') &&
+    !hasRole(auth.me, 'SCHOOL_ADMIN') &&
+    !hasRole(auth.me, 'SUPER_ADMIN');
+
   if (superAdmin) {
     return <SuperAdminDashboardPage />;
+  }
+  if (isTeacherOnly) {
+    return <TeacherDashboardPage />;
   }
   if (canSchoolDashboard && !superAdmin) {
     return <SchoolAdminDashboardPage />;

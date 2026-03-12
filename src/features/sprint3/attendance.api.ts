@@ -119,8 +119,16 @@ export interface SaveAttendanceBulkPayload {
   }>;
 }
 
-export function listAttendanceClassesApi(accessToken: string) {
-  return apiRequest<AttendanceClassOption[]>('/attendance/classes', {
+export function listAttendanceClassesApi(
+  accessToken: string,
+  params?: { teacherOnly?: boolean },
+) {
+  const query = new URLSearchParams();
+  if (params?.teacherOnly) {
+    query.set('teacherOnly', 'true');
+  }
+  const url = `/attendance/classes${query.toString() ? `?${query.toString()}` : ''}`;
+  return apiRequest<AttendanceClassOption[]>(url, {
     method: 'GET',
     accessToken,
   });

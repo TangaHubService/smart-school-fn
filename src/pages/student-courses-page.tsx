@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -169,6 +170,9 @@ export function StudentCoursesPage() {
   const auth = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlCourseId = searchParams.get('courseId');
+  const urlAssignmentId = searchParams.get('assignmentId');
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -185,11 +189,11 @@ export function StudentCoursesPage() {
   });
 
   const myCoursesQuery = useQuery({
-    queryKey: ['lms', 'student-courses', page],
+    queryKey: ['lms', 'student-courses', page, urlCourseId],
     queryFn: () =>
       listMyCoursesApi(auth.accessToken!, {
-        page,
-        pageSize: 10,
+        page: urlCourseId ? 1 : page,
+        pageSize: urlCourseId ? 50 : 10,
       }),
   });
 
@@ -347,6 +351,19 @@ export function StudentCoursesPage() {
       setSelectedAssignmentId('');
     }
   }, [selectedCourse, selectedAssignmentId]);
+
+  useEffect(() => {
+    if (!urlCourseId || !urlAssignmentId || !myCoursesQuery.data?.items) return;
+    const course = myCoursesQuery.data.items.find((c) => c.id === urlCourseId);
+    const assignment = course?.assignments.find((a) => a.id === urlAssignmentId);
+    if (course && assignment) {
+      setSelectedCourseId(course.id);
+      setExpandedSubjectKey(getCourseSubjectKey(course));
+      setSelectedLessonId(assignment.lesson?.id ?? '');
+      setSelectedAssignmentId(assignment.id);
+      setSearchParams({}, { replace: true });
+    }
+  }, [urlCourseId, urlAssignmentId, myCoursesQuery.data?.items, setSearchParams]);
 
   function handleSelectCourse(courseId: string, subjectKey?: string) {
     setSelectedCourseId(courseId);

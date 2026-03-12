@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 
-import { DashboardFilter } from '../components/dashboard/dashboard-filter';
 import { StateView } from '../components/state-view';
 import { getStoredAcademicYearId } from './student-academic-year-select-page';
 import { useAuth } from '../features/auth/auth.context';
@@ -74,7 +73,6 @@ export function StudentDashboardPage() {
             {data.school.city ? `, ${data.school.city}` : ''}
           </span>
         </div>
-        <DashboardFilter variant="school-admin" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

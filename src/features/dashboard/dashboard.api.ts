@@ -116,3 +116,32 @@ export function getStudentDashboardApi(accessToken: string) {
     accessToken,
   });
 }
+
+export interface TeacherDashboardData {
+  school: { displayName: string; city: string | null };
+  metrics: {
+    myCourses: number;
+    myClasses: number;
+    pendingSubmissions: number;
+    upcomingExams: number;
+  };
+  todayAttendance: {
+    markedStudents: number;
+    pendingClasses: number;
+    totalClasses: number;
+  };
+  upcomingExams: Array<{
+    id: string;
+    title: string;
+    date: string;
+    time: string;
+    relativeDate: string;
+  }>;
+}
+
+export function getTeacherDashboardApi(accessToken: string) {
+  return apiRequest<TeacherDashboardData>('/dashboard/teacher', {
+    method: 'GET',
+    accessToken,
+  });
+}

@@ -59,13 +59,19 @@ export function ConductIncidentsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 12;
 
+  const isTeacherOnly =
+    auth.me?.roles?.includes('TEACHER') &&
+    !auth.me?.roles?.includes('SCHOOL_ADMIN') &&
+    !auth.me?.roles?.includes('SUPER_ADMIN');
+
   const incidentsQuery = useQuery({
-    queryKey: ['conduct-incidents', { search, severity, status, page, pageSize }],
+    queryKey: ['conduct-incidents', { search, severity, status, page, pageSize, isTeacherOnly }],
     queryFn: () =>
       listConductIncidentsApi(auth.accessToken!, {
         q: search.trim() || undefined,
         severity: severity || undefined,
         status: status || undefined,
+        teacherOnly: isTeacherOnly || undefined,
         page,
         pageSize,
       }),

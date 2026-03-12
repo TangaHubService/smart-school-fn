@@ -35,11 +35,17 @@ import { ReportCardVerificationPage } from '../pages/report-card-verification-pa
 import { SetupWizardPage } from '../pages/setup-wizard-page';
 import { StaffPage } from '../pages/staff-page';
 import { StudentsPage } from '../pages/students-page';
+import { TeacherMyClassesPage } from '../pages/teacher-my-classes-page';
 import { SubjectsPage } from '../pages/subjects-page';
 import { StudentAssessmentDetailPage } from '../pages/student-assessment-detail-page';
 import { StudentAssessmentAttemptPage } from '../pages/student-assessment-attempt-page';
 import { StudentAssessmentsPage } from '../pages/student-assessments-page';
 import { TenantsPage } from '../pages/tenants-page';
+import { TimetablePage } from '../pages/timetable-page';
+import { AnnouncementsPage } from '../pages/announcements-page';
+import { AnnouncementCreatePage } from '../pages/announcement-create-page';
+import { AnnouncementDetailPage } from '../pages/announcement-detail-page';
+import { StudentAnnouncementsPage } from '../pages/student-announcements-page';
 import { UnauthorizedPage } from '../pages/unauthorized-page';
 import { AccessControlPage } from '../pages/access-control-page';
 import { AuditLogsPage } from '../pages/audit-logs-page';
@@ -48,9 +54,11 @@ import { ReportsAnalyticsPage } from '../pages/reports-analytics-page';
 import { SupportCenterPage } from '../pages/support-center-page';
 import { SystemSettingsPage } from '../pages/system-settings-page';
 import { UsersPage } from '../pages/users-page';
+import { StudentAssignmentsPage } from '../pages/student-assignments-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
 import { StudentAcademicYearSelectPage } from '../pages/student-academic-year-select-page';
+import { StudentConductPage } from '../pages/student-conduct-page';
 import { StudentConductProfilePage } from '../pages/student-conduct-profile-page';
 import { StudentDashboardPage } from '../pages/student-dashboard-page';
 import { PublicHomePage } from '../pages/public-home-page';
@@ -146,8 +154,19 @@ export function AppRoutes() {
             <Route element={<RequirePermission permission="exams.read" />}>
               <Route path="/admin/exams" element={<ExamsPage />} />
             </Route>
+            <Route element={<RequirePermission permission="timetable.read" />}>
+              <Route path="/admin/timetable" element={<TimetablePage />} />
+            </Route>
+            <Route element={<RequirePermission permission="announcements.manage" />}>
+              <Route path="/admin/announcements/new" element={<AnnouncementCreatePage />} />
+            </Route>
+            <Route element={<RequirePermission permission="announcements.read" />}>
+              <Route path="/admin/announcements" element={<AnnouncementsPage />} />
+              <Route path="/admin/announcements/:id" element={<AnnouncementDetailPage />} />
+            </Route>
             <Route element={<RequirePermission permission="courses.read" />}>
               <Route path="/admin/courses" element={<CoursesPage />} />
+              <Route path="/admin/my-classes" element={<TeacherMyClassesPage />} />
             </Route>
             <Route element={<RequirePermission permission="courses.read" />}>
               <Route path="/admin/assignments" element={<AssignmentsPage />} />
@@ -191,6 +210,7 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="students.my_courses.read" />}>
             <Route path="/student/courses" element={<StudentCoursesPage />} />
+            <Route path="/student/assignments" element={<StudentAssignmentsPage />} />
           </Route>
           <Route element={<RequirePermission permission="report_cards.my_read" />}>
             <Route path="/student/report-cards" element={<StudentReportCardsPage />} />
@@ -205,6 +225,14 @@ export function AppRoutes() {
               />
             </Route>
           ) : null}
+          {conductFeatureEnabled ? (
+            <Route element={<RequirePermission permission="conduct.my_read" />}>
+              <Route path="/student/conduct" element={<StudentConductPage />} />
+            </Route>
+          ) : null}
+          <Route element={<RequirePermission permission="announcements.my_read" />}>
+            <Route path="/student/announcements" element={<StudentAnnouncementsPage />} />
+          </Route>
 
           <Route element={<RequirePermission permission="staff.invite" />}>
             <Route path="/admin/staff" element={<StaffPage />} />
