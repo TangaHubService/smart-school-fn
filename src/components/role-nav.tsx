@@ -41,14 +41,15 @@ interface NavItem {
   icon: LucideIcon;
   roles: string[];
   requiredPermissions: string[];
+  requiredPermissionsOr?: string[];
   setupState: SetupState;
 }
 
 const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
   dashboard: 'Dashboard',
   tenants: 'Schools',
-  courses: 'Courses & Subjects',
-  exams: 'Exams & Assessments',
+  'learning-content': 'Learning Content',
+  'exams': 'Examination Portal',
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -81,7 +82,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'setup',
-    label: 'School Profile',
+    label: 'Schools Management',
     to: '/admin/setup',
     icon: LayoutTemplate,
     roles: ['SCHOOL_ADMIN'],
@@ -107,30 +108,13 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
-    key: 'classes',
-    label: 'Classes',
+    key: 'class-management',
+    label: 'Class Management',
     to: '/admin/classes',
     icon: School,
     roles: ['SCHOOL_ADMIN'],
-    requiredPermissions: ['class_room.manage'],
-    setupState: 'COMPLETE',
-  },
-  {
-    key: 'teacher-my-classes',
-    label: 'My Classes',
-    to: '/admin/my-classes',
-    icon: School,
-    roles: ['TEACHER'],
-    requiredPermissions: ['courses.read'],
-    setupState: 'COMPLETE',
-  },
-  {
-    key: 'students',
-    label: 'Students',
-    to: '/admin/students',
-    icon: GraduationCap,
-    roles: ['SCHOOL_ADMIN'],
-    requiredPermissions: ['students.read'],
+    requiredPermissionsOr: ['class_room.manage', 'students.read'],
+    requiredPermissions: [],
     setupState: 'COMPLETE',
   },
   {
@@ -152,44 +136,28 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
-    key: 'subjects',
-    label: 'Subjects',
-    to: '/admin/subjects',
-    icon: Shapes,
-    roles: ['SCHOOL_ADMIN'],
-    requiredPermissions: ['subject.manage'],
-    setupState: 'COMPLETE',
-  },
-  {
-    key: 'courses',
-    label: 'Courses',
+    key: 'learning-content',
+    label: 'Learning Content',
     to: '/admin/courses',
     icon: BookOpen,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
-    requiredPermissions: ['courses.read'],
+    requiredPermissionsOr: ['courses.read', 'subject.manage'],
+    requiredPermissions: [],
     setupState: 'COMPLETE',
   },
   {
-    key: 'assessments',
-    label: 'Assessments',
+    key: 'continuous-assessment',
+    label: 'Continuous Assessment Test',
     to: '/admin/assessments',
     icon: BadgeCheck,
-    roles: ['SCHOOL_ADMIN', 'TEACHER'],
-    requiredPermissions: ['assessments.read'],
-    setupState: 'COMPLETE',
-  },
-  {
-    key: 'assignments',
-    label: 'Assignments',
-    to: '/admin/assignments',
-    icon: ClipboardCheck,
-    roles: ['SCHOOL_ADMIN', 'TEACHER'],
-    requiredPermissions: ['courses.read'],
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissionsOr: ['assessments.read', 'courses.read'],
+    requiredPermissions: [],
     setupState: 'COMPLETE',
   },
   {
     key: 'exams',
-    label: 'Exams',
+    label: 'Examination Portal',
     to: '/admin/exams',
     icon: FileBarChart2,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
@@ -275,15 +243,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ClipboardList,
     roles: ['SUPER_ADMIN'],
     requiredPermissions: ['tenants.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'my-children',
-    label: 'Children',
-    to: '/parent/my-children',
-    icon: Users,
-    roles: ['PARENT'],
-    requiredPermissions: ['parents.my_children.read'],
     setupState: 'ANY',
   },
   {
@@ -417,19 +376,14 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     'tenants',
     'setup',
     'years',
-    'classes',
-    'teacher-my-classes',
-    'students',
+    'class-management',
     'conduct',
     'attendance',
-    'subjects',
-    'courses',
-    'assessments',
-    'assignments',
+    'learning-content',
+    'continuous-assessment',
     'exams',
     'parents',
     'staff',
-    'my-children',
     'parent-report-cards',
     'gov-dashboard',
     'gov-schools',
@@ -446,7 +400,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
   ]);
 
   const items = NAV_ITEMS.filter((item) => {
-    if (!assessmentsFeatureEnabled && ['assessments', 'student-assessments'].includes(item.key)) {
+    if (!assessmentsFeatureEnabled && ['assessments', 'continuous-assessment', 'student-assessments'].includes(item.key)) {
       return false;
     }
 
@@ -467,11 +421,12 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
       return false;
     }
 
-    const hasAllPermissions = item.requiredPermissions.every((permission) =>
-      hasPermission(auth.me, permission),
-    );
-    if (!hasAllPermissions) {
-      return false;
+    if (item.requiredPermissionsOr?.length) {
+      const hasAnyPermission = item.requiredPermissionsOr.some((p) => hasPermission(auth.me, p));
+      if (!hasAnyPermission) return false;
+    } else if (item.requiredPermissions.length) {
+      const hasAllPermissions = item.requiredPermissions.every((p) => hasPermission(auth.me, p));
+      if (!hasAllPermissions) return false;
     }
 
     if (item.setupState === 'INCOMPLETE' && setupComplete) {

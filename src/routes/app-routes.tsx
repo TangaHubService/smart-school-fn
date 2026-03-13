@@ -168,15 +168,20 @@ export function AppRoutes() {
               <Route path="/admin/courses" element={<CoursesPage />} />
               <Route path="/admin/my-classes" element={<TeacherMyClassesPage />} />
             </Route>
-            <Route element={<RequirePermission permission="courses.read" />}>
-              <Route path="/admin/assignments" element={<AssignmentsPage />} />
-            </Route>
+            <Route path="/admin/subjects" element={<Navigate to="/admin/courses" replace />} />
             {assessmentsFeatureEnabled ? (
-              <Route element={<RequirePermission permission="assessments.read" />}>
-                <Route path="/admin/assessments" element={<AssessmentsPage />} />
-                <Route path="/admin/assessments/:assessmentId" element={<AssessmentDetailPage />} />
+              <>
+                <Route path="/admin/assignments" element={<Navigate to="/admin/assessments" replace />} />
+                <Route element={<RequirePermission permission="assessments.read" />}>
+                  <Route path="/admin/assessments" element={<AssessmentsPage />} />
+                  <Route path="/admin/assessments/:assessmentId" element={<AssessmentDetailPage />} />
+                </Route>
+              </>
+            ) : (
+              <Route element={<RequirePermission permission="courses.read" />}>
+                <Route path="/admin/assignments" element={<AssignmentsPage />} />
               </Route>
-            ) : null}
+            )}
             {conductFeatureEnabled ? (
               <>
                 <Route element={<RequirePermission permission="conduct.read" />}>
@@ -254,7 +259,7 @@ export function AppRoutes() {
           {conductFeatureEnabled ? (
             <Route path="/conduct" element={<Navigate to="/admin/conduct" replace />} />
           ) : null}
-          <Route path="/students" element={<Navigate to="/admin/students" replace />} />
+          <Route path="/students" element={<Navigate to="/admin/classes" replace />} />
           <Route path="/student-results" element={<Navigate to="/student/report-cards" replace />} />
           <Route path="/parent-results" element={<Navigate to="/parent/report-cards" replace />} />
           <Route path="/parents" element={<Navigate to="/admin/parents" replace />} />
