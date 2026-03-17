@@ -36,6 +36,21 @@ export interface SuperAdminDashboardData {
   };
 }
 
+export interface SuperAdminDashboardFilters {
+  academicYear?: string;
+  term?: string;
+  region?: string;
+  school?: string;
+  status?: 'active' | 'inactive' | 'all';
+}
+
+export interface SuperAdminDashboardFilterOptions {
+  schools: Array<{ id: string; name: string; province: string | null; isActive: boolean }>;
+  regions: string[];
+  academicYears: Array<{ id: string; name: string }>;
+  terms: Array<{ id: string; name: string; sequence: number }>;
+}
+
 export interface SchoolAdminDashboardData {
   school: {
     displayName: string;
@@ -78,8 +93,28 @@ export interface SchoolAdminDashboardData {
   };
 }
 
-export function getSuperAdminDashboardApi(accessToken: string) {
-  return apiRequest<SuperAdminDashboardData>('/dashboard/super-admin', {
+export function getSuperAdminDashboardApi(
+  accessToken: string,
+  filters?: SuperAdminDashboardFilters,
+) {
+  const params = new URLSearchParams();
+  if (filters?.academicYear) params.set('academicYear', filters.academicYear);
+  if (filters?.term) params.set('term', filters.term);
+  if (filters?.region) params.set('region', filters.region);
+  if (filters?.school) params.set('school', filters.school);
+  if (filters?.status) params.set('status', filters.status);
+
+  const query = params.toString();
+  const path = query ? `/dashboard/super-admin?${query}` : '/dashboard/super-admin';
+
+  return apiRequest<SuperAdminDashboardData>(path, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function getSuperAdminDashboardFiltersApi(accessToken: string) {
+  return apiRequest<SuperAdminDashboardFilterOptions>('/dashboard/super-admin/filters', {
     method: 'GET',
     accessToken,
   });

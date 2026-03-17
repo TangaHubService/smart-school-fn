@@ -51,6 +51,7 @@ import { AccessControlPage } from '../pages/access-control-page';
 import { AuditLogsPage } from '../pages/audit-logs-page';
 import { NotificationsPage } from '../pages/notifications-page';
 import { ReportsAnalyticsPage } from '../pages/reports-analytics-page';
+import { SubscriptionManagementPage } from '../pages/subscription-management-page';
 import { SupportCenterPage } from '../pages/support-center-page';
 import { SystemSettingsPage } from '../pages/system-settings-page';
 import { UsersPage } from '../pages/users-page';
@@ -107,6 +108,7 @@ export function AppRoutes() {
             <Route path="/super-admin/tenants" element={<TenantsPage />} />
             <Route path="/super-admin/reports" element={<ReportsAnalyticsPage />} />
             <Route path="/super-admin/settings" element={<SystemSettingsPage />} />
+            <Route path="/super-admin/subscriptions" element={<SubscriptionManagementPage />} />
             <Route path="/super-admin/notifications" element={<NotificationsPage />} />
             <Route path="/super-admin/support" element={<SupportCenterPage />} />
             <Route path="/super-admin/audit-logs" element={<AuditLogsPage />} />

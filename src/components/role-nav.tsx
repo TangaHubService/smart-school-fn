@@ -47,9 +47,11 @@ interface NavItem {
 
 const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
   dashboard: 'Dashboard',
-  tenants: 'Schools',
-  'learning-content': 'Learning Content',
-  'exams': 'Examination Portal',
+  tenants: 'School Management',
+  users: 'Users',
+  'gov-auditors': 'Auditor Management',
+  announcements: 'Announcements',
+  'audit-logs': 'Activity Logs',
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -246,6 +248,15 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'subscriptions',
+    label: 'Subscription Management',
+    to: '/super-admin/subscriptions',
+    icon: Shapes,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: ['tenants.read'],
+    setupState: 'ANY',
+  },
+  {
     key: 'parent-report-cards',
     label: 'Report Cards',
     to: '/parent/report-cards',
@@ -374,29 +385,11 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
   const SUPER_ADMIN_KEYS = new Set([
     'dashboard',
     'tenants',
-    'setup',
-    'years',
-    'class-management',
-    'conduct',
-    'attendance',
-    'learning-content',
-    'continuous-assessment',
-    'exams',
-    'parents',
-    'staff',
-    'parent-report-cards',
-    'gov-dashboard',
-    'gov-schools',
-    'gov-incidents',
+    'users',
     'gov-auditors',
-    'student-courses',
-    'student-assignments',
-    'student-report-cards',
-    'student-assessments',
-    'student-conduct',
-    'student-announcements',
-    'timetable',
     'announcements',
+    'audit-logs',
+    'subscriptions',
   ]);
 
   const items = NAV_ITEMS.filter((item) => {

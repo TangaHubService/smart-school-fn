@@ -21,7 +21,10 @@ import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import {
   getSuperAdminDashboardApi,
+  getSuperAdminDashboardFiltersApi,
   type SuperAdminDashboardData,
+  type SuperAdminDashboardFilters,
+  type SuperAdminDashboardFilterOptions,
 } from '../features/dashboard/dashboard.api';
 import { useQuery } from '@tanstack/react-query';
 
@@ -42,11 +45,25 @@ const USER_OVERVIEW_ITEMS: Record<
 export function SuperAdminDashboardPage() {
   const auth = useAuth();
   const [analyticsTab, setAnalyticsTab] = useState<'weekly' | 'monthly'>('weekly');
+  const [filters, setFilters] = useState<SuperAdminDashboardFilters>({
+    academicYear: '2023/2024',
+    term: 'first',
+    region: 'all-regions',
+    school: 'all-schools',
+    status: 'active',
+  });
+  const [appliedFilters, setAppliedFilters] = useState<SuperAdminDashboardFilters>(filters);
+
+  const filtersQuery = useQuery<SuperAdminDashboardFilterOptions>({
+    queryKey: ['dashboard', 'super-admin', 'filters'],
+    enabled: Boolean(auth.accessToken),
+    queryFn: () => getSuperAdminDashboardFiltersApi(auth.accessToken!),
+  });
 
   const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ['dashboard', 'super-admin'],
+    queryKey: ['dashboard', 'super-admin', appliedFilters],
     enabled: Boolean(auth.accessToken),
-    queryFn: () => getSuperAdminDashboardApi(auth.accessToken!),
+    queryFn: () => getSuperAdminDashboardApi(auth.accessToken!, appliedFilters),
   });
 
   if (isError) {
@@ -67,7 +84,7 @@ export function SuperAdminDashboardPage() {
     );
   }
 
-  if (isPending || !data) {
+  if (isPending || !data || filtersQuery.isPending) {
     return (
       <div className="space-y-5">
         <div className="h-32 animate-pulse rounded-2xl bg-slate-200" />
@@ -82,7 +99,37 @@ export function SuperAdminDashboardPage() {
 
   return (
     <section className="space-y-3">
-      <DashboardFilter variant="super-admin" />
+      <DashboardFilter
+        variant="super-admin"
+        academicYearOptions={filtersQuery.data?.academicYears ?? []}
+        termOptions={filtersQuery.data?.terms ?? []}
+        regionOptions={filtersQuery.data?.regions ?? []}
+        schoolOptions={filtersQuery.data?.schools ?? []}
+        academicYear={filters.academicYear}
+        term={filters.term}
+        region={filters.region}
+        school={filters.school}
+        status={filters.status}
+        onAcademicYearChange={(value) => setFilters((prev) => ({ ...prev, academicYear: value }))}
+        onTermChange={(value) => setFilters((prev) => ({ ...prev, term: value }))}
+        onRegionChange={(value) => setFilters((prev) => ({ ...prev, region: value }))}
+        onSchoolChange={(value) => setFilters((prev) => ({ ...prev, school: value }))}
+        onStatusChange={(value) =>
+          setFilters((prev) => ({ ...prev, status: value as SuperAdminDashboardFilters['status'] }))
+        }
+        onApply={() => setAppliedFilters(filters)}
+        onReset={() => {
+          const reset: SuperAdminDashboardFilters = {
+            academicYear: '2023/2024',
+            term: 'first',
+            region: 'all-regions',
+            school: 'all-schools',
+            status: 'active',
+          };
+          setFilters(reset);
+          setAppliedFilters(reset);
+        }}
+      />
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard

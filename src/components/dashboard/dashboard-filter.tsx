@@ -1,6 +1,10 @@
 import { Filter, Search } from 'lucide-react';
 
 interface DashboardFilterProps {
+  academicYearOptions?: Array<{ id: string; name: string }>;
+  termOptions?: Array<{ id: string; name: string; sequence: number }>;
+  regionOptions?: string[];
+  schoolOptions?: Array<{ id: string; name: string; province: string | null; isActive: boolean }>;
   academicYear?: string;
   term?: string;
   region?: string;
@@ -21,13 +25,24 @@ interface DashboardFilterProps {
 }
 
 export function DashboardFilter({
+  academicYearOptions = [],
+  termOptions = [],
+  regionOptions = [],
+  schoolOptions = [],
   academicYear = '2023/2024',
   term = 'First Term',
   region = 'All Regions',
   school = 'All Schools',
-  status = 'Active',
+  status = 'active',
   classFilter = 'All Classes',
   findFilter = 'All Classes',
+  onAcademicYearChange,
+  onTermChange,
+  onRegionChange,
+  onSchoolChange,
+  onStatusChange,
+  onClassChange,
+  onFindChange,
   onApply,
   onReset,
   variant = 'super-admin',
@@ -39,17 +54,33 @@ export function DashboardFilter({
     return (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
-          <select className={selectClass} defaultValue={academicYear}>
-            <option>Academic Year 2023/2024</option>
+          <select
+            className={selectClass}
+            value={academicYear}
+            onChange={(e) => onAcademicYearChange?.(e.target.value)}
+          >
+            <option value="2023/2024">Academic Year 2023/2024</option>
           </select>
-          <select className={selectClass} defaultValue={term}>
-            <option>Term: First Term</option>
+          <select
+            className={selectClass}
+            value={term}
+            onChange={(e) => onTermChange?.(e.target.value)}
+          >
+            <option value="first">Term: First Term</option>
           </select>
-          <select className={selectClass} defaultValue={classFilter}>
-            <option>Class: All Classes</option>
+          <select
+            className={selectClass}
+            value={classFilter}
+            onChange={(e) => onClassChange?.(e.target.value)}
+          >
+            <option value="all">Class: All Classes</option>
           </select>
-          <select className={selectClass} defaultValue={findFilter}>
-            <option>Find: All Classes</option>
+          <select
+            className={selectClass}
+            value={findFilter}
+            onChange={(e) => onFindChange?.(e.target.value)}
+          >
+            <option value="all">Find: All Classes</option>
           </select>
         </div>
         <div className="flex items-center gap-2">
@@ -98,20 +129,62 @@ export function DashboardFilter({
       <div className="flex flex-wrap items-center gap-2">
         <Filter className="h-4 w-4 text-slate-600" />
         <span className="text-xs font-semibold text-slate-700">Filter Section</span>
-        <select className={selectClass} defaultValue={academicYear}>
-          <option>Academic Year 2023/2024</option>
+        <select
+          className={selectClass}
+          value={academicYear}
+          onChange={(e) => onAcademicYearChange?.(e.target.value)}
+        >
+          <option value="">Academic Year: All</option>
+          {academicYearOptions.map((ay) => (
+            <option key={ay.id} value={ay.name}>
+              Academic Year {ay.name}
+            </option>
+          ))}
         </select>
-        <select className={selectClass} defaultValue={term}>
-          <option>Term: First Term</option>
+        <select
+          className={selectClass}
+          value={term}
+          onChange={(e) => onTermChange?.(e.target.value)}
+        >
+          <option value="">Term: All Terms</option>
+          {termOptions.map((t) => (
+            <option key={t.id} value={t.name}>
+              Term: {t.name}
+            </option>
+          ))}
         </select>
-        <select className={selectClass} defaultValue={region}>
-          <option>Region: All Regions</option>
+        <select
+          className={selectClass}
+          value={region}
+          onChange={(e) => onRegionChange?.(e.target.value)}
+        >
+          <option value="all-regions">Region: All Regions</option>
+          {regionOptions.map((r) => (
+            <option key={r} value={r}>
+              Region: {r}
+            </option>
+          ))}
         </select>
-        <select className={selectClass} defaultValue={school}>
-          <option>School: All Schools</option>
+        <select
+          className={selectClass}
+          value={school}
+          onChange={(e) => onSchoolChange?.(e.target.value)}
+        >
+          <option value="all-schools">School: All Schools</option>
+          {schoolOptions.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
         </select>
-        <select className={selectClass} defaultValue={status}>
-          <option>Status: Active</option>
+        <select
+          className={selectClass}
+          value={status}
+          onChange={(e) => onStatusChange?.(e.target.value)}
+        >
+          <option value="active">Status: Active</option>
+          <option value="inactive">Status: Inactive</option>
+          <option value="all">Status: All</option>
         </select>
         <button
           type="button"

@@ -44,22 +44,23 @@ export function AnnouncementsPage() {
   };
 
   const canManage = auth.me?.permissions.includes('announcements.manage') ?? false;
+  const isSuperAdmin = auth.me?.roles.includes('SUPER_ADMIN');
 
   return (
-    <SectionCard
-      title="Announcements"
-      subtitle="School-wide and targeted announcements for students and staff."
-      action={
-        canManage ? (
-          <Link
-            to="/admin/announcements/new"
-            className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-          >
-            New announcement
-          </Link>
-        ) : null
-      }
-    >
+      <SectionCard
+        title="Announcements"
+        subtitle="School-wide and targeted announcements for students and staff."
+        action={
+          canManage || isSuperAdmin ? (
+            <Link
+              to="/admin/announcements/new"
+              className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+            >
+              New announcement
+            </Link>
+          ) : null
+        }
+      >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-2 text-sm">
           <input

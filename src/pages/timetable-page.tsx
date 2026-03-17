@@ -41,7 +41,9 @@ export function TimetablePage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editGrid, setEditGrid] = useState<Record<string, string>>({});
 
-  const canManage = auth.me?.permissions.includes('timetable.manage') ?? false;
+  const canManage =
+    (auth.me?.permissions.includes('timetable.manage') ||
+      auth.me?.permissions.includes('timetable.read')) ?? false;
 
   const yearsQuery = useQuery({
     queryKey: ['academic-years'],

@@ -187,15 +187,15 @@ export function GovAuditorsPage() {
   return (
     <>
       <SectionCard
-        title="Government Auditors"
-        subtitle="Create platform-level auditor accounts and assign sector, district, province, or country scope without changing school tenant workflows."
+        title="Auditor Management"
+        subtitle="List of auditors and their oversight scope."
         action={
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
             className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
           >
-            Create auditor
+            Add new auditor
           </button>
         }
       >
@@ -241,62 +241,55 @@ export function GovAuditorsPage() {
         ) : null}
 
         {!auditorsQuery.isPending && !auditorsQuery.isError && auditors.length ? (
-          <div className="grid gap-3">
-            {auditors.map((auditor) => (
-              <article key={auditor.id} className="rounded-2xl border border-brand-100 bg-white p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-950">
-                      {auditor.firstName} {auditor.lastName}
-                    </h3>
-                    <p className="text-sm text-slate-700">{auditor.email}</p>
-                    <p className="text-xs text-slate-500">{auditor.phone || 'No phone provided'}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedAuditor(auditor);
-                      setScopeForm(buildDefaultScopeForm());
-                    }}
-                    className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+          <div className="overflow-x-auto rounded-xl border border-brand-100 bg-white">
+            <table className="min-w-full border-separate border-spacing-0 text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <th className="px-4 py-3">No</th>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Phone</th>
+                  <th className="px-4 py-3">Scope</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditors.map((auditor, index) => (
+                  <tr
+                    key={auditor.id}
+                    className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}
                   >
-                    Assign scope
-                  </button>
-                </div>
-
-                <div className="mt-4 grid gap-2">
-                  {auditor.scopes.length ? (
-                    auditor.scopes.map((scope) => (
-                      <div
-                        key={scope.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-100 bg-brand-50/60 px-3 py-2 text-sm"
+                    <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {auditor.firstName} {auditor.lastName}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{auditor.email}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {auditor.phone || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-700">
+                      {auditor.scopes.length
+                        ? formatScopeLabel(auditor.scopes[0])
+                        : 'No scope assigned'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAuditor(auditor);
+                          setScopeForm(buildDefaultScopeForm());
+                        }}
+                        className="inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100"
                       >
-                        <div>
-                          <p className="font-semibold text-slate-900">
-                            {scope.scopeLevel.replace('_', ' ')}
-                          </p>
-                          <p className="text-slate-700">{formatScopeLabel(scope)}</p>
-                          <p className="text-xs text-slate-500">
-                            {scope.isActive ? 'Active' : 'Inactive'}
-                          </p>
-                        </div>
-                        {scope.isActive ? (
-                          <button
-                            type="button"
-                            onClick={() => deactivateScopeMutation.mutate(scope.id)}
-                            className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-600"
-                          >
-                            Deactivate
-                          </button>
-                        ) : null}
-                      </div>
-                    ))
-                  ) : (
-                    <EmptyState message="No scope assignments yet for this auditor." />
-                  )}
-                </div>
-              </article>
-            ))}
+                        View details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : null}
       </SectionCard>
