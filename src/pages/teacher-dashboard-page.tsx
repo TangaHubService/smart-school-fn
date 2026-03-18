@@ -8,6 +8,10 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import {
+  DashboardQuickActionsDropdown,
+  type DashboardQuickActionItem,
+} from '../components/dashboard/quick-actions-dropdown';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import { getTeacherDashboardApi } from '../features/dashboard/dashboard.api';
@@ -23,6 +27,33 @@ function getTodayKigaliDate(): string {
   const value = formatter.format(new Date());
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : new Date().toISOString().slice(0, 10);
 }
+
+const TEACHER_QUICK_ACTIONS: DashboardQuickActionItem[] = [
+  {
+    label: 'Mark attendance',
+    description: 'Open today attendance and mark your classes.',
+    icon: ClipboardCheck,
+    to: '/admin/attendance',
+  },
+  {
+    label: 'Grade submissions',
+    description: 'Open assignments and review pending work.',
+    icon: ClipboardCheck,
+    to: '/admin/assignments',
+  },
+  {
+    label: 'Enter marks',
+    description: 'Go to exams and update marks.',
+    icon: FileBarChart2,
+    to: '/admin/exams',
+  },
+  {
+    label: 'My courses',
+    description: 'Open your course and lesson workspace.',
+    icon: BookOpen,
+    to: '/admin/courses',
+  },
+];
 
 export function TeacherDashboardPage() {
   const auth = useAuth();
@@ -67,28 +98,23 @@ export function TeacherDashboardPage() {
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             Teacher Portal
           </p>
-          <h1 className="mt-2 text-[1.75rem] font-bold tracking-tight text-slate-900">
-            {data.school.displayName}
-            {data.school.city ? `, ${data.school.city}` : ''}
-          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-900">
+              {data.school.displayName}
+              {data.school.city ? `, ${data.school.city}` : ''}
+            </h1>
+            <DashboardQuickActionsDropdown actions={TEACHER_QUICK_ACTIONS} />
+          </div>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
             Your classes, attendance, and assignments at a glance.
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-3 lg:justify-end">
-          <span className="text-sm text-slate-600">Today: {todayStr}</span>
-          <Link
-            to="/admin/attendance"
-            className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white"
-          >
-            Mark attendance
-          </Link>
-        </div>
+        <span className="text-sm text-slate-600">Today: {todayStr}</span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -174,40 +200,6 @@ export function TeacherDashboardPage() {
               <p className="py-6 text-center text-sm text-slate-500">No upcoming exams</p>
             )}
           </div>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-900">Quick actions</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
-            to="/admin/attendance"
-            className="flex items-center gap-3 rounded-xl bg-brand-500 px-4 py-3 text-white transition hover:bg-brand-600"
-          >
-            <ClipboardCheck className="h-5 w-5" />
-            <span className="font-semibold">Mark attendance</span>
-          </Link>
-          <Link
-            to="/admin/assignments"
-            className="flex items-center gap-3 rounded-xl bg-amber-500 px-4 py-3 text-white transition hover:bg-amber-600"
-          >
-            <ClipboardCheck className="h-5 w-5" />
-            <span className="font-semibold">Grade submissions</span>
-          </Link>
-          <Link
-            to="/admin/exams"
-            className="flex items-center gap-3 rounded-xl bg-slate-600 px-4 py-3 text-white transition hover:bg-slate-700"
-          >
-            <FileBarChart2 className="h-5 w-5" />
-            <span className="font-semibold">Enter marks</span>
-          </Link>
-          <Link
-            to="/admin/courses"
-            className="flex items-center gap-3 rounded-xl bg-green-500 px-4 py-3 text-white transition hover:bg-green-600"
-          >
-            <BookOpen className="h-5 w-5" />
-            <span className="font-semibold">My courses</span>
-          </Link>
         </div>
       </div>
     </section>

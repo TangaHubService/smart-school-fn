@@ -166,7 +166,7 @@ export function StudentAssignmentsPage() {
                     )}
                 </div>
                 <Link
-                  to={`/student/courses?courseId=${assignment.course.id}&assignmentId=${assignment.id}`}
+                  to={`/student/courses/${assignment.course.id}/tests/${assignment.id}`}
                   className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-300 hover:bg-brand-100"
                 >
                   <ClipboardCheck className="h-4 w-4" />

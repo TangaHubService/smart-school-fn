@@ -138,6 +138,16 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
+    key: 'subjects',
+    label: 'Subjects',
+    to: '/admin/subjects',
+    icon: GraduationCap,
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissionsOr: ['courses.read', 'subject.manage'],
+    requiredPermissions: [],
+    setupState: 'COMPLETE',
+  },
+  {
     key: 'learning-content',
     label: 'Learning Content',
     to: '/admin/courses',
@@ -378,7 +388,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
 
   const getDashboardLabel = () => {
     if (superAdmin) return 'Super Admin Dashboard';
-    if (schoolAdmin) return 'School Administrator Dashboard';
+    if (schoolAdmin) return 'Dashboard';
     return 'Dashboard';
   };
 

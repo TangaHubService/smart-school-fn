@@ -93,6 +93,13 @@ export interface SchoolAdminDashboardData {
   };
 }
 
+export interface SchoolAdminDashboardFilters {
+  academicYear?: string;
+  term?: string;
+  classFilter?: string;
+  findFilter?: string;
+}
+
 export function getSuperAdminDashboardApi(
   accessToken: string,
   filters?: SuperAdminDashboardFilters,
@@ -120,8 +127,20 @@ export function getSuperAdminDashboardFiltersApi(accessToken: string) {
   });
 }
 
-export function getSchoolAdminDashboardApi(accessToken: string) {
-  return apiRequest<SchoolAdminDashboardData>('/dashboard/school-admin', {
+export function getSchoolAdminDashboardApi(
+  accessToken: string,
+  filters?: SchoolAdminDashboardFilters,
+) {
+  const params = new URLSearchParams();
+  if (filters?.academicYear) params.set('academicYear', filters.academicYear);
+  if (filters?.term) params.set('term', filters.term);
+  if (filters?.classFilter && filters.classFilter !== 'all') params.set('class', filters.classFilter);
+  if (filters?.findFilter && filters.findFilter !== 'all') params.set('find', filters.findFilter);
+
+  const query = params.toString();
+  const path = query ? `/dashboard/school-admin?${query}` : '/dashboard/school-admin';
+
+  return apiRequest<SchoolAdminDashboardData>(path, {
     method: 'GET',
     accessToken,
   });

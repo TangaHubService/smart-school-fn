@@ -1,14 +1,9 @@
 import clsx from 'clsx';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  ClipboardCheck,
-} from 'lucide-react';
+import { ChevronRight, Lock } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -45,6 +40,7 @@ const submissionSchema = z
 
 type SubmissionFormValues = z.infer<typeof submissionSchema>;
 type StudentCourseItem = MyCoursesResponse['items'][number];
+type CoursePanel = 'lessons' | 'tests';
 type SubjectCourseGroup = {
   key: string;
   id: string | null;
@@ -60,29 +56,6 @@ const defaultSubmissionForm: SubmissionFormValues = {
   linkUrl: '',
 };
 
-const COURSE_TREE_ACCENTS = [
-  {
-    icon: 'border-amber-200 bg-amber-50 text-amber-700',
-    badge: 'bg-amber-100 text-amber-800',
-    rail: 'border-amber-200/80',
-  },
-  {
-    icon: 'border-sky-200 bg-sky-50 text-sky-700',
-    badge: 'bg-sky-100 text-sky-800',
-    rail: 'border-sky-200/80',
-  },
-  {
-    icon: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-    badge: 'bg-emerald-100 text-emerald-800',
-    rail: 'border-emerald-200/80',
-  },
-  {
-    icon: 'border-rose-200 bg-rose-50 text-rose-700',
-    badge: 'bg-rose-100 text-rose-800',
-    rail: 'border-rose-200/80',
-  },
-];
-
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
     return 'Not set';
@@ -92,6 +65,119 @@ function formatDateTime(value: string | null | undefined) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+function isAudioAsset(url: string | null | undefined, mimeType?: string | null) {
+  const value = `${mimeType ?? ''} ${url ?? ''}`.toLowerCase();
+  return value.includes('audio/') || /\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/.test(value);
+}
+
+function getYouTubeEmbedUrl(url: string | null | undefined) {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+
+    if (host === 'youtu.be') {
+      const videoId = parsed.pathname.split('/').filter(Boolean)[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      const videoId =
+        parsed.searchParams.get('v') ??
+        parsed.pathname.match(/^\/(?:embed|shorts)\/([^/?]+)/)?.[1] ??
+        null;
+
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function lessonHasInlineMedia(
+  lesson: Pick<LessonItem, 'contentType' | 'externalUrl' | 'fileAsset'>,
+) {
+  const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
+  if (!mediaUrl) {
+    return false;
+  }
+
+  return Boolean(
+    getYouTubeEmbedUrl(mediaUrl) ||
+      lesson.contentType === 'VIDEO' ||
+      lesson.contentType === 'PDF' ||
+      lesson.fileAsset?.mimeType?.startsWith('video/') ||
+      isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType),
+  );
+}
+
+function LessonMediaEmbed({
+  lesson,
+}: {
+  lesson: Pick<LessonItem, 'contentType' | 'externalUrl' | 'fileAsset'>;
+}) {
+  const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
+
+  if (!mediaUrl) {
+    return null;
+  }
+
+  const youtubeEmbedUrl = getYouTubeEmbedUrl(mediaUrl);
+  if (youtubeEmbedUrl) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-brand-100 bg-black">
+        <iframe
+          title={lesson.fileAsset?.originalName ?? 'Lesson video'}
+          src={youtubeEmbedUrl}
+          className="aspect-video w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
+  if (lesson.contentType === 'VIDEO' || lesson.fileAsset?.mimeType?.startsWith('video/')) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-brand-100 bg-black">
+        <video controls className="h-auto w-full" src={mediaUrl}>
+          Your browser does not support embedded video playback.
+        </video>
+      </div>
+    );
+  }
+
+  if (isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType)) {
+    return (
+      <div className="rounded-2xl border border-brand-100 bg-white p-4">
+        <audio controls className="w-full" src={mediaUrl}>
+          Your browser does not support embedded audio playback.
+        </audio>
+      </div>
+    );
+  }
+
+  if (lesson.contentType === 'PDF') {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white">
+        <iframe
+          title={lesson.fileAsset?.originalName ?? 'Lesson PDF'}
+          src={mediaUrl}
+          className="h-[560px] w-full"
+        />
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function AttachmentLink({ label, url }: { label: string; url: string }) {
@@ -158,28 +244,53 @@ function getGeneralAssignments(course: StudentCourseItem) {
   return course.assignments.filter((assignment) => !assignment.lesson?.id);
 }
 
-function getCourseTreeAccent(index: number) {
-  return COURSE_TREE_ACCENTS[index % COURSE_TREE_ACCENTS.length];
-}
-
 function getCourseSubjectKey(course: StudentCourseItem) {
   return course.subject?.id ?? '__general_subject__';
+}
+
+const COURSE_COVER_GRADIENTS = [
+  {
+    backgroundColor: '#6c5ce7',
+    backgroundImage:
+      'radial-gradient(circle at 18% 24%, rgba(255,255,255,0.18) 0 16%, transparent 17%), radial-gradient(circle at 48% 28%, rgba(255,255,255,0.12) 0 18%, transparent 19%), radial-gradient(circle at 72% 22%, rgba(255,255,255,0.14) 0 14%, transparent 15%), radial-gradient(circle at 30% 72%, rgba(255,255,255,0.12) 0 19%, transparent 20%), radial-gradient(circle at 68% 78%, rgba(255,255,255,0.12) 0 18%, transparent 19%), linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0))',
+  },
+  {
+    backgroundColor: '#1d8cf2',
+    backgroundImage:
+      'radial-gradient(circle at 16% 18%, rgba(255,255,255,0.16) 0 16%, transparent 17%), radial-gradient(circle at 46% 18%, rgba(255,255,255,0.11) 0 18%, transparent 19%), radial-gradient(circle at 78% 16%, rgba(255,255,255,0.12) 0 14%, transparent 15%), radial-gradient(circle at 28% 66%, rgba(255,255,255,0.12) 0 18%, transparent 19%), radial-gradient(circle at 74% 70%, rgba(255,255,255,0.12) 0 18%, transparent 19%), linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0))',
+  },
+  {
+    backgroundColor: '#20c997',
+    backgroundImage:
+      'linear-gradient(45deg, rgba(255,255,255,0.08) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, transparent 75%, transparent), linear-gradient(-45deg, rgba(255,255,255,0.06) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.06) 75%, transparent 75%, transparent)',
+  },
+];
+
+function getCourseCoverGradient(index: number) {
+  return COURSE_COVER_GRADIENTS[index % COURSE_COVER_GRADIENTS.length];
 }
 
 export function StudentCoursesPage() {
   const auth = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const urlCourseId = searchParams.get('courseId');
-  const urlAssignmentId = searchParams.get('assignmentId');
+  const navigate = useNavigate();
+  const params = useParams<{
+    courseId?: string;
+    lessonId?: string;
+    assignmentId?: string;
+  }>();
+  const [searchParams] = useSearchParams();
+  const legacyCourseId = searchParams.get('courseId');
+  const legacyAssignmentId = searchParams.get('assignmentId');
+  const activeCourseId = params.courseId ?? legacyCourseId ?? '';
+  const activeLessonId = params.lessonId ?? '';
+  const activeAssignmentId = params.assignmentId ?? legacyAssignmentId ?? '';
 
   const [search, setSearch] = useState('');
+  const [subjectFilter, setSubjectFilter] = useState('ALL');
   const [page, setPage] = useState(1);
-  const [selectedCourseId, setSelectedCourseId] = useState('');
-  const [expandedSubjectKey, setExpandedSubjectKey] = useState('');
-  const [selectedLessonId, setSelectedLessonId] = useState('');
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
+  const [activeCoursePanel, setActiveCoursePanel] = useState<CoursePanel>('lessons');
   const [submissionAssignment, setSubmissionAssignment] = useState<AssignmentItem | null>(null);
   const [submissionFile, setSubmissionFile] = useState<File | null>(null);
 
@@ -189,11 +300,11 @@ export function StudentCoursesPage() {
   });
 
   const myCoursesQuery = useQuery({
-    queryKey: ['lms', 'student-courses', page, urlCourseId],
+    queryKey: ['lms', 'student-courses', page, activeCourseId],
     queryFn: () =>
       listMyCoursesApi(auth.accessToken!, {
-        page: urlCourseId ? 1 : page,
-        pageSize: urlCourseId ? 50 : 10,
+        page: activeCourseId ? 1 : page,
+        pageSize: activeCourseId ? 50 : 10,
       }),
   });
 
@@ -230,9 +341,11 @@ export function StudentCoursesPage() {
     },
   });
 
+  const allCourses = myCoursesQuery.data?.items ?? [];
+
   const visibleCourses = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const items = myCoursesQuery.data?.items ?? [];
+    const items = allCourses;
     if (!q) {
       return items;
     }
@@ -249,7 +362,7 @@ export function StudentCoursesPage() {
         .toLowerCase()
         .includes(q),
     );
-  }, [myCoursesQuery.data?.items, search]);
+  }, [allCourses, search]);
 
   const subjectGroups = useMemo<SubjectCourseGroup[]>(() => {
     const groups = new Map<string, SubjectCourseGroup>();
@@ -291,113 +404,57 @@ export function StudentCoursesPage() {
       });
   }, [visibleCourses]);
 
-  const selectedCourse = visibleCourses.find((course) => course.id === selectedCourseId) ?? null;
+  const filteredCourses = useMemo(() => {
+    if (subjectFilter === 'ALL') {
+      return visibleCourses;
+    }
+
+    if (subjectFilter === '__general_subject__') {
+      return visibleCourses.filter((course) => !course.subject?.id);
+    }
+
+    return visibleCourses.filter((course) => course.subject?.id === subjectFilter);
+  }, [subjectFilter, visibleCourses]);
+
+  const selectedCourse = allCourses.find((course) => course.id === activeCourseId) ?? null;
   const selectedLesson =
-    selectedCourse?.lessons.find((lesson) => lesson.id === selectedLessonId) ?? null;
+    selectedCourse?.lessons.find((lesson) => lesson.id === activeLessonId) ?? null;
   const selectedAssignment =
-    selectedCourse?.assignments.find((assignment) => assignment.id === selectedAssignmentId) ?? null;
+    selectedCourse?.assignments.find((assignment) => assignment.id === activeAssignmentId) ?? null;
 
   useEffect(() => {
-    if (selectedCourseId && !visibleCourses.some((course) => course.id === selectedCourseId)) {
-      setSelectedCourseId('');
-      setExpandedSubjectKey('');
-      setSelectedLessonId('');
-      setSelectedAssignmentId('');
-    }
-  }, [selectedCourseId, visibleCourses]);
-
-  useEffect(() => {
-    if (!selectedCourse) {
+    if (!legacyCourseId) {
       return;
     }
 
-    const subjectKey = getCourseSubjectKey(selectedCourse);
-    if (expandedSubjectKey !== subjectKey) {
-      setExpandedSubjectKey(subjectKey);
-    }
-  }, [expandedSubjectKey, selectedCourse]);
-
-  useEffect(() => {
-    if (selectedCourseId) {
+    if (legacyAssignmentId) {
+      navigate(`/student/courses/${legacyCourseId}/tests/${legacyAssignmentId}`, { replace: true });
       return;
     }
 
-    if (!subjectGroups.length) {
-      setExpandedSubjectKey('');
+    navigate(`/student/courses/${legacyCourseId}`, { replace: true });
+  }, [legacyAssignmentId, legacyCourseId, navigate]);
+
+  useEffect(() => {
+    if (activeAssignmentId) {
+      setActiveCoursePanel('tests');
       return;
     }
 
-    if (!subjectGroups.some((group) => group.key === expandedSubjectKey)) {
-      setExpandedSubjectKey(subjectGroups[0].key);
-    }
-  }, [expandedSubjectKey, selectedCourseId, subjectGroups]);
+    setActiveCoursePanel('lessons');
+  }, [activeAssignmentId, activeCourseId, activeLessonId]);
 
-  useEffect(() => {
-    if (
-      selectedCourse &&
-      selectedLessonId &&
-      !selectedCourse.lessons.some((lesson) => lesson.id === selectedLessonId)
-    ) {
-      setSelectedLessonId('');
-    }
-  }, [selectedCourse, selectedLessonId]);
-
-  useEffect(() => {
-    if (
-      selectedCourse &&
-      selectedAssignmentId &&
-      !selectedCourse.assignments.some((assignment) => assignment.id === selectedAssignmentId)
-    ) {
-      setSelectedAssignmentId('');
-    }
-  }, [selectedCourse, selectedAssignmentId]);
-
-  useEffect(() => {
-    if (!urlCourseId || !urlAssignmentId || !myCoursesQuery.data?.items) return;
-    const course = myCoursesQuery.data.items.find((c) => c.id === urlCourseId);
-    const assignment = course?.assignments.find((a) => a.id === urlAssignmentId);
-    if (course && assignment) {
-      setSelectedCourseId(course.id);
-      setExpandedSubjectKey(getCourseSubjectKey(course));
-      setSelectedLessonId(assignment.lesson?.id ?? '');
-      setSelectedAssignmentId(assignment.id);
-      setSearchParams({}, { replace: true });
-    }
-  }, [urlCourseId, urlAssignmentId, myCoursesQuery.data?.items, setSearchParams]);
-
-  function handleSelectCourse(courseId: string, subjectKey?: string) {
-    setSelectedCourseId(courseId);
-    if (subjectKey) {
-      setExpandedSubjectKey(subjectKey);
-    }
-    setSelectedLessonId('');
-    setSelectedAssignmentId('');
+  function handleSelectCourse(courseId: string) {
+    navigate(`/student/courses/${courseId}`);
   }
 
   function handleSelectLesson(courseId: string, lessonId: string) {
-    setSelectedCourseId(courseId);
-    const course = visibleCourses.find((item) => item.id === courseId);
-    if (course) {
-      setExpandedSubjectKey(getCourseSubjectKey(course));
-    }
-    setSelectedLessonId(lessonId);
-    setSelectedAssignmentId('');
+    navigate(`/student/courses/${courseId}/lessons/${lessonId}`);
   }
 
   function handleSelectAssignment(courseId: string, assignmentId: string, lessonId?: string) {
-    setSelectedCourseId(courseId);
-    const course = visibleCourses.find((item) => item.id === courseId);
-    if (course) {
-      setExpandedSubjectKey(getCourseSubjectKey(course));
-    }
-    setSelectedAssignmentId(assignmentId);
-
-    if (lessonId) {
-      setSelectedLessonId(lessonId);
-      return;
-    }
-
-    setSelectedLessonId('');
+    void lessonId;
+    navigate(`/student/courses/${courseId}/tests/${assignmentId}`);
   }
 
   function openSubmission(assignment: AssignmentItem) {
@@ -439,32 +496,53 @@ export function StudentCoursesPage() {
 
   return (
     <div className="grid gap-5">
-      <SectionCard
-        title="My learning"
-        subtitle="Start with a subject, choose a course, then move through lessons with simple navigation."
-      >
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-          <div className="relative">
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search subject, course, or class"
-              className="h-12 w-full rounded-2xl border border-brand-200 bg-white px-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
-              aria-label="Search my courses"
-            />
+      {!activeCourseId ? (
+        <SectionCard
+          title="My learning"
+          subtitle="Browse your available courses and open the content you need."
+        >
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-center">
+            <div className="relative">
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search subject, course, or class"
+                className="h-11 w-full rounded-2xl border border-brand-200 bg-white px-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
+                aria-label="Search my courses"
+              />
+            </div>
+            <select
+              value={subjectFilter}
+              onChange={(event) => {
+                setSubjectFilter(event.target.value);
+                setPage(1);
+              }}
+              className="h-11 rounded-2xl border border-brand-200 bg-white px-4 text-sm text-slate-900 outline-none focus:border-brand-400"
+              aria-label="Filter courses by subject"
+            >
+              <option value="ALL">All subjects</option>
+              {subjectGroups.map((group) => (
+                <option key={group.key} value={group.key}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+            <div className="inline-flex items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-slate-800">
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-500 text-white shadow-soft">
+                {`${myCoursesQuery.data?.student.firstName?.[0] ?? 'S'}${myCoursesQuery.data?.student.lastName?.[0] ?? ''}`}
+              </span>
+              <span>
+                {myCoursesQuery.data?.student.firstName ?? 'Student'} ·{' '}
+                {myCoursesQuery.data?.student.studentCode ?? 'No code'}
+              </span>
+            </div>
           </div>
-          <div className="inline-flex items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-slate-800">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-500 text-white shadow-soft">
-              {`${myCoursesQuery.data?.student.firstName?.[0] ?? 'S'}${myCoursesQuery.data?.student.lastName?.[0] ?? ''}`}
-            </span>
-            <span>
-              {myCoursesQuery.data?.student.firstName ?? 'Student'} ·{' '}
-              {myCoursesQuery.data?.student.studentCode ?? 'No code'}
-            </span>
-          </div>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      ) : null}
 
       {myCoursesQuery.isPending ? (
         <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
@@ -490,115 +568,100 @@ export function StudentCoursesPage() {
       ) : null}
 
       {!myCoursesQuery.isPending && !myCoursesQuery.isError ? (
-        visibleCourses.length ? (
-          !selectedCourse ? (
+        !activeCourseId ? (
+          visibleCourses.length ? (
             <SubjectCourseGallery
-              groups={subjectGroups}
-              expandedSubjectKey={expandedSubjectKey}
-              onToggleSubject={(subjectKey) =>
-                setExpandedSubjectKey((current) => (current === subjectKey ? '' : subjectKey))
-              }
-              onSelectCourse={(courseId, subjectKey) =>
-                handleSelectCourse(courseId, subjectKey)
-              }
+              courses={filteredCourses}
+              onSelectCourse={(courseId) => handleSelectCourse(courseId)}
             />
           ) : (
-            <section className="rounded-2xl border border-brand-100 bg-white shadow-soft">
-              <div className="flex min-h-[680px] flex-col">
-                <div className="border-b border-brand-100 px-5 py-4">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                        <span>Learning workspace</span>
-                        <span className="text-brand-300">/</span>
-                        <span>{selectedCourse.classRoom.name}</span>
-                        <span className="text-brand-300">/</span>
-                        <span>{selectedCourse.academicYear.name}</span>
-                      </div>
-                      <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900">
-                        {readerHeader.title}
-                      </h2>
-                      <p className="mt-2 text-sm text-slate-600">{readerHeader.subtitle}</p>
+            <EmptyState
+              title="No courses available"
+              message="Your active enrollment does not have any published course content yet."
+            />
+          )
+        ) : selectedCourse ? (
+          <section className="rounded-2xl border border-brand-100 bg-white shadow-soft">
+            <div className="flex min-h-[560px] flex-col">
+              <div className="border-b border-brand-100 px-4 py-3 sm:px-5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                      <span>{selectedCourse.classRoom.name}</span>
+                      <span className="text-brand-300">/</span>
+                      <span>{selectedCourse.academicYear.name}</span>
                     </div>
+                    <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                      {readerHeader.title}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-600">{readerHeader.subtitle}</p>
+                  </div>
 
-                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                      {readerHeader.badge}
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    {readerHeader.badge}
+                    <button
+                      type="button"
+                      onClick={() => navigate('/student/courses')}
+                      className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300"
+                    >
+                      Back to courses
+                    </button>
+                    {selectedLesson || selectedAssignment ? (
                       <button
                         type="button"
-                        onClick={() => {
-                          setSelectedCourseId('');
-                          setSelectedLessonId('');
-                          setSelectedAssignmentId('');
-                        }}
-                        className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300"
+                        onClick={() => navigate(`/student/courses/${selectedCourse.id}`)}
+                        className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300"
                       >
-                        Back to courses
+                        Back to lessons
                       </button>
-                      {selectedLesson || selectedAssignment ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedLessonId('');
-                            setSelectedAssignmentId('');
-                          }}
-                          className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300"
-                        >
-                          Back to lessons
-                        </button>
-                      ) : null}
-                    </div>
+                    ) : null}
                   </div>
                 </div>
-
-                <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
-                  {selectedCourse ? (
-                    <CourseLearningNavigator
-                      course={selectedCourse}
-                      selectedLessonId={selectedLessonId}
-                      selectedAssignmentId={selectedAssignmentId}
-                      onOpenOverview={() => {
-                        setSelectedLessonId('');
-                        setSelectedAssignmentId('');
-                      }}
-                      onSelectLesson={(lessonId) =>
-                        handleSelectLesson(selectedCourse.id, lessonId)
-                      }
-                      onSelectAssignment={(assignmentId) =>
-                        handleSelectAssignment(selectedCourse.id, assignmentId)
-                      }
-                    />
-                  ) : null}
-
-                  {selectedAssignment ? (
-                    <AssignmentDetailCard
-                      assignment={selectedAssignment}
-                      onOpenSubmission={openSubmission}
-                    />
-                  ) : selectedLesson ? (
-                    <LessonDetailCard
-                      lesson={selectedLesson}
-                      assignments={getLessonAssignments(selectedCourse, selectedLesson.id)}
-                      onSelectAssignment={(assignmentId) =>
-                        handleSelectAssignment(selectedCourse.id, assignmentId, selectedLesson.id)
-                      }
-                    />
-                  ) : (
-                    <CourseOverviewCard
-                      course={selectedCourse}
-                      onSelectLesson={(lessonId) => handleSelectLesson(selectedCourse.id, lessonId)}
-                      onSelectAssignment={(assignmentId) =>
-                        handleSelectAssignment(selectedCourse.id, assignmentId)
-                      }
-                    />
-                  )}
-                </div>
               </div>
-            </section>
-          )
+
+              <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+                {selectedAssignment ? (
+                  <AssignmentDetailCard
+                    assignment={selectedAssignment}
+                    onOpenSubmission={openSubmission}
+                  />
+                ) : selectedLesson ? (
+                  <LessonDetailCard
+                    lesson={selectedLesson}
+                    assignments={getLessonAssignments(selectedCourse, selectedLesson.id)}
+                    onSelectAssignment={(assignmentId) =>
+                      handleSelectAssignment(selectedCourse.id, assignmentId, selectedLesson.id)
+                    }
+                  />
+                ) : (
+                  <CourseContentSwitcher
+                    course={selectedCourse}
+                    activePanel={activeCoursePanel}
+                    selectedLessonId={activeLessonId}
+                    selectedAssignmentId={activeAssignmentId}
+                    onSelectPanel={(panel) => setActiveCoursePanel(panel)}
+                    onSelectLesson={(lessonId) => handleSelectLesson(selectedCourse.id, lessonId)}
+                    onSelectAssignment={(assignmentId) =>
+                      handleSelectAssignment(selectedCourse.id, assignmentId)
+                    }
+                  />
+                )}
+              </div>
+            </div>
+          </section>
         ) : (
-          <EmptyState
-            title="No courses available"
-            message="Your active enrollment does not have any published course content yet."
+          <StateView
+            title="Course not found"
+            message="The selected course or lesson could not be loaded."
+            action={
+              <button
+                type="button"
+                onClick={() => navigate('/student/courses')}
+                className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Back to courses
+              </button>
+            }
           />
         )
       ) : null}
@@ -730,321 +793,203 @@ function ReaderBlock({
 }
 
 function SubjectCourseGallery({
-  groups,
-  expandedSubjectKey,
-  onToggleSubject,
+  courses,
   onSelectCourse,
 }: {
-  groups: SubjectCourseGroup[];
-  expandedSubjectKey: string;
-  onToggleSubject: (subjectKey: string) => void;
-  onSelectCourse: (courseId: string, subjectKey: string) => void;
+  courses: StudentCourseItem[];
+  onSelectCourse: (courseId: string) => void;
 }) {
+  if (!courses.length) {
+    return (
+      <EmptyState
+        title="No courses found"
+        message="Try a different subject filter or search term."
+      />
+    );
+  }
+
   return (
-    <div className="grid gap-4">
-      {groups.map((group, subjectIndex) => {
-        const accent = getCourseTreeAccent(subjectIndex);
-        const isExpanded = expandedSubjectKey === group.key;
+    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {courses.map((course, courseIndex) => {
+        const cover = getCourseCoverGradient(courseIndex);
+        const courseLabel = `${course.subject?.name ?? 'General Studies'} / ${course.classRoom.name}`;
 
         return (
-          <section
-            key={group.key}
-            className="rounded-2xl border border-brand-100 bg-white shadow-soft"
+          <button
+            key={course.id}
+            type="button"
+            onClick={() => onSelectCourse(course.id)}
+            className="overflow-hidden rounded-2xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
           >
-            <button
-              type="button"
-              onClick={() => onToggleSubject(group.key)}
-              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
-              aria-expanded={isExpanded}
+            <div
+              className="relative h-40 bg-[length:140px_140px]"
+              style={cover}
             >
-              <span className="flex min-w-0 items-center gap-3">
-                <span
-                  className={clsx(
-                    'grid h-11 w-11 shrink-0 place-items-center rounded-2xl border',
-                    accent.icon,
-                  )}
-                >
-                  <BookOpen className="h-5 w-5" aria-hidden="true" />
+              <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
+                {courseLabel}
+              </span>
+              <span className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-xl bg-white text-[#184f8f] shadow-md">
+                <Lock className="h-5 w-5" aria-hidden="true" />
+              </span>
+            </div>
+            <div className="space-y-2 px-4 py-3">
+              <p className="text-lg font-medium text-slate-800">{course.title}</p>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                <span>
+                  {course.academicYear.name} · {course.lessons.length} lessons
                 </span>
                 <span>
-                  <span className="block text-lg font-bold text-slate-900">{group.name}</span>
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    {group.code}
-                  </span>
+                  {course.teacher.firstName} {course.teacher.lastName}
                 </span>
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                  {group.courses.length} courses
-                </span>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                  {group.totalLessons} lessons
-                </span>
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden="true" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-slate-500" aria-hidden="true" />
-                )}
-              </span>
-            </button>
-
-            {isExpanded ? (
-              <div className="border-t border-brand-100 px-4 py-4">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {group.courses.map((course) => (
-                    <button
-                      key={course.id}
-                      type="button"
-                      onClick={() => onSelectCourse(course.id, group.key)}
-                      className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4 text-left transition hover:border-brand-300 hover:bg-brand-50"
-                    >
-                      <p className="text-base font-bold text-slate-900">{course.title}</p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        {course.classRoom.name} · {course.academicYear.name}
-                      </p>
-                      <div className="mt-3 flex gap-2">
-                        <span className="rounded-full bg-brand-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                          {course.lessons.length} lessons
-                        </span>
-                        <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
-                          {course.assignments.length} tests
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
               </div>
-            ) : null}
-          </section>
+            </div>
+          </button>
         );
       })}
     </div>
   );
 }
 
-function CourseLearningNavigator({
+function CourseContentSwitcher({
   course,
+  activePanel,
   selectedLessonId,
   selectedAssignmentId,
-  onOpenOverview,
+  onSelectPanel,
   onSelectLesson,
   onSelectAssignment,
 }: {
   course: StudentCourseItem;
+  activePanel: CoursePanel;
   selectedLessonId: string;
   selectedAssignmentId: string;
-  onOpenOverview: () => void;
+  onSelectPanel: (panel: CoursePanel) => void;
   onSelectLesson: (lessonId: string) => void;
   onSelectAssignment: (assignmentId: string) => void;
 }) {
   const generalAssignments = getGeneralAssignments(course);
-  const selectedLessonIndex = course.lessons.findIndex((lesson) => lesson.id === selectedLessonId);
-  const previousLesson =
-    selectedLessonIndex > 0 ? course.lessons[selectedLessonIndex - 1] : null;
-  const nextLesson =
-    selectedLessonIndex >= 0 && selectedLessonIndex < course.lessons.length - 1
-      ? course.lessons[selectedLessonIndex + 1]
-      : null;
 
   return (
     <section className="mb-4 rounded-2xl border border-brand-100 bg-brand-50/60 p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-            Study path
+            Course content
           </p>
           <p className="mt-1 text-sm text-slate-700">
-            Select a lesson in order, or jump to any topic.
+            Switch between lessons and tests, then open any card to read the details.
           </p>
         </div>
-        {selectedLessonId ? (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => previousLesson && onSelectLesson(previousLesson.id)}
-              disabled={!previousLesson}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50"
-            >
-              Previous lesson
-            </button>
-            <button
-              type="button"
-              onClick={() => nextLesson && onSelectLesson(nextLesson.id)}
-              disabled={!nextLesson}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50"
-            >
-              Next lesson
-            </button>
-          </div>
-        ) : null}
+        <div className="inline-flex rounded-2xl border border-brand-200 bg-white p-1">
+          <button
+            type="button"
+            onClick={() => onSelectPanel('lessons')}
+            className={clsx(
+              'rounded-xl px-4 py-2 text-sm font-semibold transition',
+              activePanel === 'lessons'
+                ? 'bg-brand-500 text-white'
+                : 'text-slate-700 hover:bg-brand-50',
+            )}
+          >
+            Lessons
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelectPanel('tests')}
+            className={clsx(
+              'rounded-xl px-4 py-2 text-sm font-semibold transition',
+              activePanel === 'tests'
+                ? 'bg-brand-500 text-white'
+                : 'text-slate-700 hover:bg-brand-50',
+            )}
+          >
+            Tests
+          </button>
+        </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onOpenOverview}
-          className={clsx(
-            'rounded-xl border px-3 py-2 text-xs font-semibold transition',
-            !selectedLessonId && !selectedAssignmentId
-              ? 'border-brand-300 bg-white text-slate-900'
-              : 'border-brand-200 bg-white/80 text-slate-700 hover:border-brand-300',
-          )}
-        >
-          Course overview
-        </button>
-        {course.lessons.map((lesson) => {
-          const isSelected = selectedLessonId === lesson.id;
-          const assignmentCount = getLessonAssignments(course, lesson.id).length;
-          return (
-            <button
-              key={lesson.id}
-              type="button"
-              onClick={() => onSelectLesson(lesson.id)}
-              className={clsx(
-                'rounded-xl border px-3 py-2 text-xs font-semibold transition',
-                isSelected
-                  ? 'border-brand-300 bg-white text-slate-900'
-                  : 'border-brand-200 bg-white/80 text-slate-700 hover:border-brand-300',
-              )}
-            >
-              Lesson {lesson.sequence}
-              {assignmentCount ? ` · ${assignmentCount} test${assignmentCount === 1 ? '' : 's'}` : ''}
-            </button>
-          );
-        })}
-      </div>
+      {activePanel === 'lessons' ? (
+        course.lessons.length ? (
+          <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {course.lessons.map((lesson, lessonIndex) => {
+              const assignmentCount = getLessonAssignments(course, lesson.id).length;
+              const cover = getCourseCoverGradient(lessonIndex);
+              const isSelected = selectedLessonId === lesson.id;
 
-      {generalAssignments.length ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {generalAssignments.map((assignment) => {
-            const isSelected = selectedAssignmentId === assignment.id;
-            const status = getAssignmentStatus(assignment);
-            return (
-              <button
-                key={assignment.id}
-                type="button"
-                onClick={() => onSelectAssignment(assignment.id)}
-                className={clsx(
-                  'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition',
-                  isSelected
-                    ? 'border-brand-300 bg-white text-slate-900'
-                    : 'border-brand-200 bg-white/80 text-slate-700 hover:border-brand-300',
-                )}
-              >
-                <ClipboardCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{assignment.title}</span>
-                <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700">
-                  {status.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-function CourseOverviewCard({
-  course,
-  onSelectLesson,
-  onSelectAssignment,
-}: {
-  course: StudentCourseItem;
-  onSelectLesson: (lessonId: string) => void;
-  onSelectAssignment: (assignmentId: string) => void;
-}) {
-  const generalAssignments = getGeneralAssignments(course);
-
-  return (
-    <div className="grid gap-4">
-      <ReaderBlock
-        eyebrow="Course overview"
-        title={course.title}
-        subtitle={course.description ?? 'Open a lesson from the list below to start learning.'}
-        action={
-          course.subject ? (
-            <span className="inline-flex rounded-full border border-brand-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-              {course.subject.name}
-            </span>
-          ) : null
-        }
-      >
-        <div className="grid gap-3 sm:grid-cols-3">
-          <MetricTile label="Lessons" value={String(course.lessons.length)} />
-          <MetricTile label="Tests" value={String(course.assignments.length)} />
-          <MetricTile label="Teacher" value={`${course.teacher.firstName} ${course.teacher.lastName}`} />
-        </div>
-      </ReaderBlock>
-
-      <ReaderBlock
-        eyebrow="Course map"
-        title="Lessons in this course"
-        subtitle="Select a lesson to read the content and see tests linked to it."
-      >
-        {course.lessons.length ? (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {course.lessons.map((lesson) => {
-              const lessonAssignments = getLessonAssignments(course, lesson.id);
               return (
                 <button
                   key={lesson.id}
                   type="button"
                   onClick={() => onSelectLesson(lesson.id)}
-                  className="rounded-2xl border border-brand-100 bg-white p-4 text-left transition hover:border-brand-200 hover:bg-brand-50"
+                  className={clsx(
+                    'overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg',
+                    isSelected ? 'border-brand-300 ring-2 ring-brand-200' : 'border-brand-100',
+                  )}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">
-                        {lesson.sequence}. {lesson.title}
-                      </p>
-                      {lesson.summary ? (
-                        <p className="mt-2 line-clamp-2 text-sm text-slate-600">{lesson.summary}</p>
-                      ) : null}
-                    </div>
-                    <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                      {lessonAssignments.length} tests
+                  <div className="relative h-40 bg-[length:140px_140px]" style={cover}>
+                    <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
+                      Lesson {lesson.sequence} / {lesson.contentType}
                     </span>
+                    <span className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-md">
+                      {assignmentCount} test{assignmentCount === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                  <div className="space-y-2 px-4 py-3">
+                    <p className="text-lg font-medium text-slate-800">{lesson.title}</p>
+                    <p className="line-clamp-2 text-sm text-slate-600">
+                      {lesson.summary ?? 'Open this lesson to read the content.'}
+                    </p>
                   </div>
                 </button>
               );
             })}
           </div>
         ) : (
-          <EmptyState message="No published lessons in this course yet." />
-        )}
-      </ReaderBlock>
-
-      {generalAssignments.length ? (
-        <ReaderBlock
-          eyebrow="Course tests"
-          title="General tests"
-          subtitle="These tests are attached to the course directly, not to a single lesson."
-        >
-          <div className="grid gap-3">
-            {generalAssignments.map((assignment) => {
-              const status = getAssignmentStatus(assignment);
-              return (
-                <button
-                  key={assignment.id}
-                  type="button"
-                  onClick={() => onSelectAssignment(assignment.id)}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-white p-4 text-left transition hover:border-brand-200 hover:bg-brand-50"
-                >
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{assignment.title}</p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Due {formatDateTime(assignment.dueAt)}
-                    </p>
-                  </div>
-                  <StatusPill label={status.label} tone={status.tone} />
-                </button>
-              );
-            })}
+          <div className="mt-4">
+            <EmptyState message="No published lessons in this course yet." />
           </div>
-        </ReaderBlock>
-      ) : null}
-    </div>
+        )
+      ) : generalAssignments.length ? (
+        <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {generalAssignments.map((assignment, assignmentIndex) => {
+            const cover = getCourseCoverGradient(assignmentIndex);
+            const status = getAssignmentStatus(assignment);
+            const isSelected = selectedAssignmentId === assignment.id;
+
+            return (
+              <button
+                key={assignment.id}
+                type="button"
+                onClick={() => onSelectAssignment(assignment.id)}
+                className={clsx(
+                  'overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg',
+                  isSelected ? 'border-brand-300 ring-2 ring-brand-200' : 'border-brand-100',
+                )}
+              >
+                <div className="relative h-40 bg-[length:140px_140px]" style={cover}>
+                  <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
+                    Test / {status.label}
+                  </span>
+                  <span className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-md">
+                    {assignment.maxPoints} pts
+                  </span>
+                </div>
+                <div className="space-y-2 px-4 py-3">
+                  <p className="text-lg font-medium text-slate-800">{assignment.title}</p>
+                  <p className="line-clamp-2 text-sm text-slate-600">
+                    Due {formatDateTime(assignment.dueAt)}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mt-4">
+          <EmptyState message="No general tests are available for this course yet." />
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1057,6 +1002,8 @@ function LessonDetailCard({
   assignments: AssignmentItem[];
   onSelectAssignment: (assignmentId: string) => void;
 }) {
+  const showInlineMedia = lessonHasInlineMedia(lesson);
+
   return (
     <div className="grid gap-4">
       <ReaderBlock
@@ -1076,47 +1023,21 @@ function LessonDetailCard({
           </div>
         )}
 
+        <div className="mt-4">
+          <LessonMediaEmbed lesson={lesson} />
+        </div>
+
         <div className="mt-4 flex flex-wrap gap-2">
-          {lesson.externalUrl ? <AttachmentLink label="Open lesson link" url={lesson.externalUrl} /> : null}
+          {lesson.externalUrl && !showInlineMedia ? (
+            <AttachmentLink label="Open lesson link" url={lesson.externalUrl} />
+          ) : null}
           {lesson.fileAsset ? (
             <AttachmentLink
-              label={`Open ${lesson.fileAsset.originalName}`}
+              label={`Download ${lesson.fileAsset.originalName}`}
               url={lesson.fileAsset.secureUrl}
             />
           ) : null}
         </div>
-      </ReaderBlock>
-
-      <ReaderBlock
-        eyebrow="Lesson tests"
-        title="Tests linked to this lesson"
-        subtitle="Open a test to read instructions and submit your answer."
-      >
-        {assignments.length ? (
-          <div className="grid gap-3">
-            {assignments.map((assignment) => {
-              const status = getAssignmentStatus(assignment);
-              return (
-                <button
-                  key={assignment.id}
-                  type="button"
-                  onClick={() => onSelectAssignment(assignment.id)}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-white p-4 text-left transition hover:border-brand-200 hover:bg-brand-50"
-                >
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{assignment.title}</p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Due {formatDateTime(assignment.dueAt)} · {assignment.maxPoints} pts
-                    </p>
-                  </div>
-                  <StatusPill label={status.label} tone={status.tone} />
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <EmptyState message="No tests are linked to this lesson yet." />
-        )}
       </ReaderBlock>
     </div>
   );
@@ -1141,7 +1062,7 @@ function AssignmentDetailCard({
       >
         <RichContent
           html={assignment.instructions}
-          className="rich-content rounded-2xl bg-white p-5 text-[15px] leading-7 text-slate-700"
+          className="rich-content rounded-2xl bg-white p-4 text-[15px] leading-7 text-slate-700"
         />
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -1179,7 +1100,7 @@ function AssignmentDetailCard({
         }
       >
         {assignment.mySubmission ? (
-          <div className="rounded-2xl bg-white p-5 text-sm text-slate-700 shadow-sm">
+          <div className="rounded-2xl bg-white p-4 text-sm text-slate-700 shadow-sm">
             {assignment.mySubmission.textAnswer ? (
               <p className="whitespace-pre-wrap">{assignment.mySubmission.textAnswer}</p>
             ) : null}
@@ -1213,21 +1134,6 @@ function AssignmentDetailCard({
           </div>
         )}
       </ReaderBlock>
-    </div>
-  );
-}
-
-function MetricTile({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-brand-100 bg-white px-4 py-4 shadow-sm">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   ChevronRight,
   ExternalLink,
   FilePlus2,
+  Lock,
   Plus,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -53,6 +54,24 @@ interface SubjectOption {
   code: string;
   name: string;
 }
+
+const COURSE_CARD_BACKGROUNDS = [
+  {
+    backgroundColor: '#6c5ce7',
+    backgroundImage:
+      'radial-gradient(circle at 18% 24%, rgba(255,255,255,0.18) 0 16%, transparent 17%), radial-gradient(circle at 48% 28%, rgba(255,255,255,0.12) 0 18%, transparent 19%), radial-gradient(circle at 72% 22%, rgba(255,255,255,0.14) 0 14%, transparent 15%), radial-gradient(circle at 30% 72%, rgba(255,255,255,0.12) 0 19%, transparent 20%), radial-gradient(circle at 68% 78%, rgba(255,255,255,0.12) 0 18%, transparent 19%), linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0))',
+  },
+  {
+    backgroundColor: '#1d8cf2',
+    backgroundImage:
+      'radial-gradient(circle at 16% 18%, rgba(255,255,255,0.16) 0 16%, transparent 17%), radial-gradient(circle at 46% 18%, rgba(255,255,255,0.11) 0 18%, transparent 19%), radial-gradient(circle at 78% 16%, rgba(255,255,255,0.12) 0 14%, transparent 15%), radial-gradient(circle at 28% 66%, rgba(255,255,255,0.12) 0 18%, transparent 19%), radial-gradient(circle at 74% 70%, rgba(255,255,255,0.12) 0 18%, transparent 19%), linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0))',
+  },
+  {
+    backgroundColor: '#20c997',
+    backgroundImage:
+      'linear-gradient(45deg, rgba(255,255,255,0.08) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, transparent 75%, transparent), linear-gradient(-45deg, rgba(255,255,255,0.06) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.06) 75%, transparent 75%, transparent)',
+  },
+];
 
 function htmlToPlainText(value: string | undefined) {
   return (value ?? '')
@@ -128,6 +147,135 @@ function formatDateTime(value: string | null | undefined) {
   }).format(new Date(value));
 }
 
+function isAudioAsset(url: string | null | undefined, mimeType?: string | null) {
+  const value = `${mimeType ?? ''} ${url ?? ''}`.toLowerCase();
+  return value.includes('audio/') || /\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/.test(value);
+}
+
+function getYouTubeEmbedUrl(url: string | null | undefined) {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+
+    if (host === 'youtu.be') {
+      const videoId = parsed.pathname.split('/').filter(Boolean)[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      const videoId =
+        parsed.searchParams.get('v') ??
+        parsed.pathname.match(/^\/(?:embed|shorts)\/([^/?]+)/)?.[1] ??
+        null;
+
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function lessonHasInlineMedia(
+  lesson: {
+    contentType: LessonContentType;
+    externalUrl: string | null;
+    fileAsset: {
+      secureUrl: string;
+      mimeType: string | null;
+      originalName: string;
+    } | null;
+  },
+) {
+  const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
+  if (!mediaUrl) {
+    return false;
+  }
+
+  return Boolean(
+    getYouTubeEmbedUrl(mediaUrl) ||
+      lesson.contentType === 'VIDEO' ||
+      lesson.contentType === 'PDF' ||
+      lesson.fileAsset?.mimeType?.startsWith('video/') ||
+      isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType),
+  );
+}
+
+function LessonMediaEmbed({
+  lesson,
+}: {
+  lesson: {
+    contentType: LessonContentType;
+    externalUrl: string | null;
+    fileAsset: {
+      secureUrl: string;
+      mimeType: string | null;
+      originalName: string;
+    } | null;
+  };
+}) {
+  const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
+
+  if (!mediaUrl) {
+    return null;
+  }
+
+  const youtubeEmbedUrl = getYouTubeEmbedUrl(mediaUrl);
+  if (youtubeEmbedUrl) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-brand-100 bg-black">
+        <iframe
+          title={lesson.fileAsset?.originalName ?? 'Lesson video'}
+          src={youtubeEmbedUrl}
+          className="aspect-video w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
+  if (lesson.contentType === 'VIDEO' || lesson.fileAsset?.mimeType?.startsWith('video/')) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-brand-100 bg-black">
+        <video controls className="h-auto w-full" src={mediaUrl}>
+          Your browser does not support embedded video playback.
+        </video>
+      </div>
+    );
+  }
+
+  if (isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType)) {
+    return (
+      <div className="rounded-2xl border border-brand-100 bg-white p-4">
+        <audio controls className="w-full" src={mediaUrl}>
+          Your browser does not support embedded audio playback.
+        </audio>
+      </div>
+    );
+  }
+
+  if (lesson.contentType === 'PDF') {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white">
+        <iframe
+          title={lesson.fileAsset?.originalName ?? 'Lesson PDF'}
+          src={mediaUrl}
+          className="h-[560px] w-full"
+        />
+      </div>
+    );
+  }
+
+  return null;
+}
+
 function AttachmentLink({
   label,
   url,
@@ -179,10 +327,10 @@ export function CoursesPage() {
     !hasRole(auth.me, 'SUPER_ADMIN');
 
   const [search, setSearch] = useState('');
-  const [classFilter, setClassFilter] = useState('');
-  const [yearFilter, setYearFilter] = useState('');
+  const [subjectFilter, setSubjectFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [selectedLessonId, setSelectedLessonId] = useState('');
 
   const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false);
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
@@ -214,11 +362,9 @@ export function CoursesPage() {
   });
 
   const coursesQuery = useQuery({
-    queryKey: ['lms', 'courses', yearFilter || null, classFilter || null, page],
+    queryKey: ['lms', 'courses', page],
     queryFn: () =>
       listCoursesApi(auth.accessToken!, {
-        academicYearId: yearFilter || undefined,
-        classId: classFilter || undefined,
         page,
         pageSize: 12,
       }),
@@ -333,37 +479,41 @@ export function CoursesPage() {
   const visibleCourses = useMemo(() => {
     const q = search.trim().toLowerCase();
     const items = coursesQuery.data?.items ?? [];
-    if (!q) {
-      return items;
-    }
-
     return items.filter((course) => {
       const subjectName = course.subject?.name ?? '';
-      return [course.title, course.classRoom.name, course.academicYear.name, subjectName]
-        .join(' ')
-        .toLowerCase()
-        .includes(q);
-    });
-  }, [coursesQuery.data?.items, search]);
+      const matchesSearch = q
+        ? [course.title, course.classRoom.name, course.academicYear.name, subjectName]
+            .join(' ')
+            .toLowerCase()
+            .includes(q)
+        : true;
+      const matchesSubject =
+        subjectFilter === 'ALL' ? true : course.subject?.id === subjectFilter;
 
-  useEffect(() => {
-    if (!yearFilter && academicYears.length) {
-      const currentYear = academicYears.find((item) => item.isCurrent) ?? academicYears[0];
-      setYearFilter(currentYear.id);
-    }
-  }, [academicYears, yearFilter]);
+      return matchesSearch && matchesSubject;
+    });
+  }, [coursesQuery.data?.items, search, subjectFilter]);
 
   useEffect(() => {
     if (selectedCourseId && !visibleCourses.some((course) => course.id === selectedCourseId)) {
       setSelectedCourseId('');
+      setSelectedLessonId('');
     }
   }, [selectedCourseId, visibleCourses]);
 
+  useEffect(() => {
+    const lessons = courseDetailQuery.data?.lessons.items ?? [];
+    if (selectedLessonId && !lessons.some((lesson) => lesson.id === selectedLessonId)) {
+      setSelectedLessonId('');
+    }
+  }, [courseDetailQuery.data?.lessons.items, selectedLessonId]);
+
   function openCreateCourse() {
+    const currentAcademicYear = academicYears.find((item) => item.isCurrent) ?? academicYears[0];
     courseForm.reset({
       ...defaultCourseForm,
-      academicYearId: yearFilter || academicYears[0]?.id || '',
-      classRoomId: classFilter || classRooms[0]?.id || '',
+      academicYearId: currentAcademicYear?.id || '',
+      classRoomId: classRooms[0]?.id || '',
       subjectId: subjects[0]?.id || '',
     });
     setIsCreateCourseOpen(true);
@@ -411,6 +561,8 @@ export function CoursesPage() {
   }
 
   const selectedCourse = courseDetailQuery.data?.course ?? null;
+  const selectedLesson =
+    courseDetailQuery.data?.lessons.items.find((lesson) => lesson.id === selectedLessonId) ?? null;
 
   return (
     <div className="grid gap-5">
@@ -425,7 +577,10 @@ export function CoursesPage() {
           selectedCourseId ? (
             <button
               type="button"
-              onClick={() => setSelectedCourseId('')}
+              onClick={() => {
+                setSelectedCourseId('');
+                setSelectedLessonId('');
+              }}
               className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-brand-50"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -446,13 +601,16 @@ export function CoursesPage() {
         <div className="grid gap-4">
           {!selectedCourseId ? (
             <>
-              <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[minmax(0,1fr)_220px_220px] lg:items-end">
+              <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-end">
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   <span>Search courses</span>
                   <input
                     type="search"
                     value={search}
-                    onChange={(event) => setSearch(event.target.value)}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setPage(1);
+                    }}
                     placeholder="Search by title, class, or subject"
                     className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
                     aria-label="Search courses"
@@ -460,36 +618,17 @@ export function CoursesPage() {
                 </label>
 
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
-                  <span>Academic year</span>
+                  <span>Subject</span>
                   <select
-                    value={yearFilter}
+                    value={subjectFilter}
                     onChange={(event) => {
-                      setYearFilter(event.target.value);
+                      setSubjectFilter(event.target.value);
                       setPage(1);
                     }}
                     className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
                   >
-                    <option value="">All years</option>
-                    {academicYears.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="grid gap-1 text-sm font-medium text-slate-700">
-                  <span>Class</span>
-                  <select
-                    value={classFilter}
-                    onChange={(event) => {
-                      setClassFilter(event.target.value);
-                      setPage(1);
-                    }}
-                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
-                  >
-                    <option value="">All classes</option>
-                    {classRooms.map((item) => (
+                    <option value="ALL">All subjects</option>
+                    {subjects.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}
                       </option>
@@ -532,7 +671,7 @@ export function CoursesPage() {
                       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-slate-700">
                         <div>
                           <span className="font-medium text-slate-800">
-                            {coursesQuery.data?.pagination.totalItems ?? visibleCourses.length} courses
+                            {visibleCourses.length} courses
                           </span>
                           <span className="ml-2 text-xs uppercase tracking-[0.16em] text-slate-500">
                             Filtered view
@@ -567,38 +706,48 @@ export function CoursesPage() {
                         ) : null}
                       </div>
 
-                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {visibleCourses.map((course) => (
+                      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        {visibleCourses.map((course, courseIndex) => {
+                          const cover = COURSE_CARD_BACKGROUNDS[
+                            courseIndex % COURSE_CARD_BACKGROUNDS.length
+                          ];
+                          const courseLabel = `${course.subject?.name ?? 'General Studies'} / ${course.classRoom.name}`;
+
+                          return (
                           <button
                             type="button"
                             key={course.id}
-                            onClick={() => setSelectedCourseId(course.id)}
-                            className="rounded-2xl border border-brand-100 bg-white p-4 text-left transition hover:border-brand-200 hover:bg-brand-50"
+                            onClick={() => {
+                              setSelectedCourseId(course.id);
+                              setSelectedLessonId('');
+                            }}
+                            className="overflow-hidden rounded-2xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                                  <BookOpen className="h-4 w-4 text-slate-600" aria-hidden="true" />
-                                  {course.title}
-                                </p>
-                                <p className="mt-1 text-sm text-slate-600">
-                                  {course.classRoom.name} · {course.academicYear.name}
-                                </p>
-                                <p className="mt-1 text-xs text-slate-500">
-                                  Teacher: {course.teacher.firstName} {course.teacher.lastName}
-                                </p>
-                              </div>
-                              <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                                {course.counts.lessons} lessons
+                            <div
+                              className="relative h-40 bg-[length:140px_140px]"
+                              style={cover}
+                            >
+                              <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
+                                {courseLabel}
+                              </span>
+                              <span className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-xl bg-white text-[#184f8f] shadow-md">
+                                <Lock className="h-5 w-5" aria-hidden="true" />
                               </span>
                             </div>
-                            {course.subject ? (
-                              <p className="mt-3 text-xs uppercase tracking-[0.16em] text-slate-500">
-                                {course.subject.name}
-                              </p>
-                            ) : null}
+                            <div className="space-y-2 px-4 py-3">
+                              <p className="text-lg font-medium text-slate-800">{course.title}</p>
+                              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                                <span>
+                                  {course.academicYear.name} · {course.counts.lessons} lessons
+                                </span>
+                                <span>
+                                  {course.teacher.firstName} {course.teacher.lastName}
+                                </span>
+                              </div>
+                            </div>
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (
@@ -683,71 +832,128 @@ export function CoursesPage() {
                   <SectionCard
                     title="Lessons"
                     subtitle="Draft content first, then publish it when ready for students."
+                    action={
+                      selectedLesson ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedLessonId('')}
+                            className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                          >
+                            Back to lessons
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              publishLessonMutation.mutate({
+                                lessonId: selectedLesson.id,
+                                isPublished: !selectedLesson.isPublished,
+                              })
+                            }
+                            className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+                          >
+                            {selectedLesson.isPublished ? 'Move to draft' : 'Publish'}
+                          </button>
+                        </div>
+                      ) : undefined
+                    }
                   >
                     {courseDetailQuery.data?.lessons.items.length ? (
-                      <div className="grid gap-3">
-                        {courseDetailQuery.data.lessons.items.map((lesson) => (
-                          <article
-                            key={lesson.id}
-                            className="rounded-2xl border border-brand-100 bg-white p-4"
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-bold text-slate-900">
-                                  {lesson.sequence}. {lesson.title}
-                                </p>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <StatusPill
-                                    label={lesson.isPublished ? 'Published' : 'Draft'}
-                                    tone={lesson.isPublished ? 'published' : 'draft'}
-                                  />
-                                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                                    {lesson.contentType}
-                                  </span>
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  publishLessonMutation.mutate({
-                                    lessonId: lesson.id,
-                                    isPublished: !lesson.isPublished,
-                                  })
-                                }
-                                className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-                              >
-                                {lesson.isPublished ? 'Move to draft' : 'Publish'}
-                              </button>
-                            </div>
-                            {lesson.summary ? (
-                              <p className="mt-3 text-sm text-slate-700">{lesson.summary}</p>
+                      selectedLesson ? (
+                        <div className="grid gap-4">
+                          <div>
+                            <p className="text-lg font-semibold text-slate-900">
+                              {selectedLesson.sequence}. {selectedLesson.title}
+                            </p>
+                            {selectedLesson.summary ? (
+                              <p className="mt-1 text-sm text-slate-600">
+                                {selectedLesson.summary}
+                              </p>
                             ) : null}
-                            {lesson.body ? (
-                              <RichContent
-                                html={lesson.body}
-                                className="rich-content mt-3 rounded-xl bg-brand-50 p-3 text-sm leading-6 text-slate-800"
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusPill
+                              label={selectedLesson.isPublished ? 'Published' : 'Draft'}
+                              tone={selectedLesson.isPublished ? 'published' : 'draft'}
+                            />
+                            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                              {selectedLesson.contentType}
+                            </span>
+                          </div>
+
+                          {selectedLesson.body ? (
+                            <RichContent
+                              html={selectedLesson.body}
+                              className="rich-content rounded-2xl bg-brand-50 p-5 text-[15px] leading-7 text-slate-800"
+                            />
+                          ) : (
+                            <div className="rounded-2xl border border-dashed border-brand-200 bg-white px-4 py-5 text-sm text-slate-600">
+                              This lesson uses media or attached files instead of text content.
+                            </div>
+                          )}
+
+                          <LessonMediaEmbed lesson={selectedLesson} />
+
+                          <div className="flex flex-wrap gap-2">
+                            {selectedLesson.externalUrl &&
+                            !lessonHasInlineMedia(selectedLesson) ? (
+                              <AttachmentLink
+                                label="Open external content"
+                                url={selectedLesson.externalUrl}
                               />
                             ) : null}
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {lesson.externalUrl ? (
-                                <AttachmentLink
-                                  label="Open external content"
-                                  url={lesson.externalUrl}
-                                />
-                              ) : null}
-                              {lesson.fileAsset ? (
-                                <AttachmentLink
-                                  label={`Open ${lesson.fileAsset.originalName}`}
-                                  url={lesson.fileAsset.secureUrl}
-                                />
-                              ) : null}
-                            </div>
-                            <p className="mt-3 text-xs text-slate-500">
-                              Published: {formatDateTime(lesson.publishedAt)}
-                            </p>
-                          </article>
-                        ))}
-                      </div>
+                            {selectedLesson.fileAsset ? (
+                              <AttachmentLink
+                                label={`Download ${selectedLesson.fileAsset.originalName}`}
+                                url={selectedLesson.fileAsset.secureUrl}
+                              />
+                            ) : null}
+                          </div>
+
+                          <p className="text-xs text-slate-500">
+                            Published: {formatDateTime(selectedLesson.publishedAt)}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                          {courseDetailQuery.data.lessons.items.map((lesson, lessonIndex) => {
+                            const cover =
+                              COURSE_CARD_BACKGROUNDS[
+                                lessonIndex % COURSE_CARD_BACKGROUNDS.length
+                              ];
+
+                            return (
+                              <button
+                                key={lesson.id}
+                                type="button"
+                                onClick={() => setSelectedLessonId(lesson.id)}
+                                className="overflow-hidden rounded-2xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
+                              >
+                                <div
+                                  className="relative h-40 bg-[length:140px_140px]"
+                                  style={cover}
+                                >
+                                  <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
+                                    Lesson {lesson.sequence} / {lesson.contentType}
+                                  </span>
+                                  <span className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-md">
+                                    {lesson.isPublished ? 'Published' : 'Draft'}
+                                  </span>
+                                </div>
+                                <div className="space-y-2 px-4 py-3">
+                                  <p className="text-lg font-medium text-slate-800">
+                                    {lesson.title}
+                                  </p>
+                                  <p className="line-clamp-2 text-sm text-slate-600">
+                                    {lesson.summary ?? 'Open this lesson to read the content.'}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )
                     ) : (
                       <EmptyState
                         message="No lessons yet. Add the first lesson to start your course feed."

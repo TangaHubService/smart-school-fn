@@ -18,6 +18,10 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
+import {
+  DashboardQuickActionsDropdown,
+  type DashboardQuickActionItem,
+} from '../components/dashboard/quick-actions-dropdown';
 import { StateView } from '../components/state-view';
 import { SchoolAdminDashboardPage } from './school-admin-dashboard-page';
 import { SuperAdminDashboardPage } from './super-admin-dashboard-page';
@@ -253,6 +257,26 @@ export function DashboardPage() {
 
     return items;
   }, [canAssessments, canAttendance, canCourses, canSetup, setupComplete, superAdmin]);
+
+  const headerQuickActions = useMemo<DashboardQuickActionItem[]>(() => {
+    const items = quickActions.map((action) => ({
+      label: action.label,
+      description: action.description,
+      icon: action.icon,
+      to: action.to,
+    }));
+
+    if (canAttendance && !superAdmin) {
+      items.unshift({
+        label: 'Open attendance',
+        description: 'Review attendance and pending class sessions.',
+        icon: ClipboardList,
+        to: '/admin/attendance',
+      });
+    }
+
+    return items;
+  }, [canAttendance, quickActions, superAdmin]);
 
   const upcomingAssessments = useMemo(() => {
     const items = assessmentsQuery.data?.items ?? [];
@@ -512,14 +536,17 @@ export function DashboardPage() {
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-soft lg:flex-row lg:items-end lg:justify-between">
-        <div>
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-soft lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             School Dashboard
           </p>
-          <h1 className="mt-2 text-[1.75rem] font-bold tracking-tight text-slate-900">
-            {auth.me?.school?.displayName ?? auth.me?.tenant.name ?? 'Smart School Rwanda'}
-          </h1>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="min-w-0 text-[1.75rem] font-bold tracking-tight text-slate-900">
+              {auth.me?.school?.displayName ?? auth.me?.tenant.name ?? 'Smart School Rwanda'}
+            </h1>
+            <DashboardQuickActionsDropdown actions={headerQuickActions} />
+          </div>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
             Track attendance, assessments, and the next academic actions from one landing page.
           </p>
@@ -535,15 +562,6 @@ export function DashboardPage() {
               className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
             />
           </label>
-          {canAttendance && !superAdmin ? (
-            <DashboardLinkButton to="/admin/attendance" tone="primary">
-              Open attendance
-            </DashboardLinkButton>
-          ) : quickActions[0] ? (
-            <DashboardLinkButton to={quickActions[0].to} tone={quickActions[0].tone}>
-              {quickActions[0].label}
-            </DashboardLinkButton>
-          ) : null}
         </div>
       </div>
 
@@ -968,27 +986,4 @@ function RecentActivityRow({ item }: { item: ActivityItem }) {
   }
 
   return <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4">{content}</div>;
-}
-
-function DashboardLinkButton({
-  children,
-  to,
-  tone,
-}: {
-  children: ReactNode;
-  to: string;
-  tone: ActionTone;
-}) {
-  const className =
-    tone === 'primary'
-      ? 'rounded-lg border border-brand-500 bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white'
-      : tone === 'accent'
-        ? 'rounded-lg border border-accent-500 bg-accent-500 px-4 py-2.5 text-sm font-semibold text-slate-900'
-        : 'rounded-lg border border-brand-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700';
-
-  return (
-    <Link to={to} className={className}>
-      {children}
-    </Link>
-  );
 }

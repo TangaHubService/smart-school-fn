@@ -169,8 +169,8 @@ export function AppRoutes() {
             <Route element={<RequirePermission permission="courses.read" />}>
               <Route path="/admin/courses" element={<CoursesPage />} />
               <Route path="/admin/my-classes" element={<TeacherMyClassesPage />} />
+              <Route path="/admin/subjects" element={<SubjectsPage />} />
             </Route>
-            <Route path="/admin/subjects" element={<Navigate to="/admin/courses" replace />} />
             {assessmentsFeatureEnabled ? (
               <>
                 <Route path="/admin/assignments" element={<Navigate to="/admin/assessments" replace />} />
@@ -199,9 +199,6 @@ export function AppRoutes() {
             <Route element={<RequirePermission permission="students.read" />}>
               <Route path="/admin/students" element={<StudentsPage />} />
             </Route>
-            <Route element={<RequirePermission permission="subject.manage" />}>
-              <Route path="/admin/subjects" element={<SubjectsPage />} />
-            </Route>
           </Route>
 
           <Route element={<RequirePermission permission="parents.manage" />}>
@@ -217,6 +214,9 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="students.my_courses.read" />}>
             <Route path="/student/courses" element={<StudentCoursesPage />} />
+            <Route path="/student/courses/:courseId" element={<StudentCoursesPage />} />
+            <Route path="/student/courses/:courseId/lessons/:lessonId" element={<StudentCoursesPage />} />
+            <Route path="/student/courses/:courseId/tests/:assignmentId" element={<StudentCoursesPage />} />
             <Route path="/student/assignments" element={<StudentAssignmentsPage />} />
           </Route>
           <Route element={<RequirePermission permission="report_cards.my_read" />}>

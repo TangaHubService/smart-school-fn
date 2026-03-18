@@ -8,6 +8,10 @@ import {
 } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 
+import {
+  DashboardQuickActionsDropdown,
+  type DashboardQuickActionItem,
+} from '../components/dashboard/quick-actions-dropdown';
 import { StateView } from '../components/state-view';
 import { getStoredAcademicYearId } from './student-academic-year-select-page';
 import { useAuth } from '../features/auth/auth.context';
@@ -16,6 +20,33 @@ import {
   type StudentDashboardData,
 } from '../features/dashboard/dashboard.api';
 import { useQuery } from '@tanstack/react-query';
+
+const STUDENT_QUICK_ACTIONS: DashboardQuickActionItem[] = [
+  {
+    label: 'My Courses',
+    description: 'Open your lessons and course materials.',
+    icon: BookOpen,
+    to: '/student/courses',
+  },
+  {
+    label: 'Assessments',
+    description: 'Review available tests and assessments.',
+    icon: BadgeCheck,
+    to: '/student/assessments',
+  },
+  {
+    label: 'Report Cards',
+    description: 'See your latest academic reports.',
+    icon: FileBarChart2,
+    to: '/student/report-cards',
+  },
+  {
+    label: 'Assignments',
+    description: 'Open submitted and pending assignments.',
+    icon: ClipboardCheck,
+    to: '/student/assignments',
+  },
+];
 
 export function StudentDashboardPage() {
   const auth = useAuth();
@@ -64,8 +95,13 @@ export function StudentDashboardPage() {
 
   return (
     <section className="space-y-5">
-      <h1 className="text-2xl font-bold text-slate-900">Student Dashboard</h1>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="space-y-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="min-w-0 text-2xl font-bold text-slate-900">
+            Student Dashboard
+          </h1>
+          <DashboardQuickActionsDropdown actions={STUDENT_QUICK_ACTIONS} />
+        </div>
         <div className="flex items-center gap-2 text-slate-700">
           <Home className="h-5 w-5" />
           <span className="font-medium">
@@ -109,40 +145,6 @@ export function StudentDashboardPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <StudentUpcomingExamsCard data={data} />
         <StudentLatestReportsCard data={data} />
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-900">Quick Actions</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
-            to="/student/courses"
-            className="flex items-center gap-3 rounded-xl bg-green-500 px-4 py-3 text-white transition hover:bg-green-600"
-          >
-            <BookOpen className="h-5 w-5" />
-            <span className="font-semibold">My Courses</span>
-          </Link>
-          <Link
-            to="/student/assessments"
-            className="flex items-center gap-3 rounded-xl bg-brand-500 px-4 py-3 text-white transition hover:bg-brand-600"
-          >
-            <BadgeCheck className="h-5 w-5" />
-            <span className="font-semibold">Assessments</span>
-          </Link>
-          <Link
-            to="/student/report-cards"
-            className="flex items-center gap-3 rounded-xl bg-amber-500 px-4 py-3 text-white transition hover:bg-amber-600"
-          >
-            <FileBarChart2 className="h-5 w-5" />
-            <span className="font-semibold">Report Cards</span>
-          </Link>
-          <Link
-            to="/student/courses"
-            className="flex items-center gap-3 rounded-xl bg-slate-600 px-4 py-3 text-white transition hover:bg-slate-700"
-          >
-            <ClipboardCheck className="h-5 w-5" />
-            <span className="font-semibold">My Assignments</span>
-          </Link>
-        </div>
       </div>
     </section>
   );

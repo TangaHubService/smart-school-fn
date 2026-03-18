@@ -1,23 +1,29 @@
 import {
   BookOpen,
   Building2,
-  CheckCircle2,
   FileBarChart2,
   Home,
   Plus,
   User,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { DashboardFilter } from '../components/dashboard/dashboard-filter';
 import { LineChart } from '../components/dashboard/line-chart';
+import {
+  DashboardQuickActionsDropdown,
+  type DashboardQuickActionItem,
+} from '../components/dashboard/quick-actions-dropdown';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
+import { listAcademicYearsApi, listClassRoomsApi, listTermsApi } from '../features/sprint1/sprint1.api';
+import { listCoursesApi } from '../features/sprint4/lms.api';
 import {
   getSchoolAdminDashboardApi,
   type SchoolAdminDashboardData,
+  type SchoolAdminDashboardFilters,
 } from '../features/dashboard/dashboard.api';
 import { useQuery } from '@tanstack/react-query';
 
@@ -26,14 +32,156 @@ function formatChange(change: number): string {
   return `${prefix}${change} This Week`;
 }
 
+const SCHOOL_ADMIN_QUICK_ACTIONS: DashboardQuickActionItem[] = [
+  {
+    label: 'Add Student',
+    description: 'Open student management and add a new learner.',
+    icon: Plus,
+    to: '/admin/students',
+  },
+  {
+    label: 'Add Teacher',
+    description: 'Open staff management and invite a teacher.',
+    icon: Plus,
+    to: '/admin/staff',
+  },
+  {
+    label: 'Create Exam',
+    description: 'Open examinations and prepare a new exam.',
+    icon: Building2,
+    to: '/admin/exams',
+  },
+  {
+    label: 'Open Courses',
+    description: 'Review courses and lesson content.',
+    icon: BookOpen,
+    to: '/admin/courses',
+  },
+];
+
 export function SchoolAdminDashboardPage() {
   const auth = useAuth();
   const [analyticsTab, setAnalyticsTab] = useState<'weekly' | 'monthly'>('weekly');
 
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ['dashboard', 'school-admin'],
+  const [filters, setFilters] = useState<SchoolAdminDashboardFilters>({
+    academicYear: '',
+    term: 'first',
+    classFilter: 'all',
+    findFilter: 'all',
+  });
+  const [appliedFilters, setAppliedFilters] = useState<SchoolAdminDashboardFilters>(filters);
+
+  function termCodeFromSequence(sequence: number): string {
+    if (sequence === 1) return 'first';
+    if (sequence === 2) return 'second';
+    if (sequence === 3) return 'third';
+    return `term-${sequence}`;
+  }
+
+  const academicYearsQuery = useQuery({
+    queryKey: ['academic-years', 'school-admin-dashboard'],
     enabled: Boolean(auth.accessToken),
-    queryFn: () => getSchoolAdminDashboardApi(auth.accessToken!),
+    queryFn: () => listAcademicYearsApi(auth.accessToken!),
+  });
+
+  const academicYearOptions = useMemo(() => {
+    const years = (Array.isArray(academicYearsQuery.data) ? academicYearsQuery.data : []) as any[];
+    return years.map((y) => ({ id: String(y.id), name: String(y.name) }));
+  }, [academicYearsQuery.data]);
+
+  const selectedAcademicYearId = filters.academicYear;
+
+  const termOptions = useQuery({
+    queryKey: ['terms', 'school-admin-dashboard', selectedAcademicYearId],
+    enabled: Boolean(auth.accessToken && selectedAcademicYearId),
+    queryFn: () =>
+      listTermsApi(auth.accessToken!, {
+        academicYearId: selectedAcademicYearId!,
+      }),
+  });
+
+  const termOptionsData = useMemo(() => {
+    return (Array.isArray(termOptions.data) ? termOptions.data : []) as any[];
+  }, [termOptions.data]);
+
+  const classRoomsQuery = useQuery({
+    queryKey: ['class-rooms', 'school-admin-dashboard'],
+    enabled: Boolean(auth.accessToken),
+    queryFn: () => listClassRoomsApi(auth.accessToken!),
+  });
+
+  const classOptions = useMemo(() => {
+    const rooms = (Array.isArray(classRoomsQuery.data) ? classRoomsQuery.data : []) as any[];
+    return rooms.map((r) => ({
+      id: String(r.id),
+      name: `${r.code ?? ''}${r.code && r.name ? ' - ' : ''}${r.name ?? ''}`.trim(),
+    }));
+  }, [classRoomsQuery.data]);
+
+  const coursesQuery = useQuery({
+    queryKey: [
+      'courses',
+      'school-admin-dashboard',
+      selectedAcademicYearId,
+      filters.classFilter,
+    ],
+    enabled: Boolean(auth.accessToken && selectedAcademicYearId),
+    queryFn: () =>
+      listCoursesApi(auth.accessToken!, {
+        academicYearId: selectedAcademicYearId!,
+        classId: filters.classFilter !== 'all' ? filters.classFilter : undefined,
+        page: 1,
+        pageSize: 50,
+      }),
+  });
+
+  const courseOptions = useMemo<Array<{ id: string; title: string }>>(() => {
+    const items = Array.isArray((coursesQuery.data as any)?.items) ? (coursesQuery.data as any).items : [];
+    return (items as Array<{ id: string | number; title: string }>).map((c) => ({
+      id: String(c.id),
+      title: String(c.title),
+    }));
+  }, [coursesQuery.data]);
+
+  useEffect(() => {
+    if (!academicYearOptions.length) return;
+    if (filters.academicYear && academicYearOptions.some((y) => y.id === filters.academicYear)) return;
+    const next = academicYearOptions[0]?.id;
+    if (!next) return;
+    setFilters((prev) => ({ ...prev, academicYear: next }));
+    setAppliedFilters((prev) => ({ ...prev, academicYear: next }));
+  }, [academicYearOptions, filters.academicYear]);
+
+  useEffect(() => {
+    if (!termOptionsData.length) return;
+    const termCodes = new Set(termOptionsData.map((t) => termCodeFromSequence(Number(t.sequence))));
+    if (!filters.term || termCodes.has(filters.term)) return;
+    const next = termOptionsData[0] ? termCodeFromSequence(Number(termOptionsData[0].sequence)) : 'first';
+    setFilters((prev) => ({ ...prev, term: next }));
+    setAppliedFilters((prev) => ({ ...prev, term: next }));
+  }, [termOptionsData, filters.term]);
+
+  useEffect(() => {
+    if (!classOptions.length) return;
+    if (filters.classFilter === 'all') return;
+    if (classOptions.some((c) => c.id === filters.classFilter)) return;
+    setFilters((prev) => ({ ...prev, classFilter: 'all' }));
+    setAppliedFilters((prev) => ({ ...prev, classFilter: 'all' }));
+  }, [classOptions, filters.classFilter]);
+
+  useEffect(() => {
+    if (!courseOptions.length) return;
+    if (filters.findFilter === 'all') return;
+    if (!filters.findFilter) return;
+    if (courseOptions.some(({ id }) => id === filters.findFilter)) return;
+    setFilters((prev) => ({ ...prev, findFilter: 'all' }));
+    setAppliedFilters((prev) => ({ ...prev, findFilter: 'all' }));
+  }, [courseOptions, filters.findFilter]);
+
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: ['dashboard', 'school-admin', appliedFilters],
+    enabled: Boolean(auth.accessToken),
+    queryFn: () => getSchoolAdminDashboardApi(auth.accessToken!, appliedFilters),
   });
 
   if (isError) {
@@ -69,16 +217,53 @@ export function SchoolAdminDashboardPage() {
 
   return (
     <section className="space-y-5">
-      <h1 className="text-2xl font-bold text-slate-900">School Administrator Dashboard</h1>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-slate-700">
-          <Home className="h-5 w-5" />
-          <span className="font-medium">
-            {data.school.displayName}
-            {data.school.city ? `, ${data.school.city}` : ''}
-          </span>
+      <div className="flex flex-col gap-3">
+        <div className="space-y-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="min-w-0 text-2xl font-bold text-slate-900">
+              Dashboard
+            </h1>
+            <DashboardQuickActionsDropdown actions={SCHOOL_ADMIN_QUICK_ACTIONS} />
+          </div>
+          <div className="flex items-center gap-2 text-slate-700">
+            <Home className="h-5 w-5" />
+            <span className="font-medium">
+              {data.school.displayName}
+              {data.school.city ? `, ${data.school.city}` : ''}
+            </span>
+          </div>
         </div>
-        <DashboardFilter variant="school-admin" />
+        <div className="w-full">
+          <DashboardFilter
+            variant="school-admin"
+            academicYear={filters.academicYear}
+            term={filters.term}
+            classFilter={filters.classFilter}
+            findFilter={filters.findFilter}
+            academicYearOptions={academicYearOptions}
+            termOptions={termOptionsData}
+            classOptions={classOptions}
+            courseOptions={courseOptions}
+            onAcademicYearChange={(value) => setFilters((prev) => ({ ...prev, academicYear: value }))}
+            onTermChange={(value) => setFilters((prev) => ({ ...prev, term: value }))}
+            onClassChange={(value) => setFilters((prev) => ({ ...prev, classFilter: value }))}
+            onFindChange={(value) => setFilters((prev) => ({ ...prev, findFilter: value }))}
+            onApply={() => setAppliedFilters({ ...filters })}
+            onReset={() => {
+              const defaultAcademicYear = academicYearOptions[0]?.id ?? '';
+              const defaultTerm =
+                termOptionsData[0] ? termCodeFromSequence(Number(termOptionsData[0].sequence)) : 'first';
+              const reset: SchoolAdminDashboardFilters = {
+                academicYear: defaultAcademicYear,
+                term: defaultTerm,
+                classFilter: 'all',
+                findFilter: 'all',
+              };
+              setFilters(reset);
+              setAppliedFilters({ ...reset });
+            }}
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -111,14 +296,13 @@ export function SchoolAdminDashboardPage() {
         />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-2">
         <SchoolUserOverviewCard data={data} />
         <SchoolSystemAnalyticsCard
           data={data}
           tab={analyticsTab}
           onTabChange={setAnalyticsTab}
         />
-        <SchoolQuickActionsCard />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -284,56 +468,6 @@ function SchoolSystemAnalyticsCard({
       </div>
       <div className="mt-4">
         <LineChart data={chartData} lines={lines} height={180} />
-      </div>
-    </section>
-  );
-}
-
-function SchoolQuickActionsCard() {
-  const actions = [
-    {
-      label: 'Add Student',
-      icon: Plus,
-      to: '/admin/students',
-      color: 'bg-green-500 hover:bg-green-600',
-    },
-    {
-      label: 'Add Teacher',
-      icon: Plus,
-      to: '/admin/staff',
-      color: 'bg-orange-500 hover:bg-orange-600',
-    },
-    {
-      label: 'Create Exam',
-      icon: Building2,
-      to: '/admin/exams',
-      color: 'bg-brand-500 hover:bg-brand-600',
-    },
-    {
-      label: 'Send Notification',
-      icon: CheckCircle2,
-      to: '/admin',
-      color: 'bg-blue-500 hover:bg-blue-600',
-    },
-  ];
-
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-lg font-bold text-slate-900">Quick Actions</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {actions.map((action) => {
-          const Icon = action.icon;
-          return (
-            <Link
-              key={action.label}
-              to={action.to}
-              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-white transition ${action.color}`}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="font-semibold">{action.label}</span>
-            </Link>
-          );
-        })}
       </div>
     </section>
   );

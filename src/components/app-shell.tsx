@@ -41,7 +41,7 @@ export function AppShell() {
   const headerTitle = superAdmin
     ? 'Super Admin Dashboard'
     : schoolAdmin
-      ? 'School Administrator Dashboard'
+      ? 'Dashboard'
       : isStudent
         ? 'Student Portal'
         : isTeacher
@@ -74,9 +74,7 @@ export function AppShell() {
           className={clsx(
             'fixed inset-y-0 left-0 z-40 flex w-[240px] flex-col overflow-hidden bg-[#173C7F] text-white md:sticky md:top-0 md:h-screen md:w-[240px] md:shrink-0 md:rounded-none',
             isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
-            isDesktopSidebarVisible
-              ? 'md:translate-x-0'
-              : 'md:hidden',
+            isDesktopSidebarVisible ? 'md:translate-x-0' : 'md:hidden',
           )}
           aria-label="Sidebar"
         >

@@ -17,6 +17,10 @@ import { Link } from 'react-router-dom';
 
 import { DashboardFilter } from '../components/dashboard/dashboard-filter';
 import { LineChart } from '../components/dashboard/line-chart';
+import {
+  DashboardQuickActionsDropdown,
+  type DashboardQuickActionItem,
+} from '../components/dashboard/quick-actions-dropdown';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import {
@@ -41,6 +45,33 @@ const USER_OVERVIEW_ITEMS: Record<
   subjects: { icon: BookOpen, color: 'bg-orange-100 text-orange-600' },
   activeAccounts: { icon: User, color: 'bg-blue-100 text-blue-600' },
 };
+
+const SUPER_ADMIN_QUICK_ACTIONS: DashboardQuickActionItem[] = [
+  {
+    label: 'Add New User',
+    description: 'Open users and manage platform accounts.',
+    icon: Plus,
+    to: '/users',
+  },
+  {
+    label: 'Create School',
+    description: 'Open school management and add a new school.',
+    icon: Building2,
+    to: '/super-admin/schools?create=1',
+  },
+  {
+    label: 'Manage Courses',
+    description: 'Open the course workspace.',
+    icon: BookOpen,
+    to: '/admin/courses',
+  },
+  {
+    label: 'System Settings',
+    description: 'Review platform settings.',
+    icon: Settings,
+    to: '/admin/setup',
+  },
+];
 
 export function SuperAdminDashboardPage() {
   const auth = useAuth();
@@ -99,37 +130,50 @@ export function SuperAdminDashboardPage() {
 
   return (
     <section className="space-y-3">
-      <DashboardFilter
-        variant="super-admin"
-        academicYearOptions={filtersQuery.data?.academicYears ?? []}
-        termOptions={filtersQuery.data?.terms ?? []}
-        regionOptions={filtersQuery.data?.regions ?? []}
-        schoolOptions={filtersQuery.data?.schools ?? []}
-        academicYear={filters.academicYear}
-        term={filters.term}
-        region={filters.region}
-        school={filters.school}
-        status={filters.status}
-        onAcademicYearChange={(value) => setFilters((prev) => ({ ...prev, academicYear: value }))}
-        onTermChange={(value) => setFilters((prev) => ({ ...prev, term: value }))}
-        onRegionChange={(value) => setFilters((prev) => ({ ...prev, region: value }))}
-        onSchoolChange={(value) => setFilters((prev) => ({ ...prev, school: value }))}
-        onStatusChange={(value) =>
-          setFilters((prev) => ({ ...prev, status: value as SuperAdminDashboardFilters['status'] }))
-        }
-        onApply={() => setAppliedFilters(filters)}
-        onReset={() => {
-          const reset: SuperAdminDashboardFilters = {
-            academicYear: '2023/2024',
-            term: 'first',
-            region: 'all-regions',
-            school: 'all-schools',
-            status: 'active',
-          };
-          setFilters(reset);
-          setAppliedFilters(reset);
-        }}
-      />
+      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-900">
+            Super Administrator Dashboard
+          </h1>
+          <DashboardQuickActionsDropdown actions={SUPER_ADMIN_QUICK_ACTIONS} />
+        </div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+          Monitor schools, users, exams, and platform support activity from one place.
+        </p>
+        <div className="mt-4 min-w-0">
+          <DashboardFilter
+            variant="super-admin"
+            academicYearOptions={filtersQuery.data?.academicYears ?? []}
+            termOptions={filtersQuery.data?.terms ?? []}
+            regionOptions={filtersQuery.data?.regions ?? []}
+            schoolOptions={filtersQuery.data?.schools ?? []}
+            academicYear={filters.academicYear}
+            term={filters.term}
+            region={filters.region}
+            school={filters.school}
+            status={filters.status}
+            onAcademicYearChange={(value) => setFilters((prev) => ({ ...prev, academicYear: value }))}
+            onTermChange={(value) => setFilters((prev) => ({ ...prev, term: value }))}
+            onRegionChange={(value) => setFilters((prev) => ({ ...prev, region: value }))}
+            onSchoolChange={(value) => setFilters((prev) => ({ ...prev, school: value }))}
+            onStatusChange={(value) =>
+              setFilters((prev) => ({ ...prev, status: value as SuperAdminDashboardFilters['status'] }))
+            }
+            onApply={() => setAppliedFilters(filters)}
+            onReset={() => {
+              const reset: SuperAdminDashboardFilters = {
+                academicYear: '2023/2024',
+                term: 'first',
+                region: 'all-regions',
+                school: 'all-schools',
+                status: 'active',
+              };
+              setFilters(reset);
+              setAppliedFilters(reset);
+            }}
+          />
+        </div>
+      </div>
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
@@ -158,10 +202,9 @@ export function SuperAdminDashboardPage() {
         />
       </div>
 
-      <div className="grid gap-2 lg:grid-cols-3">
+      <div className="grid gap-2 lg:grid-cols-2">
         <UserOverviewCard data={data} />
         <SystemAnalyticsCard data={data} tab={analyticsTab} onTabChange={setAnalyticsTab} />
-        <QuickActionsCard />
       </div>
 
       <div className="grid gap-2 lg:grid-cols-2">
@@ -292,36 +335,6 @@ function SystemAnalyticsCard({
       </div>
       <div>
         <LineChart data={chartData} lines={lines} height={140} />
-      </div>
-    </section>
-  );
-}
-
-function QuickActionsCard() {
-  const actions = [
-    { label: 'Add New User', icon: Plus, to: '/users', color: 'bg-blue-600 hover:bg-blue-700' },
-    { label: 'Create School', icon: Building2, to: '/super-admin/schools?create=1', color: 'bg-green-500 hover:bg-green-600' },
-    { label: 'Manage Courses', icon: BookOpen, to: '/admin/courses', color: 'bg-amber-500 hover:bg-amber-600' },
-    { label: 'System Settings', icon: Settings, to: '/admin/setup', color: 'bg-dashboard-blue hover:bg-[#0f2a5c]' },
-  ];
-
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-      <h2 className="mb-2 text-sm font-bold text-slate-900">Quick Actions</h2>
-      <div className="flex flex-col gap-2">
-        {actions.map((action) => {
-          const Icon = action.icon;
-          return (
-            <Link
-              key={action.label}
-              to={action.to}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-white transition ${action.color}`}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{action.label}</span>
-            </Link>
-          );
-        })}
       </div>
     </section>
   );

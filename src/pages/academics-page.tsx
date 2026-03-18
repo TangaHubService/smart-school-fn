@@ -9,6 +9,7 @@ import { Modal } from '../components/modal';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
+import { hasPermission } from '../features/auth/auth-helpers';
 import { useAuth } from '../features/auth/auth.context';
 import {
   createAcademicYearApi,
@@ -125,6 +126,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
   const auth = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const canManageSubjects = hasPermission(auth.me, 'subject.manage');
 
   const [yearFilter, setYearFilter] = useState('');
   const [termFilter, setTermFilter] = useState('');
@@ -775,8 +777,12 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
       {showSubjects ? (
         <SectionCard
           title="Subjects"
-          subtitle="List, update, and softly delete subjects."
-          action={
+          subtitle={
+            canManageSubjects
+              ? 'List, update, and softly delete subjects.'
+              : 'Browse the school subjects configured for courses and classes.'
+          }
+          action={canManageSubjects ? (
             <button
               type="button"
               onClick={openAddSubject}
@@ -784,7 +790,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             >
               Add subject
             </button>
-          }
+          ) : null}
         >
           <FilterInput
             value={subjectFilter}
@@ -812,15 +818,19 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
 
           {!subjectsQuery.isPending && !subjectsQuery.isError ? (
             <SimpleTable
-              columns={['Code', 'Name', 'Core', 'Actions']}
+              columns={canManageSubjects ? ['Code', 'Name', 'Core', 'Actions'] : ['Code', 'Name', 'Core']}
               rows={filteredSubjects.map((subject) => [
                 subject.code,
                 subject.name,
                 subject.isCore ? 'Yes' : 'No',
-                <ActionButtons
-                  onEdit={() => openEditSubject(subject)}
-                  onDelete={() => requestDelete('subject', subject.id, subject.name)}
-                />,
+                ...(canManageSubjects
+                  ? [
+                      <ActionButtons
+                        onEdit={() => openEditSubject(subject)}
+                        onDelete={() => requestDelete('subject', subject.id, subject.name)}
+                      />,
+                    ]
+                  : []),
               ])}
               emptyMessage="No subjects found."
             />
@@ -1069,7 +1079,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
       </Modal>
 
       <Modal
-        open={isSubjectModalOpen}
+        open={canManageSubjects && isSubjectModalOpen}
         onClose={() => setIsSubjectModalOpen(false)}
         title={editingSubjectId ? 'Update Subject' : 'Add Subject'}
         description="Configure subject code, name, and whether it is core."

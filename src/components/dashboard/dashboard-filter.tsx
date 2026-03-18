@@ -5,6 +5,8 @@ interface DashboardFilterProps {
   termOptions?: Array<{ id: string; name: string; sequence: number }>;
   regionOptions?: string[];
   schoolOptions?: Array<{ id: string; name: string; province: string | null; isActive: boolean }>;
+  classOptions?: Array<{ id: string; name: string }>;
+  courseOptions?: Array<{ id: string; title: string }>;
   academicYear?: string;
   term?: string;
   region?: string;
@@ -29,6 +31,8 @@ export function DashboardFilter({
   termOptions = [],
   regionOptions = [],
   schoolOptions = [],
+  classOptions = [],
+  courseOptions = [],
   academicYear = '2023/2024',
   term = 'First Term',
   region = 'All Regions',
@@ -50,6 +54,20 @@ export function DashboardFilter({
   const selectClass =
     'h-9 rounded border border-slate-200 bg-slate-50 px-2 text-xs text-slate-700 outline-none focus:border-blue-400';
 
+  function termCodeFromSequence(sequence: number): string {
+    if (sequence === 1) return 'first';
+    if (sequence === 2) return 'second';
+    if (sequence === 3) return 'third';
+    return `term-${sequence}`;
+  }
+
+  // School-admin filter select values are short codes (`first`, `all`),
+  // but the component defaults are human-friendly labels.
+  // Normalize so the correct option stays selected.
+  const schoolAdminTerm = term === 'First Term' ? 'first' : term;
+  const schoolAdminClassFilter = classFilter === 'All Classes' ? 'all' : classFilter;
+  const schoolAdminFindFilter = findFilter === 'All Classes' ? 'all' : findFilter;
+
   if (variant === 'school-admin') {
     return (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -59,28 +77,57 @@ export function DashboardFilter({
             value={academicYear}
             onChange={(e) => onAcademicYearChange?.(e.target.value)}
           >
-            <option value="2023/2024">Academic Year 2023/2024</option>
+            {academicYearOptions.length ? (
+              academicYearOptions.map((ay) => (
+                <option key={ay.id} value={ay.id}>
+                  Academic Year {ay.name}
+                </option>
+              ))
+            ) : (
+              <option value="">Academic Year 2023/2024</option>
+            )}
           </select>
           <select
             className={selectClass}
-            value={term}
+            value={schoolAdminTerm}
             onChange={(e) => onTermChange?.(e.target.value)}
           >
-            <option value="first">Term: First Term</option>
+            {termOptions.length ? (
+              termOptions.map((t) => {
+                const code = termCodeFromSequence(t.sequence);
+                return (
+                  <option key={t.id} value={code}>
+                    Term: {t.name}
+                  </option>
+                );
+              })
+            ) : (
+              <option value="first">Term: First Term</option>
+            )}
           </select>
           <select
             className={selectClass}
-            value={classFilter}
+            value={schoolAdminClassFilter}
             onChange={(e) => onClassChange?.(e.target.value)}
           >
             <option value="all">Class: All Classes</option>
+            {classOptions.map((c) => (
+              <option key={c.id} value={c.id}>
+                Class: {c.name}
+              </option>
+            ))}
           </select>
           <select
             className={selectClass}
-            value={findFilter}
+            value={schoolAdminFindFilter}
             onChange={(e) => onFindChange?.(e.target.value)}
           >
-            <option value="all">Find: All Classes</option>
+            <option value="all">Find: All Courses</option>
+            {courseOptions.map((course) => (
+              <option key={course.id} value={course.id}>
+                Find: {course.title}
+              </option>
+            ))}
           </select>
         </div>
         <div className="flex items-center gap-2">
