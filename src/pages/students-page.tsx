@@ -15,6 +15,7 @@ import {
   createStudentApi,
   deleteStudentApi,
   exportStudentsApi,
+  importStudentsApi,
   listStudentsApi,
   updateStudentApi,
 } from '../features/sprint2/sprint2.api';
@@ -64,8 +65,9 @@ export function StudentsPage() {
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
-  const csvInputRef = useRef<HTMLInputElement | null>(null);
+  const excelInputRef = useRef<HTMLInputElement | null>(null);
 
   const studentForm = useForm<StudentForm>({
     resolver: zodResolver(studentSchema),
@@ -158,12 +160,18 @@ export function StudentsPage() {
         classId: classFilter || undefined,
         academicYearId: yearFilter || undefined,
       }),
-    onSuccess: (result) => {
-      const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' });
+    onSuccess: async (result) => {
+      const XLSX = await import('xlsx');
+      const wb = XLSX.read(result.csv, { type: 'string', raw: true });
+      const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([out], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', result.fileName || 'students.csv');
+      const baseName = (result.fileName || 'students').replace(/\.csv$/i, '');
+      link.setAttribute('download', `${baseName}.xlsx`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -242,39 +250,113 @@ export function StudentsPage() {
   }
 
   async function handleFileSelect(file: File) {
-    await file.text();
-    showToast({
-      type: 'info',
-      title: 'CSV selected',
-      message: `${file.name} is ready. Preview/import modal flow will be used.`,
-    });
+    const isExcel =
+      file.name.endsWith('.xlsx') ||
+      file.name.endsWith('.xls') ||
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.type === 'application/vnd.ms-excel';
+    if (!isExcel) {
+      showToast({
+        type: 'error',
+        title: 'Invalid file',
+        message: 'Please upload an Excel file (.xlsx or .xls).',
+      });
+      return;
+    }
+    setIsImporting(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) {
+        showToast({ type: 'error', title: 'Invalid Excel', message: 'No sheet found.' });
+        return;
+      }
+      const sheet = workbook.Sheets[sheetName];
+      const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: '',
+        raw: false,
+      }) as unknown[][];
+      if (rows.length === 0) {
+        showToast({ type: 'error', title: 'Empty file', message: 'Excel has no data.' });
+        return;
+      }
+      const csvLines = rows.map((row) =>
+        (row as (string | number)[])
+          .map((cell) => {
+            const s = String(cell ?? '');
+            if (/[,"\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+            return s;
+          })
+          .join(','),
+      );
+      const csv = csvLines.join('\r\n');
+      const result = await importStudentsApi(auth.accessToken!, {
+        csv,
+        mode: 'commit',
+        allowPartial: true,
+      });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      showToast({
+        type: 'success',
+        title: 'Import complete',
+        message: `${result.summary.importedRows ?? result.summary.validRows ?? 0} students imported. ${result.summary.invalidRows ?? 0} row(s) had errors.`,
+      });
+    } catch (err) {
+      showToast({
+        type: 'error',
+        title: 'Import failed',
+        message: err instanceof Error ? err.message : 'Could not import Excel file.',
+      });
+    } finally {
+      setIsImporting(false);
+    }
   }
 
-  function openCsvPicker() {
-    csvInputRef.current?.click();
+  function openExcelPicker() {
+    excelInputRef.current?.click();
   }
 
-  function downloadTemplate() {
-    const template = [
-      'studentCode,firstName,lastName,gender,dateOfBirth,academicYearId,classRoomId,enrolledAt',
-      'STU-001,Alice,Uwase,FEMALE,2014-05-20,academic-year-id,class-room-id,2026-09-01',
-      'STU-002,Eric,Ndayisenga,MALE,2013-10-02,academic-year-id,class-room-id,2026-09-01',
-    ].join('\n');
-
-    const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+  async function downloadTemplate() {
+    const XLSX = await import('xlsx');
+    const headers = [
+      'studentCode',
+      'firstName',
+      'lastName',
+      'gender',
+      'dateOfBirth',
+      'academicYearName',
+      'classCode',
+      'enrolledAt',
+    ];
+    const exampleRow = [
+      'STU-001',
+      'Alice',
+      'Uwase',
+      'FEMALE',
+      '2014-05-20',
+      '2025-2026',
+      'P5-A',
+      '2026-09-01',
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Students');
+    const blob = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const url = URL.createObjectURL(new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'students-import-template.csv');
+    link.setAttribute('download', 'students-import-template.xlsx');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-
     showToast({
       type: 'info',
       title: 'Template downloaded',
-      message: 'Use this template and replace academicYearId/classRoomId with real IDs.',
+      message: 'Fill in the Excel file and upload it. Use academic year name and class code.',
     });
   }
 
@@ -285,15 +367,16 @@ export function StudentsPage() {
       action={
         <div className="flex flex-wrap gap-2">
           <input
-            ref={csvInputRef}
+            ref={excelInputRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             className="sr-only"
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (file) {
                 void handleFileSelect(file);
               }
+              event.target.value = '';
             }}
           />
           <button
@@ -301,21 +384,22 @@ export function StudentsPage() {
             onClick={() => exportMutation.mutate()}
             className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
           >
-            {exportMutation.isPending ? 'Exporting...' : 'Export CSV'}
+            {exportMutation.isPending ? 'Exporting...' : 'Export Excel'}
           </button>
           <button
             type="button"
-            onClick={openCsvPicker}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+            onClick={openExcelPicker}
+            disabled={isImporting}
+            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
           >
-            Upload CSV
+            {isImporting ? 'Importing...' : 'Upload Excel'}
           </button>
           <button
             type="button"
-            onClick={downloadTemplate}
+            onClick={() => void downloadTemplate()}
             className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
           >
-            Template CSV
+            Template Excel
           </button>
           <button
             type="button"
@@ -407,7 +491,7 @@ export function StudentsPage() {
       ) : null}
 
       {!studentsQuery.isPending && !studentsQuery.isError && students.length === 0 ? (
-        <EmptyState message="No students found. Add one manually or import CSV." />
+        <EmptyState message="No students found. Add one manually or import Excel." />
       ) : null}
 
       {!studentsQuery.isPending && !studentsQuery.isError && students.length > 0 ? (

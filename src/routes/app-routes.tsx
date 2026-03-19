@@ -14,6 +14,7 @@ import { AssessmentDetailPage } from '../pages/assessment-detail-page';
 import { AssessmentsPage } from '../pages/assessments-page';
 import { AttendancePage } from '../pages/attendance-page';
 import { AssignmentsPage } from '../pages/assignments-page';
+import { ClassMarksPage } from '../pages/class-marks-page';
 import { ClassesPage } from '../pages/classes-page';
 import { ConductCreateIncidentPage } from '../pages/conduct-create-incident-page';
 import { ConductIncidentDetailPage } from '../pages/conduct-incident-detail-page';
@@ -32,6 +33,7 @@ import { ParentMyChildrenPage } from '../pages/parent-my-children-page';
 import { ParentReportCardsPage } from '../pages/parent-report-cards-page';
 import { ParentsPage } from '../pages/parents-page';
 import { ReportCardVerificationPage } from '../pages/report-card-verification-page';
+import { ReportCardsPage } from '../pages/report-cards-page';
 import { SetupWizardPage } from '../pages/setup-wizard-page';
 import { StaffPage } from '../pages/staff-page';
 import { StudentsPage } from '../pages/students-page';
@@ -155,6 +157,10 @@ export function AppRoutes() {
             </Route>
             <Route element={<RequirePermission permission="exams.read" />}>
               <Route path="/admin/exams" element={<ExamsPage />} />
+              <Route path="/admin/class-marks" element={<ClassMarksPage />} />
+            </Route>
+            <Route element={<RequirePermission permission="report_cards.read" />}>
+              <Route path="/admin/report-cards" element={<ReportCardsPage />} />
             </Route>
             <Route element={<RequirePermission permission="timetable.read" />}>
               <Route path="/admin/timetable" element={<TimetablePage />} />

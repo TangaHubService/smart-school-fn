@@ -296,6 +296,69 @@ export function bulkSaveExamMarksApi(
   });
 }
 
+export interface MarksGridSubject {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface MarksGridStudentRow {
+  index: number;
+  studentId: string;
+  studentCode: string;
+  firstName: string;
+  lastName: string;
+  subjectMarks: Array<{
+    subjectId: string;
+    testMarks: number | null;
+    examMarks: number | null;
+    total: number;
+  }>;
+  total: number;
+  rank: number;
+}
+
+export interface MarksGridResponse {
+  academicYear: { id: string; name: string };
+  term: { id: string; name: string };
+  classRoom: { id: string; code: string; name: string };
+  subjects: MarksGridSubject[];
+  students: MarksGridStudentRow[];
+}
+
+export function getMarksGridApi(
+  accessToken: string,
+  params: { termId: string; classRoomId: string },
+) {
+  const query = new URLSearchParams();
+  query.set('termId', params.termId);
+  query.set('classRoomId', params.classRoomId);
+  return apiRequest<MarksGridResponse>(`/classes/marks-grid?${query.toString()}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function saveMarksGridApi(
+  accessToken: string,
+  payload: {
+    termId: string;
+    classRoomId: string;
+    entries: Array<{
+      studentId: string;
+      subjectId: string;
+      testMarks?: number | null;
+      examMarks?: number | null;
+    }>;
+  },
+) {
+  return apiRequest<{ savedCount: number; createdExamsCount: number }>('/classes/marks-grid', {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
 export function listConductGradesForEntryApi(
   accessToken: string,
   params: { termId: string; classRoomId: string },
@@ -363,6 +426,36 @@ export function publishResultsApi(
     method: 'POST',
     accessToken,
     body: payload,
+  });
+}
+
+export function getStudentReportCardsApi(
+  accessToken: string,
+  studentId: string,
+  params: { termId?: string; academicYearId?: string } = {},
+) {
+  const query = new URLSearchParams();
+  if (params.termId) query.set('termId', params.termId);
+  if (params.academicYearId) query.set('academicYearId', params.academicYearId);
+  return apiRequest<MyReportCardsResponse>(
+    `/report-cards/students/${studentId}${query.toString() ? `?${query.toString()}` : ''}`,
+    { method: 'GET', accessToken },
+  );
+}
+
+export function downloadStudentReportCardPdfApi(
+  accessToken: string,
+  studentId: string,
+  termId: string,
+) {
+  const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+  const url = `${base}/report-cards/students/${studentId}/pdf?termId=${encodeURIComponent(termId)}`;
+  return fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  }).then((res) => {
+    if (!res.ok) throw new Error('Could not load report card PDF');
+    return res.blob();
   });
 }
 

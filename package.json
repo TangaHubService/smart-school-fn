@@ -28,6 +28,7 @@
     "react-hook-form": "^7.53.2",
     "react-router-dom": "^6.28.0",
     "rwanda": "^3.0.0",
+    "xlsx": "^0.18.5",
     "socket.io-client": "^4.8.3",
     "zod": "^3.24.1"
   },
