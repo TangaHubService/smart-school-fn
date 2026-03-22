@@ -1,7 +1,8 @@
 import { ArrowRight, BookOpen, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { academyApi, Program } from '../api/academy-api';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { academyApi, Program, type ProgramEnrollment } from '../api/academy-api';
 import { useAuth } from '../features/auth/auth.context';
 import { Modal } from '../components/modal';
 import { useToast } from '../components/toast';
@@ -10,14 +11,41 @@ import backgroundImage from '../asset/background.jpg';
 import { loginApi, registerApi } from '../features/auth/auth.api';
 
 const ACADEMY_PLANS = [
-  { id: 'weekly', name: 'Weekly Access', price: 2000, duration: 7 },
-  { id: 'monthly', name: 'Monthly Access', price: 5000, duration: 30 },
-  { id: 'quarterly', name: 'Quarterly Access', price: 10000, duration: 90 },
-  { id: 'yearly', name: 'Yearly Access', price: 30000, duration: 365 },
+  { id: 'weekly', name: 'Weekly access', durationDays: 7 },
+  { id: 'monthly', name: 'Monthly access', durationDays: 30 },
+  { id: 'quarterly', name: 'Quarterly access', durationDays: 90 },
+  { id: 'yearly', name: 'Yearly access', durationDays: 365 },
 ];
 
+function programCardImage(program: Program) {
+  const t = program.thumbnail?.trim();
+  return t ? t : backgroundImage;
+}
+
+function enrollmentIsActive(e: Pick<ProgramEnrollment, 'isActive' | 'expiresAt'>) {
+  if (!e.isActive) {
+    return false;
+  }
+  if (!e.expiresAt) {
+    return true;
+  }
+  return new Date(e.expiresAt).getTime() > Date.now();
+}
+
+function activeEnrollmentForProgram(programId: string, list: ProgramEnrollment[] | undefined) {
+  return list?.find((e) => e.programId === programId && enrollmentIsActive(e));
+}
+
 export function PublicAcademyPage() {
-  const { me, login: contextLogin, setSessionTokens } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const highlightProgramId = useMemo(() => {
+    const s = location.state as { highlightProgramId?: string } | null | undefined;
+    return s?.highlightProgramId;
+  }, [location.state]);
+
+  const { me, setSessionTokens } = useAuth();
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -25,9 +53,8 @@ export function PublicAcademyPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'PENDING' | 'SUCCESS' | 'FAILED'>('IDLE');
   const [paypackRef, setPaypackRef] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState(ACADEMY_PLANS[1]); // Default to Monthly
+  const [selectedPlan, setSelectedPlan] = useState(ACADEMY_PLANS[1]);
 
-  // Registration/Login state for non-authenticated users
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('REGISTER');
   const [authForm, setAuthForm] = useState({
@@ -41,6 +68,20 @@ export function PublicAcademyPage() {
     queryKey: ['academy-programs'],
     queryFn: academyApi.getPrograms,
   });
+
+  const enrollmentsQuery = useQuery({
+    queryKey: ['academy-my-enrollments'],
+    queryFn: academyApi.getMyEnrollments,
+    enabled: Boolean(me),
+  });
+
+  const activeTrialExpiresAt = useMemo(() => {
+    const list = enrollmentsQuery.data ?? [];
+    const row = list.find(
+      (e) => e.isTrial && e.expiresAt && new Date(e.expiresAt).getTime() > Date.now(),
+    );
+    return row?.expiresAt ?? null;
+  }, [enrollmentsQuery.data]);
 
   const purchaseMutation = useMutation({
     mutationFn: academyApi.purchaseProgram,
@@ -57,23 +98,49 @@ export function PublicAcademyPage() {
   const authMutation = useMutation({
     mutationFn: async () => {
       if (authMode === 'REGISTER') {
-        const res = await registerApi(authForm);
-        // We'll update AuthContext to handle this, but for now we need a way to log in
-        // Since we have the res (LoginResponse), we can just use the login data if we expose its setter
-        return res;
-      } else {
-        const res = await loginApi({ loginAs: 'staff' as any, email: authForm.email, password: authForm.password });
-        return res;
+        return registerApi(authForm);
       }
+      return loginApi({ loginAs: 'staff' as any, email: authForm.email, password: authForm.password });
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       setSessionTokens({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
       });
       setShowAuthModal(false);
+
+      let list: ProgramEnrollment[] = [];
+      try {
+        list = await academyApi.getMyEnrollments();
+      } catch {
+        list = [];
+      }
+      queryClient.setQueryData(['academy-my-enrollments'], list);
+
+      const prog = selectedProgram;
+      if (prog) {
+        const active = activeEnrollmentForProgram(prog.id, list);
+        if (active) {
+          const courseId = active.program?.courseId;
+          navigate(courseId ? `/student/courses/${courseId}` : '/student/courses');
+          showToast({
+            type: 'success',
+            title: authMode === 'REGISTER' ? 'Account ready' : 'Welcome back',
+            message: active.isTrial
+              ? 'Free trial is active — opening your course. No MoMo payment needed until the trial ends.'
+              : 'Opening your course.',
+          });
+          return;
+        }
+      }
+
       setShowPurchaseModal(true);
-      showToast({ type: 'success', title: 'Authenticated', message: 'Welcome to the Academy!' });
+      showToast({
+        type: 'success',
+        title: authMode === 'REGISTER' ? 'Signed in' : 'Welcome back',
+        message:
+          'Complete MoMo payment below to enroll. If you are on a free trial, close this and use Open course on the program card.',
+      });
     },
     onError: (error: any) => {
       showToast({ type: 'error', title: 'Auth Failed', message: error.message });
@@ -88,6 +155,7 @@ export function PublicAcademyPage() {
       const handleUpdate = (data: any) => {
         if (data.status === 'COMPLETED') {
           setPaymentStatus('SUCCESS');
+          void queryClient.invalidateQueries({ queryKey: ['academy-my-enrollments'] });
           showToast({ type: 'success', title: 'Payment Successful', message: 'You are now enrolled in the program!' });
         } else if (data.status === 'FAILED' || data.status === 'CANCELLED') {
           setPaymentStatus('FAILED');
@@ -100,15 +168,49 @@ export function PublicAcademyPage() {
         socket.off('transactionUpdate', handleUpdate);
       };
     }
-  }, [paypackRef, showToast]);
+  }, [paypackRef, queryClient, showToast]);
+
+  useEffect(() => {
+    if (!highlightProgramId || !programs?.length || isLoading) {
+      return;
+    }
+    const t = window.setTimeout(() => {
+      document.getElementById(`academy-program-${highlightProgramId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 100);
+    return () => window.clearTimeout(t);
+  }, [highlightProgramId, programs, isLoading]);
 
   const handleEnrollClick = (program: Program) => {
     setSelectedProgram(program);
     if (!me) {
       setShowAuthModal(true);
-    } else {
-      setShowPurchaseModal(true);
+      return;
     }
+    if (enrollmentsQuery.isPending) {
+      showToast({
+        type: 'info',
+        title: 'Please wait',
+        message: 'Checking your enrollments…',
+      });
+      return;
+    }
+    const active = activeEnrollmentForProgram(program.id, enrollmentsQuery.data);
+    if (active) {
+      const courseId = active.program?.courseId;
+      navigate(courseId ? `/student/courses/${courseId}` : '/student/courses');
+      showToast({
+        type: 'success',
+        title: 'You already have access',
+        message: active.isTrial
+          ? 'Free trial — no payment needed. Opening your course.'
+          : 'Opening your course.',
+      });
+      return;
+    }
+    setShowPurchaseModal(true);
   };
 
   const handleDetailsClick = (program: Program) => {
@@ -122,7 +224,6 @@ export function PublicAcademyPage() {
       purchaseMutation.mutate({
         programId: selectedProgram.id,
         phoneNumber,
-        amount: selectedPlan.price,
         planId: selectedPlan.id,
       });
     }
@@ -130,7 +231,6 @@ export function PublicAcademyPage() {
 
   return (
     <main className="bg-white">
-      {/* Hero Section */}
       <section
         className="relative flex h-[60vh] items-center justify-center bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${backgroundImage})` }}
@@ -151,7 +251,20 @@ export function PublicAcademyPage() {
         </div>
       </section>
 
-      {/* Program Catalog */}
+      {activeTrialExpiresAt ? (
+        <div className="border-b border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-950">
+          <span className="font-semibold">Free trial active</span>
+          <span className="mx-1 text-emerald-800">—</span>
+          Catalog access ends{' '}
+          <time dateTime={activeTrialExpiresAt}>
+            {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
+              new Date(activeTrialExpiresAt),
+            )}
+          </time>
+          . Purchase a program to keep access after that.
+        </div>
+      ) : null}
+
       <div className="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
         <div className="mb-16 text-center">
           <h2 className="text-3xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">Available Programs</h2>
@@ -170,11 +283,17 @@ export function PublicAcademyPage() {
             {programs?.map((program) => (
               <article
                 key={program.id}
-                className="group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-500/10"
+                id={`academy-program-${program.id}`}
+                className={[
+                  'group flex flex-col overflow-hidden rounded-3xl border bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-500/10',
+                  highlightProgramId === program.id
+                    ? 'border-brand-500 ring-2 ring-brand-400/40'
+                    : 'border-slate-100',
+                ].join(' ')}
               >
                 <div className="relative h-56 overflow-hidden">
                   <img
-                    src={program.thumbnail}
+                    src={programCardImage(program)}
                     alt={program.title}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -189,7 +308,7 @@ export function PublicAcademyPage() {
                   </div>
                   <h3 className="text-2xl font-bold tracking-tight text-slate-900">{program.title}</h3>
                   <p className="mt-4 flex-1 text-[15px] leading-relaxed text-slate-600 line-clamp-3">
-                    {program.description}
+                    {program.description?.trim() || 'Professional certification track.'}
                   </p>
                   <div className="mt-8 flex gap-3">
                     <button
@@ -202,7 +321,7 @@ export function PublicAcademyPage() {
                       onClick={() => handleEnrollClick(program)}
                       className="flex-[1.5] flex items-center justify-center gap-2 rounded-2xl bg-brand-500 px-4 py-3.5 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-brand-600"
                     >
-                      Enroll
+                      {activeEnrollmentForProgram(program.id, enrollmentsQuery.data) ? 'Open course' : 'Enroll'}
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -213,7 +332,6 @@ export function PublicAcademyPage() {
         )}
       </div>
 
-      {/* Auth Modal (Register/Login) */}
       <Modal
         open={showAuthModal}
         onClose={() => setShowAuthModal(false)}
@@ -284,7 +402,6 @@ export function PublicAcademyPage() {
         </form>
       </Modal>
 
-      {/* Purchase Modal */}
       <Modal
         open={showPurchaseModal}
         onClose={() => {
@@ -296,6 +413,12 @@ export function PublicAcademyPage() {
       >
         {paymentStatus === 'IDLE' ? (
           <form className="space-y-6" onSubmit={handlePurchaseSubmit}>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+              <p className="font-semibold">On a free trial?</p>
+              <p className="mt-1 text-emerald-900/90">
+                Close this window and click <strong>Open course</strong> on the program card — MoMo is only to extend access after your trial.
+              </p>
+            </div>
             <div className="space-y-3">
               <label className="text-sm font-bold text-slate-800">Select Access Plan</label>
               <div className="grid grid-cols-2 gap-3">
@@ -312,8 +435,8 @@ export function PublicAcademyPage() {
                     ].join(' ')}
                   >
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{plan.name}</span>
-                    <span className="mt-1 text-lg font-black text-brand-800">{plan.price.toLocaleString()} RWF</span>
-                    <span className="text-[10px] font-medium text-slate-500">{plan.duration} Days Access</span>
+                    <span className="mt-1 text-lg font-black text-brand-800">{plan.durationDays} days</span>
+                    <span className="text-[10px] font-medium text-slate-500">Enrollment length</span>
                   </button>
                 ))}
               </div>
@@ -325,9 +448,14 @@ export function PublicAcademyPage() {
                 <span>{selectedPlan.name}</span>
               </div>
               <div className="mt-2 flex justify-between border-t border-brand-100 pt-2 text-lg font-bold text-brand-800">
-                <span>Total Amount</span>
-                <span>{selectedPlan.price.toLocaleString()} RWF</span>
+                <span>Amount charged</span>
+                <span>
+                  {selectedProgram ? `${Number(selectedProgram.price).toLocaleString()} RWF` : '—'}
+                </span>
               </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Price is set on the program. Your plan only changes how long access stays active after payment.
+              </p>
             </div>
 
             <div>
@@ -409,7 +537,6 @@ export function PublicAcademyPage() {
         )}
       </Modal>
 
-      {/* Details Modal (Public) */}
       <Modal
         open={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
@@ -419,7 +546,7 @@ export function PublicAcademyPage() {
         <div className="space-y-6">
           <div className="aspect-video w-full overflow-hidden rounded-2xl bg-slate-100">
             <img
-              src={selectedProgram?.thumbnail}
+              src={selectedProgram ? programCardImage(selectedProgram) : undefined}
               alt={selectedProgram?.title}
               className="h-full w-full object-cover"
             />
@@ -433,12 +560,14 @@ export function PublicAcademyPage() {
             </div>
             <div className="grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Duration</p>
-                <p className="text-sm font-bold text-slate-700">{selectedProgram?.durationDays} Days</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Default length</p>
+                <p className="text-sm font-bold text-slate-700">{selectedProgram?.durationDays} days</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Access</p>
-                <p className="text-sm font-bold text-brand-600">Flexible Plans</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Price</p>
+                <p className="text-sm font-bold text-brand-600">
+                  {selectedProgram ? `${Number(selectedProgram.price).toLocaleString()} RWF` : '—'}
+                </p>
               </div>
             </div>
           </div>
@@ -449,7 +578,9 @@ export function PublicAcademyPage() {
             }}
             className="w-full rounded-2xl bg-brand-500 py-4 text-sm font-black uppercase tracking-widest text-white transition hover:bg-brand-600"
           >
-            Enroll in Program
+            {selectedProgram && activeEnrollmentForProgram(selectedProgram.id, enrollmentsQuery.data)
+              ? 'Open course'
+              : 'Enroll in Program'}
           </button>
         </div>
       </Modal>

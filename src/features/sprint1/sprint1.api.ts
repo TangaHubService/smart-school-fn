@@ -4,6 +4,7 @@ export interface CreateTenantPayload {
   code: string;
   name: string;
   domain?: string;
+  isAcademyCatalog?: boolean;
   school?: {
     displayName: string;
     registrationNumber?: string;
@@ -34,6 +35,7 @@ export interface TenantListItem {
   name: string;
   domain: string | null;
   isActive: boolean;
+  isAcademyCatalog?: boolean;
   createdAt: string;
   activeUsers: number;
   school: {
@@ -52,6 +54,7 @@ export interface SchoolDetail {
   name: string;
   domain: string | null;
   isActive: boolean;
+  isAcademyCatalog?: boolean;
   createdAt: string;
   updatedAt: string;
   activeUsers: number;
@@ -169,6 +172,7 @@ export function updateTenantApi(
     code: string;
     name: string;
     domain?: string | null;
+    isAcademyCatalog?: boolean;
     school: {
       displayName: string;
       email?: string | null;

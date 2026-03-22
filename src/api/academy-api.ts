@@ -3,10 +3,11 @@ import { apiRequest } from './client';
 export interface Program {
   id: string;
   title: string;
-  description: string;
-  thumbnail: string;
+  description?: string | null;
+  thumbnail?: string | null;
   price: number;
   durationDays: number;
+  courseId?: string | null;
 }
 
 export interface ProgramEnrollment {
@@ -14,14 +15,14 @@ export interface ProgramEnrollment {
   programId: string;
   userId: string;
   isActive: boolean;
-  expiresAt: string;
+  isTrial?: boolean;
+  expiresAt: string | null;
   program: Program;
 }
 
 export interface PurchaseRequest {
   programId: string;
   phoneNumber: string;
-  amount: number;
   planId: string;
 }
 

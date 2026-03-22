@@ -27,6 +27,7 @@ const createSchoolSchema = z.object({
   code: z.string().trim().min(2).max(50).regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers, and hyphens only'),
   name: z.string().trim().min(2).max(120),
   domain: z.string().trim().max(200).optional(),
+  isAcademyCatalog: z.boolean().optional(),
 });
 
 const inviteAdminSchema = z.object({
@@ -40,6 +41,7 @@ const editSchoolSchema = z.object({
   schoolDisplayName: z.string().trim().min(2).max(120),
   schoolEmail: z.string().trim().email().optional().or(z.literal('')),
   schoolPhone: z.string().trim().max(40).optional().or(z.literal('')),
+  isAcademyCatalog: z.boolean(),
 });
 
 type CreateSchoolValues = z.infer<typeof createSchoolSchema>;
@@ -71,6 +73,7 @@ export function TenantsPage() {
       code: '',
       name: '',
       domain: '',
+      isAcademyCatalog: false,
     },
   });
 
@@ -90,6 +93,7 @@ export function TenantsPage() {
       schoolDisplayName: '',
       schoolEmail: '',
       schoolPhone: '',
+      isAcademyCatalog: false,
     },
   });
 
@@ -117,6 +121,7 @@ export function TenantsPage() {
         code: values.code,
         name: values.name,
         domain: values.domain || undefined,
+        ...(values.isAcademyCatalog ? { isAcademyCatalog: true } : {}),
         school: {
           displayName: values.name,
           country: 'Rwanda',
@@ -166,6 +171,7 @@ export function TenantsPage() {
         code: values.code,
         name: values.name,
         domain: values.domain?.trim() ? values.domain.trim() : null,
+        isAcademyCatalog: values.isAcademyCatalog,
         school: {
           displayName: values.schoolDisplayName,
           email: values.schoolEmail?.trim() ? values.schoolEmail.trim() : null,
@@ -215,6 +221,7 @@ export function TenantsPage() {
         code: '',
         name: '',
         domain: '',
+        isAcademyCatalog: false,
       });
       inviteForm.reset({
         email: '',
@@ -235,6 +242,7 @@ export function TenantsPage() {
       schoolDisplayName: detail.school?.displayName ?? detail.name,
       schoolEmail: detail.school?.email ?? '',
       schoolPhone: detail.school?.phone ?? '',
+      isAcademyCatalog: Boolean(detail.isAcademyCatalog),
     });
   }, [editSchoolId, schoolDetailQuery.data, editForm]);
 
@@ -351,6 +359,7 @@ export function TenantsPage() {
                 <th className="px-3 py-2 font-semibold">Code</th>
                 <th className="px-3 py-2 font-semibold">School</th>
                 <th className="px-3 py-2 font-semibold">Domain</th>
+                <th className="px-3 py-2 font-semibold">Academy</th>
                 <th className="px-3 py-2 font-semibold">Setup</th>
                 <th className="px-3 py-2 font-semibold">Users</th>
                 <th className="px-3 py-2 font-semibold">Created</th>
@@ -367,6 +376,15 @@ export function TenantsPage() {
                     <p className="text-xs text-slate-500">{tenant.name}</p>
                   </td>
                   <td className="px-3 py-2 align-middle text-slate-700">{tenant.domain ?? '-'}</td>
+                  <td className="px-3 py-2 align-middle">
+                    {tenant.isAcademyCatalog ? (
+                      <span className="inline-flex rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800">
+                        Catalog
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 align-middle">
                     <span
                       className={[
@@ -473,6 +491,16 @@ export function TenantsPage() {
                 placeholder="green.smartschool.rw"
                 {...createForm.register('domain')}
               />
+            </label>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-brand-100 bg-white px-3 py-3 text-sm text-slate-700">
+              <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-brand-300" {...createForm.register('isAcademyCatalog')} />
+              <span>
+                <span className="font-semibold text-slate-900">Public academy catalog school</span>
+                <span className="mt-1 block text-xs text-slate-500">
+                  Only one school should hold this role. Programs here appear on /academy for the whole platform.
+                </span>
+              </span>
             </label>
 
             {createError ? <StateView title="Could not create school" message={createError.message} /> : null}
@@ -611,6 +639,16 @@ export function TenantsPage() {
             </div>
             <FieldError message={editForm.formState.errors.schoolEmail?.message} />
 
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-brand-100 bg-white px-3 py-3 text-sm text-slate-700">
+              <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-brand-300" {...editForm.register('isAcademyCatalog')} />
+              <span>
+                <span className="font-semibold text-slate-900">Public academy catalog school</span>
+                <span className="mt-1 block text-xs text-slate-500">
+                  Checking this moves the catalog to this school and clears it from any other.
+                </span>
+              </span>
+            </label>
+
             {updateError ? <StateView title="Could not update school" message={updateError.message} /> : null}
 
             <div className="flex justify-end gap-2">
@@ -707,6 +745,10 @@ function SchoolDetailView({ detail }: { detail: SchoolDetail }) {
     <div className="grid gap-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <DetailBlock label="School code" value={detail.code} mono />
+        <DetailBlock
+          label="Academy catalog"
+          value={detail.isAcademyCatalog ? 'Yes — programs listed on /academy' : 'No'}
+        />
         <DetailBlock label="Workspace name" value={detail.name} />
         <DetailBlock label="Display name" value={detail.school?.displayName ?? '-'} />
         <DetailBlock label="Domain" value={detail.domain ?? '-'} />

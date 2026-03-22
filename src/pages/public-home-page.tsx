@@ -5,6 +5,7 @@ import backgroundImage from '../asset/background.jpg';
 import { useAuth } from '../features/auth/auth.context';
 import { getDefaultLandingPath } from '../features/auth/auth-helpers';
 import { PublicCommunityCTA } from '../components/public/public-community-cta';
+import { PublicAcademyProgramsShowcase } from '../components/public/public-academy-showcase';
 
 const programs = [
   {
@@ -94,6 +95,15 @@ export function PublicHomePage() {
           </div>
         </div>
       </section>
+
+      <PublicAcademyProgramsShowcase
+        eyebrow="Open enrollment"
+        title="Featured academy programs"
+        subtitle="Real offerings from your catalog—pricing and duration straight from the platform. Enroll on the academy page."
+        limit={6}
+        ctaHref="/academy"
+        ctaLabel="Full catalog & enroll"
+      />
 
       <section className="bg-slate-50 py-20">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">

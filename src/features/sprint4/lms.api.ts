@@ -560,3 +560,67 @@ export function signUploadApi(
     body: payload,
   });
 }
+
+export interface AcademyProgram {
+  id: string;
+  tenantId: string;
+  title: string;
+  description: string | null;
+  thumbnail: string | null;
+  price: number;
+  durationDays: number;
+  isActive: boolean;
+  listedInPublicCatalog: boolean;
+  courseId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  linkedCourse: { id: string; title: string } | null;
+}
+
+export function listAcademyProgramsApi(accessToken: string) {
+  return apiRequest<AcademyProgram[]>('/academy-programs', {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function createAcademyProgramApi(
+  accessToken: string,
+  payload: {
+    title: string;
+    description?: string;
+    thumbnail?: string;
+    price: number;
+    durationDays?: number;
+    isActive?: boolean;
+    listedInPublicCatalog?: boolean;
+    courseId?: string | null;
+  },
+) {
+  return apiRequest<AcademyProgram>('/academy-programs', {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function updateAcademyProgramApi(
+  accessToken: string,
+  programId: string,
+  payload: {
+    title?: string;
+    description?: string | null;
+    thumbnail?: string | null;
+    price?: number;
+    durationDays?: number;
+    isActive?: boolean;
+    listedInPublicCatalog?: boolean;
+    courseId?: string | null;
+  },
+) {
+  return apiRequest<AcademyProgram>(`/academy-programs/${programId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}

@@ -19,6 +19,7 @@ import { ClassesPage } from '../pages/classes-page';
 import { ConductCreateIncidentPage } from '../pages/conduct-create-incident-page';
 import { ConductIncidentDetailPage } from '../pages/conduct-incident-detail-page';
 import { ConductIncidentsPage } from '../pages/conduct-incidents-page';
+import { AcademyProgramsAdminPage } from '../pages/academy-programs-admin-page';
 import { CoursesPage } from '../pages/courses-page';
 import { DashboardPage } from '../pages/dashboard-page';
 import { ExamsPage } from '../pages/exams-page';
@@ -69,6 +70,7 @@ import { PublicAcademyPage } from '../pages/public-academy-page';
 import { PublicAboutPage } from '../pages/public-about-page';
 import { PublicContactPage } from '../pages/public-contact-page';
 import { PublicCoursesPage } from '../pages/public-courses-page';
+import { PublicProgramsAdvertPage } from '../pages/public-programs-advert-page';
 import { PublicTuitionPage } from '../pages/public-tuition-page';
 import { PublicJobsPage } from '../pages/public-jobs-page';
 import { PublicJobDetailPage } from '../pages/public-job-detail-page';
@@ -81,6 +83,8 @@ export function AppRoutes() {
         <Route path="/platform" element={<Navigate to="/courses" replace />} />
         <Route path="/about" element={<PublicAboutPage />} />
         <Route path="/academy" element={<PublicAcademyPage />} />
+        <Route path="/programs" element={<PublicProgramsAdvertPage />} />
+        <Route path="/advert" element={<PublicProgramsAdvertPage />} />
         <Route path="/courses" element={<PublicCoursesPage />} />
         <Route path="/courses/all" element={<PublicCoursesPage />} />
         <Route path="/courses/categories" element={<PublicCoursesPage />} />
@@ -174,6 +178,7 @@ export function AppRoutes() {
             </Route>
             <Route element={<RequirePermission permission="courses.read" />}>
               <Route path="/admin/courses" element={<CoursesPage />} />
+              <Route path="/admin/academy-programs" element={<AcademyProgramsAdminPage />} />
               <Route path="/admin/my-classes" element={<TeacherMyClassesPage />} />
               <Route path="/admin/subjects" element={<SubjectsPage />} />
             </Route>

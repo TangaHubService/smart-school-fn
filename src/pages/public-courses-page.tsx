@@ -1,8 +1,7 @@
-import { ArrowRight, BookOpen, Star, GraduationCap, Clock, Award } from 'lucide-react';
+import { ArrowRight, BookOpen, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { PublicCommunityCTA } from '../components/public/public-community-cta';
-import { academyApi } from '../api/academy-api';
+import { PublicAcademyProgramsShowcase } from '../components/public/public-academy-showcase';
 
 import backgroundImage from '../asset/background.jpg';
 
@@ -34,11 +33,6 @@ const courses = [
 ];
 
 export function PublicCoursesPage() {
-  const { data: academyPrograms, isLoading } = useQuery({
-    queryKey: ['academy-programs'],
-    queryFn: academyApi.getPrograms,
-  });
-
   return (
     <main className="bg-white">
       <section
@@ -69,6 +63,15 @@ export function PublicCoursesPage() {
           </div>
         </div>
       </section>
+
+      <PublicAcademyProgramsShowcase
+        eyebrow="Advertised this week"
+        title="Enroll in live programs"
+        subtitle="These listings are public—they match what buyers see on the academy checkout."
+        limit={9}
+        ctaHref="/academy"
+        ctaLabel="Go to academy"
+      />
 
       <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="mb-14 text-center">
@@ -104,65 +107,6 @@ export function PublicCoursesPage() {
             );
           })}
         </div>
-      </div>
-
-      <div id="academy-section" className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:px-8 border-t border-slate-100">
-        <div className="mb-14 text-center">
-          <p className="mb-4 text-[10px] font-black uppercase tracking-[0.28em] text-brand-600">Professional Development</p>
-          <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">Academy Programs</h2>
-          <div className="mx-auto mt-6 h-1 w-16 rounded-full bg-brand-500" />
-          <p className="mx-auto mt-6 max-w-3xl text-lg text-slate-500">Fast-track your career with industry-recognized certifications.</p>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-brand-600" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {academyPrograms?.map((program) => (
-              <article
-                key={program.id}
-                className="group relative flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(0,0,0,0.06)]"
-              >
-                <div className="aspect-[16/9] w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={program.thumbnail}
-                    alt={program.title}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-8">
-                  <div className="mb-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-700">
-                      <GraduationCap className="h-3 w-3" />
-                      Academy Program
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-brand-600">{program.title}</h3>
-                  <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">{program.description}</p>
-                  <div className="mt-6 flex items-center gap-6 border-t border-slate-50 pt-6">
-                    <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                      <Clock className="h-3.5 w-3.5 text-brand-500" />
-                      {program.durationDays} Days
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                      <Award className="h-3.5 w-3.5 text-brand-500" />
-                      Professional Certification
-                    </div>
-                  </div>
-                  <Link
-                    to="/academy"
-                    className="mt-8 flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-brand-600"
-                  >
-                    View in Academy
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
       </div>
 
       <PublicCommunityCTA />

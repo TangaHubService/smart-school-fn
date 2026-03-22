@@ -10,6 +10,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -566,6 +567,22 @@ export function CoursesPage() {
 
   return (
     <div className="grid gap-5">
+      {auth.me?.permissions.includes('courses.manage') ? (
+        <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-950">
+          <p className="font-semibold">Public Smart School Academy</p>
+          <p className="mt-1 text-violet-900/90">
+            Courses below are for classes at your school. The public <strong>/academy</strong> page lists separate{' '}
+            <strong>programs</strong> (with a price). Create them under Academy programs.
+          </p>
+          <Link
+            to="/admin/academy-programs"
+            className="mt-2 inline-flex items-center gap-1 font-semibold text-brand-700 hover:underline"
+          >
+            Manage academy programs
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      ) : null}
       <SectionCard
         title="Courses"
         subtitle={
