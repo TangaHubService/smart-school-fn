@@ -13,7 +13,7 @@ export function PublicCommunityCTA() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* For Staff */}
           <div className="flex flex-col rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition hover:shadow-md">
             <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
@@ -45,6 +45,23 @@ export function PublicCommunityCTA() {
               className="mt-8 inline-flex items-center justify-center rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold uppercase tracking-wider text-white transition hover:bg-emerald-700"
             >
               Student Entry
+            </Link>
+          </div>
+
+          {/* For Parent */}
+          <div className="flex flex-col rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition hover:shadow-md">
+            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+              <Users className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">For Parent</h3>
+            <p className="mt-4 flex-grow text-[15px] leading-relaxed text-slate-600">
+              Parents access performance, attendance, assignments, feedback, communication and resources to support learning.
+            </p>
+            <Link
+              to="/login?mode=staff"
+              className="mt-8 inline-flex items-center justify-center rounded-full bg-blue-600 px-6 py-3 text-sm font-bold uppercase tracking-wider text-white transition hover:bg-blue-700"
+            >
+              Parent Login
             </Link>
           </div>
 

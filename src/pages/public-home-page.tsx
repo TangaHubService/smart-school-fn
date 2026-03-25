@@ -66,11 +66,11 @@ export function PublicHomePage() {
         <div className="relative mx-auto w-full max-w-6xl px-4 text-center sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
             <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Smart School Rwanda</p>
-            <h1 className="text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
-              Transform Your Future With Practical Digital Learning
+            <h1 className="text-3xl font-bold font-display leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+              Rwanda's Leading Exam Partner for Academic and Professional Success
             </h1>
-            <p className="mx-auto mt-6 hidden max-w-3xl text-lg font-medium leading-relaxed text-gray-100 md:block">
-              Smart School provides a complete education and operations platform designed for modern institutions in Rwanda.
+            <p className="mx-auto mt-6 hidden max-w-4xl text-lg font-medium leading-relaxed text-gray-100 md:block">
+              Smart School Rwanda empowers learners with practical, market-relevant skills through a digital platform that automates exams, standardizes marking, and delivers real-time insights, reducing teachers’ workload while improving fairness, learning outcomes, and access to quality, lifelong education across Rwanda for all.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
               <Link

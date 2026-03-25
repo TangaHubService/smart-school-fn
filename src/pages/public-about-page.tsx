@@ -33,8 +33,8 @@ export function PublicAboutPage() {
         <div className="relative mx-auto w-full max-w-6xl px-4 text-center sm:px-6 lg:px-8">
           <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Elite Education</p>
           <h1 className="text-3xl font-bold uppercase tracking-tight text-white sm:text-5xl">About Smart School</h1>
-          <p className="mx-auto mt-6 hidden max-w-3xl text-lg font-medium text-gray-100 md:block">
-            The future of learning beyond classroom walls with practical, adaptive digital education.
+          <p className="mx-auto mt-6 hidden max-w-4xl text-lg font-medium leading-relaxed text-gray-100 md:block">
+            Smart School Rwanda is a digital education management platform designed to transform how schools operate, teach, and assess students. By integrating modern technology into daily school activities, the system enhances efficiency, transparency, and academic performance across Rwandan schools.
           </p>
         </div>
       </section>

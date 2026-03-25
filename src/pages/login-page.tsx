@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
+import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FieldError, useForm } from 'react-hook-form';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
 import { LoginFormValues, loginFormSchema } from '../features/auth/auth.schema';
@@ -13,6 +14,7 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
   const auth = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [showRecoveryTips, setShowRecoveryTips] = useState(false);
 
   const emailFromQuery = searchParams.get('email') ?? '';
 
@@ -218,6 +220,18 @@ export function LoginPage() {
             {loginMutation.isPending ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        {loginAs === 'staff' && (
+          <div className="mt-8 pt-4 border-t border-slate-100 flex justify-center">
+            <Link
+              to="/forgot-password"
+              className="flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition"
+            >
+              <HelpCircle className="h-4 w-4" />
+              Forgot Password?
+            </Link>
+          </div>
+        )}
       </section>
     </main>
   );

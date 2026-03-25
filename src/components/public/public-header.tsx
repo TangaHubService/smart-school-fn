@@ -9,10 +9,7 @@ import { getDefaultLandingPath } from '../../features/auth/auth-helpers';
 const publicNav = [
   { to: '/', label: 'Home', end: true },
   { to: '/about', label: 'About' },
-  { to: '/courses', label: 'Courses' },
-  { to: '/academy', label: 'Academy' },
-  { to: '/programs', label: 'Programs' },
-  { to: '/tuition', label: 'Tuition' },
+  { to: '/courses', label: 'Programs' },
   { to: '/job-listing', label: 'Jobs' },
   { to: '/contact', label: 'Contact' },
 ];

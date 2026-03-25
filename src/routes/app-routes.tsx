@@ -30,6 +30,8 @@ import { GovIncidentsPage } from '../pages/gov-incidents-page';
 import { GovSchoolDetailPage } from '../pages/gov-school-detail-page';
 import { GovSchoolsPage } from '../pages/gov-schools-page';
 import { LoginPage } from '../pages/login-page';
+import { ForgotPasswordPage } from '../pages/forgot-password-page';
+import { ResetPasswordPage } from '../pages/reset-password-page';
 import { ParentMyChildrenPage } from '../pages/parent-my-children-page';
 import { ParentReportCardsPage } from '../pages/parent-report-cards-page';
 import { ParentsPage } from '../pages/parents-page';
@@ -96,6 +98,8 @@ export function AppRoutes() {
       </Route>
 
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route path="/verify/report-cards/:snapshotId" element={<ReportCardVerificationPage />} />
