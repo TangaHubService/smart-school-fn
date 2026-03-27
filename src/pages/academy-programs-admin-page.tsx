@@ -54,6 +54,15 @@ export function AcademyProgramsAdminPage() {
 
   const canManage = Boolean(auth.me?.permissions.includes('courses.manage'));
 
+  if (auth.me && !auth.me.tenant.isAcademyCatalog) {
+    return (
+      <StateView
+        title="Academy programs unavailable"
+        message="This feature is only enabled for tenants in the Academy catalog. Contact your platform administrator if you believe this is a mistake."
+      />
+    );
+  }
+
   const programsQuery = useQuery({
     queryKey: ['admin-academy-programs'],
     queryFn: () => listAcademyProgramsApi(auth.accessToken!),

@@ -15,6 +15,7 @@ import {
   getRwandaVillages,
 } from '../features/location/rwanda-location';
 import { schoolSetupStatusApi, setupSchoolApi } from '../features/sprint1/sprint1.api';
+import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import { ApiClientError } from '../types/api';
 
 const schoolProfileSchema = z.object({
@@ -28,6 +29,7 @@ const schoolProfileSchema = z.object({
   schoolSector: z.string().trim().min(2).max(100),
   schoolCell: z.string().trim().min(2).max(100),
   schoolVillage: z.string().trim().min(2).max(100),
+  logoUrl: z.string().trim().url().optional().or(z.literal('')),
 });
 
 type SchoolProfileValues = z.infer<typeof schoolProfileSchema>;
@@ -48,6 +50,7 @@ function buildDefaultValues(tenantName: string): SchoolProfileValues {
     schoolSector: '',
     schoolCell: '',
     schoolVillage: '',
+    logoUrl: '',
   };
 }
 
@@ -87,6 +90,7 @@ export function SetupWizardPage() {
           city: values.schoolDistrict,
           country: 'Rwanda',
           timezone: 'Africa/Kigali',
+          logoUrl: values.logoUrl || undefined,
         },
         markSetupComplete: true,
       }),
@@ -116,6 +120,7 @@ export function SetupWizardPage() {
       schoolSector: school.sector ?? '',
       schoolCell: school.cell ?? '',
       schoolVillage: school.village ?? '',
+      logoUrl: school.logoUrl ?? '',
     });
   }, [schoolSetupStatusQuery.data, form, auth.me?.tenant.name]);
 
@@ -211,6 +216,41 @@ export function SetupWizardPage() {
 
       {!schoolSetupStatusQuery.isError ? (
         <form className="grid gap-3" onSubmit={form.handleSubmit((values) => saveProfileMutation.mutate(values))}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-brand-200 bg-slate-50">
+              {form.watch('logoUrl') ? (
+                <img
+                  src={form.watch('logoUrl')}
+                  alt="School logo"
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  No Logo
+                </div>
+              )}
+            </div>
+            <div className="grid gap-1">
+              <span className="text-sm font-semibold text-slate-800">School Logo</span>
+              <p className="text-xs text-slate-500">Upload your logo (png, jpg, max 2MB)</p>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const asset = await uploadFileToCloudinary(auth.accessToken!, 'logo', file);
+                    form.setValue('logoUrl', asset.secureUrl, { shouldDirty: true });
+                  } catch (err: any) {
+                    alert(err.message || 'Logo upload failed');
+                  }
+                }}
+                className="mt-1 block text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
+              />
+            </div>
+          </div>
+
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             School display name
             <input className="rounded-lg border border-brand-200 px-3 py-2" {...form.register('schoolDisplayName')} />

@@ -5,7 +5,21 @@ import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
-import { getGovSchoolDetailApi } from '../features/gov/gov.api';
+import {
+  getGovSchoolConductSummaryApi,
+  getGovSchoolDetailApi,
+  listGovSchoolCoursesApi,
+} from '../features/gov/gov.api';
+
+function conductRangeLastDays(days: number) {
+  const to = new Date();
+  const from = new Date();
+  from.setUTCDate(from.getUTCDate() - days);
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
+}
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat('en-RW', {
@@ -18,10 +32,25 @@ export function GovSchoolDetailPage() {
   const { tenantId } = useParams();
   const auth = useAuth();
 
+  const conductRange = conductRangeLastDays(90);
+
   const schoolDetailQuery = useQuery({
     queryKey: ['gov-school-detail', tenantId],
     queryFn: () => getGovSchoolDetailApi(auth.accessToken!, tenantId!),
     enabled: Boolean(tenantId),
+  });
+
+  const coursesQuery = useQuery({
+    queryKey: ['gov-school-courses', tenantId],
+    queryFn: () => listGovSchoolCoursesApi(auth.accessToken!, tenantId!),
+    enabled: Boolean(tenantId && auth.accessToken),
+  });
+
+  const conductQuery = useQuery({
+    queryKey: ['gov-school-conduct-summary', tenantId, conductRange.from, conductRange.to],
+    queryFn: () =>
+      getGovSchoolConductSummaryApi(auth.accessToken!, tenantId!, conductRange),
+    enabled: Boolean(tenantId && auth.accessToken),
   });
 
   if (!tenantId) {
@@ -93,6 +122,89 @@ export function GovSchoolDetailPage() {
             <p className="mt-2 text-3xl font-bold text-slate-950">{detail.summary.resolvedIncidents}</p>
           </div>
         </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Conduct summary (90 days)"
+        subtitle="Read-only aggregate from school conduct records. Date range is fixed for a quick audit snapshot."
+      >
+        {conductQuery.isPending ? (
+          <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
+        ) : conductQuery.isError ? (
+          <p className="text-sm text-slate-600">Could not load conduct summary.</p>
+        ) : conductQuery.data ? (
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-brand-100 bg-brand-50/70 p-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Total incidents</p>
+              <p className="mt-1 text-2xl font-bold text-slate-950">{conductQuery.data.totalIncidents}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {conductQuery.data.range.from} → {conductQuery.data.range.to}
+              </p>
+            </div>
+            <div className="rounded-xl border border-brand-100 bg-white p-3 text-sm">
+              <p className="text-xs font-semibold uppercase text-slate-500">By status</p>
+              <ul className="mt-2 space-y-1 text-slate-700">
+                {conductQuery.data.byStatus.map((r) => (
+                  <li key={r.status}>
+                    {r.status.replace('_', ' ')}: {r.count}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-xl border border-brand-100 bg-white p-3 text-sm">
+              <p className="text-xs font-semibold uppercase text-slate-500">Top categories</p>
+              <ul className="mt-2 space-y-1 text-slate-700">
+                {conductQuery.data.topCategories.slice(0, 6).map((r) => (
+                  <li key={r.category}>
+                    {r.category}: {r.count}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+      </SectionCard>
+
+      <SectionCard
+        title="Courses (read-only)"
+        subtitle="Learning content overview for audit — no edits from this view."
+      >
+        {coursesQuery.isPending ? (
+          <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
+        ) : coursesQuery.isError ? (
+          <p className="text-sm text-slate-600">Could not load courses.</p>
+        ) : coursesQuery.data?.items.length ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-600">
+                  <th className="py-2 pr-3 font-medium">Course</th>
+                  <th className="py-2 pr-3 font-medium">Class</th>
+                  <th className="py-2 pr-3 font-medium">Subject</th>
+                  <th className="py-2 pr-3 font-medium">Teacher</th>
+                  <th className="py-2 font-medium">Year</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coursesQuery.data.items.map((c) => (
+                  <tr key={c.id} className="border-b border-slate-100">
+                    <td className="py-2 pr-3 font-medium text-slate-900">{c.title}</td>
+                    <td className="py-2 pr-3 text-slate-700">
+                      {c.classRoom.code} {c.classRoom.name}
+                    </td>
+                    <td className="py-2 pr-3 text-slate-700">{c.subject?.name ?? '—'}</td>
+                    <td className="py-2 pr-3 text-slate-700">
+                      {c.teacher.firstName} {c.teacher.lastName}
+                    </td>
+                    <td className="py-2 text-slate-600">{c.academicYear.name}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyState message="No active courses are listed for this school." />
+        )}
       </SectionCard>
 
       <SectionCard title="Recent Incidents" subtitle="The latest conduct records visible for this school only.">

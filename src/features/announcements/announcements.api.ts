@@ -20,8 +20,24 @@ export interface AnnouncementItem {
   };
 }
 
+export interface SystemBroadcastItem {
+  id: string;
+  title: string;
+  body: string;
+  source: 'system';
+  targetType: string;
+  publishedAt: string | null;
+  expiresAt: string | null;
+  author: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
 export interface AnnouncementListResponse {
   items: AnnouncementItem[];
+  systemBroadcasts?: SystemBroadcastItem[];
   pagination: {
     page: number;
     pageSize: number;

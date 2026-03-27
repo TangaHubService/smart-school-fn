@@ -46,7 +46,7 @@ export function LoginPage() {
       if (data.roles.includes('PUBLIC_LEARNER')) {
         navigate('/student/courses', { replace: true });
       } else {
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       }
     },
   });

@@ -24,6 +24,7 @@ export function StudentAssessmentDetailPage() {
   const { assessmentId = '' } = useParams();
   const [isStartOpen, setIsStartOpen] = useState(false);
   const [startStep, setStartStep] = useState<0 | 1>(0);
+  const [examAccessCode, setExamAccessCode] = useState('');
 
   const assessmentQuery = useQuery({
     queryKey: ['student-assessment-detail', assessmentId || null],
@@ -32,7 +33,14 @@ export function StudentAssessmentDetailPage() {
   });
 
   const startAttemptMutation = useMutation({
-    mutationFn: () => startAssessmentAttemptApi(auth.accessToken!, assessmentId),
+    mutationFn: () =>
+      startAssessmentAttemptApi(
+        auth.accessToken!,
+        assessmentId,
+        assessment?.requiresAccessCode
+          ? { accessCode: examAccessCode.trim() }
+          : undefined,
+      ),
     onSuccess: (attempt) => {
       void queryClient.invalidateQueries({ queryKey: ['student-assessments'] });
       void queryClient.invalidateQueries({ queryKey: ['student-assessment-detail', assessmentId] });
@@ -51,6 +59,7 @@ export function StudentAssessmentDetailPage() {
 
   function openStartModal() {
     setStartStep(0);
+    setExamAccessCode('');
     setIsStartOpen(true);
   }
 
@@ -234,7 +243,10 @@ export function StudentAssessmentDetailPage() {
               <button
                 type="button"
                 onClick={() => startAttemptMutation.mutate()}
-                disabled={startAttemptMutation.isPending}
+                disabled={
+                  startAttemptMutation.isPending ||
+                  (Boolean(assessment.requiresAccessCode) && examAccessCode.trim().length < 4)
+                }
                 className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {startAttemptMutation.isPending ? (
@@ -274,6 +286,21 @@ export function StudentAssessmentDetailPage() {
               <li>Your answers save automatically while you work.</li>
               <li>Use Next to move forward until you reach Finish test.</li>
             </ul>
+            {assessment.requiresAccessCode ? (
+              <label className="grid gap-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                  Exam access code
+                </span>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  value={examAccessCode}
+                  onChange={(e) => setExamAccessCode(e.target.value)}
+                  placeholder="Enter the code from your teacher"
+                  className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none ring-brand-200 focus:ring-2"
+                />
+              </label>
+            ) : null}
           </div>
         )}
       </Modal>

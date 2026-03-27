@@ -35,7 +35,7 @@ export const questionFormSchema = z
   .object({
     prompt: z.string().trim().min(2, 'Question prompt is required').max(5000),
     explanation: z.string().trim().max(5000).optional(),
-    type: z.enum(['MCQ_SINGLE', 'OPEN_TEXT']),
+    type: z.enum(['MCQ_SINGLE', 'OPEN_TEXT', 'SHORT_ANSWER', 'ESSAY']),
     points: z.coerce.number().int().min(1).max(100),
     correctOptionIndex: z.coerce.number().int().min(0).max(3).optional(),
     optionA: z.string().trim().max(500).optional(),
@@ -44,25 +44,26 @@ export const questionFormSchema = z
     optionD: z.string().trim().max(500).optional(),
   })
   .superRefine((value, context) => {
-    if (value.type === 'MCQ_SINGLE') {
-      const optionFields = [value.optionA, value.optionB, value.optionC, value.optionD];
-      optionFields.forEach((option, index) => {
-        if (!option?.trim()) {
-          context.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: [`option${String.fromCharCode(65 + index)}`],
-            message: `Option ${String.fromCharCode(65 + index)} is required`,
-          });
-        }
-      });
-
-      if (value.correctOptionIndex == null) {
+    if (value.type !== 'MCQ_SINGLE') {
+      return;
+    }
+    const optionFields = [value.optionA, value.optionB, value.optionC, value.optionD];
+    optionFields.forEach((option, index) => {
+      if (!option?.trim()) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['correctOptionIndex'],
-          message: 'Choose the correct option',
+          path: [`option${String.fromCharCode(65 + index)}`],
+          message: `Option ${String.fromCharCode(65 + index)} is required`,
         });
       }
+    });
+
+    if (value.correctOptionIndex == null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['correctOptionIndex'],
+        message: 'Choose the correct option',
+      });
     }
   });
 

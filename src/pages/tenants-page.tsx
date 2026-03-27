@@ -12,6 +12,7 @@ import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
+  assignSchoolAdminApi,
   createTenantApi,
   getTenantDetailApi,
   inviteTenantAdminApi,
@@ -740,6 +741,93 @@ export function TenantsPage() {
   );
 }
 
+function SchoolAdminsBlock({
+  tenantId,
+  admins,
+}: {
+  tenantId: string;
+  admins: SchoolDetail['schoolAdmins'];
+}) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [userId, setUserId] = useState('');
+
+  const assignMutation = useMutation({
+    mutationFn: () =>
+      assignSchoolAdminApi(auth.accessToken!, tenantId, {
+        userId: userId.trim(),
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['super-admin-school-detail', tenantId] });
+      await queryClient.invalidateQueries({ queryKey: ['super-admin-tenants'] });
+      showToast({
+        type: 'success',
+        title: 'Administrator assigned',
+        message: 'The user now has the school administrator role.',
+      });
+      setUserId('');
+    },
+    onError: (error: unknown) => {
+      showToast({
+        type: 'error',
+        title: 'Could not assign',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const list = admins ?? [];
+
+  return (
+    <div className="rounded-lg border border-brand-100 bg-white">
+      <div className="border-b border-brand-100 px-4 py-3">
+        <h4 className="text-sm font-bold text-slate-900">School administrators</h4>
+        <p className="text-xs text-slate-500">Multiple admins are supported. Assign the SCHOOL_ADMIN role to an existing user in this school.</p>
+      </div>
+      <div className="space-y-3 px-4 py-3">
+        {list.length ? (
+          <ul className="grid gap-2">
+            {list.map((a) => (
+              <li
+                key={a.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand-100 px-3 py-2 text-sm"
+              >
+                <span>
+                  {a.firstName} {a.lastName}{' '}
+                  <span className="text-slate-500">({a.email})</span>
+                </span>
+                <span className="text-xs font-semibold text-slate-600">{a.status}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-600">No school administrators yet.</p>
+        )}
+        <div className="flex flex-wrap items-end gap-2 border-t border-brand-50 pt-3">
+          <label className="grid min-w-[200px] flex-1 gap-1 text-xs font-semibold text-slate-700">
+            User ID (from System Users)
+            <input
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="User UUID"
+              className="rounded-lg border border-brand-200 px-3 py-2 font-mono text-xs"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={assignMutation.isPending || !userId.trim()}
+            onClick={() => assignMutation.mutate()}
+            className="rounded-lg bg-brand-500 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            {assignMutation.isPending ? 'Saving…' : 'Add as admin'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SchoolDetailView({ detail }: { detail: SchoolDetail }) {
   return (
     <div className="grid gap-4">
@@ -797,9 +885,11 @@ function SchoolDetailView({ detail }: { detail: SchoolDetail }) {
         </div>
       </div>
 
+      <SchoolAdminsBlock tenantId={detail.id} admins={detail.schoolAdmins} />
+
       <div className="rounded-lg border border-brand-100 bg-white">
         <div className="border-b border-brand-100 px-4 py-3">
-          <h4 className="text-sm font-bold text-slate-900">Users</h4>
+          <h4 className="text-sm font-bold text-slate-900">All users</h4>
         </div>
         <div className="px-4 py-3">
           {detail.users.length ? (

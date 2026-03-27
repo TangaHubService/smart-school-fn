@@ -35,13 +35,15 @@ export function listTimetableSlotsApi(
   params: {
     academicYearId: string;
     termId?: string;
-    classRoomId: string;
+    classRoomId?: string;
+    teacherUserId?: string;
   },
 ) {
   const query = new URLSearchParams();
   query.set('academicYearId', params.academicYearId);
   if (params.termId) query.set('termId', params.termId);
-  query.set('classRoomId', params.classRoomId);
+  if (params.classRoomId) query.set('classRoomId', params.classRoomId);
+  if (params.teacherUserId) query.set('teacherUserId', params.teacherUserId);
 
   return apiRequest<ListTimetableSlotsResponse>(
     `/timetable?${query.toString()}`,

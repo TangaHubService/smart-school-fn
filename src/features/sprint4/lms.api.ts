@@ -550,7 +550,7 @@ export function listMyCoursesApi(
 export function signUploadApi(
   accessToken: string,
   payload: {
-    purpose: 'lesson' | 'assignment' | 'submission';
+    purpose: 'lesson' | 'assignment' | 'submission' | 'logo';
     fileName: string;
   },
 ) {

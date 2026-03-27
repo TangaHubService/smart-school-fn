@@ -12,7 +12,7 @@ import {
   Users,
   Video,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { DashboardFilter } from '../components/dashboard/dashboard-filter';
@@ -51,7 +51,7 @@ const SUPER_ADMIN_QUICK_ACTIONS: DashboardQuickActionItem[] = [
     label: 'Add New User',
     description: 'Open users and manage platform accounts.',
     icon: Plus,
-    to: '/users',
+    to: '/super-admin/users',
   },
   {
     label: 'Create School',
@@ -69,7 +69,7 @@ const SUPER_ADMIN_QUICK_ACTIONS: DashboardQuickActionItem[] = [
     label: 'System Settings',
     description: 'Review platform settings.',
     icon: Settings,
-    to: '/admin/setup',
+    to: '/super-admin/settings',
   },
 ];
 
@@ -90,6 +90,43 @@ export function SuperAdminDashboardPage() {
     enabled: Boolean(auth.accessToken),
     queryFn: () => getSuperAdminDashboardFiltersApi(auth.accessToken!),
   });
+
+  useEffect(() => {
+    const opts = filtersQuery.data;
+    if (!opts?.academicYears?.length) {
+      return;
+    }
+    const firstAy = opts.academicYears[0]?.name;
+    const firstTerm = opts.terms[0];
+    const termCode =
+      firstTerm?.sequence === 1
+        ? 'first'
+        : firstTerm?.sequence === 2
+          ? 'second'
+          : firstTerm?.sequence === 3
+            ? 'third'
+            : 'first';
+    setFilters((prev) => {
+      if (prev.academicYear !== '2023/2024') {
+        return prev;
+      }
+      return {
+        ...prev,
+        academicYear: firstAy ?? prev.academicYear,
+        term: termCode,
+      };
+    });
+    setAppliedFilters((prev) => {
+      if (prev.academicYear !== '2023/2024') {
+        return prev;
+      }
+      return {
+        ...prev,
+        academicYear: firstAy ?? prev.academicYear,
+        term: termCode,
+      };
+    });
+  }, [filtersQuery.data]);
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['dashboard', 'super-admin', appliedFilters],

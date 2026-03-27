@@ -38,12 +38,24 @@ export function TimetablePage() {
   const [academicYearId, setAcademicYearId] = useState('');
   const [termId, setTermId] = useState('');
   const [classRoomId, setClassRoomId] = useState('');
+  const [teacherUserId, setTeacherUserId] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [editGrid, setEditGrid] = useState<Record<string, string>>({});
+  const [viewMode, setViewMode] = useState<'class' | 'teacher' | 'school'>('class');
 
-  const canManage =
-    (auth.me?.permissions.includes('timetable.manage') ||
-      auth.me?.permissions.includes('timetable.read')) ?? false;
+  const isTeacher = auth.me?.roles.includes('TEACHER') ?? false;
+  const isAdmin =
+    (auth.me?.roles.includes('SCHOOL_ADMIN') ||
+      auth.me?.roles.includes('SUPER_ADMIN')) ??
+    false;
+
+  useEffect(() => {
+    if (isTeacher && !isAdmin) {
+      setViewMode('teacher');
+    }
+  }, [isTeacher, isAdmin]);
+
+  const canManage = (auth.me?.permissions.includes('timetable.manage') && isAdmin) ?? false;
 
   const yearsQuery = useQuery({
     queryKey: ['academic-years'],
@@ -64,13 +76,24 @@ export function TimetablePage() {
   });
 
   const slotsQuery = useQuery({
-    queryKey: ['timetable', academicYearId, termId, classRoomId],
-    enabled: Boolean(academicYearId && classRoomId),
+    queryKey: ['timetable', academicYearId, termId, classRoomId, teacherUserId, viewMode],
+    enabled: Boolean(academicYearId && (viewMode !== 'class' || classRoomId)),
     queryFn: () =>
       listTimetableSlotsApi(auth.accessToken!, {
         academicYearId,
         termId: termId || undefined,
-        classRoomId,
+        classRoomId:
+          viewMode === 'class'
+            ? classRoomId
+            : viewMode === 'school'
+              ? classRoomId || undefined
+              : undefined,
+        teacherUserId:
+          viewMode === 'teacher'
+            ? auth.me?.id
+            : viewMode === 'school'
+              ? teacherUserId || undefined
+              : undefined,
       }),
   });
 
@@ -85,6 +108,16 @@ export function TimetablePage() {
       }),
   });
 
+  const teacherOptionsQuery = useQuery({
+    queryKey: ['timetable-teachers', academicYearId],
+    enabled: Boolean(academicYearId),
+    queryFn: () =>
+      listCoursesApi(auth.accessToken!, {
+        academicYearId,
+        pageSize: 200,
+      }),
+  });
+
   const years = (yearsQuery.data ?? []) as Array<{ id: string; name: string }>;
   const terms = (termsQuery.data ?? []) as Array<{ id: string; name: string; academicYearId?: string }>;
   const classes = (classesQuery.data ?? []) as Array<{ id: string; code: string; name: string }>;
@@ -94,6 +127,14 @@ export function TimetablePage() {
     title: string;
     subject?: { name: string } | null;
   }>;
+  const teacherOptions = Array.from(
+    new Map(
+      (((teacherOptionsQuery.data?.items as Array<{ teacher: { id: string; firstName: string; lastName: string } }> | undefined) ?? []).map((c) => [
+        c.teacher.id,
+        c.teacher,
+      ])),
+    ).values(),
+  );
 
   const effectiveTermId = termId || terms[0]?.id;
 
@@ -191,40 +232,79 @@ export function TimetablePage() {
       title="Timetable"
       subtitle="View and manage class timetable by academic year, term, and class."
       action={
-        canEdit && !isEditMode ? (
-          <button
-            type="button"
-            onClick={handleStartEdit}
-            className="inline-flex items-center gap-2 rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-          >
-            <Pencil className="h-4 w-4" />
-            Edit timetable
-          </button>
-        ) : isEditMode ? (
-          <div className="flex gap-2">
+        <div className="flex gap-2">
+          {isAdmin && (
+            <div className="flex rounded-lg border border-brand-200 p-1">
+              <button
+                type="button"
+                onClick={() => setViewMode('class')}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+                  viewMode === 'class'
+                    ? 'bg-brand-500 text-white'
+                    : 'text-slate-600 hover:bg-brand-50'
+                }`}
+              >
+                Class View
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('teacher')}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+                  viewMode === 'teacher'
+                    ? 'bg-brand-500 text-white'
+                    : 'text-slate-600 hover:bg-brand-50'
+                }`}
+              >
+                My Schedule
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('school')}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+                  viewMode === 'school'
+                    ? 'bg-brand-500 text-white'
+                    : 'text-slate-600 hover:bg-brand-50'
+                }`}
+              >
+                School View
+              </button>
+            </div>
+          )}
+          {canEdit && !isEditMode && viewMode === 'class' ? (
             <button
               type="button"
-              onClick={handleSave}
-              disabled={saveMutation.isPending}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              onClick={handleStartEdit}
+              className="inline-flex items-center gap-2 rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
             >
-              <Save className="h-4 w-4" />
-              {saveMutation.isPending ? 'Saving...' : 'Save'}
+              <Pencil className="h-4 w-4" />
+              Edit timetable
             </button>
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              disabled={saveMutation.isPending}
-              className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-            >
-              <X className="h-4 w-4" />
-              Cancel
-            </button>
-          </div>
-        ) : null
+          ) : isEditMode ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saveMutation.isPending}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                <Save className="h-4 w-4" />
+                {saveMutation.isPending ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                disabled={saveMutation.isPending}
+                className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </button>
+            </div>
+          ) : null}
+        </div>
       }
     >
-      <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_1fr_1fr]">
+      <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_1fr]">
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Academic Year
           <select
@@ -258,24 +338,45 @@ export function TimetablePage() {
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          Class
-          <select
-            value={classRoomId}
-            onChange={(e) => setClassRoomId(e.target.value)}
-            className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-          >
-            <option value="">Select class</option>
-            {classes.map((c: { id: string; code: string; name: string }) => (
-              <option key={c.id} value={c.id}>
-                {c.code} - {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {(viewMode === 'class' || viewMode === 'school') && (
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            {viewMode === 'class' ? 'Class' : 'Class (optional)'}
+            <select
+              value={classRoomId}
+              onChange={(e) => setClassRoomId(e.target.value)}
+              className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
+            >
+              <option value="">{viewMode === 'class' ? 'Select class' : 'All classes'}</option>
+              {classes.map((c: { id: string; code: string; name: string }) => (
+                <option key={c.id} value={c.id}>
+                  {c.code} - {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {viewMode === 'school' && (
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Teacher (optional)
+            <select
+              value={teacherUserId}
+              onChange={(e) => setTeacherUserId(e.target.value)}
+              className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
+            >
+              <option value="">All teachers</option>
+              {teacherOptions.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.firstName} {t.lastName}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
-      {slotsQuery.isPending && academicYearId && classRoomId ? (
+      {slotsQuery.isPending &&
+      academicYearId &&
+      (viewMode === 'teacher' || classRoomId) ? (
         <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
           <Calendar className="h-6 w-6 animate-pulse" />
           <span>Loading timetable...</span>
@@ -298,21 +399,31 @@ export function TimetablePage() {
         />
       ) : null}
 
-      {!slotsQuery.isPending && !slotsQuery.isError && (!academicYearId || !classRoomId) ? (
-        <EmptyState message="Select academic year and class to view timetable." />
+      {!slotsQuery.isPending &&
+      !slotsQuery.isError &&
+      (!academicYearId || (viewMode === 'class' && !classRoomId)) ? (
+        <EmptyState
+          message={
+            viewMode === 'class'
+              ? 'Select academic year and class to view timetable.'
+              : 'Select academic year to view your timetable.'
+          }
+        />
       ) : null}
 
       {!slotsQuery.isPending &&
       !slotsQuery.isError &&
       academicYearId &&
-      classRoomId &&
+      (classRoomId || viewMode !== 'class') &&
       !isEditMode &&
       grid.length === 0 ? (
         <EmptyState
           message={
-            canEdit
-              ? 'No timetable slots yet. Click "Edit timetable" to create one.'
-              : 'No timetable slots configured for this class.'
+            viewMode === 'class'
+              ? canEdit
+                ? 'No timetable slots yet. Click "Edit timetable" to create one.'
+                : 'No timetable slots configured for this class.'
+              : 'You have no timetable entries for the selected period.'
           }
         />
       ) : null}
@@ -343,7 +454,9 @@ export function TimetablePage() {
           <table className="w-full table-auto text-left text-sm">
             <thead>
               <tr className="border-b border-brand-100 bg-brand-50/50">
-                <th className="px-2 py-2 font-semibold text-slate-700">Period</th>
+                <th className="px-2 py-2 font-semibold text-slate-700">
+                  Period
+                </th>
                 {DAYS.map((d) => (
                   <th key={d} className="px-2 py-2 font-semibold text-slate-700">
                     {d}
@@ -379,7 +492,9 @@ export function TimetablePage() {
                               }) => (
                                 <option key={c.id} value={c.id}>
                                   {c.title}
-                                  {c.subject?.name ? ` (${c.subject.name})` : ''}
+                                  {c.subject?.name
+                                    ? ` (${c.subject.name})`
+                                    : ''}
                                 </option>
                               ),
                             )}
@@ -408,13 +523,20 @@ export function TimetablePage() {
                                 <p className="text-xs text-slate-600">
                                   {slot.course.subject?.name ?? '—'}
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                {viewMode === 'teacher' && (
+                                  <p className="mt-1 text-xs font-medium text-brand-600">
+                                    {slot.classRoom.name}
+                                  </p>
+                                )}
+                                <p className="mt-1 text-xs text-slate-500">
                                   {slot.startTime}–{slot.endTime}
                                 </p>
-                                <p className="text-xs text-slate-500">
-                                  {slot.course.teacherUser.firstName}{' '}
-                                  {slot.course.teacherUser.lastName}
-                                </p>
+                                {viewMode === 'class' && (
+                                  <p className="text-xs text-slate-500">
+                                    {slot.course.teacherUser.firstName}{' '}
+                                    {slot.course.teacherUser.lastName}
+                                  </p>
+                                )}
                               </div>
                             ) : (
                               <span className="text-slate-400">—</span>
@@ -424,6 +546,41 @@ export function TimetablePage() {
                       })}
                     </tr>
                   ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      {!slotsQuery.isPending && !slotsQuery.isError && viewMode === 'school' && slots.length > 0 ? (
+        <div className="mt-4 overflow-x-auto rounded-xl border border-brand-100">
+          <table className="w-full table-auto text-left text-sm">
+            <thead>
+              <tr className="border-b border-brand-100 bg-brand-50/50">
+                <th className="px-3 py-2 font-semibold text-slate-700">Day</th>
+                <th className="px-3 py-2 font-semibold text-slate-700">Period</th>
+                <th className="px-3 py-2 font-semibold text-slate-700">Time</th>
+                <th className="px-3 py-2 font-semibold text-slate-700">Class</th>
+                <th className="px-3 py-2 font-semibold text-slate-700">Course / Subject</th>
+                <th className="px-3 py-2 font-semibold text-slate-700">Teacher</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slots.map((slot) => (
+                <tr key={slot.id} className="border-b border-brand-50">
+                  <td className="px-3 py-2 text-slate-700">{DAYS[slot.dayOfWeek - 1] ?? slot.dayOfWeek}</td>
+                  <td className="px-3 py-2 text-slate-700">P{slot.periodNumber}</td>
+                  <td className="px-3 py-2 text-slate-700">{slot.startTime}-{slot.endTime}</td>
+                  <td className="px-3 py-2 text-slate-700">
+                    {slot.classRoom.code} - {slot.classRoom.name}
+                  </td>
+                  <td className="px-3 py-2 text-slate-700">
+                    {slot.course.title}
+                    {slot.course.subject?.name ? ` (${slot.course.subject.name})` : ''}
+                  </td>
+                  <td className="px-3 py-2 text-slate-700">
+                    {slot.course.teacherUser.firstName} {slot.course.teacherUser.lastName}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
