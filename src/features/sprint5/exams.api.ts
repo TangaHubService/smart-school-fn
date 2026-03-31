@@ -324,6 +324,8 @@ export interface MarksGridResponse {
   classRoom: { id: string; code: string; name: string };
   subjects: MarksGridSubject[];
   students: MarksGridStudentRow[];
+  /** False when results are locked/published for this term+class — grid is view-only. */
+  marksEditable?: boolean;
 }
 
 export function getMarksGridApi(

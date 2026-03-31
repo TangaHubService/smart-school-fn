@@ -20,6 +20,12 @@ import {
 
 const inputClass =
   'w-14 rounded border border-brand-200 bg-white px-1 py-1 text-center text-sm outline-none focus:border-brand-500';
+const inputReadonlyClass =
+  'w-14 rounded border border-slate-200 bg-slate-100 px-1 py-1 text-center text-sm text-slate-800 cursor-default';
+
+/** Left border between subject groups (after first subject). */
+const subjectGroupBorder = (subjectIndex: number) =>
+  subjectIndex > 0 ? 'border-l-2 border-slate-300' : '';
 
 const FULL_YEAR_TERM_ID = '__full_year__';
 
@@ -74,6 +80,7 @@ export function ClassMarksPage() {
   const grid = gridQuery.data;
   const hasGrid = Boolean(grid && (grid.subjects.length > 0 || grid.students.length > 0));
   const isFullYearSelected = termId === FULL_YEAR_TERM_ID;
+  const marksReadOnly = Boolean(grid && grid.marksEditable === false);
 
   // Prevent old edits from being saved accidentally when switching filters.
   useEffect(() => {
@@ -137,6 +144,10 @@ export function ClassMarksPage() {
   };
 
   const handleSave = () => {
+    if (marksReadOnly) {
+      showToast({ type: 'info', title: 'Marks are read-only' });
+      return;
+    }
     const payload = buildSavePayload();
     if (!payload || payload.entries.length === 0) {
       showToast({ type: 'info', title: 'No changes to save' });
@@ -150,13 +161,17 @@ export function ClassMarksPage() {
   return (
     <SectionCard
       title="Class marks (Test / Exam / Total)"
-      subtitle="Enter or edit Test and Exam marks per subject. Total is computed automatically. Save to update."
+      subtitle={
+        marksReadOnly
+          ? 'Results are locked for this term and class. This table is read-only. Unlock results in Exams to edit marks.'
+          : 'Enter or edit Test and Exam marks per subject. Total is computed automatically. Save to update.'
+      }
       action={
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={handleSave}
-            disabled={!hasGrid || !hasDraft || saveMutation.isPending}
+            disabled={!hasGrid || !hasDraft || saveMutation.isPending || marksReadOnly}
             className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {saveMutation.isPending ? 'Saving...' : 'Save marks'}
@@ -264,6 +279,12 @@ export function ClassMarksPage() {
         <EmptyState message="Select an academic year, then a term and class to load the marks table. Use ‘Full academic year’ in the Term dropdown for info on yearly reports." />
       ) : null}
 
+      {marksReadOnly ? (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+          <strong>Read-only:</strong> Report results are locked for this term and class. Marks cannot be edited until an administrator unlocks results.
+        </div>
+      ) : null}
+
       {!gridQuery.isPending && !gridQuery.isError && hasGrid && grid && !isFullYearSelected ? (
         <div className="overflow-x-auto rounded-xl border border-brand-100">
           <table className="w-full table-auto border-collapse text-left text-sm">
@@ -278,16 +299,21 @@ export function ClassMarksPage() {
                 <th className="sticky left-0 z-10 min-w-[100px] border-r border-brand-200 bg-brand-50 px-2 py-2 font-semibold text-slate-800">
                   Last name
                 </th>
-                {grid.subjects.map((sub) => (
+                {grid.subjects.map((sub, si) => (
                   <th
                     key={sub.id}
                     colSpan={3}
-                    className="border-b border-brand-200 px-1 py-2 text-center font-semibold text-slate-800"
+                    className={`border-b border-brand-200 px-1 py-2 text-center font-semibold text-slate-800 ${subjectGroupBorder(si)}`}
                   >
-                    {sub.name}
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span>{sub.name}</span>
+                      <span className="text-[0.65rem] font-normal uppercase tracking-wide text-slate-500">
+                        {sub.code}
+                      </span>
+                    </div>
                   </th>
                 ))}
-                <th className="min-w-[4rem] border-b border-l border-brand-200 px-2 py-2 text-center font-semibold text-slate-800">
+                <th className="min-w-[4rem] border-b border-l-2 border-brand-200 bg-brand-50/90 px-2 py-2 text-center font-semibold text-slate-800">
                   Total
                 </th>
                 <th className="min-w-[3rem] border-b border-l border-brand-200 px-2 py-2 text-center font-semibold text-slate-800">
@@ -298,14 +324,18 @@ export function ClassMarksPage() {
                 <th className="sticky left-0 z-10 border-r border-brand-200 bg-brand-50/80 px-2 py-1" />
                 <th className="sticky left-0 z-10 border-r border-brand-200 bg-brand-50/80 px-2 py-1" />
                 <th className="sticky left-0 z-10 border-r border-brand-200 bg-brand-50/80 px-2 py-1" />
-                {grid.subjects.map((sub) => (
+                {grid.subjects.map((sub, si) => (
                   <React.Fragment key={sub.id}>
-                    <th className="px-1 py-1 text-center text-xs font-medium text-slate-600">Test</th>
+                    <th
+                      className={`px-1 py-1 text-center text-xs font-medium text-slate-600 ${subjectGroupBorder(si)}`}
+                    >
+                      Test
+                    </th>
                     <th className="px-1 py-1 text-center text-xs font-medium text-slate-600">Exam</th>
                     <th className="px-1 py-1 text-center text-xs font-medium text-slate-600">Total</th>
                   </React.Fragment>
                 ))}
-                <th className="border-l border-brand-200 px-2 py-1" />
+                <th className="border-l-2 border-brand-200 bg-brand-50/90 px-2 py-1" />
                 <th className="border-l border-brand-200 px-2 py-1" />
               </tr>
             </thead>
@@ -332,16 +362,20 @@ export function ClassMarksPage() {
                       }
                       return sm.total;
                     })();
+                    const sep = subjectGroupBorder(i);
                     return (
                       <React.Fragment key={sm.subjectId}>
-                        <td className="border-r border-brand-100 px-1 py-1">
+                        <td className={`border-r border-brand-100 px-1 py-1 ${sep}`}>
                           <input
                             type="number"
                             min={0}
                             max={500}
-                            className={inputClass}
+                            readOnly={marksReadOnly}
+                            tabIndex={marksReadOnly ? -1 : 0}
+                            className={marksReadOnly ? inputReadonlyClass : inputClass}
                             value={testStr}
                             onChange={(e) => {
+                              if (marksReadOnly) return;
                               const v = e.target.value.trim();
                               setCell(row.studentId, sm.subjectId, 'test', v === '' ? null : parseInt(v, 10));
                             }}
@@ -353,16 +387,19 @@ export function ClassMarksPage() {
                             type="number"
                             min={0}
                             max={500}
-                            className={inputClass}
+                            readOnly={marksReadOnly}
+                            tabIndex={marksReadOnly ? -1 : 0}
+                            className={marksReadOnly ? inputReadonlyClass : inputClass}
                             value={examStr}
                             onChange={(e) => {
+                              if (marksReadOnly) return;
                               const v = e.target.value.trim();
                               setCell(row.studentId, sm.subjectId, 'exam', v === '' ? null : parseInt(v, 10));
                             }}
                             aria-label={`${row.firstName} ${row.lastName} ${grid.subjects[i]?.name} Exam`}
                           />
                         </td>
-                        <td className="border-r border-brand-100 px-1 py-1 text-center font-medium text-slate-700">
+                        <td className="border-r border-brand-100 bg-slate-50/80 px-1 py-1 text-center font-medium text-slate-700">
                           {total}
                         </td>
                       </React.Fragment>
