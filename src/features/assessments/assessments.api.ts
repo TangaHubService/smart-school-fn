@@ -1,7 +1,7 @@
 import { apiRequest } from '../../api/client';
 
 export type AssessmentType = 'GENERAL' | 'OPENENDED' | 'PSYCHOMETRIC' | 'INTERVIEW';
-export type AssessmentQuestionType = 'MCQ_SINGLE' | 'OPEN_TEXT' | 'SHORT_ANSWER' | 'ESSAY';
+export type AssessmentQuestionType = 'MCQ_SINGLE' | 'OPEN_TEXT';
 export type AssessmentAttemptStatus = 'IN_PROGRESS' | 'SUBMITTED';
 
 export interface AssessmentSummary {
@@ -39,13 +39,9 @@ export interface AssessmentSummary {
     title: string;
     sequence: number;
   } | null;
-  accessCode?: string | null;
-  portalAssignOnly: boolean;
-  requiresAccessCode?: boolean;
   counts: {
     questions: number;
     attempts: number;
-    assignedStudents: number;
   };
 }
 
@@ -68,12 +64,6 @@ export interface AssessmentQuestion {
 
 export interface AssessmentDetail extends AssessmentSummary {
   questions: AssessmentQuestion[];
-  assignedStudents?: Array<{
-    id: string;
-    studentCode: string;
-    firstName: string;
-    lastName: string;
-  }>;
 }
 
 export interface AssessmentAttemptSummary {
@@ -221,8 +211,6 @@ export function createAssessmentApi(
     timeLimitMinutes?: number;
     maxAttempts?: number;
     isPublished?: boolean;
-    accessCode?: string | null;
-    portalAssignOnly?: boolean;
   },
 ) {
   return apiRequest<AssessmentSummary>('/assessments', {
@@ -379,15 +367,10 @@ export function getMyAssessmentDetailApi(accessToken: string, assessmentId: stri
   });
 }
 
-export function startAssessmentAttemptApi(
-  accessToken: string,
-  assessmentId: string,
-  body?: { accessCode?: string },
-) {
+export function startAssessmentAttemptApi(accessToken: string, assessmentId: string) {
   return apiRequest<AssessmentAttemptDetail>(`/assessments/${assessmentId}/attempts/start`, {
     method: 'POST',
     accessToken,
-    body: body && Object.keys(body).length ? body : undefined,
   });
 }
 

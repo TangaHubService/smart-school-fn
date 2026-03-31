@@ -6,7 +6,6 @@ import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
-import { hasRole } from '../features/auth/auth-helpers';
 import { listGovSchoolsApi } from '../features/gov/gov.api';
 import {
   getRwandaDistricts,
@@ -16,7 +15,6 @@ import {
 
 export function GovSchoolsPage() {
   const auth = useAuth();
-  const isSuperAdmin = hasRole(auth.me, 'SUPER_ADMIN');
   const [search, setSearch] = useState('');
   const [province, setProvince] = useState('');
   const [district, setDistrict] = useState('');
@@ -165,11 +163,6 @@ export function GovSchoolsPage() {
                     Setup {school.setupCompletedAt ? 'completed' : 'pending'} •{' '}
                     {school.isActive ? 'Active' : 'Inactive'}
                   </p>
-                  {!isSuperAdmin && school.scopeLabel ? (
-                    <p className="mt-2 text-xs font-medium text-slate-600">
-                      Scope: {school.scopeLabel}
-                    </p>
-                  ) : null}
                 </div>
                 <Link
                   to={`/gov/schools/${school.tenantId}`}

@@ -12,7 +12,6 @@ import {
   HelpCircle,
   Home,
   LayoutTemplate,
-  Megaphone,
   School,
   Sparkles,
   Settings,
@@ -50,9 +49,9 @@ interface NavItem {
 const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
   dashboard: 'Dashboard',
   tenants: 'School Management',
-  users: 'System Users',
-  'system-announcements': 'Announcements',
+  users: 'Users',
   'gov-auditors': 'Auditor Management',
+  announcements: 'Announcements',
   'audit-logs': 'Activity Logs',
 };
 
@@ -207,22 +206,6 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
-    key: 'school-reports',
-    label: 'Reports',
-    to: '/admin/reports',
-    icon: FileBarChart2,
-    roles: ['SCHOOL_ADMIN', 'TEACHER'],
-    requiredPermissionsOr: [
-      'exams.read',
-      'attendance.read',
-      'courses.read',
-      'timetable.read',
-      'conduct.read',
-    ],
-    requiredPermissions: [],
-    setupState: 'COMPLETE',
-  },
-  {
     key: 'report-cards',
     label: 'Report cards',
     to: '/admin/report-cards',
@@ -265,15 +248,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ShieldCheck,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['staff.invite'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'system-announcements',
-    label: 'Announcements',
-    to: '/super-admin/announcements',
-    icon: Megaphone,
-    roles: ['SUPER_ADMIN'],
-    requiredPermissions: ['tenants.read'],
     setupState: 'ANY',
   },
   {
@@ -412,15 +386,6 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
-    key: 'student-exam-schedule',
-    label: 'Exam schedule',
-    to: '/student/exam-schedule',
-    icon: CalendarDays,
-    roles: ['STUDENT'],
-    requiredPermissions: ['students.my_courses.read'],
-    setupState: 'ANY',
-  },
-  {
     key: 'student-assessments',
     label: 'Tests',
     to: '/student/assessments',
@@ -470,7 +435,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     'tenants',
     'users',
     'gov-auditors',
-    'system-announcements',
+    'announcements',
     'audit-logs',
     'subscriptions',
   ]);
@@ -485,14 +450,6 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     }
 
     if (!govAuditingFeatureEnabled && item.key.startsWith('gov-')) {
-      return false;
-    }
-
-    if (
-      item.key === 'academy-programs' &&
-      !superAdmin &&
-      !auth.me?.tenant?.isAcademyCatalog
-    ) {
       return false;
     }
 
@@ -537,18 +494,10 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
             : superAdmin && SUPER_ADMIN_NAV_OVERRIDES[item.key]
               ? SUPER_ADMIN_NAV_OVERRIDES[item.key]
               : item.label;
-
-        const linkTo =
-          superAdmin && item.key === 'users'
-            ? '/super-admin/users'
-            : superAdmin && item.key === 'gov-auditors'
-              ? '/super-admin/auditors'
-              : item.to;
-
         return (
           <div key={item.key}>
             <NavLink
-              to={linkTo}
+              to={item.to}
               end={item.key === 'dashboard' || item.key === 'student-dashboard'}
               onClick={onNavigate}
               className={({ isActive }) =>

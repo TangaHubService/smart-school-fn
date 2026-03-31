@@ -55,7 +55,6 @@ export interface SchoolAdminDashboardData {
   school: {
     displayName: string;
     city: string | null;
-    logoUrl: string | null;
   };
   metrics: {
     totalStudents: number;
@@ -161,24 +160,8 @@ export interface StudentDashboardData {
     date: string;
     time: string;
     relativeDate: string;
-    classLabel: string;
-    subjectName: string;
   }>;
   latestReports: Array<{ id: string; name: string; value: string | number }>;
-  recentAnnouncements: Array<{
-    id: string;
-    title: string;
-    publishedAt: string | null;
-    excerpt: string;
-  }>;
-  attendanceWeek: {
-    daysWithRecords: number;
-    present: number;
-    absent: number;
-    late: number;
-    excused: number;
-  } | null;
-  conductOpen: number | null;
 }
 
 export function getStudentDashboardApi(accessToken: string) {

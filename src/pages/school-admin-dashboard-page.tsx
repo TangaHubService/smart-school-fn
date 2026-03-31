@@ -225,16 +225,8 @@ export function SchoolAdminDashboardPage() {
             </h1>
             <DashboardQuickActionsDropdown actions={SCHOOL_ADMIN_QUICK_ACTIONS} />
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-slate-700">
-            {data.school.logoUrl ? (
-              <img
-                src={data.school.logoUrl}
-                alt=""
-                className="h-11 w-11 rounded-xl border border-brand-100 bg-white object-contain"
-              />
-            ) : (
-              <Home className="h-5 w-5" />
-            )}
+          <div className="flex items-center gap-2 text-slate-700">
+            <Home className="h-5 w-5" />
             <span className="font-medium">
               {data.school.displayName}
               {data.school.city ? `, ${data.school.city}` : ''}

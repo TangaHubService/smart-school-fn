@@ -468,23 +468,6 @@ export function getMyReportCardsApi(accessToken: string, termId?: string) {
   });
 }
 
-export interface MyExamScheduleResponse {
-  items: ExamSummary[];
-}
-
-export function listMyExamScheduleApi(
-  accessToken: string,
-  params?: { upcomingOnly?: boolean },
-) {
-  const query = new URLSearchParams();
-  if (params?.upcomingOnly) query.set('upcomingOnly', 'true');
-  const qs = query.toString();
-  return apiRequest<MyExamScheduleResponse>(`/students/me/exam-schedule${qs ? `?${qs}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
-}
-
 export function getParentReportCardsApi(
   accessToken: string,
   params: { studentId?: string; termId?: string } = {},

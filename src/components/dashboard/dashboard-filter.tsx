@@ -53,8 +53,6 @@ export function DashboardFilter({
 }: DashboardFilterProps) {
   const selectClass =
     'h-9 rounded border border-slate-200 bg-slate-50 px-2 text-xs text-slate-700 outline-none focus:border-blue-400';
-  const superAdminSelectClass =
-    'h-10 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400';
 
   function termCodeFromSequence(sequence: number): string {
     if (sequence === 1) return 'first';
@@ -174,12 +172,12 @@ export function DashboardFilter({
   }
 
   return (
-    <div className="rounded-2xl border border-brand-100 bg-white p-4 shadow-soft">
-      <div className="flex flex-wrap items-center gap-3">
-        <Filter className="h-4 w-4 shrink-0 text-slate-600" />
-        <span className="text-xs font-semibold text-slate-700">Filters</span>
+    <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <Filter className="h-4 w-4 text-slate-600" />
+        <span className="text-xs font-semibold text-slate-700">Filter Section</span>
         <select
-          className={superAdminSelectClass}
+          className={selectClass}
           value={academicYear}
           onChange={(e) => onAcademicYearChange?.(e.target.value)}
         >
@@ -191,7 +189,7 @@ export function DashboardFilter({
           ))}
         </select>
         <select
-          className={superAdminSelectClass}
+          className={selectClass}
           value={term}
           onChange={(e) => onTermChange?.(e.target.value)}
         >
@@ -203,7 +201,7 @@ export function DashboardFilter({
           ))}
         </select>
         <select
-          className={superAdminSelectClass}
+          className={selectClass}
           value={region}
           onChange={(e) => onRegionChange?.(e.target.value)}
         >
@@ -215,7 +213,7 @@ export function DashboardFilter({
           ))}
         </select>
         <select
-          className={superAdminSelectClass}
+          className={selectClass}
           value={school}
           onChange={(e) => onSchoolChange?.(e.target.value)}
         >
@@ -227,7 +225,7 @@ export function DashboardFilter({
           ))}
         </select>
         <select
-          className={superAdminSelectClass}
+          className={selectClass}
           value={status}
           onChange={(e) => onStatusChange?.(e.target.value)}
         >
@@ -238,16 +236,23 @@ export function DashboardFilter({
         <button
           type="button"
           onClick={onApply}
-          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-600"
+          className="rounded bg-dashboard-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0f2a5c]"
         >
-          Apply
+          Apply Filter
         </button>
         <button
           type="button"
           onClick={onReset}
-          className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-brand-50"
+          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
         >
           Reset
+        </button>
+        <button
+          type="button"
+          className="grid h-9 w-9 place-items-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+          aria-label="Search"
+        >
+          <Search className="h-4 w-4" />
         </button>
       </div>
     </div>

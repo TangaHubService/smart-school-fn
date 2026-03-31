@@ -29,7 +29,6 @@ export interface GovAuditor {
   firstName: string;
   lastName: string;
   phone: string | null;
-  status?: string;
   createdAt: string;
   updatedAt: string;
   scopes: GovAuditorScope[];
@@ -44,26 +43,10 @@ export interface GovDashboardResponse {
     total: number;
     open: number;
     resolved: number;
-    last30Days: number;
   };
   feedback: {
     authoredByMe: number;
-    recentDiscussion: Array<{
-      id: string;
-      body: string;
-      createdAt: string;
-      authorName: string;
-      incidentId: string;
-      incidentTitle: string;
-      schoolName: string | null;
-    }>;
   };
-  myScopes: Array<{
-    id: string;
-    label: string;
-    scopeLevel: GovScopeLevel;
-    assignedBy: { firstName: string; lastName: string; email: string } | null;
-  }>;
 }
 
 export interface GovSchoolListResponse {
@@ -87,8 +70,6 @@ export interface GovSchoolListItem {
   country: string | null;
   setupCompletedAt: string | null;
   isActive: boolean;
-  /** Which active assignment matches this school (auditors only; null for super admin). */
-  scopeLabel: string | null;
 }
 
 export interface GovSchoolDetailResponse {
@@ -113,23 +94,6 @@ export function createGovAuditorApi(
 ) {
   return apiRequest<GovAuditor>('/gov/admin/auditors', {
     method: 'POST',
-    accessToken,
-    body: payload,
-  });
-}
-
-export function updateGovAuditorApi(
-  accessToken: string,
-  auditorUserId: string,
-  payload: {
-    firstName?: string;
-    lastName?: string;
-    phone?: string | null;
-    status?: 'ACTIVE' | 'INACTIVE';
-  },
-) {
-  return apiRequest<GovAuditor>(`/gov/admin/auditors/${auditorUserId}`, {
-    method: 'PATCH',
     accessToken,
     body: payload,
   });
@@ -312,52 +276,4 @@ export function addGovIncidentFeedbackApi(
     accessToken,
     body: payload,
   });
-}
-
-export interface GovSchoolCourseItem {
-  id: string;
-  title: string;
-  description: string | null;
-  isActive: boolean;
-  updatedAt: string;
-  academicYear: { id: string; name: string };
-  classRoom: { id: string; code: string; name: string };
-  subject: { id: string; code: string; name: string } | null;
-  teacher: { id: string; firstName: string; lastName: string };
-}
-
-export interface GovSchoolCoursesResponse {
-  items: GovSchoolCourseItem[];
-}
-
-export function listGovSchoolCoursesApi(accessToken: string, tenantId: string) {
-  return apiRequest<GovSchoolCoursesResponse>(`/gov/schools/${tenantId}/courses`, {
-    method: 'GET',
-    accessToken,
-  });
-}
-
-export interface GovConductSummaryResponse {
-  range: { from: string; to: string };
-  totalIncidents: number;
-  byStatus: Array<{ status: string; count: number }>;
-  bySeverity: Array<{ severity: string; count: number }>;
-  topCategories: Array<{ category: string; count: number }>;
-}
-
-export function getGovSchoolConductSummaryApi(
-  accessToken: string,
-  tenantId: string,
-  params: { from: string; to: string },
-) {
-  const query = new URLSearchParams();
-  query.set('from', params.from);
-  query.set('to', params.to);
-  return apiRequest<GovConductSummaryResponse>(
-    `/gov/schools/${tenantId}/reports/conduct-summary?${query.toString()}`,
-    {
-      method: 'GET',
-      accessToken,
-    },
-  );
 }

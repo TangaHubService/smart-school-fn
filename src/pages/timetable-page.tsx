@@ -38,10 +38,9 @@ export function TimetablePage() {
   const [academicYearId, setAcademicYearId] = useState('');
   const [termId, setTermId] = useState('');
   const [classRoomId, setClassRoomId] = useState('');
-  const [teacherUserId, setTeacherUserId] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [editGrid, setEditGrid] = useState<Record<string, string>>({});
-  const [viewMode, setViewMode] = useState<'class' | 'teacher' | 'school'>('class');
+  const [viewMode, setViewMode] = useState<'class' | 'teacher'>('class');
 
   const isTeacher = auth.me?.roles.includes('TEACHER') ?? false;
   const isAdmin =
@@ -55,7 +54,9 @@ export function TimetablePage() {
     }
   }, [isTeacher, isAdmin]);
 
-  const canManage = (auth.me?.permissions.includes('timetable.manage') && isAdmin) ?? false;
+  const canManage =
+    (auth.me?.permissions.includes('timetable.manage') ||
+      auth.me?.permissions.includes('timetable.read')) ?? false;
 
   const yearsQuery = useQuery({
     queryKey: ['academic-years'],
@@ -76,24 +77,14 @@ export function TimetablePage() {
   });
 
   const slotsQuery = useQuery({
-    queryKey: ['timetable', academicYearId, termId, classRoomId, teacherUserId, viewMode],
-    enabled: Boolean(academicYearId && (viewMode !== 'class' || classRoomId)),
+    queryKey: ['timetable', academicYearId, termId, classRoomId, viewMode],
+    enabled: Boolean(academicYearId && (classRoomId || viewMode === 'teacher')),
     queryFn: () =>
       listTimetableSlotsApi(auth.accessToken!, {
         academicYearId,
         termId: termId || undefined,
-        classRoomId:
-          viewMode === 'class'
-            ? classRoomId
-            : viewMode === 'school'
-              ? classRoomId || undefined
-              : undefined,
-        teacherUserId:
-          viewMode === 'teacher'
-            ? auth.me?.id
-            : viewMode === 'school'
-              ? teacherUserId || undefined
-              : undefined,
+        classRoomId: viewMode === 'class' ? classRoomId : undefined,
+        teacherUserId: viewMode === 'teacher' ? auth.me?.id : undefined,
       }),
   });
 
@@ -108,16 +99,6 @@ export function TimetablePage() {
       }),
   });
 
-  const teacherOptionsQuery = useQuery({
-    queryKey: ['timetable-teachers', academicYearId],
-    enabled: Boolean(academicYearId),
-    queryFn: () =>
-      listCoursesApi(auth.accessToken!, {
-        academicYearId,
-        pageSize: 200,
-      }),
-  });
-
   const years = (yearsQuery.data ?? []) as Array<{ id: string; name: string }>;
   const terms = (termsQuery.data ?? []) as Array<{ id: string; name: string; academicYearId?: string }>;
   const classes = (classesQuery.data ?? []) as Array<{ id: string; code: string; name: string }>;
@@ -127,14 +108,6 @@ export function TimetablePage() {
     title: string;
     subject?: { name: string } | null;
   }>;
-  const teacherOptions = Array.from(
-    new Map(
-      (((teacherOptionsQuery.data?.items as Array<{ teacher: { id: string; firstName: string; lastName: string } }> | undefined) ?? []).map((c) => [
-        c.teacher.id,
-        c.teacher,
-      ])),
-    ).values(),
-  );
 
   const effectiveTermId = termId || terms[0]?.id;
 
@@ -233,7 +206,7 @@ export function TimetablePage() {
       subtitle="View and manage class timetable by academic year, term, and class."
       action={
         <div className="flex gap-2">
-          {isAdmin && (
+          {isTeacher && isAdmin && (
             <div className="flex rounded-lg border border-brand-200 p-1">
               <button
                 type="button"
@@ -256,17 +229,6 @@ export function TimetablePage() {
                 }`}
               >
                 My Schedule
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('school')}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
-                  viewMode === 'school'
-                    ? 'bg-brand-500 text-white'
-                    : 'text-slate-600 hover:bg-brand-50'
-                }`}
-              >
-                School View
               </button>
             </div>
           )}
@@ -304,7 +266,7 @@ export function TimetablePage() {
         </div>
       }
     >
-      <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_1fr]">
+      <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_1fr_1fr]">
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Academic Year
           <select
@@ -338,35 +300,18 @@ export function TimetablePage() {
             ))}
           </select>
         </label>
-        {(viewMode === 'class' || viewMode === 'school') && (
+        {viewMode === 'class' && (
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            {viewMode === 'class' ? 'Class' : 'Class (optional)'}
+            Class
             <select
               value={classRoomId}
               onChange={(e) => setClassRoomId(e.target.value)}
               className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
             >
-              <option value="">{viewMode === 'class' ? 'Select class' : 'All classes'}</option>
+              <option value="">Select class</option>
               {classes.map((c: { id: string; code: string; name: string }) => (
                 <option key={c.id} value={c.id}>
                   {c.code} - {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        {viewMode === 'school' && (
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Teacher (optional)
-            <select
-              value={teacherUserId}
-              onChange={(e) => setTeacherUserId(e.target.value)}
-              className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-            >
-              <option value="">All teachers</option>
-              {teacherOptions.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.firstName} {t.lastName}
                 </option>
               ))}
             </select>
@@ -414,7 +359,7 @@ export function TimetablePage() {
       {!slotsQuery.isPending &&
       !slotsQuery.isError &&
       academicYearId &&
-      (classRoomId || viewMode !== 'class') &&
+      (classRoomId || viewMode === 'teacher') &&
       !isEditMode &&
       grid.length === 0 ? (
         <EmptyState
@@ -546,41 +491,6 @@ export function TimetablePage() {
                       })}
                     </tr>
                   ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-      {!slotsQuery.isPending && !slotsQuery.isError && viewMode === 'school' && slots.length > 0 ? (
-        <div className="mt-4 overflow-x-auto rounded-xl border border-brand-100">
-          <table className="w-full table-auto text-left text-sm">
-            <thead>
-              <tr className="border-b border-brand-100 bg-brand-50/50">
-                <th className="px-3 py-2 font-semibold text-slate-700">Day</th>
-                <th className="px-3 py-2 font-semibold text-slate-700">Period</th>
-                <th className="px-3 py-2 font-semibold text-slate-700">Time</th>
-                <th className="px-3 py-2 font-semibold text-slate-700">Class</th>
-                <th className="px-3 py-2 font-semibold text-slate-700">Course / Subject</th>
-                <th className="px-3 py-2 font-semibold text-slate-700">Teacher</th>
-              </tr>
-            </thead>
-            <tbody>
-              {slots.map((slot) => (
-                <tr key={slot.id} className="border-b border-brand-50">
-                  <td className="px-3 py-2 text-slate-700">{DAYS[slot.dayOfWeek - 1] ?? slot.dayOfWeek}</td>
-                  <td className="px-3 py-2 text-slate-700">P{slot.periodNumber}</td>
-                  <td className="px-3 py-2 text-slate-700">{slot.startTime}-{slot.endTime}</td>
-                  <td className="px-3 py-2 text-slate-700">
-                    {slot.classRoom.code} - {slot.classRoom.name}
-                  </td>
-                  <td className="px-3 py-2 text-slate-700">
-                    {slot.course.title}
-                    {slot.course.subject?.name ? ` (${slot.course.subject.name})` : ''}
-                  </td>
-                  <td className="px-3 py-2 text-slate-700">
-                    {slot.course.teacherUser.firstName} {slot.course.teacherUser.lastName}
-                  </td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </div>

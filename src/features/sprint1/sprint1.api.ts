@@ -89,13 +89,6 @@ export interface SchoolDetail {
     lastName: string;
     status: string;
   }>;
-  schoolAdmins?: Array<{
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    status: string;
-  }>;
 }
 
 export interface CompleteSetupPayload {
@@ -160,18 +153,6 @@ export function inviteTenantAdminApi(
   payload: { email: string; expiresInDays?: number },
 ) {
   return apiRequest(`/tenants/${tenantId}/admin-invite`, {
-    method: 'POST',
-    accessToken,
-    body: payload,
-  });
-}
-
-export function assignSchoolAdminApi(
-  accessToken: string,
-  tenantId: string,
-  payload: { userId: string },
-) {
-  return apiRequest(`/tenants/${tenantId}/school-admins`, {
     method: 'POST',
     accessToken,
     body: payload,

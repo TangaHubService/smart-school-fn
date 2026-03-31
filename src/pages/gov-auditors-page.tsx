@@ -13,7 +13,6 @@ import {
   assignGovAuditorScopeApi,
   createGovAuditorApi,
   listGovAuditorsApi,
-  updateGovAuditorApi,
   updateGovScopeApi,
 } from '../features/gov/gov.api';
 import {
@@ -142,22 +141,6 @@ export function GovAuditorsPage() {
     },
   });
 
-  const updateAuditorStatusMutation = useMutation({
-    mutationFn: (input: { id: string; status: 'ACTIVE' | 'INACTIVE' }) =>
-      updateGovAuditorApi(auth.accessToken!, input.id, { status: input.status }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['gov-auditors'] });
-      showToast({ type: 'success', title: 'Auditor updated' });
-    },
-    onError: (error) => {
-      showToast({
-        type: 'error',
-        title: 'Update failed',
-        message: error instanceof Error ? error.message : 'Request failed',
-      });
-    },
-  });
-
   const deactivateScopeMutation = useMutation({
     mutationFn: (scopeId: string) =>
       updateGovScopeApi(auth.accessToken!, scopeId, {
@@ -266,7 +249,6 @@ export function GovAuditorsPage() {
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Scope</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -287,56 +269,22 @@ export function GovAuditorsPage() {
                     <td className="px-4 py-3 text-slate-700">
                       {auditor.phone || '—'}
                     </td>
-                    <td className="px-4 py-3 text-xs font-semibold text-slate-700">
-                      {auditor.status ?? 'ACTIVE'}
-                    </td>
                     <td className="px-4 py-3 text-xs text-slate-700">
                       {auditor.scopes.length
                         ? formatScopeLabel(auditor.scopes[0])
                         : 'No scope assigned'}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex flex-wrap justify-end gap-2">
-                        {(auditor.status ?? 'ACTIVE') === 'ACTIVE' ? (
-                          <button
-                            type="button"
-                            disabled={updateAuditorStatusMutation.isPending}
-                            onClick={() =>
-                              updateAuditorStatusMutation.mutate({
-                                id: auditor.id,
-                                status: 'INACTIVE',
-                              })
-                            }
-                            className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-900"
-                          >
-                            Deactivate
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={updateAuditorStatusMutation.isPending}
-                            onClick={() =>
-                              updateAuditorStatusMutation.mutate({
-                                id: auditor.id,
-                                status: 'ACTIVE',
-                              })
-                            }
-                            className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-900"
-                          >
-                            Activate
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedAuditor(auditor);
-                            setScopeForm(buildDefaultScopeForm());
-                          }}
-                          className="inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100"
-                        >
-                          View details
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAuditor(auditor);
+                          setScopeForm(buildDefaultScopeForm());
+                        }}
+                        className="inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100"
+                      >
+                        View details
+                      </button>
                     </td>
                   </tr>
                 ))}

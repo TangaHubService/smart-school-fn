@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '../components/app-shell';
 import { PublicLayout } from '../components/public/public-layout';
 import { ProtectedRoute } from '../components/protected-route';
-import { RequireAnyPermission, RequirePermission } from '../components/require-permission';
+import { RequirePermission } from '../components/require-permission';
 import { RequireSetupComplete } from '../components/require-setup-complete';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
 import { conductFeatureEnabled } from '../features/conduct/feature';
@@ -19,7 +19,6 @@ import { ClassesPage } from '../pages/classes-page';
 import { ConductCreateIncidentPage } from '../pages/conduct-create-incident-page';
 import { ConductIncidentDetailPage } from '../pages/conduct-incident-detail-page';
 import { ConductIncidentsPage } from '../pages/conduct-incidents-page';
-import { AdminReportsPage } from '../pages/admin-reports-page';
 import { AcademyProgramsAdminPage } from '../pages/academy-programs-admin-page';
 import { CoursesPage } from '../pages/courses-page';
 import { DashboardPage } from '../pages/dashboard-page';
@@ -60,7 +59,6 @@ import { ReportsAnalyticsPage } from '../pages/reports-analytics-page';
 import { SubscriptionManagementPage } from '../pages/subscription-management-page';
 import { SupportCenterPage } from '../pages/support-center-page';
 import { SystemSettingsPage } from '../pages/system-settings-page';
-import { SystemAnnouncementsPage } from '../pages/system-announcements-page';
 import { UsersPage } from '../pages/users-page';
 import { StudentAssignmentsPage } from '../pages/student-assignments-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
@@ -69,7 +67,6 @@ import { StudentAcademicYearSelectPage } from '../pages/student-academic-year-se
 import { StudentConductPage } from '../pages/student-conduct-page';
 import { StudentConductProfilePage } from '../pages/student-conduct-profile-page';
 import { StudentDashboardPage } from '../pages/student-dashboard-page';
-import { StudentExamSchedulePage } from '../pages/student-exam-schedule-page';
 import { PublicHomePage } from '../pages/public-home-page';
 import { PublicAcademyPage } from '../pages/public-academy-page';
 import { PublicAboutPage } from '../pages/public-about-page';
@@ -126,11 +123,6 @@ export function AppRoutes() {
             <Route path="/super-admin/support" element={<SupportCenterPage />} />
             <Route path="/super-admin/audit-logs" element={<AuditLogsPage />} />
             <Route path="/super-admin/access-control" element={<AccessControlPage />} />
-            <Route path="/super-admin/announcements" element={<SystemAnnouncementsPage />} />
-          </Route>
-
-          <Route element={<RequirePermission permission="users.read" />}>
-            <Route path="/super-admin/users" element={<UsersPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="tenants.create" />}>
@@ -144,9 +136,6 @@ export function AppRoutes() {
 
           {govAuditingFeatureEnabled ? (
             <>
-              <Route element={<RequirePermission permission="gov.auditors.manage" />}>
-                <Route path="/super-admin/auditors" element={<GovAuditorsPage />} />
-              </Route>
               <Route element={<RequirePermission permission="gov.dashboard.read" />}>
                 <Route path="/gov" element={<GovDashboardPage />} />
               </Route>
@@ -173,21 +162,6 @@ export function AppRoutes() {
             </Route>
             <Route element={<RequirePermission permission="attendance.read" />}>
               <Route path="/admin/attendance" element={<AttendancePage />} />
-            </Route>
-            <Route
-              element={
-                <RequireAnyPermission
-                  permissions={[
-                    'exams.read',
-                    'attendance.read',
-                    'courses.read',
-                    'timetable.read',
-                    'conduct.read',
-                  ]}
-                />
-              }
-            >
-              <Route path="/admin/reports" element={<AdminReportsPage />} />
             </Route>
             <Route element={<RequirePermission permission="exams.read" />}>
               <Route path="/admin/exams" element={<ExamsPage />} />
@@ -262,7 +236,6 @@ export function AppRoutes() {
           </Route>
           <Route element={<RequirePermission permission="report_cards.my_read" />}>
             <Route path="/student/report-cards" element={<StudentReportCardsPage />} />
-            <Route path="/student/exam-schedule" element={<StudentExamSchedulePage />} />
           </Route>
           {assessmentsFeatureEnabled ? (
             <Route element={<RequirePermission permission="assessments.submit" />}>

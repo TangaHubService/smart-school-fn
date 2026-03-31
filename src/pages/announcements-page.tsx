@@ -36,7 +36,6 @@ export function AnnouncementsPage() {
   });
 
   const items = announcementsQuery.data?.items ?? [];
-  const systemBroadcasts = announcementsQuery.data?.systemBroadcasts ?? [];
   const pagination = announcementsQuery.data?.pagination ?? {
     page: 1,
     pageSize: 12,
@@ -82,24 +81,6 @@ export function AnnouncementsPage() {
           <div className="h-20 animate-pulse rounded-lg bg-brand-100" />
           <div className="h-20 animate-pulse rounded-lg bg-brand-100" />
           <div className="h-20 animate-pulse rounded-lg bg-brand-100" />
-        </div>
-      ) : null}
-
-      {!announcementsQuery.isPending && systemBroadcasts.length > 0 ? (
-        <div className="mb-4 space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-brand-600">System</p>
-          {systemBroadcasts.map((b) => (
-            <article
-              key={b.id}
-              className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 text-sm shadow-sm"
-            >
-              <h3 className="font-semibold text-slate-900">{b.title}</h3>
-              <p className="mt-1 whitespace-pre-wrap text-slate-700">{b.body}</p>
-              <p className="mt-2 text-xs text-slate-500">
-                {b.targetType} · {b.publishedAt ? formatDate(b.publishedAt) : '—'}
-              </p>
-            </article>
-          ))}
         </div>
       ) : null}
 
