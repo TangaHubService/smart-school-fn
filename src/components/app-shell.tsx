@@ -72,7 +72,7 @@ export function AppShell() {
       <div className="relative h-full md:flex md:gap-0">
         <aside
           className={clsx(
-            'fixed inset-y-0 left-0 z-40 flex w-[240px] flex-col overflow-hidden bg-[#173C7F] text-white md:sticky md:top-0 md:h-screen md:w-[240px] md:shrink-0 md:rounded-none',
+            'fixed inset-y-0 left-0 z-40 flex w-max max-w-[100vw] flex-col overflow-x-hidden overflow-y-hidden bg-[#173C7F] text-white md:sticky md:top-0 md:h-screen md:shrink-0 md:rounded-none',
             isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
             isDesktopSidebarVisible ? 'md:translate-x-0' : 'md:hidden',
           )}
@@ -97,10 +97,10 @@ export function AppShell() {
                 <span className="text-base">🎓</span>
               </div>
               <div>
-                <p className="text-base font-bold tracking-tight text-white">
+                <p className="whitespace-nowrap text-base font-bold tracking-tight text-white">
                   Smart<span className="text-amber-400">School</span>
                 </p>
-                <p className="text-[10px] font-medium uppercase tracking-wider text-white/80">
+                <p className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wider text-white/80">
                   {isStudent ? 'STUDENT PORTAL' : isTeacher ? 'TEACHER PORTAL' : 'RWANDA ADMIN OS'}
                 </p>
               </div>
@@ -110,14 +110,14 @@ export function AppShell() {
           <div className="border-b border-white/10 px-6 py-4">
             <a
               href="/"
-              className="flex w-full items-center gap-2 rounded-lg bg-white/15 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/25"
+              className="flex w-full items-center gap-2 whitespace-nowrap rounded-lg bg-white/15 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/25"
             >
               <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               Back to Website
             </a>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+          <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-6 py-6">
             <RoleNav onNavigate={closeMobileNav} />
           </div>
 
@@ -125,7 +125,7 @@ export function AppShell() {
             <button
               type="button"
               onClick={() => void auth.logout()}
-              className="inline-flex w-full items-center gap-2 rounded-lg bg-white px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-white/95"
+              className="inline-flex w-full items-center gap-2 whitespace-nowrap rounded-lg bg-white px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-white/95"
             >
               <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
               Logout

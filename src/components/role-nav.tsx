@@ -198,7 +198,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'class-marks',
-    label: 'Class marks',
+    label: 'Marks',
     to: '/admin/class-marks',
     icon: FileBarChart2,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
@@ -482,7 +482,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
   });
 
   return (
-    <nav aria-label="Primary" className="grid gap-0.5">
+    <nav aria-label="Primary" className="grid w-max gap-0.5">
       {items.map((item) => {
         const label =
           item.key === 'dashboard' || item.key === 'student-dashboard'
@@ -502,7 +502,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
               onClick={onNavigate}
               className={({ isActive }) =>
                 clsx(
-                  'group flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition',
+                  'group flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition',
                   isActive
                     ? 'bg-white text-[#173C7F]'
                     : 'text-white/90 hover:bg-white/10 hover:text-white',

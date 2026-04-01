@@ -569,8 +569,8 @@ export function ExamsPage() {
 
           {!examsQuery.isPending && !examsQuery.isError ? (
             exams.length ? (
-              <div className="overflow-x-auto rounded-xl bg-white/88">
-                <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
+              <div className="w-full overflow-x-auto rounded-xl bg-white/88">
+                <table className="w-full min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
                   <thead>
                     <tr className="bg-brand-50/80 text-xs uppercase tracking-[0.14em] text-slate-500">
                       <th className="border-b border-brand-100 px-3 py-3">#</th>
@@ -818,8 +818,8 @@ export function ExamsPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-xl bg-white/92">
-              <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
+            <div className="w-full overflow-x-auto rounded-xl bg-white/92">
+              <table className="w-full min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
                 <thead>
                   <tr className="bg-brand-50/80 text-xs uppercase tracking-[0.14em] text-slate-500">
                     <th className="border-b border-brand-100 px-3 py-3">#</th>
@@ -882,8 +882,8 @@ export function ExamsPage() {
             <p className="text-sm text-slate-600">
               Term: {terms.find((t) => t.id === termFilter)?.name ?? termFilter} · Class: {classRooms.find((c) => c.id === classFilter)?.name ?? classFilter}
             </p>
-            <div className="overflow-x-auto rounded-xl bg-white/92">
-              <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
+            <div className="w-full overflow-x-auto rounded-xl bg-white/92">
+              <table className="w-full min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
                 <thead>
                   <tr className="bg-brand-50/80 text-xs uppercase tracking-[0.14em] text-slate-500">
                     <th className="border-b border-brand-100 px-3 py-3">#</th>

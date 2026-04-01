@@ -153,6 +153,82 @@ export interface MyReportCardsResponse {
   items: ReportCardSummary[];
 }
 
+/** Row from GET /report-cards/catalog (one per published/locked snapshot). */
+export interface ReportCardCatalogRow {
+  id: string;
+  student: {
+    id: string;
+    studentCode: string;
+    firstName: string;
+    lastName: string;
+  };
+  classRoom: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  academicYear: {
+    id: string;
+    name: string;
+  };
+  term: {
+    id: string;
+    name: string;
+  };
+  status: 'LOCKED' | 'PUBLISHED';
+}
+
+export interface ReportCardCatalogResponse {
+  items: ReportCardCatalogRow[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export function listReportCardsCatalogApi(
+  accessToken: string,
+  params: {
+    /** Omit to list across all academic years (paginated). */
+    academicYearId?: string;
+    termId?: string;
+    classRoomId?: string;
+    studentId?: string;
+    q?: string;
+    page?: number;
+    pageSize?: number;
+  },
+) {
+  const query = new URLSearchParams();
+  if (params.academicYearId) {
+    query.set('academicYearId', params.academicYearId);
+  }
+  if (params.termId) {
+    query.set('termId', params.termId);
+  }
+  if (params.classRoomId) {
+    query.set('classRoomId', params.classRoomId);
+  }
+  if (params.studentId) {
+    query.set('studentId', params.studentId);
+  }
+  if (params.q?.trim()) {
+    query.set('q', params.q.trim());
+  }
+  if (params.page) {
+    query.set('page', String(params.page));
+  }
+  if (params.pageSize) {
+    query.set('pageSize', String(params.pageSize));
+  }
+  return apiRequest<ReportCardCatalogResponse>(`/report-cards/catalog?${query.toString()}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
 export interface PublicReportCardVerificationResponse {
   valid: boolean;
   verificationCode: string;
@@ -316,6 +392,8 @@ export interface MarksGridStudentRow {
   }>;
   total: number;
   rank: number;
+  /** Term conduct grade for this class, if recorded. */
+  conduct: { grade: string; remark: string | null } | null;
 }
 
 export interface MarksGridResponse {
@@ -326,6 +404,97 @@ export interface MarksGridResponse {
   students: MarksGridStudentRow[];
   /** False when results are locked/published for this term+class — grid is view-only. */
   marksEditable?: boolean;
+}
+
+/** Per-subject cell on a wide ledger row (CAT / EXAM / weighted total / grade). */
+export interface AllMarksLedgerSubjectScore {
+  testPercent: number | null;
+  examPercent: number | null;
+  subjectScore: number;
+  grade: string;
+  remark: string;
+}
+
+/** One row per student per class per term — subjects spread horizontally (combined marks sheet). */
+export interface AllMarksLedgerWideRow {
+  academicYear: { id: string; name: string };
+  term: { id: string; name: string };
+  classRoom: { id: string; code: string; name: string };
+  student: {
+    id: string;
+    studentCode: string;
+    firstName: string;
+    lastName: string;
+  };
+  rank: number;
+  studentTermTotal: number;
+  studentTermAverage: number;
+  termGrade: string;
+  termRemark: string;
+  scores: Record<string, AllMarksLedgerSubjectScore | null>;
+  conduct: { grade: string; remark: string | null } | null;
+}
+
+export interface AllMarksLedgerResponse {
+  academicYear: { id: string; name: string };
+  /** Union of subjects in the filtered result; column order for `scores`. */
+  subjects: Array<{ id: string; code: string; name: string }>;
+  items: AllMarksLedgerWideRow[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export function listAllMarksLedgerApi(
+  accessToken: string,
+  params: {
+    /** Omit to load marks for every academic year (paginated). */
+    academicYearId?: string;
+    termId?: string;
+    classRoomId?: string;
+    studentId?: string;
+    q?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: 'rank' | 'studentName' | 'classCode' | 'term' | 'subject' | 'total' | 'average';
+    sortDir?: 'asc' | 'desc';
+  },
+) {
+  const query = new URLSearchParams();
+  if (params.academicYearId) {
+    query.set('academicYearId', params.academicYearId);
+  }
+  if (params.termId) {
+    query.set('termId', params.termId);
+  }
+  if (params.classRoomId) {
+    query.set('classRoomId', params.classRoomId);
+  }
+  if (params.studentId) {
+    query.set('studentId', params.studentId);
+  }
+  if (params.q?.trim()) {
+    query.set('q', params.q.trim());
+  }
+  if (params.page) {
+    query.set('page', String(params.page));
+  }
+  if (params.pageSize) {
+    query.set('pageSize', String(params.pageSize));
+  }
+  if (params.sortBy) {
+    query.set('sortBy', params.sortBy);
+  }
+  if (params.sortDir) {
+    query.set('sortDir', params.sortDir);
+  }
+  return apiRequest<AllMarksLedgerResponse>(`/classes/all-marks-ledger?${query.toString()}`, {
+    method: 'GET',
+    accessToken,
+  });
 }
 
 export function getMarksGridApi(

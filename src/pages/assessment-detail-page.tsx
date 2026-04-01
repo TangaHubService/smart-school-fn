@@ -520,8 +520,8 @@ export function AssessmentDetailPage() {
                 }
               />
             ) : resultRows.length ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
+              <div className="w-full overflow-x-auto">
+                <table className="w-full min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
                   <thead>
                     <tr className="text-xs uppercase tracking-[0.14em] text-slate-500">
                       <th className="border-b border-brand-100 px-3 py-3">Student</th>

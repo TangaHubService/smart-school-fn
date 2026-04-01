@@ -200,13 +200,15 @@ export function UsersPage() {
         ) : null}
 
         {!usersQuery.isPending && rows.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-0 text-sm">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-full border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="bg-slate-50/50 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
                   <th className="px-5 py-3 border-b border-brand-100">No</th>
-                  <th className="px-5 py-3 border-b border-brand-100">User Details</th>
-                  <th className="px-5 py-3 border-b border-brand-100">School / Role</th>
+                  <th className="px-5 py-3 border-b border-brand-100">Name</th>
+                  <th className="px-5 py-3 border-b border-brand-100">Contacts</th>
+                  <th className="px-5 py-3 border-b border-brand-100">School</th>
+                  <th className="px-5 py-3 border-b border-brand-100"> Role</th>
                   <th className="px-5 py-3 border-b border-brand-100">Status</th>
                   {isSchoolAdminOnly && (
                     <th className="px-5 py-3 border-b border-brand-100 text-right">Actions</th>
@@ -220,14 +222,18 @@ export function UsersPage() {
                     className="group transition-colors hover:bg-brand-50/30"
                   >
                     <td className="px-5 py-4 border-b border-brand-50 text-xs text-slate-400">
-                      {row.no}
+                      # {row.no}
                     </td>
                     <td className="px-5 py-4 border-b border-brand-50">
                       <div className="font-bold text-slate-900">{row.name}</div>
+                    </td>
+                    <td className="px-5 py-4 border-b border-brand-50">
                       <div className="text-xs text-slate-500">{row.contact}</div>
                     </td>
                     <td className="px-5 py-4 border-b border-brand-50">
                       <div className="text-sm font-semibold text-slate-700">{row.school}</div>
+                    </td>
+                    <td className="px-5 py-4 border-b border-brand-50">
                       <div className="text-xs text-brand-600 font-medium">{row.role}</div>
                     </td>
                     <td className="px-5 py-4 border-b border-brand-50">

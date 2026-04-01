@@ -241,8 +241,8 @@ export function GovAuditorsPage() {
         ) : null}
 
         {!auditorsQuery.isPending && !auditorsQuery.isError && auditors.length ? (
-          <div className="overflow-x-auto rounded-xl border border-brand-100 bg-white">
-            <table className="min-w-full border-separate border-spacing-0 text-sm">
+          <div className="w-full overflow-x-auto rounded-xl border border-brand-100 bg-white">
+            <table className="w-full min-w-full border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-3">No</th>

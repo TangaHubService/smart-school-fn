@@ -351,8 +351,8 @@ export function TenantsPage() {
       ) : null}
 
       {!tenantsQuery.isPending && !tenantsQuery.isError && tenants.length ? (
-        <div className="overflow-x-auto rounded-xl border border-brand-100 bg-white">
-          <table className="w-full table-auto text-left text-sm">
+        <div className="w-full overflow-x-auto rounded-xl border border-brand-100 bg-white">
+          <table className="w-full min-w-full table-auto text-left text-sm">
             <thead className="bg-brand-50 text-slate-700">
               <tr>
                 <th className="px-3 py-2 font-semibold">#</th>

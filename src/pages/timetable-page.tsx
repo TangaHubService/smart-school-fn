@@ -395,8 +395,8 @@ export function TimetablePage() {
 
       {((!slotsQuery.isPending && !slotsQuery.isError && grid.length > 0) ||
         (isEditMode && academicYearId && classRoomId)) ? (
-        <div className="overflow-x-auto rounded-xl border border-brand-100">
-          <table className="w-full table-auto text-left text-sm">
+        <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
+          <table className="w-full min-w-full table-auto text-left text-sm">
             <thead>
               <tr className="border-b border-brand-100 bg-brand-50/50">
                 <th className="px-2 py-2 font-semibold text-slate-700">

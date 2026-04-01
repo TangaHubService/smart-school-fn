@@ -70,8 +70,8 @@ export function ReportsAnalyticsPage() {
           </button>
         }
       >
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full min-w-full text-sm">
             <thead>
               <tr className="border-b border-brand-100">
                 <th className="pb-3 text-left font-semibold text-slate-700">Report Name</th>

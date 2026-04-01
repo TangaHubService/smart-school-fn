@@ -1164,18 +1164,18 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
 
 function ActionButtons({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex-row gap-2">
       <button
         type="button"
         onClick={onEdit}
-        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
+        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 mr-2 text-xs font-semibold text-slate-700"
       >
         Update
       </button>
       <button
         type="button"
         onClick={onDelete}
-        className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
+        className="rounded-md border border-red-200 bg-red-50 px-2 py-1 mr-2 text-xs font-semibold text-red-700"
       >
         Delete
       </button>
@@ -1272,11 +1272,11 @@ function SimpleTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-brand-100">
-      <table className="w-full table-auto text-left text-sm">
+    <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
+      <table className="w-full min-w-full table-auto text-left text-sm">
         <thead>
           <tr className="border-b border-brand-100 text-slate-700">
-            <th className="px-2 py-2 font-semibold">#</th>
+            <th className="px-2 py-2 font-semibold">No.</th>
             {columns.map((column) => (
               <th key={column} className="px-2 py-2 font-semibold">{column}</th>
             ))}
@@ -1285,7 +1285,7 @@ function SimpleTable({
         <tbody>
           {rows.map((row, index) => (
             <tr key={index} className="border-b border-brand-50">
-              <td className="px-2 py-2 align-middle text-slate-600">{index + 1}</td>
+              <td className="px-2 py-2 align-middle text-slate-600"># {index + 1}</td>
               {row.map((cell, cellIndex) => (
                 <td key={cellIndex} className="px-2 py-2 align-middle">{cell}</td>
               ))}
