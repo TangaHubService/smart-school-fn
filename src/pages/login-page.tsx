@@ -35,7 +35,9 @@ export function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: (payload: LoginFormValues) => auth.login(payload),
     onSuccess: (data) => {
-      if (data.roles.includes('PUBLIC_LEARNER')) {
+      if (data.roles.includes('STUDENT')) {
+        navigate('/student/dashboard', { replace: true });
+      } else if (data.roles.includes('PUBLIC_LEARNER')) {
         navigate('/student/courses', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
