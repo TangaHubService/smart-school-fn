@@ -21,24 +21,16 @@ export function LoginPage() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
-      loginAs: 'staff',
-      email: emailFromQuery,
+      identifier: emailFromQuery,
       password: '',
     },
   });
 
-  const modeFromQuery = searchParams.get('mode') as 'staff' | 'student' | null;
-
-  const loginAs = form.watch('loginAs');
-
   useEffect(() => {
     if (emailFromQuery) {
-      form.setValue('loginAs', 'staff');
-      form.setValue('email', emailFromQuery);
-    } else if (modeFromQuery === 'staff' || modeFromQuery === 'student') {
-      form.setValue('loginAs', modeFromQuery);
+      form.setValue('identifier', emailFromQuery);
     }
-  }, [emailFromQuery, modeFromQuery, form]);
+  }, [emailFromQuery, form]);
 
   const loginMutation = useMutation({
     mutationFn: (payload: LoginFormValues) => auth.login(payload),
@@ -53,14 +45,8 @@ export function LoginPage() {
 
   const apiError = loginMutation.error as ApiClientError | null;
   const formErrors = form.formState.errors as Partial<
-    Record<'email' | 'password' | 'studentId' | 'schoolCode', FieldError>
+    Record<'identifier' | 'password', FieldError>
   >;
-
-  function switchLoginMode(nextMode: 'staff' | 'student') {
-    form.clearErrors();
-    loginMutation.reset();
-    form.setValue('loginAs', nextMode);
-  }
 
   return (
     <main
@@ -78,130 +64,58 @@ export function LoginPage() {
         <h1 className="text-2xl font-bold text-slate-900">Smart School Rwanda</h1>
         <p className="mt-2 text-sm text-slate-700">Sign in to your school workspace.</p>
 
-        <div className="mt-5 grid grid-cols-2 gap-2 rounded-xl bg-brand-50 p-1">
-          <button
-            type="button"
-            onClick={() => switchLoginMode('staff')}
-            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-              loginAs === 'staff'
-                ? 'bg-white text-brand-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-            aria-pressed={loginAs === 'staff'}
-          >
-            Staff
-          </button>
-          <button
-            type="button"
-            onClick={() => switchLoginMode('student')}
-            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-              loginAs === 'student'
-                ? 'bg-white text-brand-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-            aria-pressed={loginAs === 'student'}
-          >
-            Student
-          </button>
-        </div>
-
         <form
           className="mt-6 space-y-4"
           onSubmit={form.handleSubmit((values) => loginMutation.mutate(values))}
           noValidate
         >
-          <input type="hidden" {...form.register('loginAs')} />
+          <div>
+            <label htmlFor="identifier" className="mb-1 block text-sm font-semibold text-slate-800">
+              Email or Username
+            </label>
+            <input
+              id="identifier"
+              type="text"
+              autoComplete="username"
+              placeholder="e.g. teacher@school.com or STU001"
+              className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
+              {...form.register('identifier')}
+            />
+            {formErrors.identifier ? (
+              <p className="mt-1 text-xs text-red-700" aria-live="polite">
+                {formErrors.identifier.message}
+              </p>
+            ) : null}
+          </div>
 
-          {loginAs === 'staff' ? (
-            <>
-              <div>
-                <label htmlFor="email" className="mb-1 block text-sm font-semibold text-slate-800">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
-                  {...form.register('email')}
-                />
-                {formErrors.email ? (
-                  <p className="mt-1 text-xs text-red-700" aria-live="polite">
-                    {formErrors.email.message}
-                  </p>
-                ) : null}
-              </div>
-
-              <div>
-                <label htmlFor="password" className="mb-1 block text-sm font-semibold text-slate-800">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    className="w-full rounded-xl border border-brand-200 px-3 py-2 pr-16 text-sm outline-none ring-brand-400 transition focus:ring"
-                    {...form.register('password')}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((current) => !current)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded px-1 text-xs font-semibold text-brand-600 transition hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    aria-pressed={showPassword}
-                  >
-                    {showPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-                {formErrors.password ? (
-                  <p className="mt-1 text-xs text-red-700" aria-live="polite">
-                    {formErrors.password.message}
-                  </p>
-                ) : null}
-              </div>
-            </>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="schoolCode" className="mb-1 block text-sm font-semibold text-slate-800">
-                  School Code
-                </label>
-                <input
-                  id="schoolCode"
-                  type="text"
-                  autoComplete="organization"
-                  placeholder="e.g. SMART"
-                  className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
-                  {...form.register('schoolCode')}
-                />
-                {formErrors.schoolCode ? (
-                  <p className="mt-1 text-xs text-red-700" aria-live="polite">
-                    {formErrors.schoolCode.message}
-                  </p>
-                ) : null}
-              </div>
-
-              <div>
-                <label htmlFor="studentId" className="mb-1 block text-sm font-semibold text-slate-800">
-                  Student ID
-                </label>
-                <input
-                  id="studentId"
-                  type="text"
-                  autoComplete="username"
-                  placeholder="e.g. STU-001"
-                  className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
-                  {...form.register('studentId')}
-                />
-                {formErrors.studentId ? (
-                  <p className="mt-1 text-xs text-red-700" aria-live="polite">
-                    {formErrors.studentId.message}
-                  </p>
-                ) : null}
-              </div>
+          <div>
+            <label htmlFor="password" className="mb-1 block text-sm font-semibold text-slate-800">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                className="w-full rounded-xl border border-brand-200 px-3 py-2 pr-16 text-sm outline-none ring-brand-400 transition focus:ring"
+                {...form.register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded px-1 text-xs font-semibold text-brand-600 transition hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
             </div>
-          )}
+            {formErrors.password ? (
+              <p className="mt-1 text-xs text-red-700" aria-live="polite">
+                {formErrors.password.message}
+              </p>
+            ) : null}
+          </div>
 
           {apiError ? (
             <p
@@ -221,17 +135,15 @@ export function LoginPage() {
           </button>
         </form>
 
-        {loginAs === 'staff' && (
-          <div className="mt-8 pt-4 border-t border-slate-100 flex justify-center">
-            <Link
-              to="/forgot-password"
-              className="flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition"
-            >
-              <HelpCircle className="h-4 w-4" />
-              Forgot Password?
-            </Link>
-          </div>
-        )}
+        <div className="mt-8 pt-4 border-t border-slate-100 flex justify-center">
+          <Link
+            to="/forgot-password"
+            className="flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition"
+          >
+            <HelpCircle className="h-4 w-4" />
+            Forgot Password?
+          </Link>
+        </div>
       </section>
     </main>
   );

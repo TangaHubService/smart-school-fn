@@ -1,10 +1,11 @@
 import {
   BadgeCheck,
+  BookMarked,
   BookOpen,
   ClipboardCheck,
+  ChevronRight,
   FileBarChart2,
   Home,
-  UserSquare2,
 } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 
@@ -15,10 +16,7 @@ import {
 import { StateView } from '../components/state-view';
 import { getStoredAcademicYearId } from './student-academic-year-select-page';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  getStudentDashboardApi,
-  type StudentDashboardData,
-} from '../features/dashboard/dashboard.api';
+import { getStudentDashboardApi, type StudentDashboardData } from '../features/dashboard/dashboard.api';
 import { useQuery } from '@tanstack/react-query';
 
 const STUDENT_QUICK_ACTIONS: DashboardQuickActionItem[] = [
@@ -27,6 +25,12 @@ const STUDENT_QUICK_ACTIONS: DashboardQuickActionItem[] = [
     description: 'Open your lessons and course materials.',
     icon: BookOpen,
     to: '/student/courses',
+  },
+  {
+    label: 'My Learning',
+    description: 'See progress and resume across all courses.',
+    icon: BookMarked,
+    to: '/student/my-learning',
   },
   {
     label: 'Assessments',
@@ -82,11 +86,11 @@ export function StudentDashboardPage() {
 
   if (isPending || !data) {
     return (
-      <div className="space-y-5">
-        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="space-y-4">
+        <div className="h-14 animate-pulse rounded-xl bg-slate-200" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-2xl bg-slate-200" />
+            <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-200" />
           ))}
         </div>
       </div>
@@ -94,166 +98,109 @@ export function StudentDashboardPage() {
   }
 
   return (
-    <section className="space-y-5">
-      <div className="space-y-2">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="min-w-0 text-2xl font-bold text-slate-900">
-            Student Dashboard
+    <section className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            Hey, {auth.me?.firstName || 'Student'}
           </h1>
-          <DashboardQuickActionsDropdown actions={STUDENT_QUICK_ACTIONS} />
+          <p className="mt-0.5 text-sm text-slate-600">Tap a card below to open that area of your portal.</p>
         </div>
-        <div className="flex items-center gap-2 text-slate-700">
-          <Home className="h-5 w-5" />
-          <span className="font-medium">
-            {data.school.displayName}
-            {data.school.city ? `, ${data.school.city}` : ''}
-          </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 shadow-sm lg:inline-flex">
+            <Home className="h-4 w-4 text-brand-500" />
+            <span>{data.school.displayName}</span>
+          </div>
+          <DashboardQuickActionsDropdown actions={STUDENT_QUICK_ACTIONS} />
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StudentMetricCard
-          icon={UserSquare2}
-          label="My Courses"
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StudentStatCard
+          icon={BookOpen}
+          label="My courses"
           value={data.metrics.myCourses}
-          color="green"
           to="/student/courses"
         />
-        <StudentMetricCard
+        <StudentStatCard
           icon={ClipboardCheck}
-          label="Assignments"
+          label="Assignments submitted"
           value={data.metrics.assignmentsSubmitted}
-          color="blue"
-          to="/student/courses"
+          to="/student/assignments"
         />
-        <StudentMetricCard
+        <StudentStatCard
           icon={BadgeCheck}
-          label="Assessments"
+          label="Tests taken"
           value={data.metrics.myAssessments}
-          color="orange"
           to="/student/assessments"
         />
-        <StudentMetricCard
+        <StudentStatCard
           icon={FileBarChart2}
-          label="Report Cards"
+          label="Report cards"
           value={data.metrics.reportCards}
-          color="green"
           to="/student/report-cards"
         />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <StudentUpcomingExamsCard data={data} />
-        <StudentLatestReportsCard data={data} />
-      </div>
+      <StudentUpcomingExamsCard data={data} />
     </section>
   );
 }
 
-function StudentMetricCard({
+function StudentStatCard({
   icon: Icon,
   label,
   value,
-  color,
   to,
 }: {
-  icon: typeof UserSquare2;
+  icon: typeof BookOpen;
   label: string;
   value: number;
-  color: string;
   to: string;
 }) {
-  const colorClasses: Record<string, string> = {
-    green: 'bg-green-100 text-green-600',
-    orange: 'bg-orange-100 text-orange-600',
-    blue: 'bg-blue-100 text-blue-600',
-  };
-
   return (
     <Link
       to={to}
-      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-brand-200 hover:shadow-md"
+      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-brand-200 hover:shadow-md"
     >
-      <div className="flex items-center gap-4">
-        <span
-          className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${colorClasses[color] ?? 'bg-slate-100 text-slate-600'}`}
-        >
-          <Icon className="h-6 w-6" />
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+          <Icon className="h-5 w-5" />
         </span>
-        <div>
-          <p className="text-sm font-medium text-slate-600">{label}</p>
-          <p className="text-2xl font-bold text-slate-900">{value}</p>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-slate-500">{label}</p>
+          <p className="text-xl font-semibold text-slate-900">{value}</p>
         </div>
       </div>
+      <ChevronRight className="h-5 w-5 shrink-0 text-slate-300" aria-hidden />
     </Link>
   );
 }
 
 function StudentUpcomingExamsCard({ data }: { data: StudentDashboardData }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-lg font-bold text-slate-900">Upcoming Exams</h2>
-      <div className="mt-4 space-y-3">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <h2 className="text-base font-semibold text-slate-900">Upcoming exams</h2>
+      <div className="mt-3 space-y-2">
         {data.upcomingExams.length ? (
           data.upcomingExams.map((exam) => (
             <div
               key={exam.id}
-              className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3"
+              className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5"
             >
-              <div className="flex items-center gap-3">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                 <div>
-                  <p className="font-semibold text-slate-900">{exam.title}</p>
-                  <p className="text-sm text-slate-500">{exam.relativeDate}</p>
+                  <p className="text-sm font-medium text-slate-900">{exam.title}</p>
+                  <p className="text-xs text-slate-500">{exam.relativeDate}</p>
                 </div>
               </div>
-              <p className="text-sm font-medium text-slate-600">{exam.time}</p>
+              <p className="text-xs font-medium text-slate-600">{exam.time}</p>
             </div>
           ))
         ) : (
-          <p className="py-8 text-center text-sm text-slate-500">No upcoming exams</p>
+          <p className="py-6 text-center text-sm text-slate-500">No upcoming exams</p>
         )}
-      </div>
-    </section>
-  );
-}
-
-function StudentLatestReportsCard({ data }: { data: StudentDashboardData }) {
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-slate-900">Latest Reports</h2>
-        <Link to="/student/report-cards" className="text-sm font-semibold text-brand-500">
-          View All &gt;
-        </Link>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {data.latestReports.map((report) => (
-          <Link
-            key={report.id}
-            to={
-              report.id === 'report-cards'
-                ? '/student/report-cards'
-                : report.id === 'assignments'
-                  ? '/student/courses'
-                  : '/student/assessments'
-            }
-            className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 transition hover:bg-slate-100"
-          >
-            <div className="flex items-center gap-3">
-              <FileBarChart2 className="h-5 w-5 text-slate-500" />
-              <div>
-                <p className="text-sm font-medium text-slate-900">{report.name}</p>
-                <p className="text-lg font-bold text-slate-900">
-                  {typeof report.value === 'number'
-                    ? report.value.toLocaleString()
-                    : report.value}
-                </p>
-              </div>
-            </div>
-            <span className="text-slate-400">→</span>
-          </Link>
-        ))}
       </div>
     </section>
   );

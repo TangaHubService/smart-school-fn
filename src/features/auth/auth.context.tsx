@@ -43,10 +43,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const refreshToken = session.refreshToken;
 
   const meQuery = useQuery({
-    queryKey: ['me'],
+    queryKey: ['me', accessToken],
     queryFn: () => meApi(accessToken as string),
     enabled: Boolean(accessToken),
-    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   useEffect(() => {

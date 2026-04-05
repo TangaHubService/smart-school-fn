@@ -9,6 +9,7 @@ import { useToast } from '../components/toast';
 import socket from '../utils/socket';
 import backgroundImage from '../asset/background.jpg';
 import { loginApi, registerApi } from '../features/auth/auth.api';
+import { loginFormSchema, registerFormSchema } from '../features/auth/auth.schema';
 
 const ACADEMY_PLANS = [
   { id: 'weekly', name: 'Weekly access', durationDays: 7 },
@@ -36,6 +37,17 @@ function activeEnrollmentForProgram(programId: string, list: ProgramEnrollment[]
   return list?.find((e) => e.programId === programId && enrollmentIsActive(e));
 }
 
+function fieldErrorsFromZod(issues: { path: (string | number)[]; message: string }[]): Record<string, string> {
+  const next: Record<string, string> = {};
+  for (const issue of issues) {
+    const key = issue.path[0];
+    if (typeof key === 'string' && next[key] === undefined) {
+      next[key] = issue.message;
+    }
+  }
+  return next;
+}
+
 export function PublicAcademyPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,11 +69,15 @@ export function PublicAcademyPage() {
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('REGISTER');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [authFieldErrors, setAuthFieldErrors] = useState<Record<string, string>>({});
   const [authForm, setAuthForm] = useState({
     firstName: '',
     lastName: '',
+    username: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
 
   const { data: programs, isLoading } = useQuery({
@@ -96,13 +112,13 @@ export function PublicAcademyPage() {
   });
 
   const authMutation = useMutation({
-    mutationFn: async () => {
-      if (authMode === 'REGISTER') {
-        return registerApi(authForm);
+    mutationFn: async (vars: { kind: 'REGISTER'; payload: typeof authForm } | { kind: 'LOGIN'; payload: { identifier: string; password: string } }) => {
+      if (vars.kind === 'REGISTER') {
+        return registerApi(vars.payload);
       }
-      return loginApi({ loginAs: 'staff' as any, email: authForm.email, password: authForm.password });
+      return loginApi(vars.payload);
     },
-    onSuccess: async (data: any) => {
+    onSuccess: async (data: any, variables) => {
       setSessionTokens({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
@@ -125,7 +141,7 @@ export function PublicAcademyPage() {
           navigate(courseId ? `/student/courses/${courseId}` : '/student/courses');
           showToast({
             type: 'success',
-            title: authMode === 'REGISTER' ? 'Account ready' : 'Welcome back',
+            title: variables.kind === 'REGISTER' ? 'Account ready' : 'Welcome back',
             message: active.isTrial
               ? 'Free trial is active — opening your course. No MoMo payment needed until the trial ends.'
               : 'Opening your course.',
@@ -137,7 +153,7 @@ export function PublicAcademyPage() {
       setShowPurchaseModal(true);
       showToast({
         type: 'success',
-        title: authMode === 'REGISTER' ? 'Signed in' : 'Welcome back',
+        title: variables.kind === 'REGISTER' ? 'Signed in' : 'Welcome back',
         message:
           'Complete MoMo payment below to enroll. If you are on a free trial, close this and use Open course on the program card.',
       });
@@ -334,54 +350,141 @@ export function PublicAcademyPage() {
 
       <Modal
         open={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
+        onClose={() => {
+          setShowAuthModal(false);
+          setAuthFieldErrors({});
+        }}
         title={authMode === 'REGISTER' ? 'Create Your Account' : 'Welcome Back'}
         description="Join the Public Academy to access professional courses."
       >
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); authMutation.mutate(); }}>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setAuthFieldErrors({});
+            if (authMode === 'REGISTER') {
+              const parsed = registerFormSchema.safeParse(authForm);
+              if (!parsed.success) {
+                setAuthFieldErrors(fieldErrorsFromZod(parsed.error.issues));
+                return;
+              }
+              authMutation.mutate({ kind: 'REGISTER', payload: parsed.data });
+              return;
+            }
+            const parsed = loginFormSchema.safeParse({
+              identifier: loginIdentifier,
+              password: authForm.password,
+            });
+            if (!parsed.success) {
+              setAuthFieldErrors(fieldErrorsFromZod(parsed.error.issues));
+              return;
+            }
+            authMutation.mutate({ kind: 'LOGIN', payload: parsed.data });
+          }}
+        >
           {authMode === 'REGISTER' && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-700">First Name</label>
                 <input
                   type="text"
-                  required
                   className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
                   value={authForm.firstName}
                   onChange={(e) => setAuthForm({ ...authForm, firstName: e.target.value })}
                 />
+                {authFieldErrors.firstName ? (
+                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.firstName}</p>
+                ) : null}
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-700">Last Name</label>
                 <input
                   type="text"
-                  required
                   className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
                   value={authForm.lastName}
                   onChange={(e) => setAuthForm({ ...authForm, lastName: e.target.value })}
                 />
+                {authFieldErrors.lastName ? (
+                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.lastName}</p>
+                ) : null}
               </div>
             </div>
           )}
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-700">Email Address</label>
-            <input
-              type="email"
-              required
-              className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-              value={authForm.email}
-              onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-700">Password</label>
-            <input
-              type="password"
-              required
-              className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-              value={authForm.password}
-              onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
-            />
+          {authMode === 'LOGIN' ? (
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Email or username</label>
+              <input
+                type="text"
+                autoComplete="username"
+                placeholder="e.g. you@email.com or your_username"
+                className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
+                value={loginIdentifier}
+                onChange={(e) => setLoginIdentifier(e.target.value)}
+              />
+              {authFieldErrors.identifier ? (
+                <p className="mt-1 text-xs text-red-600">{authFieldErrors.identifier}</p>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Username</label>
+                <input
+                  type="text"
+                  placeholder="e.g. jdoe99"
+                  className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
+                  value={authForm.username}
+                  onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })}
+                />
+                {authFieldErrors.username ? (
+                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.username}</p>
+                ) : null}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Email Address</label>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="e.g. jane@example.com"
+                  className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
+                  value={authForm.email}
+                  onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+                />
+                {authFieldErrors.email ? (
+                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.email}</p>
+                ) : null}
+              </div>
+            </>
+          )}
+          <div className={authMode === 'REGISTER' ? 'grid grid-cols-2 gap-4' : 'space-y-4'}>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Password</label>
+              <input
+                type="password"
+                autoComplete={authMode === 'LOGIN' ? 'current-password' : 'new-password'}
+                className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
+                value={authForm.password}
+                onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+              />
+              {authFieldErrors.password ? (
+                <p className="mt-1 text-xs text-red-600">{authFieldErrors.password}</p>
+              ) : null}
+            </div>
+            {authMode === 'REGISTER' ? (
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Confirm Password</label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
+                  value={authForm.confirmPassword}
+                  onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })}
+                />
+                {authFieldErrors.confirmPassword ? (
+                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.confirmPassword}</p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <button
             type="submit"
@@ -394,7 +497,10 @@ export function PublicAcademyPage() {
             <button
               type="button"
               className="font-semibold text-brand-600 hover:underline"
-              onClick={() => setAuthMode(authMode === 'REGISTER' ? 'LOGIN' : 'REGISTER')}
+              onClick={() => {
+                setAuthMode(authMode === 'REGISTER' ? 'LOGIN' : 'REGISTER');
+                setAuthFieldErrors({});
+              }}
             >
               {authMode === 'REGISTER' ? 'Already have an account? Login' : 'Need an account? Register'}
             </button>
@@ -512,7 +618,10 @@ export function PublicAcademyPage() {
               Your enrollment is confirmed. You can now access all lessons and assessments.
             </p>
             <button
-              onClick={() => window.location.href = '/dashboard'}
+              type="button"
+              onClick={() => {
+                window.location.href = '/student/courses';
+              }}
               className="mt-10 rounded-xl bg-brand-500 px-8 py-3 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-brand-600"
             >
               Go to My Courses

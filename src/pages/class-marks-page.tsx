@@ -6,6 +6,8 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { hasPermission } from '../features/auth/auth-helpers';
+import { ConductDeductionForm } from '../components/conduct-deduction-form';
 import {
   getMarksGridApi,
   listAllMarksLedgerApi,
@@ -60,6 +62,8 @@ export function ClassMarksPage() {
     'rank' | 'studentName' | 'classCode' | 'term' | 'subject' | 'total' | 'average'
   >('rank');
   const [ledgerSortDir, setLedgerSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const [conductModalOpen, setConductModalOpen] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedLedgerQ(ledgerSearchInput.trim()), 350);
@@ -265,6 +269,28 @@ export function ClassMarksPage() {
   };
 
   const hasDraft = useMemo(() => Object.keys(draft).length > 0, [draft]);
+
+  const canRecordConductDeduction =
+    hasPermission(auth.me, 'conduct.manage') &&
+    Boolean(grid?.academicYear?.id && termId && classRoomId && termId !== FULL_YEAR_TERM_ID && !marksReadOnly && grid?.students?.length);
+
+  const conductModalStudents = useMemo(
+    () =>
+      grid?.students.map((s) => ({
+        id: s.studentId,
+        studentCode: s.studentCode,
+        firstName: s.firstName,
+        lastName: s.lastName,
+      })) ?? [],
+    [grid?.students],
+  );
+
+  const openConductModal = () => {
+    if (!grid?.academicYear?.id || !termId || !classRoomId || !grid?.students?.length) {
+      return;
+    }
+    setConductModalOpen(true);
+  };
 
   const ledgerEmpty =
     !ledgerQuery.isPending &&
@@ -597,16 +623,12 @@ export function ClassMarksPage() {
                             ) : null}
                           </td>
                           <td className="sticky right-0 z-10 min-w-[5.5rem] border-l-2 border-brand-100 bg-white px-2 py-1.5 text-left text-xs text-slate-800">
-                            {row.conduct ? (
-                              <span>
-                                <span className="font-semibold">{row.conduct.grade}</span>
-                                {row.conduct.remark ? (
-                                  <span className="mt-0.5 block font-normal text-slate-600">{row.conduct.remark}</span>
-                                ) : null}
-                              </span>
-                            ) : (
-                              <span className="text-slate-400">—</span>
-                            )}
+                            <span>
+                              <span className="font-semibold">{row.conduct.grade}</span>
+                              {row.conduct.remark ? (
+                                <span className="mt-0.5 block font-normal text-slate-600">{row.conduct.remark}</span>
+                              ) : null}
+                            </span>
                           </td>
                         </tr>
                       ))}
@@ -653,17 +675,28 @@ export function ClassMarksPage() {
                 <p className="mt-1 text-sm text-slate-700">
                   {marksReadOnly
                     ? 'Results are locked for this term and class. This table is read-only. Unlock results in Exams to edit marks.'
-                    : 'Enter or edit CAT and EXAM marks per subject. Total follows your assessment weights. Save to update. Conduct shows the term conduct grade when recorded.'}
+                    : 'Enter or edit CAT and EXAM marks per subject. Total follows your assessment weights. Save to update. Conduct shows final score out of the term pool minus deductions.'}
                 </p>
               </div>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!hasGrid || !hasDraft || saveMutation.isPending || marksReadOnly}
-            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {saveMutation.isPending ? 'Saving...' : 'Save marks'}
-          </button>
+              <div className="flex flex-wrap gap-2">
+                {canRecordConductDeduction ? (
+                  <button
+                    type="button"
+                    onClick={openConductModal}
+                    className="rounded-lg border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm"
+                  >
+                    Record conduct deduction
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={!hasGrid || !hasDraft || saveMutation.isPending || marksReadOnly}
+                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {saveMutation.isPending ? 'Saving...' : 'Save marks'}
+                </button>
+              </div>
         </div>
             <div className="mt-2 grid gap-4">
               <div className="mb-4 flex flex-nowrap items-end gap-2 overflow-x-auto pb-0.5 [scrollbar-width:thin]">
@@ -927,16 +960,12 @@ export function ClassMarksPage() {
                     {row.rank}
                   </td>
                   <td className="sticky right-0 z-10 min-w-[6.5rem] border-l-2 border-brand-100 bg-white px-2 py-1 text-left text-xs text-slate-800">
-                    {row.conduct ? (
-                      <span>
-                        <span className="font-semibold">{row.conduct.grade}</span>
-                        {row.conduct.remark ? (
-                          <span className="mt-0.5 block font-normal text-slate-600">{row.conduct.remark}</span>
-                        ) : null}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">—</span>
-                    )}
+                    <span>
+                      <span className="font-semibold">{row.conduct.grade}</span>
+                      {row.conduct.remark ? (
+                        <span className="mt-0.5 block font-normal text-slate-600">{row.conduct.remark}</span>
+                      ) : null}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -952,6 +981,34 @@ export function ClassMarksPage() {
           </div>
       ) : null}
     </SectionCard>
+
+      {conductModalOpen && grid?.academicYear?.id && auth.accessToken ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="conduct-modal-title"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-brand-100 bg-white p-5 shadow-xl">
+            <ConductDeductionForm
+              key={`${grid.term.id}-${grid.classRoom.id}`}
+              accessToken={auth.accessToken}
+              lockedContext={{
+                academicYearId: grid.academicYear.id,
+                termId: grid.term.id,
+                classRoomId: grid.classRoom.id,
+              }}
+              students={conductModalStudents}
+              defaultStudentId={grid.students[0]?.studentId}
+              titleId="conduct-modal-title"
+              description=""
+              showCancel
+              onCancel={() => setConductModalOpen(false)}
+              onSuccess={() => setConductModalOpen(false)}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

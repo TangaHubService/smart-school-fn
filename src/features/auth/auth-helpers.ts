@@ -34,7 +34,8 @@ export function getDefaultLandingPath(me: MeResponse | null | undefined): string
   }
 
   if (hasPermission(me, 'students.my_courses.read')) {
-    return '/student/academic-year';
+    // Students should land on the main courses dashboard by default (Coursera-like experience)
+    return '/student/courses';
   }
 
   if (hasRole(me, 'TEACHER') && hasPermission(me, 'courses.read')) {

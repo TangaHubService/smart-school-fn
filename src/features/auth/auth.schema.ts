@@ -1,28 +1,34 @@
 import { z } from 'zod';
 
-const staffLoginFormSchema = z.object({
-  loginAs: z.literal('staff'),
-  email: z.string().trim().email('Enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+export const loginFormSchema = z.object({
+  identifier: z.string().trim().toLowerCase().min(1, 'Email or username is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
 });
 
-const studentLoginFormSchema = z.object({
-  loginAs: z.literal('student'),
-  schoolCode: z.string().trim().min(1, 'School code is required').max(20, 'School code is too long'),
-  studentId: z.string().trim().min(1, 'Student ID is required').max(40, 'Student ID is too long'),
-});
-
-export const loginFormSchema = z.discriminatedUnion('loginAs', [
-  staffLoginFormSchema,
-  studentLoginFormSchema,
-]);
-
-export const registerFormSchema = z.object({
-  firstName: z.string().trim().min(2, 'First name is too short').max(50),
-  lastName: z.string().trim().min(2, 'Last name is too short').max(50),
-  email: z.string().trim().email('Enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-});
+export const registerFormSchema = z
+  .object({
+    firstName: z.string().trim().min(2, 'First name is too short').max(50),
+    lastName: z.string().trim().min(2, 'Last name is too short').max(50),
+    username: z
+      .string()
+      .trim()
+      .min(3, 'Username must be at least 3 characters')
+      .max(30)
+      .regex(/^[a-z0-9_]+$/, 'Only small letters, numbers, and underscores allowed'),
+    email: z.string().trim().toLowerCase().email('Enter a valid email'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Must include a capital letter')
+      .regex(/[a-z]/, 'Must include a small letter')
+      .regex(/[0-9]/, 'Must include a number')
+      .regex(/[^A-Za-z0-9]/, 'Must include a special character'),
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 export type RegisterInput = z.infer<typeof registerFormSchema>;
 

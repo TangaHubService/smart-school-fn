@@ -1,12 +1,15 @@
 import clsx from 'clsx';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Lock } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { BookOpen, ChevronRight, ClipboardCheck, Lock, Play, CheckCircle2, Circle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ProgressRing } from '../components/progress-ring';
+import { CourseOverviewPanel } from '../components/student-learning/course-overview-panel';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { useSetStudentHeaderActions } from '../contexts/student-header-actions.context';
 import { EmptyState } from '../components/empty-state';
 import { Modal } from '../components/modal';
 import { RichContent } from '../components/rich-content';
@@ -21,8 +24,14 @@ import {
   MyCoursesResponse,
   listMyCoursesApi,
   submitAssignmentApi,
+  markLessonCompleteApi,
 } from '../features/sprint4/lms.api';
-
+import {
+  addPendingLessonComplete,
+  getPendingLessonIds,
+  removePendingLessonComplete,
+} from '../utils/offline-learning-cache';
+import { getCourseProgressMetrics, getResumeLessonId } from '../utils/course-progress';
 const submissionSchema = z
   .object({
     textAnswer: z.string().trim().max(10000).optional(),
@@ -214,6 +223,9 @@ function getAssignmentStatus(assignment: AssignmentItem) {
   };
 }
 
+const STUDENT_HEADER_ACTION_BTN =
+  'rounded-lg border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20 sm:text-sm';
+
 function StatusPill({
   label,
   tone,
@@ -234,14 +246,6 @@ function StatusPill({
       {label}
     </span>
   );
-}
-
-function getLessonAssignments(course: StudentCourseItem, lessonId: string) {
-  return course.assignments.filter((assignment) => assignment.lesson?.id === lessonId);
-}
-
-function getGeneralAssignments(course: StudentCourseItem) {
-  return course.assignments.filter((assignment) => !assignment.lesson?.id);
 }
 
 function getCourseSubjectKey(course: StudentCourseItem) {
@@ -272,9 +276,10 @@ function getCourseCoverGradient(index: number) {
 
 export function StudentCoursesPage() {
   const auth = useAuth();
-  const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const navigate = useNavigate();
+  const setHeaderActions = useSetStudentHeaderActions();
   const params = useParams<{
     courseId?: string;
     lessonId?: string;
@@ -290,9 +295,11 @@ export function StudentCoursesPage() {
   const [search, setSearch] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('ALL');
   const [page, setPage] = useState(1);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeCoursePanel, setActiveCoursePanel] = useState<CoursePanel>('lessons');
   const [submissionAssignment, setSubmissionAssignment] = useState<AssignmentItem | null>(null);
   const [submissionFile, setSubmissionFile] = useState<File | null>(null);
+  const [completionCourse, setCompletionCourse] = useState<StudentCourseItem | null>(null);
 
   const submissionForm = useForm<SubmissionFormValues>({
     resolver: zodResolver(submissionSchema),
@@ -326,18 +333,9 @@ export function StudentCoursesPage() {
       setSubmissionAssignment(null);
       setSubmissionFile(null);
       submissionForm.reset(defaultSubmissionForm);
-      showToast({
-        type: 'success',
-        title: 'Submission saved',
-        message: 'Your assignment work has been sent to the teacher.',
-      });
     },
     onError: (error) => {
-      showToast({
-        type: 'error',
-        title: 'Could not save submission',
-        message: error instanceof Error ? error.message : 'Request failed',
-      });
+      console.error('Submission error:', error);
     },
   });
 
@@ -422,6 +420,188 @@ export function StudentCoursesPage() {
   const selectedAssignment =
     selectedCourse?.assignments.find((assignment) => assignment.id === activeAssignmentId) ?? null;
 
+  const sortedLessons = selectedCourse?.lessons.slice().sort((a, b) => a.sequence - b.sequence) ?? [];
+  const currentLessonIndex = selectedLesson
+    ? sortedLessons.findIndex((lesson) => lesson.id === selectedLesson.id)
+    : -1;
+  const nextLesson =
+    currentLessonIndex >= 0 && currentLessonIndex < sortedLessons.length - 1
+      ? sortedLessons[currentLessonIndex + 1]
+      : null;
+  const previousLesson =
+    currentLessonIndex > 0 ? sortedLessons[currentLessonIndex - 1] : null;
+
+  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
+
+  const selectedCourseProgress = selectedCourse
+    ? getCourseProgressMetrics(selectedCourse, completedLessonIds)
+    : null;
+
+  const isLessonCompleted = (lessonId: string) => completedLessonIds.includes(lessonId);
+
+  const markLessonCompleted = (lessonId: string) => {
+    setCompletedLessonIds((prev) => (prev.includes(lessonId) ? prev : [...prev, lessonId]));
+  };
+
+  // Hydrate completed lessons from backend when course data loads
+  useEffect(() => {
+    if (!selectedCourse) {
+      return;
+    }
+
+    const courseData = allCourses.find((c) => c.id === selectedCourse.id);
+    if (courseData?.completedLessonIds) {
+      setCompletedLessonIds(courseData.completedLessonIds);
+    }
+  }, [selectedCourse?.id, allCourses]);
+
+  const markLessonMutation = useMutation({
+    mutationFn: (lessonId: string) => markLessonCompleteApi(auth.accessToken!, lessonId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard', 'student'] });
+    },
+  });
+
+  const flushPendingLessonCompletes = useCallback(async () => {
+    const token = auth.accessToken;
+    if (!token) {
+      return;
+    }
+    const ids = [...getPendingLessonIds()];
+    if (!ids.length) {
+      return;
+    }
+    for (const lid of ids) {
+      try {
+        await markLessonCompleteApi(token, lid);
+        removePendingLessonComplete(lid);
+      } catch {
+        break;
+      }
+    }
+    void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
+    void queryClient.invalidateQueries({ queryKey: ['dashboard', 'student'] });
+  }, [auth.accessToken, queryClient]);
+
+  useEffect(() => {
+    const onOnline = () => void flushPendingLessonCompletes();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [flushPendingLessonCompletes]);
+
+  useEffect(() => {
+    if (!auth.accessToken) {
+      return;
+    }
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      void flushPendingLessonCompletes();
+    }
+  }, [auth.accessToken, flushPendingLessonCompletes]);
+
+  const handleCompleteAndGoNext = async (courseId: string, lessonId: string) => {
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+    if (offline) {
+      addPendingLessonComplete(lessonId);
+      showToast({
+        type: 'info',
+        title: 'Saved on this device',
+        message: 'Lesson marked complete locally. It will sync to the server when you are back online.',
+      });
+    } else {
+      try {
+        await markLessonMutation.mutateAsync(lessonId);
+        removePendingLessonComplete(lessonId);
+      } catch (error) {
+        console.error('Failed to mark lesson complete:', error);
+        addPendingLessonComplete(lessonId);
+        showToast({
+          type: 'info',
+          title: 'Queued for sync',
+          message: 'We could not reach the server. This lesson will sync automatically when your connection is stable.',
+        });
+      }
+    }
+
+    markLessonCompleted(lessonId);
+
+    const lessons = (selectedCourse?.lessons ?? []).slice().sort((a, b) => a.sequence - b.sequence);
+    const index = lessons.findIndex((lesson) => lesson.id === lessonId);
+    if (index === -1) {
+      return;
+    }
+
+    const nextLesson = lessons[index + 1];
+    if (nextLesson) {
+      handleSelectLesson(courseId, nextLesson.id);
+    } else {
+      const updatedCompletedIds = completedLessonIds.includes(lessonId)
+        ? completedLessonIds
+        : [...completedLessonIds, lessonId];
+      maybeShowCourseCompletion(courseId, updatedCompletedIds);
+      navigate(`/student/courses/${courseId}`);
+    }
+  };
+
+  const maybeShowCourseCompletion = useCallback(
+    (courseId: string, updatedCompletedIds: string[]) => {
+      const c = allCourses.find((x) => x.id === courseId);
+      if (!c) {
+        return;
+      }
+      const m = getCourseProgressMetrics(c, updatedCompletedIds);
+      if (m.overallProgress >= 100) {
+        setCompletionCourse(c);
+      }
+    },
+    [allCourses],
+  );
+
+  const handleMarkLessonCompleteOnly = async (courseId: string, lessonId: string) => {
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+    const mergedIds = completedLessonIds.includes(lessonId)
+      ? completedLessonIds
+      : [...completedLessonIds, lessonId];
+
+    if (offline) {
+      addPendingLessonComplete(lessonId);
+      markLessonCompleted(lessonId);
+      maybeShowCourseCompletion(courseId, mergedIds);
+      showToast({
+        type: 'info',
+        title: 'Saved on this device',
+        message: 'Lesson marked complete locally. It will sync when you are back online.',
+      });
+      return;
+    }
+
+    try {
+      await markLessonMutation.mutateAsync(lessonId);
+      removePendingLessonComplete(lessonId);
+    } catch {
+      addPendingLessonComplete(lessonId);
+      showToast({
+        type: 'info',
+        title: 'Queued for sync',
+        message: 'We could not reach the server. This lesson will sync when your connection is stable.',
+      });
+    }
+    markLessonCompleted(lessonId);
+    maybeShowCourseCompletion(courseId, mergedIds);
+  };
+
+  function handleGoNextLesson(courseId: string, lessonId: string) {
+    const lessons = (selectedCourse?.lessons ?? []).slice().sort((a, b) => a.sequence - b.sequence);
+    const index = lessons.findIndex((lesson) => lesson.id === lessonId);
+    const next = index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : null;
+    if (next) {
+      navigate(`/student/courses/${courseId}/lessons/${next.id}`);
+      return;
+    }
+    navigate(`/student/courses/${courseId}`);
+  }
+
   useEffect(() => {
     if (!legacyCourseId) {
       return;
@@ -454,7 +634,18 @@ export function StudentCoursesPage() {
 
   function handleSelectAssignment(courseId: string, assignmentId: string, lessonId?: string) {
     void lessonId;
+    setActiveCoursePanel('tests');
     navigate(`/student/courses/${courseId}/tests/${assignmentId}`);
+  }
+
+  function handleGoPrevious(courseId: string, lessonId: string) {
+    const lessons = selectedCourse?.lessons.slice().sort((a, b) => a.sequence - b.sequence) ?? [];
+    const index = lessons.findIndex((lesson) => lesson.id === lessonId);
+    const prevLesson = index > 0 ? lessons[index - 1] : null;
+
+    if (prevLesson) {
+      navigate(`/student/courses/${courseId}/lessons/${prevLesson.id}`);
+    }
   }
 
   function openSubmission(assignment: AssignmentItem) {
@@ -466,42 +657,69 @@ export function StudentCoursesPage() {
     setSubmissionAssignment(assignment);
   }
 
-  const readerHeader = selectedAssignment
-    ? {
-        title: selectedAssignment.title,
-        subtitle: `Test · Due ${formatDateTime(selectedAssignment.dueAt)} · ${selectedAssignment.maxPoints} pts`,
-        badge: <StatusPill label={getAssignmentStatus(selectedAssignment).label} tone={getAssignmentStatus(selectedAssignment).tone} />,
-      }
-    : selectedLesson
-      ? {
-          title: selectedLesson.title,
-          subtitle: `Lesson ${selectedLesson.sequence} · ${selectedLesson.contentType}`,
-          badge: <StatusPill label="Published" tone="published" />,
-        }
-      : selectedCourse
-        ? {
-            title: selectedCourse.title,
-            subtitle: `${selectedCourse.classRoom.name} · ${selectedCourse.academicYear.name}`,
-            badge: selectedCourse.subject ? (
-              <span className="inline-flex rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-slate-700">
-                {selectedCourse.subject.name}
-              </span>
-            ) : null,
-          }
-        : {
-            title: 'Choose a course',
-            subtitle: 'Open a subject card, choose a course, then select a lesson.',
-            badge: null,
-          };
+  useEffect(() => {
+    if (!setHeaderActions) {
+      return;
+    }
+    if (!activeCourseId || !selectedCourse) {
+      setHeaderActions(null);
+      return;
+    }
+
+    const assignmentStatus = selectedAssignment ? getAssignmentStatus(selectedAssignment) : null;
+
+    setHeaderActions(
+      <>
+        {selectedAssignment && assignmentStatus ? (
+          <StatusPill label={assignmentStatus.label} tone={assignmentStatus.tone} />
+        ) : selectedLesson ? (
+          <StatusPill label="Published" tone="published" />
+        ) : selectedCourse.subject ? (
+          <span className="inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+            {selectedCourse.subject.name}
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed((c) => !c)}
+          className={STUDENT_HEADER_ACTION_BTN}
+        >
+          {sidebarCollapsed ? 'Show curriculum' : 'Hide curriculum'}
+        </button>
+        <button type="button" onClick={() => navigate('/student/courses')} className={STUDENT_HEADER_ACTION_BTN}>
+          Back to courses
+        </button>
+        {selectedLesson || selectedAssignment ? (
+          <button
+            type="button"
+            onClick={() => navigate(`/student/courses/${selectedCourse.id}`)}
+            className={STUDENT_HEADER_ACTION_BTN}
+          >
+            Back to overview
+          </button>
+        ) : null}
+      </>,
+    );
+
+    return () => setHeaderActions(null);
+  }, [
+    setHeaderActions,
+    activeCourseId,
+    selectedCourse,
+    selectedLesson,
+    selectedAssignment,
+    sidebarCollapsed,
+    navigate,
+  ]);
 
   return (
     <div className="grid gap-5">
       {!activeCourseId ? (
         <SectionCard
           title="My learning"
-          subtitle="Browse your available courses and open the content you need."
+          subtitle=""
         >
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-center">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px] sm:items-center">
             <div className="relative">
               <input
                 type="search"
@@ -531,15 +749,6 @@ export function StudentCoursesPage() {
                 </option>
               ))}
             </select>
-            <div className="inline-flex items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-slate-800">
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-brand-500 text-white shadow-soft">
-                {`${myCoursesQuery.data?.student.firstName?.[0] ?? 'S'}${myCoursesQuery.data?.student.lastName?.[0] ?? ''}`}
-              </span>
-              <span>
-                {myCoursesQuery.data?.student.firstName ?? 'Student'} ·{' '}
-                {myCoursesQuery.data?.student.studentCode ?? 'No code'}
-              </span>
-            </div>
           </div>
         </SectionCard>
       ) : null}
@@ -573,79 +782,224 @@ export function StudentCoursesPage() {
             <SubjectCourseGallery
               courses={filteredCourses}
               onSelectCourse={(courseId) => handleSelectCourse(courseId)}
+              completedLessonIds={completedLessonIds}
             />
           ) : (
-            <EmptyState
-              title="No courses available"
-              message="Your active enrollment does not have any published course content yet."
-            />
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <EmptyState
+                title="No courses available"
+                message="Your active enrollment does not have any published course content yet."
+              />
+            </div>
           )
         ) : selectedCourse ? (
-          <section className="rounded-2xl border border-brand-100 bg-white shadow-soft">
-            <div className="flex min-h-[560px] flex-col">
-              <div className="border-b border-brand-100 px-4 py-3 sm:px-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                      <span>{selectedCourse.classRoom.name}</span>
-                      <span className="text-brand-300">/</span>
-                      <span>{selectedCourse.academicYear.name}</span>
-                    </div>
-                    <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-                      {readerHeader.title}
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-600">{readerHeader.subtitle}</p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                    {readerHeader.badge}
-                    <button
-                      type="button"
-                      onClick={() => navigate('/student/courses')}
-                      className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300"
-                    >
-                      Back to courses
-                    </button>
-                    {selectedLesson || selectedAssignment ? (
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/student/courses/${selectedCourse.id}`)}
-                        className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-brand-300"
-                      >
-                        Back to lessons
-                      </button>
-                    ) : null}
-                  </div>
+          <section className="-mx-5 w-[calc(100%+2.5rem)] min-w-0 max-w-none bg-transparent md:-mx-6 md:w-[calc(100%+3rem)]">
+            <div className="flex min-h-[480px] flex-col">
+              <div className="border-b border-slate-200/60 bg-transparent px-5 py-3 md:px-6 md:py-4">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span>{selectedCourse.classRoom.name}</span>
+                  <span className="text-brand-300">/</span>
+                  <span>{selectedCourse.academicYear.name}</span>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-                {selectedAssignment ? (
-                  <AssignmentDetailCard
-                    assignment={selectedAssignment}
-                    onOpenSubmission={openSubmission}
-                  />
-                ) : selectedLesson ? (
-                  <LessonDetailCard
-                    lesson={selectedLesson}
-                    assignments={getLessonAssignments(selectedCourse, selectedLesson.id)}
-                    onSelectAssignment={(assignmentId) =>
-                      handleSelectAssignment(selectedCourse.id, assignmentId, selectedLesson.id)
-                    }
-                  />
-                ) : (
-                  <CourseContentSwitcher
-                    course={selectedCourse}
-                    activePanel={activeCoursePanel}
-                    selectedLessonId={activeLessonId}
-                    selectedAssignmentId={activeAssignmentId}
-                    onSelectPanel={(panel) => setActiveCoursePanel(panel)}
-                    onSelectLesson={(lessonId) => handleSelectLesson(selectedCourse.id, lessonId)}
-                    onSelectAssignment={(assignmentId) =>
-                      handleSelectAssignment(selectedCourse.id, assignmentId)
-                    }
-                  />
-                )}
+              <div className="flex-1 overflow-hidden px-0 sm:px-0">
+                <div className={clsx(
+                  "grid h-[calc(100vh-180px)] min-h-[520px] gap-0 transition-all duration-300",
+                  sidebarCollapsed ? "grid-cols-1" : "lg:grid-cols-[380px_1fr]"
+                )}>
+                  {/* Collapsible/Minimal Sidebar */}
+                  {!sidebarCollapsed && (
+                    <aside className="relative flex min-h-0 flex-col border-r border-slate-200/50 bg-content-bg transition-all duration-300">
+                    <div
+                      className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-5 md:px-6 md:py-6"
+                      data-student-scroll-root
+                    >
+                      <div className="mb-4">
+                        <h2 className="text-lg font-semibold text-slate-900">{selectedCourse.title}</h2>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {selectedCourse.teacher.firstName} {selectedCourse.teacher.lastName}
+                        </p>
+                        <div className="mt-2 flex items-center gap-2 rounded-lg bg-slate-50/90 p-2.5">
+                          <ProgressRing
+                            percentage={selectedCourseProgress?.overallProgress ?? 0}
+                            size={52}
+                            strokeWidth={5}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-slate-900">
+                              {selectedCourseProgress?.overallProgress ?? 0}% complete
+                            </p>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              {selectedCourseProgress?.completedLessons ?? 0}/{selectedCourseProgress?.totalLessons ?? 0}{' '}
+                              lessons · {selectedCourseProgress?.completedAssignments ?? 0}/
+                              {selectedCourseProgress?.totalAssignments ?? 0} tests
+                            </p>
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                              <div
+                                className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                                style={{ width: `${selectedCourseProgress?.overallProgress ?? 0}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    <div className="mt-4 space-y-1">
+                      <p className="text-xs font-medium text-slate-500">Curriculum</p>
+                      {sortedLessons.map((lesson, index) => {
+                        const isCompleted = isLessonCompleted(lesson.id);
+                        const previousLesson = index > 0 ? sortedLessons[index - 1] : null;
+                        const isLocked =
+                          index > 0 && Boolean(previousLesson && !isLessonCompleted(previousLesson.id));
+
+                        return (
+                          <button
+                            key={lesson.id}
+                            type="button"
+                            disabled={isLocked}
+                            onClick={() => !isLocked && handleSelectLesson(selectedCourse.id, lesson.id)}
+                            className={`group relative flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
+                              activeLessonId === lesson.id && activeCoursePanel === 'lessons'
+                                ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
+                                : isLocked
+                                  ? 'bg-slate-50 text-slate-400 opacity-60 cursor-not-allowed'
+                                  : 'bg-transparent text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            <span className="mt-0.5 flex-shrink-0">
+                              {isLocked ? (
+                                <Lock className="h-4 w-4" />
+                              ) : activeLessonId === lesson.id ? (
+                                <Play className="h-4 w-4" />
+                              ) : isCompleted ? (
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                              ) : (
+                                <Circle className="h-4 w-4 text-slate-300" />
+                              )}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className={`truncate font-medium ${
+                                activeLessonId === lesson.id ? 'text-white' : 'text-slate-900'
+                              }`}>
+                                {lesson.title}
+                              </p>
+                              <div className="mt-0.5 flex items-center gap-2">
+                                <span
+                                  className={`text-xs ${
+                                    activeLessonId === lesson.id ? 'text-brand-100/90' : 'text-slate-400'
+                                  }`}
+                                >
+                                  Lesson {lesson.sequence}
+                                </span>
+                                {isLocked && (
+                                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                                    Locked
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-4 border-t border-slate-100 pt-4">
+                      <p className="text-xs font-medium text-slate-500">Assessments</p>
+                      <div className="mt-3 space-y-1.5">
+                        {selectedCourse.assignments.map((assignment) => {
+                          const isCompleted = Boolean(assignment.mySubmission);
+                          const isSelected = activeAssignmentId === assignment.id;
+                          return (
+                            <button
+                              key={assignment.id}
+                              type="button"
+                              onClick={() => handleSelectAssignment(selectedCourse.id, assignment.id)}
+                              className={`flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
+                                isSelected
+                                  ? 'bg-slate-900 text-white shadow-lg'
+                                  : 'bg-transparent text-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span className="mt-0.5 flex-shrink-0">
+                                {isCompleted ? (
+                                  <CheckCircle2 className={`h-4 w-4 ${isSelected ? 'text-white' : 'text-emerald-500'}`} />
+                                ) : (
+                                  <Circle className="h-4 w-4 text-slate-300" />
+                                )}{' '}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className={`truncate font-medium ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                                  {assignment.title}
+                                </p>
+                                <p className={`text-xs ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
+                                  {isCompleted ? 'Completed' : 'Pending'}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    </div>
+                  </aside>
+                  )}
+
+                  <main
+                    className="relative flex min-h-0 flex-col overflow-y-auto bg-content-bg lg:h-[calc(100vh-180px)]"
+                    data-student-scroll-root
+                  >
+                    <div className="w-full max-w-none px-5 py-5 md:px-6 md:py-6">
+                      {selectedAssignment ? (
+                        <AssignmentDetailCard
+                          assignment={selectedAssignment}
+                          onOpenSubmission={openSubmission}
+                        />
+                      ) : selectedLesson ? (
+                        <LessonDetailCard
+                          lesson={selectedLesson}
+                          onMarkCompleteOnly={() =>
+                            handleMarkLessonCompleteOnly(selectedCourse.id, selectedLesson.id)
+                          }
+                          onMarkCompleteAndContinue={() =>
+                            handleCompleteAndGoNext(selectedCourse.id, selectedLesson.id)
+                          }
+                          onGoPrevious={() => handleGoPrevious(selectedCourse.id, selectedLesson.id)}
+                          onGoNext={() => handleGoNextLesson(selectedCourse.id, selectedLesson.id)}
+                          nextLesson={nextLesson}
+                          previousLesson={previousLesson}
+                          isCompleted={isLessonCompleted(selectedLesson.id)}
+                        />
+                      ) : (
+                        <CourseOverviewPanel
+                          course={selectedCourse}
+                          completedLessonIds={completedLessonIds}
+                          onResume={() => {
+                            const id = getResumeLessonId(selectedCourse, completedLessonIds);
+                            if (id) {
+                              handleSelectLesson(selectedCourse.id, id);
+                            }
+                          }}
+                          onStartBeginning={() => {
+                            const first = sortedLessons[0];
+                            if (first) {
+                              handleSelectLesson(selectedCourse.id, first.id);
+                            }
+                          }}
+                          onOpenLesson={(lessonId) => handleSelectLesson(selectedCourse.id, lessonId)}
+                          onOpenTests={() => {
+                            setActiveCoursePanel('tests');
+                            const next =
+                              selectedCourse.assignments.find((a) => !a.mySubmission) ??
+                              selectedCourse.assignments[0];
+                            if (next) {
+                              handleSelectAssignment(selectedCourse.id, next.id);
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </main>
+                </div>
               </div>
             </div>
           </section>
@@ -699,7 +1053,7 @@ export function StudentCoursesPage() {
       <Modal
         open={Boolean(submissionAssignment)}
         title={submissionAssignment ? `Submit · ${submissionAssignment.title}` : 'Submit assignment'}
-        description="Add text, a link, or a file. You can update it until the teacher grades it."
+        description=""
         onClose={() => {
           setSubmissionAssignment(null);
           setSubmissionFile(null);
@@ -756,6 +1110,49 @@ export function StudentCoursesPage() {
           </div>
         </form>
       </Modal>
+
+      <Modal
+        open={Boolean(completionCourse)}
+        title="🎉 Course Completed!"
+        description=""
+        onClose={() => setCompletionCourse(null)}
+      >
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Congratulations! You've completed {completionCourse?.title}
+          </h3>
+          <p className="mt-2 text-sm text-slate-600">
+            You've successfully finished all lessons and assignments in this course.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setCompletionCourse(null);
+                if (completionCourse) {
+                  navigate(`/student/courses/${completionCourse.id}`);
+                }
+              }}
+              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              Review Course
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCompletionCourse(null);
+                navigate('/student/courses');
+              }}
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Back to Courses
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -764,40 +1161,46 @@ function ReaderBlock({
   eyebrow,
   title,
   subtitle,
-  action,
   children,
+  action,
 }: {
   eyebrow?: string;
   title: string;
   subtitle?: string;
-  action?: ReactNode;
   children: ReactNode;
+  action?: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-brand-100 bg-brand-50/40 p-5">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          {eyebrow ? (
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-              {eyebrow}
-            </p>
-          ) : null}
-          <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-900">{title}</h3>
-          {subtitle ? <p className="mt-1 text-sm text-slate-600">{subtitle}</p> : null}
+    <div className="space-y-4 transition-all duration-500">
+      <header className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          {eyebrow && (
+            <span className="text-xs font-medium text-brand-600">{eyebrow}</span>
+          )}
+          {action}
         </div>
-        {action ?? null}
-      </div>
-      {children}
-    </section>
+        <div className="space-y-1.5">
+          <h1 className="text-balance text-2xl font-semibold leading-snug tracking-tight text-slate-900 lg:text-3xl">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="max-w-2xl text-sm leading-relaxed text-slate-600">{subtitle}</p>
+          )}
+        </div>
+      </header>
+      <div className="lms-reader-content rich-content">{children}</div>
+    </div>
   );
 }
 
 function SubjectCourseGallery({
   courses,
   onSelectCourse,
+  completedLessonIds,
 }: {
   courses: StudentCourseItem[];
   onSelectCourse: (courseId: string) => void;
+  completedLessonIds: string[];
 }) {
   if (!courses.length) {
     return (
@@ -809,10 +1212,11 @@ function SubjectCourseGallery({
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {courses.map((course, courseIndex) => {
         const cover = getCourseCoverGradient(courseIndex);
         const courseLabel = `${course.subject?.name ?? 'General Studies'} / ${course.classRoom.name}`;
+        const progress = getCourseProgressMetrics(course, course.completedLessonIds ?? []);
 
         return (
           <button
@@ -829,18 +1233,50 @@ function SubjectCourseGallery({
                 {courseLabel}
               </span>
               <span className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-xl bg-white text-[#184f8f] shadow-md">
-                <Lock className="h-5 w-5" aria-hidden="true" />
+                <BookOpen className="h-5 w-5" aria-hidden="true" />
               </span>
             </div>
-            <div className="space-y-2 px-4 py-3">
-              <p className="text-lg font-medium text-slate-800">{course.title}</p>
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                <span>
-                  {course.academicYear.name} · {course.lessons.length} lessons
-                </span>
-                <span>
+            <div className="space-y-3 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-lg font-medium text-slate-800">{course.title}</p>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span>{course.academicYear.name}</span>
+                    <span>·</span>
+                    <span>{course.lessons.length} lessons</span>
+                    {progress.overallProgress >= 100 ? (
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
+                        Done
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ProgressRing
+                    percentage={progress.overallProgress}
+                    size={44}
+                    strokeWidth={5}
+                    className="flex-shrink-0"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">
+                    {progress.overallProgress}%
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-500">
                   {course.teacher.firstName} {course.teacher.lastName}
                 </span>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelectCourse(course.id);
+                  }}
+                  className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-100"
+                >
+                  {progress.overallProgress >= 100 ? 'Review' : progress.overallProgress > 0 ? 'Resume' : 'Open'}
+                </button>
               </div>
             </div>
           </button>
@@ -850,195 +1286,111 @@ function SubjectCourseGallery({
   );
 }
 
-function CourseContentSwitcher({
-  course,
-  activePanel,
-  selectedLessonId,
-  selectedAssignmentId,
-  onSelectPanel,
-  onSelectLesson,
-  onSelectAssignment,
-}: {
-  course: StudentCourseItem;
-  activePanel: CoursePanel;
-  selectedLessonId: string;
-  selectedAssignmentId: string;
-  onSelectPanel: (panel: CoursePanel) => void;
-  onSelectLesson: (lessonId: string) => void;
-  onSelectAssignment: (assignmentId: string) => void;
-}) {
-  const generalAssignments = getGeneralAssignments(course);
-
-  return (
-    <section className="mb-4 rounded-2xl border border-brand-100 bg-brand-50/60 p-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-            Course content
-          </p>
-          <p className="mt-1 text-sm text-slate-700">
-            Switch between lessons and tests, then open any card to read the details.
-          </p>
-        </div>
-        <div className="inline-flex rounded-2xl border border-brand-200 bg-white p-1">
-          <button
-            type="button"
-            onClick={() => onSelectPanel('lessons')}
-            className={clsx(
-              'rounded-xl px-4 py-2 text-sm font-semibold transition',
-              activePanel === 'lessons'
-                ? 'bg-brand-500 text-white'
-                : 'text-slate-700 hover:bg-brand-50',
-            )}
-          >
-            Lessons
-          </button>
-          <button
-            type="button"
-            onClick={() => onSelectPanel('tests')}
-            className={clsx(
-              'rounded-xl px-4 py-2 text-sm font-semibold transition',
-              activePanel === 'tests'
-                ? 'bg-brand-500 text-white'
-                : 'text-slate-700 hover:bg-brand-50',
-            )}
-          >
-            Tests
-          </button>
-        </div>
-      </div>
-
-      {activePanel === 'lessons' ? (
-        course.lessons.length ? (
-          <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {course.lessons.map((lesson, lessonIndex) => {
-              const assignmentCount = getLessonAssignments(course, lesson.id).length;
-              const cover = getCourseCoverGradient(lessonIndex);
-              const isSelected = selectedLessonId === lesson.id;
-
-              return (
-                <button
-                  key={lesson.id}
-                  type="button"
-                  onClick={() => onSelectLesson(lesson.id)}
-                  className={clsx(
-                    'overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg',
-                    isSelected ? 'border-brand-300 ring-2 ring-brand-200' : 'border-brand-100',
-                  )}
-                >
-                  <div className="relative h-40 bg-[length:140px_140px]" style={cover}>
-                    <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
-                      Lesson {lesson.sequence} / {lesson.contentType}
-                    </span>
-                    <span className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-md">
-                      {assignmentCount} test{assignmentCount === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                  <div className="space-y-2 px-4 py-3">
-                    <p className="text-lg font-medium text-slate-800">{lesson.title}</p>
-                    <p className="line-clamp-2 text-sm text-slate-600">
-                      {lesson.summary ?? 'Open this lesson to read the content.'}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="mt-4">
-            <EmptyState message="No published lessons in this course yet." />
-          </div>
-        )
-      ) : generalAssignments.length ? (
-        <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {generalAssignments.map((assignment, assignmentIndex) => {
-            const cover = getCourseCoverGradient(assignmentIndex);
-            const status = getAssignmentStatus(assignment);
-            const isSelected = selectedAssignmentId === assignment.id;
-
-            return (
-              <button
-                key={assignment.id}
-                type="button"
-                onClick={() => onSelectAssignment(assignment.id)}
-                className={clsx(
-                  'overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg',
-                  isSelected ? 'border-brand-300 ring-2 ring-brand-200' : 'border-brand-100',
-                )}
-              >
-                <div className="relative h-40 bg-[length:140px_140px]" style={cover}>
-                  <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
-                    Test / {status.label}
-                  </span>
-                  <span className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-md">
-                    {assignment.maxPoints} pts
-                  </span>
-                </div>
-                <div className="space-y-2 px-4 py-3">
-                  <p className="text-lg font-medium text-slate-800">{assignment.title}</p>
-                  <p className="line-clamp-2 text-sm text-slate-600">
-                    Due {formatDateTime(assignment.dueAt)}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="mt-4">
-          <EmptyState message="No general tests are available for this course yet." />
-        </div>
-      )}
-    </section>
-  );
-}
-
 function LessonDetailCard({
   lesson,
-  assignments,
-  onSelectAssignment,
+  onMarkCompleteOnly,
+  onMarkCompleteAndContinue,
+  onGoPrevious,
+  onGoNext,
+  nextLesson,
+  previousLesson,
+  isCompleted,
 }: {
   lesson: LessonItem;
-  assignments: AssignmentItem[];
-  onSelectAssignment: (assignmentId: string) => void;
+  onMarkCompleteOnly: () => void;
+  onMarkCompleteAndContinue: () => void;
+  onGoPrevious: () => void;
+  onGoNext: () => void;
+  nextLesson: LessonItem | null;
+  previousLesson: LessonItem | null;
+  isCompleted: boolean;
 }) {
   const showInlineMedia = lessonHasInlineMedia(lesson);
+  const canGoNext = isCompleted;
 
   return (
-    <div className="grid gap-4">
-      <ReaderBlock
-        eyebrow="Lesson"
-        title={lesson.title}
-        subtitle={lesson.summary ?? `Lesson ${lesson.sequence} · ${lesson.contentType}`}
-        action={<StatusPill label="Published" tone="published" />}
-      >
-        {lesson.body ? (
-          <RichContent
-            html={lesson.body}
-            className="rich-content rounded-2xl bg-white p-5 text-[15px] leading-7 text-slate-700"
-          />
-        ) : (
-          <div className="rounded-2xl border border-dashed border-brand-200 bg-white px-4 py-5 text-sm text-slate-600">
-            This lesson uses links or files instead of text content.
+    <div className="min-w-0 space-y-4">
+        <div className="bg-transparent py-0">
+          <ReaderBlock
+            eyebrow={`Lesson ${lesson.sequence} · ${lesson.contentType}`}
+            title={lesson.title}
+            subtitle={lesson.summary ?? 'Study the material below, then mark this lesson complete.'}
+            action={
+              isCompleted ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Completed
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
+                  <Play className="h-3 w-3" aria-hidden /> In progress
+                </span>
+              )
+            }
+          >
+            <div className="mt-3">
+              <LessonMediaEmbed lesson={lesson} />
+            </div>
+
+            {lesson.body ? (
+              <RichContent html={lesson.body} className="lms-reader-content mt-4" />
+            ) : null}
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {lesson.externalUrl && !showInlineMedia ? (
+                <AttachmentLink label="Open Lesson Source" url={lesson.externalUrl} />
+              ) : null}
+              {lesson.fileAsset ? (
+                <AttachmentLink
+                  label={`Resource: ${lesson.fileAsset.originalName}`}
+                  url={lesson.fileAsset.secureUrl}
+                />
+              ) : null}
+            </div>
+          </ReaderBlock>
+        </div>
+
+        <footer className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/40 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {previousLesson ? (
+              <button
+                type="button"
+                onClick={onGoPrevious}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Previous
+              </button>
+            ) : null}
           </div>
-        )}
-
-        <div className="mt-4">
-          <LessonMediaEmbed lesson={lesson} />
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {lesson.externalUrl && !showInlineMedia ? (
-            <AttachmentLink label="Open lesson link" url={lesson.externalUrl} />
-          ) : null}
-          {lesson.fileAsset ? (
-            <AttachmentLink
-              label={`Download ${lesson.fileAsset.originalName}`}
-              url={lesson.fileAsset.secureUrl}
-            />
-          ) : null}
-        </div>
-      </ReaderBlock>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            {!isCompleted ? (
+              <button
+                type="button"
+                onClick={onMarkCompleteOnly}
+                className="rounded-lg border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-800 transition hover:bg-brand-50"
+              >
+                Mark complete
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onGoNext}
+              disabled={!canGoNext}
+              title={!canGoNext ? 'Mark this lesson complete to continue' : undefined}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {nextLesson ? 'Next lesson' : 'Back to course'}
+            </button>
+            {!isCompleted ? (
+              <button
+                type="button"
+                onClick={onMarkCompleteAndContinue}
+                className="rounded-lg border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+              >
+                {nextLesson ? 'Mark complete & next' : 'Mark complete & finish'}
+              </button>
+            ) : null}
+          </div>
+        </footer>
     </div>
   );
 }
@@ -1053,87 +1405,109 @@ function AssignmentDetailCard({
   const status = getAssignmentStatus(assignment);
 
   return (
-    <div className="grid gap-4">
+    <div className="space-y-5">
       <ReaderBlock
-        eyebrow="Test"
+        eyebrow="Test requirements"
         title={assignment.title}
-        subtitle={`Due ${formatDateTime(assignment.dueAt)} · ${assignment.maxPoints} pts`}
-        action={<StatusPill label={status.label} tone={status.tone} />}
+        subtitle={`Due ${formatDateTime(assignment.dueAt)} · ${assignment.maxPoints} points`}
+        action={
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+              status.tone === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
+            }`}
+          >
+            {status.label}
+          </span>
+        }
       >
-        <RichContent
-          html={assignment.instructions}
-          className="rich-content rounded-2xl bg-white p-4 text-[15px] leading-7 text-slate-700"
-        />
+        <div className="bg-slate-50/80 py-3 sm:py-4">
+          <RichContent html={assignment.instructions} className="lms-reader-content" />
+        </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {assignment.attachmentAsset ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {assignment.attachmentAsset && (
             <AttachmentLink
-              label={`Open ${assignment.attachmentAsset.originalName}`}
+              label={`Test Attachment: ${assignment.attachmentAsset.originalName}`}
               url={assignment.attachmentAsset.secureUrl}
             />
-          ) : null}
-          {assignment.lesson ? (
-            <span className="inline-flex rounded-full border border-brand-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-              Lesson: {assignment.lesson.title}
-            </span>
-          ) : null}
+          )}
+          {assignment.lesson && (
+            <div className="flex items-center gap-2 rounded-lg bg-slate-100/80 px-3 py-1.5 text-xs font-medium text-slate-600">
+              <BookOpen className="h-4 w-4 text-brand-500" />
+              Related Lesson: {assignment.lesson.title}
+            </div>
+          )}
         </div>
       </ReaderBlock>
 
-      <ReaderBlock
-        eyebrow="My work"
-        title={assignment.mySubmission ? 'Your current submission' : 'Submit your answer'}
-        subtitle={
-          assignment.mySubmission
-            ? `Submitted ${formatDateTime(assignment.mySubmission.submittedAt)}`
-            : 'Add text, a link, or a file before the due date.'
-        }
-        action={
+      <div className="border-t border-slate-100 bg-transparent pt-4">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Your submission</h2>
+            <p className="text-sm text-slate-500">
+              {assignment.mySubmission
+                ? `Successfully submitted on ${formatDateTime(assignment.mySubmission.submittedAt)}`
+                : 'Turn in your work before the deadline'}
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => onOpenSubmission(assignment)}
             disabled={assignment.mySubmission?.status === 'GRADED'}
-            className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
           >
-            {assignment.mySubmission ? 'Update submission' : 'Submit test'}
+            {assignment.mySubmission ? 'Edit submission' : 'Submit work'}
           </button>
-        }
-      >
+        </div>
+
         {assignment.mySubmission ? (
-          <div className="rounded-2xl bg-white p-4 text-sm text-slate-700 shadow-sm">
-            {assignment.mySubmission.textAnswer ? (
-              <p className="whitespace-pre-wrap">{assignment.mySubmission.textAnswer}</p>
-            ) : null}
-            {assignment.mySubmission.linkUrl ? (
-              <div className="mt-3">
-                <AttachmentLink label="Open submitted link" url={assignment.mySubmission.linkUrl} />
+          <div className="space-y-5">
+            <div className="rounded-xl bg-slate-50 p-4 text-slate-700">
+              {assignment.mySubmission.textAnswer && (
+                <p className="whitespace-pre-wrap leading-relaxed">{assignment.mySubmission.textAnswer}</p>
+              )}
+              {assignment.mySubmission.linkUrl && (
+                <div className="mt-6">
+                  <AttachmentLink label="View Submitted Link" url={assignment.mySubmission.linkUrl} />
+                </div>
+              )}
+              {assignment.mySubmission.fileAsset && (
+                <div className="mt-4">
+                  <AttachmentLink
+                    label={`Attached: ${assignment.mySubmission.fileAsset.originalName}`}
+                    url={assignment.mySubmission.fileAsset.secureUrl}
+                  />
+                </div>
+              )}
+            </div>
+
+            {assignment.mySubmission.gradePoints !== null && (
+              <div className="rounded-lg bg-brand-50/50 p-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500 text-white shadow-sm">
+                    <span className="text-lg font-semibold">{assignment.mySubmission.gradePoints}</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-brand-700">Grade</p>
+                    <p className="text-sm font-medium text-slate-900">Out of {assignment.maxPoints} points</p>
+                  </div>
+                </div>
+                {assignment.mySubmission.feedback && (
+                  <div className="mt-4 border-t border-brand-100 pt-4">
+                    <p className="mb-1 text-xs font-medium text-slate-500">Teacher feedback</p>
+                    <p className="text-sm italic text-slate-700">"{assignment.mySubmission.feedback}"</p>
+                  </div>
+                )}
               </div>
-            ) : null}
-            {assignment.mySubmission.fileAsset ? (
-              <div className="mt-3">
-                <AttachmentLink
-                  label={`Open ${assignment.mySubmission.fileAsset.originalName}`}
-                  url={assignment.mySubmission.fileAsset.secureUrl}
-                />
-              </div>
-            ) : null}
-            {assignment.mySubmission.gradePoints !== null ? (
-              <div className="mt-4 rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3">
-                <p className="font-semibold text-slate-900">
-                  Grade: {assignment.mySubmission.gradePoints}/{assignment.maxPoints}
-                </p>
-                {assignment.mySubmission.feedback ? (
-                  <p className="mt-2 text-slate-700">{assignment.mySubmission.feedback}</p>
-                ) : null}
-              </div>
-            ) : null}
+            )}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-brand-200 bg-white px-4 py-5 text-sm text-slate-600">
-            No submission yet. Open the test form and send your answer when ready.
+          <div className="flex flex-col items-center justify-center bg-slate-50/50 py-8 text-center">
+            <ClipboardCheck className="mb-3 h-10 w-10 text-slate-200" />
+            <p className="text-sm font-medium text-slate-500">No work submitted yet.</p>
           </div>
         )}
-      </ReaderBlock>
+      </div>
     </div>
   );
 }

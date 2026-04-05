@@ -17,6 +17,7 @@ export interface StudentListItem {
   studentCode: string;
   firstName: string;
   lastName: string;
+  email: string | null;
   gender: StudentGender | null;
   dateOfBirth: string | null;
   isActive: boolean;
@@ -33,6 +34,22 @@ export interface StudentListItem {
       name: string;
     };
   } | null;
+  /** Present on list/detail responses from the API. */
+  parents?: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+    relationship: string;
+    isPrimary: boolean;
+  }>;
+}
+
+/** Full student record (GET /students/:id), includes parents when present. */
+export interface StudentDetail extends StudentListItem {
+  createdAt: string;
+  updatedAt: string;
   parents: Array<{
     id: string;
     firstName: string;
@@ -186,6 +203,7 @@ export function createStudentApi(
     lastName: string;
     gender?: StudentGender;
     dateOfBirth?: string;
+    email?: string;
     enrollment: {
       academicYearId: string;
       classRoomId: string;
@@ -234,6 +252,13 @@ export function listStudentsApi(
   });
 }
 
+export function getStudentApi(accessToken: string, id: string) {
+  return apiRequest<StudentDetail>(`/students/${id}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
 export function updateStudentApi(
   accessToken: string,
   id: string,
@@ -241,6 +266,7 @@ export function updateStudentApi(
     studentCode?: string;
     firstName?: string;
     lastName?: string;
+    email?: string | null;
     gender?: StudentGender | null;
     dateOfBirth?: string | null;
     isActive?: boolean;

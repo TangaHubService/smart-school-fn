@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -10,6 +11,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { hasPermission } from '../features/auth/auth-helpers';
 import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import {
   createStudentApi,
@@ -25,6 +27,7 @@ const studentSchema = z.object({
   studentCode: z.string().trim().min(1, 'Student code is required').max(40),
   firstName: z.string().trim().min(2, 'First name is required').max(80),
   lastName: z.string().trim().min(2, 'Last name is required').max(80),
+  email: z.string().trim().email('Enter a valid email').optional().or(z.literal('')),
   gender: z.enum(['', 'MALE', 'FEMALE', 'OTHER', 'UNDISCLOSED']).optional(),
   dateOfBirth: z.string().optional(),
   academicYearId: z.string().min(1, 'Academic year is required'),
@@ -37,6 +40,7 @@ const defaultStudentForm: StudentForm = {
   studentCode: '',
   firstName: '',
   lastName: '',
+  email: '',
   gender: '',
   dateOfBirth: '',
   academicYearId: '',
@@ -102,6 +106,7 @@ export function StudentsPage() {
         studentCode: values.studentCode,
         firstName: values.firstName,
         lastName: values.lastName,
+        email: values.email || undefined,
         gender: values.gender ? (values.gender as any) : undefined,
         dateOfBirth: values.dateOfBirth || undefined,
         enrollment: {
@@ -130,6 +135,7 @@ export function StudentsPage() {
         studentCode: values.studentCode,
         firstName: values.firstName,
         lastName: values.lastName,
+        email: values.email || null,
         gender: values.gender ? (values.gender as any) : null,
         dateOfBirth: values.dateOfBirth || null,
         enrollment: {
@@ -241,6 +247,7 @@ export function StudentsPage() {
       studentCode: student.studentCode,
       firstName: student.firstName,
       lastName: student.lastName,
+      email: student.email ?? '',
       gender: student.gender ?? '',
       dateOfBirth: toDateInput(student.dateOfBirth),
       academicYearId: student.currentEnrollment?.academicYear.id ?? years[0]?.id ?? '',
@@ -524,9 +531,17 @@ export function StudentsPage() {
                   <td className="px-2 py-2 align-middle">
                     {student.currentEnrollment?.academicYear.name ?? '-'}
                   </td>
-                  <td className="px-2 py-2 align-middle">{student.parents.length}</td>
+                  <td className="px-2 py-2 align-middle">{(student.parents ?? []).length}</td>
                   <td className="px-2 py-2 align-middle">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      {hasPermission(auth.me, 'conduct.read') || hasPermission(auth.me, 'conduct.manage') ? (
+                        <Link
+                          to={`/admin/students/${student.id}/conduct`}
+                          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+                        >
+                          Conduct
+                        </Link>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => openEditStudent(student)}
@@ -620,6 +635,19 @@ export function StudentsPage() {
               <input className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('lastName')} />
             </label>
           </div>
+
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Email Address (Optional)
+            <input
+              type="email"
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              placeholder="student@example.com"
+              {...studentForm.register('email')}
+            />
+          </label>
+          {studentForm.formState.errors.email ? (
+            <p className="text-xs text-red-700">{studentForm.formState.errors.email.message}</p>
+          ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">

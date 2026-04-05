@@ -194,6 +194,7 @@ export interface MyCoursesResponse {
     CourseSummary & {
       lessons: LessonItem[];
       assignments: Array<AssignmentItem & { mySubmission: SubmissionItem | null }>;
+      completedLessonIds: string[];
     }
   >;
   pagination: {
@@ -543,6 +544,20 @@ export function listMyCoursesApi(
     {
       method: 'GET',
       accessToken,
+    },
+  );
+}
+
+export function markLessonCompleteApi(
+  accessToken: string,
+  lessonId: string,
+) {
+  return apiRequest<{ isCompleted: boolean; completedAt: string }>(
+    `/lessons/${lessonId}/mark-complete`,
+    {
+      method: 'POST',
+      accessToken,
+      body: {},
     },
   );
 }

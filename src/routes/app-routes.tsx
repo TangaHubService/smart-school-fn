@@ -3,10 +3,9 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '../components/app-shell';
 import { PublicLayout } from '../components/public/public-layout';
 import { ProtectedRoute } from '../components/protected-route';
-import { RequirePermission } from '../components/require-permission';
+import { RequireAnyPermission, RequirePermission } from '../components/require-permission';
 import { RequireSetupComplete } from '../components/require-setup-complete';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
-import { conductFeatureEnabled } from '../features/conduct/feature';
 import { govAuditingFeatureEnabled } from '../features/gov/feature';
 import { AcademicYearsPage } from '../pages/academic-years-page';
 import { AcceptInvitePage } from '../pages/accept-invite-page';
@@ -15,10 +14,8 @@ import { AssessmentsPage } from '../pages/assessments-page';
 import { AttendancePage } from '../pages/attendance-page';
 import { AssignmentsPage } from '../pages/assignments-page';
 import { ClassMarksPage } from '../pages/class-marks-page';
+import { ConductMarksSettingsPage } from '../pages/conduct-marks-settings-page';
 import { ClassesPage } from '../pages/classes-page';
-import { ConductCreateIncidentPage } from '../pages/conduct-create-incident-page';
-import { ConductIncidentDetailPage } from '../pages/conduct-incident-detail-page';
-import { ConductIncidentsPage } from '../pages/conduct-incidents-page';
 import { AcademyProgramsAdminPage } from '../pages/academy-programs-admin-page';
 import { CoursesPage } from '../pages/courses-page';
 import { DashboardPage } from '../pages/dashboard-page';
@@ -64,8 +61,8 @@ import { StudentAssignmentsPage } from '../pages/student-assignments-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
 import { StudentAcademicYearSelectPage } from '../pages/student-academic-year-select-page';
-import { StudentConductPage } from '../pages/student-conduct-page';
 import { StudentConductProfilePage } from '../pages/student-conduct-profile-page';
+import { MyLearningPage } from '../pages/my-learning-page';
 import { StudentDashboardPage } from '../pages/student-dashboard-page';
 import { PublicHomePage } from '../pages/public-home-page';
 import { PublicAcademyPage } from '../pages/public-academy-page';
@@ -111,6 +108,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="students.my_courses.read" />}>
             <Route path="/student/academic-year" element={<StudentAcademicYearSelectPage />} />
             <Route path="/student/dashboard" element={<StudentDashboardPage />} />
+            <Route path="/student/my-learning" element={<MyLearningPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="tenants.read" />}>
@@ -157,6 +155,15 @@ export function AppRoutes() {
             <Route element={<RequirePermission permission="academic_year.manage" />}>
               <Route path="/admin/academic-years" element={<AcademicYearsPage />} />
             </Route>
+            <Route
+              element={
+                <RequireAnyPermission
+                  permissions={['term.manage', 'academic_year.manage', 'conduct.manage']}
+                />
+              }
+            >
+              <Route path="/admin/conduct-marks" element={<ConductMarksSettingsPage />} />
+            </Route>
             <Route element={<RequirePermission permission="class_room.manage" />}>
               <Route path="/admin/classes" element={<ClassesPage />} />
             </Route>
@@ -199,20 +206,9 @@ export function AppRoutes() {
                 <Route path="/admin/assignments" element={<AssignmentsPage />} />
               </Route>
             )}
-            {conductFeatureEnabled ? (
-              <>
-                <Route element={<RequirePermission permission="conduct.read" />}>
-                  <Route path="/admin/conduct" element={<ConductIncidentsPage />} />
-                  <Route path="/admin/conduct/students/:studentId" element={<StudentConductProfilePage />} />
-                  <Route path="/admin/conduct/:incidentId" element={<ConductIncidentDetailPage />} />
-                </Route>
-                <Route element={<RequirePermission permission="conduct.manage" />}>
-                  <Route path="/admin/conduct/new" element={<ConductCreateIncidentPage />} />
-                </Route>
-              </>
-            ) : null}
             <Route element={<RequirePermission permission="students.read" />}>
               <Route path="/admin/students" element={<StudentsPage />} />
+              <Route path="/admin/students/:studentId/conduct" element={<StudentConductProfilePage />} />
             </Route>
           </Route>
 
@@ -247,11 +243,6 @@ export function AppRoutes() {
               />
             </Route>
           ) : null}
-          {conductFeatureEnabled ? (
-            <Route element={<RequirePermission permission="conduct.my_read" />}>
-              <Route path="/student/conduct" element={<StudentConductPage />} />
-            </Route>
-          ) : null}
           <Route element={<RequirePermission permission="announcements.my_read" />}>
             <Route path="/student/announcements" element={<StudentAnnouncementsPage />} />
           </Route>
@@ -273,9 +264,7 @@ export function AppRoutes() {
           {assessmentsFeatureEnabled ? (
             <Route path="/assessments" element={<Navigate to="/admin/assessments" replace />} />
           ) : null}
-          {conductFeatureEnabled ? (
-            <Route path="/conduct" element={<Navigate to="/admin/conduct" replace />} />
-          ) : null}
+          <Route path="/conduct" element={<Navigate to="/admin/conduct-marks" replace />} />
           <Route path="/students" element={<Navigate to="/admin/classes" replace />} />
           <Route path="/student-results" element={<Navigate to="/student/report-cards" replace />} />
           <Route path="/parent-results" element={<Navigate to="/parent/report-cards" replace />} />

@@ -25,7 +25,6 @@ import { NavLink } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
-import { conductFeatureEnabled } from '../features/conduct/feature';
 import { govAuditingFeatureEnabled } from '../features/gov/feature';
 import {
   hasPermission,
@@ -130,15 +129,6 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'COMPLETE',
   },
   {
-    key: 'conduct',
-    label: 'Discipline / Conduct',
-    to: '/admin/conduct',
-    icon: ClipboardList,
-    roles: ['SCHOOL_ADMIN', 'TEACHER'],
-    requiredPermissions: ['conduct.read'],
-    setupState: 'COMPLETE',
-  },
-  {
     key: 'attendance',
     label: 'Attendance',
     to: '/admin/attendance',
@@ -203,6 +193,16 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FileBarChart2,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissions: ['exams.read'],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'conduct-marks-settings',
+    label: 'Conduct marks',
+    to: '/admin/conduct-marks',
+    icon: FileBarChart2,
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissionsOr: ['term.manage', 'academic_year.manage', 'conduct.manage'],
+    requiredPermissions: [],
     setupState: 'COMPLETE',
   },
   {
@@ -359,10 +359,19 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'student-my-learning',
+    label: 'My Learning',
+    to: '/student/my-learning',
+    icon: GraduationCap,
+    roles: ['STUDENT'],
+    requiredPermissions: ['students.my_courses.read'],
+    setupState: 'ANY',
+  },
+  {
     key: 'student-courses',
-    label: 'Courses',
+    label: 'Course Curriculum',
     to: '/student/courses',
-    icon: UserSquare2,
+    icon: BookOpen,
     roles: ['STUDENT'],
     requiredPermissions: ['students.my_courses.read'],
     setupState: 'ANY',
@@ -392,15 +401,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: BadgeCheck,
     roles: ['STUDENT'],
     requiredPermissions: ['assessments.submit'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'student-conduct',
-    label: 'Conduct',
-    to: '/student/conduct',
-    icon: ClipboardList,
-    roles: ['STUDENT'],
-    requiredPermissions: ['conduct.my_read'],
     setupState: 'ANY',
   },
   {
@@ -442,10 +442,6 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
 
   const items = NAV_ITEMS.filter((item) => {
     if (!assessmentsFeatureEnabled && ['assessments', 'continuous-assessment', 'student-assessments'].includes(item.key)) {
-      return false;
-    }
-
-    if (!conductFeatureEnabled && ['conduct', 'student-conduct'].includes(item.key)) {
       return false;
     }
 
@@ -502,10 +498,10 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
               onClick={onNavigate}
               className={({ isActive }) =>
                 clsx(
-                  'group flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition',
+                  'group flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition duration-150',
                   isActive
-                    ? 'bg-white text-[#173C7F]'
-                    : 'text-white/90 hover:bg-white/10 hover:text-white',
+                    ? 'bg-white text-[#173C7F] shadow-sm ring-1 ring-brand-200'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white',
                 )
               }
             >

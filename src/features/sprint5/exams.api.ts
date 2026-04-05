@@ -392,8 +392,8 @@ export interface MarksGridStudentRow {
   }>;
   total: number;
   rank: number;
-  /** Term conduct grade for this class, if recorded. */
-  conduct: { grade: string; remark: string | null } | null;
+  /** Term conduct score (final/total) from configured pool minus deductions. */
+  conduct: { grade: string; remark: string | null };
 }
 
 export interface MarksGridResponse {
@@ -432,7 +432,7 @@ export interface AllMarksLedgerWideRow {
   termGrade: string;
   termRemark: string;
   scores: Record<string, AllMarksLedgerSubjectScore | null>;
-  conduct: { grade: string; remark: string | null } | null;
+  conduct: { grade: string; remark: string | null };
 }
 
 export interface AllMarksLedgerResponse {
@@ -545,6 +545,9 @@ export function listConductGradesForEntryApi(
       lastName: string;
       grade: string;
       remark: string;
+      totalMarks: number;
+      totalDeducted: number;
+      finalScore: number;
     }>;
   }>(`/results/conduct?${query.toString()}`, {
     method: 'GET',

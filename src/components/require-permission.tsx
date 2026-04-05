@@ -23,3 +23,24 @@ export function RequirePermission({ permission }: RequirePermissionProps) {
 
   return <Outlet />;
 }
+
+interface RequireAnyPermissionProps {
+  permissions: string[];
+}
+
+export function RequireAnyPermission({ permissions }: RequireAnyPermissionProps) {
+  const auth = useAuth();
+  const isSuperAdmin = hasRole(auth.me, 'SUPER_ADMIN');
+
+  if (isSuperAdmin) {
+    return <Outlet />;
+  }
+
+  const ok = permissions.some((p) => auth.me?.permissions.includes(p) ?? false);
+
+  if (!ok) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  return <Outlet />;
+}
