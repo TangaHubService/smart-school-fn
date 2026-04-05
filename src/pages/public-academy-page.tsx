@@ -281,6 +281,29 @@ export function PublicAcademyPage() {
         </div>
       ) : null}
 
+      <div className="border-b border-slate-200 bg-slate-50 px-4 py-5">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between sm:gap-6">
+          {[
+            { step: 1, title: 'Account', desc: 'Register or sign in to save your progress.' },
+            { step: 2, title: 'Enroll', desc: 'Choose a plan and pay with MoMo (or use trial when offered).' },
+            { step: 3, title: 'Learn', desc: 'Open course from Enroll — same access after successful payment.' },
+          ].map((s) => (
+            <div
+              key={s.step}
+              className="flex flex-1 items-start gap-3 rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
+                {s.step}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">{s.title}</p>
+                <p className="mt-0.5 text-xs leading-snug text-slate-600">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
         <div className="mb-16 text-center">
           <h2 className="text-3xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">Available Programs</h2>

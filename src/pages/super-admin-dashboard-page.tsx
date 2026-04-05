@@ -2,7 +2,9 @@ import {
   BookOpen,
   Building2,
   CheckCircle2,
+  CreditCard,
   FileBarChart2,
+  GraduationCap,
   Headphones,
   LayoutGrid,
   Lock,
@@ -81,7 +83,8 @@ export function SuperAdminDashboardPage() {
     term: 'first',
     region: 'all-regions',
     school: 'all-schools',
-    status: 'active',
+    /** Aligns with Users page default: all tenants (active + inactive), not “active schools only”. */
+    status: 'all',
   });
   const [appliedFilters, setAppliedFilters] = useState<SuperAdminDashboardFilters>(filters);
 
@@ -128,6 +131,12 @@ export function SuperAdminDashboardPage() {
     );
   }
 
+  const billing = data.billing ?? {
+    schoolSubscriptionsActive: 0,
+    academyLearnersActive: 0,
+    academyPaymentsPending: 0,
+  };
+
   return (
     <section className="space-y-3">
       <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
@@ -166,7 +175,7 @@ export function SuperAdminDashboardPage() {
                 term: 'first',
                 region: 'all-regions',
                 school: 'all-schools',
-                status: 'active',
+                status: 'all',
               };
               setFilters(reset);
               setAppliedFilters(reset);
@@ -200,6 +209,51 @@ export function SuperAdminDashboardPage() {
           value={String(data.metrics.supportTickets)}
           valueColor="text-blue-600"
         />
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-slate-900">Billing & academy</h2>
+          <Link
+            to="/super-admin/subscriptions"
+            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+          >
+            Open billing workspace →
+          </Link>
+        </div>
+        <p className="mb-3 text-xs text-slate-600">
+          Same numbers as the subscriptions page: school SaaS plans, active catalog learners, and pending MoMo
+          checkouts.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <article className="rounded-lg border border-slate-100 bg-slate-50/90 p-3">
+            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+              <Building2 className="h-3.5 w-3.5 text-brand-600" aria-hidden />
+              School plans (active / trialing)
+            </div>
+            <p className="text-xl font-bold text-slate-900">
+              {billing.schoolSubscriptionsActive.toLocaleString()}
+            </p>
+          </article>
+          <article className="rounded-lg border border-slate-100 bg-slate-50/90 p-3">
+            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+              <GraduationCap className="h-3.5 w-3.5 text-emerald-600" aria-hidden />
+              Academy learners (active access)
+            </div>
+            <p className="text-xl font-bold text-slate-900">
+              {billing.academyLearnersActive.toLocaleString()}
+            </p>
+          </article>
+          <article className="rounded-lg border border-slate-100 bg-slate-50/90 p-3">
+            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+              <CreditCard className="h-3.5 w-3.5 text-amber-600" aria-hidden />
+              Pending academy payments
+            </div>
+            <p className="text-xl font-bold text-slate-900">
+              {billing.academyPaymentsPending.toLocaleString()}
+            </p>
+          </article>
+        </div>
       </div>
 
       <div className="grid gap-2 lg:grid-cols-2">

@@ -7,6 +7,11 @@ export interface SuperAdminDashboardData {
     ongoingExams: number;
     supportTickets: number;
   };
+  billing: {
+    schoolSubscriptionsActive: number;
+    academyLearnersActive: number;
+    academyPaymentsPending: number;
+  };
   userOverview: {
     administrators: number;
     schools: number;
