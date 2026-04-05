@@ -795,14 +795,6 @@ export function StudentCoursesPage() {
         ) : selectedCourse ? (
           <section className="-mx-5 w-[calc(100%+2.5rem)] min-w-0 max-w-none bg-transparent md:-mx-6 md:w-[calc(100%+3rem)]">
             <div className="flex min-h-[480px] flex-col">
-              <div className="border-b border-slate-200/60 bg-transparent px-5 py-3 md:px-6 md:py-4">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                  <span>{selectedCourse.classRoom.name}</span>
-                  <span className="text-brand-300">/</span>
-                  <span>{selectedCourse.academicYear.name}</span>
-                </div>
-              </div>
-
               <div className="flex-1 overflow-hidden px-0 sm:px-0">
                 <div className={clsx(
                   "grid h-[calc(100vh-180px)] min-h-[520px] gap-0 transition-all duration-300",
