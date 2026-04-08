@@ -142,7 +142,7 @@ export function AcademyProgramsAdminPage() {
   return (
     <SectionCard
       title="Academy programs (public catalog)"
-      subtitle="These are paid storefront items on /academy—not the same as class courses. Link an LMS course so buyers get that content after enrollment."
+      subtitle="These catalog items appear on /academy for plan-based access. Link an LMS course so selected learners can open the content after activating a plan."
       action={
         canManage ? (
           <button
@@ -182,7 +182,7 @@ export function AcademyProgramsAdminPage() {
       ) : !programsQuery.data?.length ? (
         <EmptyState
           title="No academy programs yet"
-          message="Create a program with a price. Optionally link it to an existing LMS course so lessons open after purchase."
+          message="Create a catalog program, keep the legacy price filled for old records, and link it to an LMS course so learners can open it from their plan."
           action={
             canManage ? (
               <button
@@ -204,7 +204,7 @@ export function AcademyProgramsAdminPage() {
             <thead className="bg-brand-50 text-slate-700">
               <tr>
                 <th className="px-3 py-2 font-semibold">Title</th>
-                <th className="px-3 py-2 font-semibold">Price (RWF)</th>
+                <th className="px-3 py-2 font-semibold">Legacy price (RWF)</th>
                 <th className="px-3 py-2 font-semibold">Days</th>
                 <th className="px-3 py-2 font-semibold">Public</th>
                 <th className="px-3 py-2 font-semibold">Linked course</th>
@@ -352,8 +352,11 @@ function ProgramFormFields({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          Price (RWF)
+          Legacy price (RWF)
           <input type="number" step="1" min="1" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('price')} />
+          <span className="text-xs font-normal text-slate-500">
+            Kept for older per-program purchases. The public academy now charges by time plan instead.
+          </span>
         </label>
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Access length (days)

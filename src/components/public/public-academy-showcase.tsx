@@ -22,14 +22,14 @@ function ProgramAdvertCard({ program }: { program: Program }) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <span className="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-brand-700 shadow-sm">
-          From {Number(program.price).toLocaleString()} RWF
+          Plan-based access
         </span>
       </div>
       <div className="flex flex-1 flex-col p-6">
         <h3 className="text-lg font-bold tracking-tight text-slate-900">{program.title}</h3>
         <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-slate-600">{desc}</p>
         <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
-          <span className="font-semibold text-slate-700">{program.durationDays} days access</span>
+          <span className="font-semibold text-slate-700">{program.durationDays} days default</span>
           <Link
             to={`/academy`}
             state={{ highlightProgramId: program.id }}

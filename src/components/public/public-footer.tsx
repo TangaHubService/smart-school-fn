@@ -45,7 +45,7 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
-                <Link to="/tuition" className="transition-colors hover:text-brand-300">
+                <Link to="/academy" className="transition-colors hover:text-brand-300">
                   {t('footer.pricing')}
                 </Link>
               </li>

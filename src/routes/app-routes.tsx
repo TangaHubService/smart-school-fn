@@ -70,7 +70,6 @@ import { PublicAboutPage } from '../pages/public-about-page';
 import { PublicContactPage } from '../pages/public-contact-page';
 import { PublicCoursesPage } from '../pages/public-courses-page';
 import { PublicProgramsAdvertPage } from '../pages/public-programs-advert-page';
-import { PublicTuitionPage } from '../pages/public-tuition-page';
 import { PublicJobsPage } from '../pages/public-jobs-page';
 import { PublicJobDetailPage } from '../pages/public-job-detail-page';
 import { PrivacyPage } from '../pages/privacy-page';
@@ -92,7 +91,7 @@ export function AppRoutes() {
         <Route path="/courses/all" element={<PublicCoursesPage />} />
         <Route path="/courses/categories" element={<PublicCoursesPage />} />
         <Route path="/courses/category/:categoryId" element={<PublicCoursesPage />} />
-        <Route path="/tuition" element={<PublicTuitionPage />} />
+        <Route path="/tuition" element={<Navigate to="/academy" replace />} />
         <Route path="/job-listing" element={<PublicJobsPage />} />
         <Route path="/job-listing/:slug" element={<PublicJobDetailPage />} />
         <Route path="/contact" element={<PublicContactPage />} />

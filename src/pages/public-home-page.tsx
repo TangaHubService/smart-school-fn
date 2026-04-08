@@ -107,10 +107,10 @@ export function PublicHomePage() {
       <PublicAcademyProgramsShowcase
         eyebrow="Open enrollment"
         title="Featured academy programs"
-        subtitle="Real offerings from your catalog—pricing and duration straight from the platform. Enroll on the academy page."
+        subtitle="Real offerings from your catalog. Activate a plan on the academy page, then choose up to 3 courses."
         limit={6}
         ctaHref="/academy"
-        ctaLabel="Full catalog & enroll"
+        ctaLabel="Full catalog & plans"
       />
 
       <section className="bg-slate-50 py-20">
@@ -213,7 +213,7 @@ export function PublicHomePage() {
               </p>
               <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
                 <Link
-                  to="/login"
+                  to="/login?tab=register&returnTo=/academy"
                   className="rounded-full bg-white px-9 py-3 text-xs font-black uppercase tracking-[0.14em] text-brand-600"
                 >
                   Create account now

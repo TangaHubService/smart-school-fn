@@ -1,618 +1,647 @@
 import { ArrowRight, BookOpen, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { academyApi, Program, type ProgramEnrollment } from '../api/academy-api';
-import { useAuth } from '../features/auth/auth.context';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+
+import {
+  academyApi,
+  type AcademyPlanId,
+  type AcademySubscriptionSummary,
+  type Program,
+} from '../api/academy-api';
 import { Modal } from '../components/modal';
 import { useToast } from '../components/toast';
-import socket from '../utils/socket';
+import { useAuth } from '../features/auth/auth.context';
 import backgroundImage from '../asset/background.jpg';
-import { loginApi, registerApi } from '../features/auth/auth.api';
-import { loginFormSchema, registerFormSchema } from '../features/auth/auth.schema';
+import socket from '../utils/socket';
 
 const ACADEMY_PLANS = [
-  { id: 'weekly', name: 'Weekly access', durationDays: 7 },
-  { id: 'monthly', name: 'Monthly access', durationDays: 30 },
-  { id: 'quarterly', name: 'Quarterly access', durationDays: 90 },
-  { id: 'yearly', name: 'Yearly access', durationDays: 365 },
-];
+  {
+    id: 'test',
+    name: 'Test',
+    durationDays: 1,
+    price: 100,
+    description: 'Quick verification plan for checkout and payment flow testing.',
+  },
+  {
+    id: 'weekly',
+    name: 'Weekly',
+    durationDays: 7,
+    price: 2000,
+    description: 'Short sprint for focused revision and fast starts.',
+  },
+  {
+    id: 'monthly',
+    name: 'Monthly',
+    durationDays: 30,
+    price: 5000,
+    description: 'The balanced option for consistent learning and practice.',
+  },
+  {
+    id: 'quarterly',
+    name: 'Quarterly',
+    durationDays: 90,
+    price: 10000,
+    description: 'Longer runway for deeper progress across your selected courses.',
+  },
+  {
+    id: 'yearly',
+    name: 'Yearly',
+    durationDays: 365,
+    price: 30000,
+    description: 'Best value for extended access and uninterrupted momentum.',
+  },
+] as const satisfies Array<{
+  id: Exclude<AcademyPlanId, 'trial'>;
+  name: string;
+  durationDays: number;
+  price: number;
+  description: string;
+}>;
+
+type PurchasableAcademyPlan = (typeof ACADEMY_PLANS)[number];
 
 function programCardImage(program: Program) {
-  const t = program.thumbnail?.trim();
-  return t ? t : backgroundImage;
+  const thumbnail = program.thumbnail?.trim();
+  return thumbnail ? thumbnail : backgroundImage;
 }
 
-function enrollmentIsActive(e: Pick<ProgramEnrollment, 'isActive' | 'expiresAt'>) {
-  if (!e.isActive) {
-    return false;
-  }
-  if (!e.expiresAt) {
-    return true;
-  }
-  return new Date(e.expiresAt).getTime() > Date.now();
+function isPurchasablePlanId(value: string | null): value is PurchasableAcademyPlan['id'] {
+  return ACADEMY_PLANS.some((plan) => plan.id === value);
 }
 
-function activeEnrollmentForProgram(programId: string, list: ProgramEnrollment[] | undefined) {
-  return list?.find((e) => e.programId === programId && enrollmentIsActive(e));
+function formatPlanName(planCode: AcademyPlanId) {
+  if (planCode === 'trial') {
+    return 'Trial';
+  }
+  return ACADEMY_PLANS.find((plan) => plan.id === planCode)?.name ?? planCode;
 }
 
-function fieldErrorsFromZod(issues: { path: (string | number)[]; message: string }[]): Record<string, string> {
-  const next: Record<string, string> = {};
-  for (const issue of issues) {
-    const key = issue.path[0];
-    if (typeof key === 'string' && next[key] === undefined) {
-      next[key] = issue.message;
-    }
+function formatExpiry(value: string | null) {
+  if (!value) {
+    return 'No end date';
   }
-  return next;
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
 }
 
 export function PublicAcademyPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const highlightProgramId = useMemo(() => {
-    const s = location.state as { highlightProgramId?: string } | null | undefined;
-    return s?.highlightProgramId;
-  }, [location.state]);
-
-  const { me, setSessionTokens } = useAuth();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const auth = useAuth();
+
+  const requestedPlanId = searchParams.get('plan');
+  const defaultPlan = ACADEMY_PLANS.find((plan) => plan.id === 'monthly') ?? ACADEMY_PLANS[0];
+  const [selectedPlan, setSelectedPlan] = useState<PurchasableAcademyPlan>(
+    ACADEMY_PLANS.find((plan) => plan.id === requestedPlanId) ?? defaultPlan,
+  );
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'PENDING' | 'SUCCESS' | 'FAILED'>('IDLE');
   const [paypackRef, setPaypackRef] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState(ACADEMY_PLANS[1]);
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('REGISTER');
-  const [loginIdentifier, setLoginIdentifier] = useState('');
-  const [authFieldErrors, setAuthFieldErrors] = useState<Record<string, string>>({});
-  const [authForm, setAuthForm] = useState({
-    firstName: '',
-    lastName: '',
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+  const highlightProgramId = useMemo(() => {
+    const state = location.state as { highlightProgramId?: string } | null | undefined;
+    return state?.highlightProgramId;
+  }, [location.state]);
 
-  const { data: programs, isLoading } = useQuery({
+  const isPublicLearner = auth.me?.roles.includes('PUBLIC_LEARNER') ?? false;
+
+  useEffect(() => {
+    if (!isPurchasablePlanId(requestedPlanId)) {
+      return;
+    }
+    const match = ACADEMY_PLANS.find((plan) => plan.id === requestedPlanId);
+    if (match) {
+      setSelectedPlan(match);
+    }
+  }, [requestedPlanId]);
+
+  const programsQuery = useQuery({
     queryKey: ['academy-programs'],
     queryFn: academyApi.getPrograms,
   });
 
-  const enrollmentsQuery = useQuery({
-    queryKey: ['academy-my-enrollments'],
-    queryFn: academyApi.getMyEnrollments,
-    enabled: Boolean(me),
+  const subscriptionQuery = useQuery({
+    queryKey: ['academy-subscription-summary'],
+    queryFn: academyApi.getSubscriptionSummary,
+    enabled: Boolean(auth.me && isPublicLearner),
   });
 
-  const activeTrialExpiresAt = useMemo(() => {
-    const list = enrollmentsQuery.data ?? [];
-    const row = list.find(
-      (e) => e.isTrial && e.expiresAt && new Date(e.expiresAt).getTime() > Date.now(),
-    );
-    return row?.expiresAt ?? null;
-  }, [enrollmentsQuery.data]);
+  const selectMutation = useMutation({
+    mutationFn: (programId: string) => academyApi.selectProgram(programId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['academy-subscription-summary'], data);
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
+      showToast({ type: 'success', title: 'Course added', message: 'This course is now part of your active plan.' });
+    },
+    onError: (error: any) => {
+      showToast({ type: 'error', title: 'Could not add course', message: error.message });
+    },
+  });
 
-  const purchaseMutation = useMutation({
-    mutationFn: academyApi.purchaseProgram,
+  const removeMutation = useMutation({
+    mutationFn: (programId: string) => academyApi.removeProgram(programId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['academy-subscription-summary'], data);
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
+      showToast({ type: 'success', title: 'Course removed', message: 'You now have a free slot to choose another course.' });
+    },
+    onError: (error: any) => {
+      showToast({ type: 'error', title: 'Could not remove course', message: error.message });
+    },
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: (payload: { planId: PurchasableAcademyPlan['id']; phoneNumber: string }) =>
+      academyApi.startPlanCheckout(payload),
     onSuccess: (data) => {
       setPaypackRef(data.paypackRef);
       setPaymentStatus('PENDING');
-      showToast({ type: 'info', title: 'Payment Initiated', message: data.message });
+      showToast({ type: 'info', title: 'Payment initiated', message: data.message });
     },
     onError: (error: any) => {
-      showToast({ type: 'error', title: 'Purchase Failed', message: error.message });
-    },
-  });
-
-  const authMutation = useMutation({
-    mutationFn: async (vars: { kind: 'REGISTER'; payload: typeof authForm } | { kind: 'LOGIN'; payload: { identifier: string; password: string } }) => {
-      if (vars.kind === 'REGISTER') {
-        return registerApi(vars.payload);
-      }
-      return loginApi(vars.payload);
-    },
-    onSuccess: async (data: any, variables) => {
-      setSessionTokens({
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      });
-      setShowAuthModal(false);
-
-      let list: ProgramEnrollment[] = [];
-      try {
-        list = await academyApi.getMyEnrollments();
-      } catch {
-        list = [];
-      }
-      queryClient.setQueryData(['academy-my-enrollments'], list);
-
-      const prog = selectedProgram;
-      if (prog) {
-        const active = activeEnrollmentForProgram(prog.id, list);
-        if (active) {
-          const courseId = active.program?.courseId;
-          navigate(courseId ? `/student/courses/${courseId}` : '/student/courses');
-          showToast({
-            type: 'success',
-            title: variables.kind === 'REGISTER' ? 'Account ready' : 'Welcome back',
-            message: active.isTrial
-              ? 'Free trial is active — opening your course. No MoMo payment needed until the trial ends.'
-              : 'Opening your course.',
-          });
-          return;
-        }
-      }
-
-      setShowPurchaseModal(true);
-      showToast({
-        type: 'success',
-        title: variables.kind === 'REGISTER' ? 'Signed in' : 'Welcome back',
-        message:
-          'Complete MoMo payment below to enroll. If you are on a free trial, close this and use Open course on the program card.',
-      });
-    },
-    onError: (error: any) => {
-      showToast({ type: 'error', title: 'Auth Failed', message: error.message });
+      setPaymentStatus('FAILED');
+      showToast({ type: 'error', title: 'Checkout failed', message: error.message });
     },
   });
 
   useEffect(() => {
-    if (paypackRef) {
-      const room = `trx-${paypackRef}`;
-      socket.emit('joinTransaction', { transactionId: paypackRef });
-      
-      const handleUpdate = (data: any) => {
-        if (data.status === 'COMPLETED') {
-          setPaymentStatus('SUCCESS');
-          void queryClient.invalidateQueries({ queryKey: ['academy-my-enrollments'] });
-          showToast({ type: 'success', title: 'Payment Successful', message: 'You are now enrolled in the program!' });
-        } else if (data.status === 'FAILED' || data.status === 'CANCELLED') {
-          setPaymentStatus('FAILED');
-          showToast({ type: 'error', title: 'Payment Failed', message: 'Please try again or contact support.' });
-        }
-      };
-
-      socket.on('transactionUpdate', handleUpdate);
-      return () => {
-        socket.off('transactionUpdate', handleUpdate);
-      };
+    if (!paypackRef) {
+      return;
     }
+
+    socket.emit('joinTransaction', { transactionId: paypackRef });
+
+    const handleUpdate = (data: { status: string }) => {
+      if (data.status === 'COMPLETED') {
+        setPaymentStatus('SUCCESS');
+        void queryClient.invalidateQueries({ queryKey: ['academy-subscription-summary'] });
+        void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
+        showToast({
+          type: 'success',
+          title: 'Plan activated',
+          message: 'Your academy plan is active. Choose up to 3 courses below.',
+        });
+      } else if (data.status === 'FAILED' || data.status === 'CANCELLED') {
+        setPaymentStatus('FAILED');
+        showToast({
+          type: 'error',
+          title: 'Payment failed',
+          message: 'The payment was not completed. Please try again.',
+        });
+      }
+    };
+
+    socket.on('transactionUpdate', handleUpdate);
+    return () => {
+      socket.off('transactionUpdate', handleUpdate);
+    };
   }, [paypackRef, queryClient, showToast]);
 
   useEffect(() => {
-    if (!highlightProgramId || !programs?.length || isLoading) {
+    if (!highlightProgramId || !programsQuery.data?.length || programsQuery.isPending) {
       return;
     }
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       document.getElementById(`academy-program-${highlightProgramId}`)?.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
       });
     }, 100);
-    return () => window.clearTimeout(t);
-  }, [highlightProgramId, programs, isLoading]);
+    return () => window.clearTimeout(timer);
+  }, [highlightProgramId, programsQuery.data, programsQuery.isPending]);
 
-  const handleEnrollClick = (program: Program) => {
-    setSelectedProgram(program);
-    if (!me) {
-      setShowAuthModal(true);
+  const selectedProgramsById = useMemo(() => {
+    const map = new Map<string, AcademySubscriptionSummary['selectedPrograms'][number]>();
+    for (const item of subscriptionQuery.data?.selectedPrograms ?? []) {
+      map.set(item.programId, item);
+    }
+    return map;
+  }, [subscriptionQuery.data?.selectedPrograms]);
+
+  const accessibleProgramsById = useMemo(() => {
+    const map = new Map<string, AcademySubscriptionSummary['accessiblePrograms'][number]>();
+    for (const item of subscriptionQuery.data?.accessiblePrograms ?? []) {
+      map.set(item.programId, item);
+    }
+    return map;
+  }, [subscriptionQuery.data?.accessiblePrograms]);
+
+  const currentSubscription = subscriptionQuery.data?.subscription ?? null;
+  const hasActivePlan =
+    currentSubscription?.status === 'ACTIVE' || currentSubscription?.status === 'TRIAL';
+
+  function navigateToLogin(planId: PurchasableAcademyPlan['id']) {
+    const params = new URLSearchParams({
+      tab: 'register',
+      returnTo: '/academy',
+      plan: planId,
+    });
+    navigate(`/login?${params.toString()}`);
+  }
+
+  function openCourse(programId: string) {
+    const access = accessibleProgramsById.get(programId);
+    if (!access?.courseId) {
+      showToast({
+        type: 'error',
+        title: 'Course unavailable',
+        message: 'This program is not linked to a ready course yet.',
+      });
       return;
     }
-    if (enrollmentsQuery.isPending) {
+    navigate(`/student/courses/${access.courseId}`);
+  }
+
+  function handlePlanClick(plan: PurchasableAcademyPlan) {
+    setSelectedPlan(plan);
+
+    if (!auth.me) {
+      navigateToLogin(plan.id);
+      return;
+    }
+
+    if (!isPublicLearner) {
+      showToast({
+        type: 'error',
+        title: 'Learner account required',
+        message: 'Sign in with your public academy learner account to activate a plan.',
+      });
+      return;
+    }
+
+    setShowCheckoutModal(true);
+  }
+
+  function handleProgramAction(program: Program) {
+    const access = accessibleProgramsById.get(program.id);
+    if (access?.courseId) {
+      openCourse(program.id);
+      return;
+    }
+
+    if (!auth.me) {
+      navigateToLogin(selectedPlan.id);
+      return;
+    }
+
+    if (!isPublicLearner) {
+      showToast({
+        type: 'error',
+        title: 'Learner account required',
+        message: 'Use a public academy learner account to choose academy courses.',
+      });
+      return;
+    }
+
+    if (!hasActivePlan) {
       showToast({
         type: 'info',
-        title: 'Please wait',
-        message: 'Checking your enrollments…',
+        title: 'Choose a plan first',
+        message: 'Activate or renew a plan before selecting your courses.',
       });
       return;
     }
-    const active = activeEnrollmentForProgram(program.id, enrollmentsQuery.data);
-    if (active) {
-      const courseId = active.program?.courseId;
-      navigate(courseId ? `/student/courses/${courseId}` : '/student/courses');
+
+    if (currentSubscription && currentSubscription.remainingSlots <= 0) {
       showToast({
-        type: 'success',
-        title: 'You already have access',
-        message: active.isTrial
-          ? 'Free trial — no payment needed. Opening your course.'
-          : 'Opening your course.',
+        type: 'info',
+        title: 'All slots in use',
+        message: 'Remove one selected course to free a slot for another choice.',
       });
       return;
     }
-    setShowPurchaseModal(true);
-  };
 
-  const handleDetailsClick = (program: Program) => {
-    setSelectedProgram(program);
-    setShowDetailsModal(true);
-  };
+    selectMutation.mutate(program.id);
+  }
 
-  const handlePurchaseSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedProgram && phoneNumber && selectedPlan) {
-      purchaseMutation.mutate({
-        programId: selectedProgram.id,
-        phoneNumber,
-        planId: selectedPlan.id,
-      });
-    }
-  };
+  const slotUsage = currentSubscription
+    ? `${currentSubscription.courseLimit - currentSubscription.remainingSlots}/${currentSubscription.courseLimit}`
+    : '0/3';
 
   return (
     <main className="bg-white">
       <section
-        className="relative flex h-[60vh] items-center justify-center bg-cover bg-center bg-no-repeat"
+        className="relative flex min-h-[58vh] items-center justify-center bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${backgroundImage})` }}
       >
         <div className="absolute inset-0 bg-brand-950/70" />
-        <div className="relative mx-auto w-full max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+        <div className="relative mx-auto w-full max-w-5xl px-4 py-16 text-center sm:px-6 lg:px-8">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-brand-500/20 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-brand-200 ring-1 ring-brand-400/30">
             <Sparkles className="h-3.5 w-3.5" />
-            After-School Programs
+            Plan-based access
           </div>
           <h1 className="text-4xl font-bold uppercase tracking-tight text-white sm:text-6xl">
             Smart School <span className="text-brand-400">Academy</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg font-medium text-gray-100">
-            Master new skills with our professional certification programs.
-            Designed for learners seeking career excellence.
+          <p className="mx-auto mt-6 max-w-3xl text-lg font-medium text-gray-100">
+            Activate a plan, then choose up to 3 academy courses you want to access.
           </p>
         </div>
       </section>
 
-      {activeTrialExpiresAt ? (
-        <div className="border-b border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-950">
-          <span className="font-semibold">Free trial active</span>
-          <span className="mx-1 text-emerald-800">—</span>
-          Catalog access ends{' '}
-          <time dateTime={activeTrialExpiresAt}>
-            {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
-              new Date(activeTrialExpiresAt),
-            )}
-          </time>
-          . Purchase a program to keep access after that.
-        </div>
-      ) : null}
-
-      <div className="border-b border-slate-200 bg-slate-50 px-4 py-5">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-between sm:gap-6">
+      <section className="border-b border-slate-200 bg-slate-50 py-8">
+        <div className="mx-auto grid w-full max-w-6xl gap-4 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
           {[
-            { step: 1, title: 'Account', desc: 'Register or sign in to save your progress.' },
-            { step: 2, title: 'Enroll', desc: 'Choose a plan and pay with MoMo (or use trial when offered).' },
-            { step: 3, title: 'Learn', desc: 'Open course from Enroll — same access after successful payment.' },
-          ].map((s) => (
-            <div
-              key={s.step}
-              className="flex flex-1 items-start gap-3 rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
-                {s.step}
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{s.title}</p>
-                <p className="mt-0.5 text-xs leading-snug text-slate-600">{s.desc}</p>
+            { step: 1, title: 'Create account', desc: 'Register or sign in with your academy learner account.' },
+            { step: 2, title: 'Activate plan', desc: 'Choose the access plan that fits your testing or learning needs and pay with MoMo.' },
+            { step: 3, title: 'Choose 3 courses', desc: 'Pick up to 3 linked courses under your active plan and swap later if needed.' },
+          ].map((item) => (
+            <div key={item.step} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
+                  {item.step}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                  <p className="mt-1 text-sm text-slate-600">{item.desc}</p>
+                </div>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div className="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-        <div className="mb-16 text-center">
-          <h2 className="text-3xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">Available Programs</h2>
-          <div className="mx-auto mt-6 h-1 w-20 rounded-full bg-brand-500" />
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-500">
-            Flexible, affordable, and government-recognized certifications for the modern workforce.
-          </p>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-10 w-10 animate-spin text-brand-500" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {programs?.map((program) => (
-              <article
-                key={program.id}
-                id={`academy-program-${program.id}`}
-                className={[
-                  'group flex flex-col overflow-hidden rounded-3xl border bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand-500/10',
-                  highlightProgramId === program.id
-                    ? 'border-brand-500 ring-2 ring-brand-400/40'
-                    : 'border-slate-100',
-                ].join(' ')}
-              >
-                <div className="relative h-56 overflow-hidden">
-                  <img
-                    src={programCardImage(program)}
-                    alt={program.title}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute right-4 top-4 rounded-2xl bg-white/90 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brand-600 shadow-sm backdrop-blur-md">
-                    Certification
-                  </div>
-                </div>
-                <div className="flex flex-1 flex-col p-8">
-                  <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-500">
-                    <BookOpen className="h-4 w-4" />
-                    {program.durationDays} Days Duration
-                  </div>
-                  <h3 className="text-2xl font-bold tracking-tight text-slate-900">{program.title}</h3>
-                  <p className="mt-4 flex-1 text-[15px] leading-relaxed text-slate-600 line-clamp-3">
-                    {program.description?.trim() || 'Professional certification track.'}
-                  </p>
-                  <div className="mt-8 flex gap-3">
-                    <button
-                      onClick={() => handleDetailsClick(program)}
-                      className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-xs font-bold uppercase tracking-widest text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Details
-                    </button>
-                    <button
-                      onClick={() => handleEnrollClick(program)}
-                      className="flex-[1.5] flex items-center justify-center gap-2 rounded-2xl bg-brand-500 px-4 py-3.5 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-brand-600"
-                    >
-                      {activeEnrollmentForProgram(program.id, enrollmentsQuery.data) ? 'Open course' : 'Enroll'}
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Modal
-        open={showAuthModal}
-        onClose={() => {
-          setShowAuthModal(false);
-          setAuthFieldErrors({});
-        }}
-        title={authMode === 'REGISTER' ? 'Create Your Account' : 'Welcome Back'}
-        description="Join the Public Academy to access professional courses."
-      >
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setAuthFieldErrors({});
-            if (authMode === 'REGISTER') {
-              const parsed = registerFormSchema.safeParse(authForm);
-              if (!parsed.success) {
-                setAuthFieldErrors(fieldErrorsFromZod(parsed.error.issues));
-                return;
-              }
-              authMutation.mutate({ kind: 'REGISTER', payload: parsed.data });
-              return;
-            }
-            const parsed = loginFormSchema.safeParse({
-              identifier: loginIdentifier,
-              password: authForm.password,
-            });
-            if (!parsed.success) {
-              setAuthFieldErrors(fieldErrorsFromZod(parsed.error.issues));
-              return;
-            }
-            authMutation.mutate({ kind: 'LOGIN', payload: parsed.data });
-          }}
-        >
-          {authMode === 'REGISTER' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">First Name</label>
-                <input
-                  type="text"
-                  className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-                  value={authForm.firstName}
-                  onChange={(e) => setAuthForm({ ...authForm, firstName: e.target.value })}
-                />
-                {authFieldErrors.firstName ? (
-                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.firstName}</p>
-                ) : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">Last Name</label>
-                <input
-                  type="text"
-                  className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-                  value={authForm.lastName}
-                  onChange={(e) => setAuthForm({ ...authForm, lastName: e.target.value })}
-                />
-                {authFieldErrors.lastName ? (
-                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.lastName}</p>
-                ) : null}
-              </div>
-            </div>
-          )}
-          {authMode === 'LOGIN' ? (
+      <section className="py-20">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Email or username</label>
-              <input
-                type="text"
-                autoComplete="username"
-                placeholder="e.g. you@email.com or your_username"
-                className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-                value={loginIdentifier}
-                onChange={(e) => setLoginIdentifier(e.target.value)}
-              />
-              {authFieldErrors.identifier ? (
-                <p className="mt-1 text-xs text-red-600">{authFieldErrors.identifier}</p>
-              ) : null}
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">Step 1</p>
+              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">Choose your plan</h2>
+              <p className="mt-3 max-w-2xl text-slate-600">
+                All plans unlock the same academy catalog flow. The difference is how long your chosen 3-course access stays active.
+              </p>
             </div>
-          ) : (
-            <>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">Username</label>
-                <input
-                  type="text"
-                  placeholder="e.g. jdoe99"
-                  className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-                  value={authForm.username}
-                  onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })}
-                />
-                {authFieldErrors.username ? (
-                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.username}</p>
-                ) : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">Email Address</label>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="e.g. jane@example.com"
-                  className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-                  value={authForm.email}
-                  onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
-                />
-                {authFieldErrors.email ? (
-                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.email}</p>
-                ) : null}
-              </div>
-            </>
-          )}
-          <div className={authMode === 'REGISTER' ? 'grid grid-cols-2 gap-4' : 'space-y-4'}>
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Password</label>
-              <input
-                type="password"
-                autoComplete={authMode === 'LOGIN' ? 'current-password' : 'new-password'}
-                className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-                value={authForm.password}
-                onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
-              />
-              {authFieldErrors.password ? (
-                <p className="mt-1 text-xs text-red-600">{authFieldErrors.password}</p>
-              ) : null}
-            </div>
-            {authMode === 'REGISTER' ? (
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">Confirm Password</label>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  className="w-full rounded-xl border border-brand-100 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-brand-500 transition focus:ring-2"
-                  value={authForm.confirmPassword}
-                  onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })}
-                />
-                {authFieldErrors.confirmPassword ? (
-                  <p className="mt-1 text-xs text-red-600">{authFieldErrors.confirmPassword}</p>
-                ) : null}
+            {currentSubscription ? (
+              <div className="rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4 text-sm text-brand-950">
+                <p className="font-semibold">Current access</p>
+                <p className="mt-1">
+                  {formatPlanName(currentSubscription.planCode)} · {currentSubscription.status}
+                </p>
+                <p className="mt-1 text-brand-900/80">Slots used: {slotUsage}</p>
+                <p className="mt-1 text-brand-900/80">Expires: {formatExpiry(currentSubscription.expiresAt)}</p>
               </div>
             ) : null}
           </div>
-          <button
-            type="submit"
-            disabled={authMutation.isPending}
-            className="w-full rounded-xl bg-brand-500 py-3 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-brand-600 disabled:opacity-50"
-          >
-            {authMutation.isPending ? 'Processing...' : authMode === 'REGISTER' ? 'Register & Continue' : 'Login & Continue'}
-          </button>
-          <div className="text-center text-sm">
-            <button
-              type="button"
-              className="font-semibold text-brand-600 hover:underline"
-              onClick={() => {
-                setAuthMode(authMode === 'REGISTER' ? 'LOGIN' : 'REGISTER');
-                setAuthFieldErrors({});
-              }}
-            >
-              {authMode === 'REGISTER' ? 'Already have an account? Login' : 'Need an account? Register'}
-            </button>
+
+          {auth.me && !isPublicLearner ? (
+            <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
+              You are signed in to a workspace account. Academy plans require a public academy learner account.
+            </div>
+          ) : null}
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+            {ACADEMY_PLANS.map((plan) => {
+              const isSelected = selectedPlan.id === plan.id;
+              const isCurrentPlan = currentSubscription?.planCode === plan.id && hasActivePlan;
+              return (
+                <article
+                  key={plan.id}
+                  className={[
+                    'rounded-3xl border p-6 shadow-sm transition',
+                    isSelected || isCurrentPlan
+                      ? 'border-brand-500 bg-brand-50 shadow-[0_24px_60px_rgba(30,90,168,0.12)]'
+                      : 'border-slate-200 bg-white hover:border-brand-200',
+                  ].join(' ')}
+                >
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">{plan.name}</p>
+                  <p className="mt-4 text-4xl font-black text-slate-900">
+                    {plan.price.toLocaleString()}
+                    <span className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">RWF</span>
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-700">{plan.durationDays} days access</p>
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">{plan.description}</p>
+                  <button
+                    type="button"
+                    onClick={() => handlePlanClick(plan)}
+                    className="mt-6 w-full rounded-2xl bg-brand-500 px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-brand-600"
+                  >
+                    {auth.me ? (isCurrentPlan ? `Renew ${plan.name}` : `Choose ${plan.name}`) : `Continue with ${plan.name}`}
+                  </button>
+                </article>
+              );
+            })}
           </div>
-        </form>
-      </Modal>
+
+          {subscriptionQuery.data?.pendingPayment ? (
+            <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-950">
+              Payment pending for <span className="font-semibold capitalize">{subscriptionQuery.data.pendingPayment.planCode}</span>.
+              Confirm the MoMo request on your phone to activate the plan.
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="border-t border-slate-100 bg-slate-50/70 py-20">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">Step 2</p>
+              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">Choose up to 3 courses</h2>
+              <p className="mt-3 max-w-2xl text-slate-600">
+                Your plan controls time. Your selected courses control content access. Remove one selected course any time to free a slot.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-700 shadow-sm">
+              <p className="font-semibold text-slate-900">Current slot usage</p>
+              <p className="mt-1">{slotUsage} selected</p>
+            </div>
+          </div>
+
+          {programsQuery.isPending ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-10 w-10 animate-spin text-brand-500" />
+            </div>
+          ) : (
+            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+              {programsQuery.data?.map((program) => {
+                const selected = selectedProgramsById.get(program.id);
+                const accessible = accessibleProgramsById.get(program.id);
+                const canAdd =
+                  Boolean(auth.me && isPublicLearner && hasActivePlan) &&
+                  !selected &&
+                  !accessible &&
+                  Boolean(currentSubscription && currentSubscription.remainingSlots > 0) &&
+                  Boolean(program.courseId);
+
+                return (
+                  <article
+                    key={program.id}
+                    id={`academy-program-${program.id}`}
+                    className={[
+                      'group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition',
+                      highlightProgramId === program.id
+                        ? 'border-brand-500 ring-2 ring-brand-400/30'
+                        : 'border-slate-200 hover:border-brand-200',
+                    ].join(' ')}
+                  >
+                    <div className="relative h-56 overflow-hidden">
+                      <img
+                        src={programCardImage(program)}
+                        alt={program.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-brand-700 shadow-sm">
+                        {program.durationDays} days default
+                      </div>
+                    </div>
+                    <div className="flex flex-1 flex-col p-7">
+                      <div className="mb-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em]">
+                        {accessible ? (
+                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                            {accessible.isLegacy ? 'Legacy access' : 'Accessible now'}
+                          </span>
+                        ) : null}
+                        {selected && !accessible ? (
+                          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">
+                            Selected on plan
+                          </span>
+                        ) : null}
+                        {!program.courseId ? (
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                            Course link pending
+                          </span>
+                        ) : null}
+                      </div>
+                      <h3 className="text-2xl font-bold tracking-tight text-slate-900">{program.title}</h3>
+                      <p className="mt-4 flex-1 text-[15px] leading-relaxed text-slate-600">
+                        {program.description?.trim() || 'Professional academy track.'}
+                      </p>
+                      <div className="mt-6 space-y-3">
+                        {accessible?.expiresAt ? (
+                          <p className="text-sm text-slate-500">Access ends {formatExpiry(accessible.expiresAt)}</p>
+                        ) : currentSubscription?.expiresAt ? (
+                          <p className="text-sm text-slate-500">Current plan ends {formatExpiry(currentSubscription.expiresAt)}</p>
+                        ) : null}
+
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedProgram(program);
+                              setShowDetailsModal(true);
+                            }}
+                            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Details
+                          </button>
+                          <button
+                            type="button"
+                            disabled={selectMutation.isPending || removeMutation.isPending}
+                            onClick={() => handleProgramAction(program)}
+                            className={[
+                              'flex-[1.35] rounded-2xl px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition',
+                              accessible?.courseId || canAdd
+                                ? 'bg-brand-500 hover:bg-brand-600'
+                                : 'bg-slate-400',
+                            ].join(' ')}
+                          >
+                            {accessible?.courseId
+                              ? 'Open course'
+                              : !auth.me
+                                ? 'Login first'
+                                : !hasActivePlan
+                                  ? 'Choose plan first'
+                                  : currentSubscription && currentSubscription.remainingSlots <= 0 && !selected
+                                    ? '3/3 selected'
+                                    : !program.courseId
+                                      ? 'Coming soon'
+                                      : selected
+                                        ? 'Selected'
+                                        : 'Add to plan'}
+                          </button>
+                        </div>
+
+                        {selected ? (
+                          <button
+                            type="button"
+                            onClick={() => removeMutation.mutate(program.id)}
+                            disabled={removeMutation.isPending}
+                            className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-rose-700 transition hover:bg-rose-100"
+                          >
+                            Remove from plan
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
 
       <Modal
-        open={showPurchaseModal}
+        open={showCheckoutModal}
         onClose={() => {
-          setShowPurchaseModal(false);
+          setShowCheckoutModal(false);
           setPaymentStatus('IDLE');
           setPaypackRef(null);
         }}
-        title={`Enroll in ${selectedProgram?.title}`}
+        title={`${selectedPlan.name} plan`}
+        description="Activate your plan with MoMo. Your selected courses stay under the same 3-slot limit."
       >
         {paymentStatus === 'IDLE' ? (
-          <form className="space-y-6" onSubmit={handlePurchaseSubmit}>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
-              <p className="font-semibold">On a free trial?</p>
-              <p className="mt-1 text-emerald-900/90">
-                Close this window and click <strong>Open course</strong> on the program card — MoMo is only to extend access after your trial.
-              </p>
-            </div>
-            <div className="space-y-3">
-              <label className="text-sm font-bold text-slate-800">Select Access Plan</label>
-              <div className="grid grid-cols-2 gap-3">
-                {ACADEMY_PLANS.map((plan) => (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    onClick={() => setSelectedPlan(plan)}
-                    className={[
-                      "flex flex-col items-start rounded-2xl border p-4 transition-all text-left",
-                      selectedPlan.id === plan.id
-                        ? "border-brand-500 bg-brand-50 ring-1 ring-brand-500"
-                        : "border-slate-100 bg-white hover:border-brand-200"
-                    ].join(' ')}
-                  >
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{plan.name}</span>
-                    <span className="mt-1 text-lg font-black text-brand-800">{plan.durationDays} days</span>
-                    <span className="text-[10px] font-medium text-slate-500">Enrollment length</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          <form
+            className="space-y-6"
+            onSubmit={(event) => {
+              event.preventDefault();
+              checkoutMutation.mutate({
+                planId: selectedPlan.id,
+                phoneNumber,
+              });
+            }}
+          >
             <div className="rounded-2xl bg-brand-50 p-6">
               <div className="flex justify-between text-sm font-medium text-slate-600">
-                <span>Selected Plan</span>
+                <span>Plan</span>
                 <span>{selectedPlan.name}</span>
               </div>
-              <div className="mt-2 flex justify-between border-t border-brand-100 pt-2 text-lg font-bold text-brand-800">
-                <span>Amount charged</span>
-                <span>
-                  {selectedProgram ? `${Number(selectedProgram.price).toLocaleString()} RWF` : '—'}
-                </span>
+              <div className="mt-2 flex justify-between border-t border-brand-100 pt-3 text-lg font-bold text-brand-800">
+                <span>Amount</span>
+                <span>{selectedPlan.price.toLocaleString()} RWF</span>
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                Price is set on the program. Your plan only changes how long access stays active after payment.
+                After payment, choose up to 3 linked academy courses. Renewing extends the same selected set until you change it.
               </p>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-800">MoMo Phone Number</label>
+              <label className="mb-2 block text-sm font-bold text-slate-800">MoMo phone number</label>
               <input
                 type="tel"
                 required
                 placeholder="e.g. 078XXXXXXX"
                 className="w-full rounded-xl border border-brand-200 px-4 py-3 text-lg outline-none ring-brand-500 transition focus:ring-2"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={(event) => setPhoneNumber(event.target.value)}
               />
-              <p className="mt-2 text-xs text-slate-500">
-                A payment prompt will be sent to this number via Paypack.
-              </p>
             </div>
 
             <button
               type="submit"
-              disabled={purchaseMutation.isPending}
+              disabled={checkoutMutation.isPending}
               className="w-full rounded-xl bg-brand-500 py-4 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-brand-500/20 transition hover:bg-brand-600 disabled:opacity-50"
             >
-              {purchaseMutation.isPending ? (
+              {checkoutMutation.isPending ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Initiating...
                 </span>
-              ) : 'Confirm Payment'}
+              ) : (
+                `Pay ${selectedPlan.price.toLocaleString()} RWF`
+              )}
             </button>
           </form>
         ) : paymentStatus === 'PENDING' ? (
@@ -621,49 +650,42 @@ export function PublicAcademyPage() {
               <div className="absolute inset-0 animate-ping rounded-full bg-brand-500/20" />
               <Loader2 className="relative h-16 w-16 animate-spin text-brand-500" />
             </div>
-            <h3 className="mt-8 text-xl font-bold text-slate-900">Waiting for Confirmation</h3>
+            <h3 className="mt-8 text-xl font-bold text-slate-900">Waiting for confirmation</h3>
             <p className="mt-4 max-w-xs text-slate-600">
-              Please check your phone and enter your MoMo PIN to complete the transaction.
+              Confirm the MoMo request on your phone. Once payment succeeds, your plan will activate here automatically.
             </p>
-            <div className="mt-8 flex gap-2">
-              <span className="h-2 w-2 animate-bounce rounded-full bg-brand-400" />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-brand-400 [animation-delay:0.2s]" />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-brand-400 [animation-delay:0.4s]" />
-            </div>
           </div>
         ) : paymentStatus === 'SUCCESS' ? (
           <div className="flex flex-col items-center py-10 text-center">
             <div className="rounded-full bg-success-50 p-4">
               <CheckCircle2 className="h-16 w-16 text-success-500" />
             </div>
-            <h3 className="mt-8 text-2xl font-bold text-slate-900">Welcome to the Program!</h3>
+            <h3 className="mt-8 text-2xl font-bold text-slate-900">Plan activated</h3>
             <p className="mt-4 text-slate-600">
-              Your enrollment is confirmed. You can now access all lessons and assessments.
+              Your academy plan is now active. Close this window and choose up to 3 courses from the catalog below.
             </p>
             <button
               type="button"
               onClick={() => {
-                window.location.href = '/student/courses';
+                setShowCheckoutModal(false);
+                setPaymentStatus('IDLE');
+                setPaypackRef(null);
               }}
               className="mt-10 rounded-xl bg-brand-500 px-8 py-3 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-brand-600"
             >
-              Go to My Courses
+              Continue
             </button>
           </div>
         ) : (
           <div className="flex flex-col items-center py-10 text-center">
-             <div className="rounded-full bg-danger-50 p-4">
-              <Loader2 className="h-16 w-16 text-danger-500" />
-            </div>
-            <h3 className="mt-8 text-xl font-bold text-slate-900">Payment Failed</h3>
-            <p className="mt-4 text-slate-600">
-              We couldn't process your payment. Please ensure you have sufficient balance and try again.
-            </p>
+            <h3 className="text-xl font-bold text-slate-900">Payment failed</h3>
+            <p className="mt-4 text-slate-600">We could not activate the plan. Please try again.</p>
             <button
+              type="button"
               onClick={() => setPaymentStatus('IDLE')}
               className="mt-10 rounded-xl bg-slate-900 px-8 py-3 text-sm font-bold uppercase tracking-widest text-white"
             >
-              Try Again
+              Try again
             </button>
           </div>
         )}
@@ -672,8 +694,8 @@ export function PublicAcademyPage() {
       <Modal
         open={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
-        title={selectedProgram?.title || 'Program Details'}
-        description="Comprehensive information about this certification program."
+        title={selectedProgram?.title || 'Program details'}
+        description="Review this academy course before adding it to your plan."
       >
         <div className="space-y-6">
           <div className="aspect-video w-full overflow-hidden rounded-2xl bg-slate-100">
@@ -683,37 +705,26 @@ export function PublicAcademyPage() {
               className="h-full w-full object-cover"
             />
           </div>
-          <div className="space-y-4">
-            <h4 className="text-lg font-bold text-slate-900">About the Program</h4>
-            <div className="max-h-[30vh] overflow-y-auto pr-2">
-               <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-wrap">
-                {selectedProgram?.description}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Default length</p>
-                <p className="text-sm font-bold text-slate-700">{selectedProgram?.durationDays} days</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Price</p>
-                <p className="text-sm font-bold text-brand-600">
-                  {selectedProgram ? `${Number(selectedProgram.price).toLocaleString()} RWF` : '—'}
-                </p>
-              </div>
-            </div>
+          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+            <p className="font-semibold text-slate-900">Default course length</p>
+            <p className="mt-1">{selectedProgram?.durationDays} days</p>
+            <p className="mt-4 font-semibold text-slate-900">Description</p>
+            <p className="mt-1 whitespace-pre-wrap text-slate-600">
+              {selectedProgram?.description?.trim() || 'Professional academy track.'}
+            </p>
           </div>
-          <button
-            onClick={() => {
-              setShowDetailsModal(false);
-              handleEnrollClick(selectedProgram!);
-            }}
-            className="w-full rounded-2xl bg-brand-500 py-4 text-sm font-black uppercase tracking-widest text-white transition hover:bg-brand-600"
-          >
-            {selectedProgram && activeEnrollmentForProgram(selectedProgram.id, enrollmentsQuery.data)
-              ? 'Open course'
-              : 'Enroll in Program'}
-          </button>
+          {selectedProgram ? (
+            <button
+              type="button"
+              onClick={() => {
+                setShowDetailsModal(false);
+                handleProgramAction(selectedProgram);
+              }}
+              className="w-full rounded-2xl bg-brand-500 py-4 text-sm font-black uppercase tracking-widest text-white transition hover:bg-brand-600"
+            >
+              {accessibleProgramsById.get(selectedProgram.id)?.courseId ? 'Open course' : 'Use this course'}
+            </button>
+          ) : null}
         </div>
       </Modal>
     </main>

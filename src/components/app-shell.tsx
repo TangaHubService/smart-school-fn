@@ -44,7 +44,8 @@ export function AppShell() {
   const schoolAdmin = hasPermission(auth.me, 'school.setup.manage') && !isSuperAdmin(auth.me);
   const superAdmin = isSuperAdmin(auth.me);
 
-  const isStudent = hasRole(auth.me, 'STUDENT');
+  const isStudent = hasRole(auth.me, 'STUDENT') || hasRole(auth.me, 'PUBLIC_LEARNER');
+  const isPublicLearner = hasRole(auth.me, 'PUBLIC_LEARNER');
   const isTeacher =
     hasRole(auth.me, 'TEACHER') &&
     !hasRole(auth.me, 'SCHOOL_ADMIN') &&
@@ -64,6 +65,28 @@ export function AppShell() {
     auth.me?.email ||
     'User';
   const userDisplayEmail = auth.me?.email ?? '-';
+  const studentHeaderNavItems = [
+    !isPublicLearner ? { to: '/student/dashboard', label: t('studentHeader.dashboard') } : null,
+    { to: '/student/courses', label: t('studentHeader.courses') },
+    { to: '/student/my-learning', label: t('studentHeader.progress') },
+    hasPermission(auth.me, 'report_cards.my_read')
+      ? {
+          to: '/student/report-cards',
+          label: t('studentHeader.reports'),
+          title: t('studentHeader.reportCards'),
+        }
+      : null,
+    hasPermission(auth.me, 'assessments.submit')
+      ? { to: '/student/assessments', label: t('studentHeader.tests') }
+      : null,
+    hasPermission(auth.me, 'announcements.my_read')
+      ? {
+          to: '/student/announcements',
+          label: t('studentHeader.news'),
+          title: t('studentHeader.announcements'),
+        }
+      : null,
+  ].filter(Boolean) as Array<{ to: string; label: string; title?: string }>;
 
   function closeMobileNav() {
     setIsMobileNavOpen(false);
@@ -434,14 +457,7 @@ export function AppShell() {
                     className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 overflow-x-auto pb-0.5 text-sm sm:gap-2"
                     aria-hidden={!studentNavExpanded}
                   >
-                {[
-                  { to: '/student/dashboard', label: t('studentHeader.dashboard') },
-                      { to: '/student/courses', label: t('studentHeader.courses') },
-                      { to: '/student/my-learning', label: t('studentHeader.progress') },
-                      { to: '/student/report-cards', label: t('studentHeader.reports'), title: t('studentHeader.reportCards') },
-                  { to: '/student/assessments', label: t('studentHeader.tests') },
-                      { to: '/student/announcements', label: t('studentHeader.news'), title: t('studentHeader.announcements') },
-                ].map((item) => (
+                {studentHeaderNavItems.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}

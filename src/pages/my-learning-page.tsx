@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
+import { hasRole } from '../features/auth/auth-helpers';
 import { listMyCoursesApi } from '../features/sprint4/lms.api';
 import { getStoredAcademicYearId } from './student-academic-year-select-page';
 import { StateView } from '../components/state-view';
@@ -13,14 +14,15 @@ import { getCourseProgressMetrics, getResumeLessonId } from '../utils/course-pro
 export function MyLearningPage() {
   const auth = useAuth();
   const academicYearId = getStoredAcademicYearId();
+  const isPublicLearner = hasRole(auth.me, 'PUBLIC_LEARNER');
 
-  if (!academicYearId) {
+  if (!academicYearId && !isPublicLearner) {
     return <Navigate to="/student/academic-year" replace />;
   }
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['lms', 'student-courses', 'my-learning'],
-    enabled: Boolean(auth.accessToken && academicYearId),
+    enabled: Boolean(auth.accessToken && (academicYearId || isPublicLearner)),
     queryFn: () => listMyCoursesApi(auth.accessToken!, { page: 1, pageSize: 50 }),
   });
 
@@ -115,10 +117,10 @@ function CourseProgressCard({
 }) {
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-brand-200 hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="inline-flex items-center rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-800 ring-1 ring-brand-100">
-            {course.classRoom.name}
+            {course.classRoom?.name ?? 'Academy course'}
           </div>
           <h3 className="text-lg font-semibold text-slate-900 underline-offset-2 group-hover:underline">
             {course.title}
