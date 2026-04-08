@@ -1,0 +1,40 @@
+{
+  "assessments": {
+    "title": "Mes tests",
+    "subtitle": "Ouvrez un test pour lire les consignes, puis commencez quand vous êtes prêt.",
+    "searchLabel": "Rechercher des tests",
+    "searchPlaceholder": "Rechercher par titre ou cours",
+    "studentFallback": "Étudiant",
+    "noCode": "Pas de code",
+    "errorTitle": "Impossible de charger les tests",
+    "errorMessage": "Réessayez pour charger vos évaluations disponibles.",
+    "retry": "Réessayer",
+    "awaitingReview": "En attente de correction",
+    "inProgress": "En cours",
+    "openTest": "Ouvrir le test",
+    "emptyTitle": "Aucun test disponible",
+    "emptyMessage": "Les évaluations publiées pour vos classes apparaîtront ici."
+  },
+  "reportCards": {
+    "title": "Mes bulletins",
+    "subtitle": "Consultez ou téléchargez les bulletins publiés pour vos périodes.",
+    "term": "Période",
+    "allTerms": "Toutes les périodes",
+    "studentFallback": "Étudiant",
+    "loadErrorTitle": "Impossible de charger les bulletins",
+    "loadErrorMessage": "Réessayez pour charger vos bulletins.",
+    "retry": "Réessayer",
+    "average": "Moyenne",
+    "grade": "Note",
+    "position": "Classement",
+    "viewPdf": "Voir PDF",
+    "download": "Télécharger",
+    "emptyTitle": "Pas encore de bulletin",
+    "emptyMessage": "Les bulletins publiés apparaîtront ici quand l'école finalisera les résultats.",
+    "previewTitle": "Aperçu du bulletin",
+    "close": "Fermer",
+    "previewErrorTitle": "Impossible d'ouvrir le bulletin",
+    "downloadErrorTitle": "Impossible de télécharger le bulletin",
+    "requestFailed": "Échec de la requête"
+  }
+}

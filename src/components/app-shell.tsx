@@ -14,6 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/auth.context';
 import {
@@ -24,9 +25,12 @@ import {
 } from '../features/auth/auth-helpers';
 import { SetStudentHeaderActionsContext } from '../contexts/student-header-actions.context';
 import { ConnectionStatusBanner } from './connection-status-banner';
+import { LanguageSwitcher } from './language-switcher';
+import { LowBandwidthToggle } from './low-bandwidth-toggle';
 import { RoleNav } from './role-nav';
 
 export function AppShell() {
+  const { t } = useTranslation('common');
   const auth = useAuth();
   const location = useLocation();
   const contentScrollRef = useRef<HTMLDivElement>(null);
@@ -46,20 +50,20 @@ export function AppShell() {
     !hasRole(auth.me, 'SCHOOL_ADMIN') &&
     !hasRole(auth.me, 'SUPER_ADMIN');
   const headerTitle = superAdmin
-    ? 'Super Admin Dashboard'
+    ? t('headerTitle.superAdmin')
     : schoolAdmin
-      ? 'Dashboard'
+      ? t('headerTitle.dashboard')
       : isStudent
-        ? 'Student Portal'
+        ? t('headerTitle.studentPortal')
         : isTeacher
-          ? 'Teacher Portal'
-          : 'Dashboard';
+          ? t('headerTitle.teacherPortal')
+          : t('headerTitle.dashboard');
 
   const userDisplayName =
     `${auth.me?.firstName ?? ''} ${auth.me?.lastName ?? ''}`.trim() ||
     auth.me?.email ||
-    'Signed-in user';
-  const userDisplayEmail = auth.me?.email ?? 'No email';
+    'User';
+  const userDisplayEmail = auth.me?.email ?? '-';
 
   function closeMobileNav() {
     setIsMobileNavOpen(false);
@@ -192,7 +196,7 @@ export function AppShell() {
       {isMobileNavOpen ? (
         <button
           type="button"
-          aria-label="Close navigation overlay"
+          aria-label={t('shell.close')}
           className="fixed inset-0 z-30 bg-brand-900/45 md:hidden"
           onClick={closeMobileNav}
         />
@@ -211,7 +215,7 @@ export function AppShell() {
           <div className={'border-b border-white/10 px-6 py-5'}>
             <div className="flex items-center justify-between md:hidden">
               <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
-                Navigation
+                {t('shell.navigation')}
               </span>
               <button
                 type="button"
@@ -219,7 +223,7 @@ export function AppShell() {
                 className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white"
               >
                 <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                Close
+                {t('shell.close')}
               </button>
             </div>
             <div className="mt-2 flex items-center gap-2 md:mt-0">
@@ -231,7 +235,7 @@ export function AppShell() {
                   Smart<span className="text-amber-400">School</span>
                 </p>
                 <p className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wider text-white/80">
-                  {isStudent ? 'STUDENT PORTAL' : isTeacher ? 'TEACHER PORTAL' : 'RWANDA ADMIN OS'}
+                  {isStudent ? t('headerTitle.studentPortal') : isTeacher ? t('headerTitle.teacherPortal') : 'RWANDA ADMIN OS'}
                 </p>
               </div>
             </div>
@@ -243,7 +247,7 @@ export function AppShell() {
               className="flex w-full items-center gap-2 whitespace-nowrap rounded-lg bg-white/15 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/25"
             >
               <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
-              Back to Website
+              {t('shell.backToWebsite')}
             </a>
           </div>
 
@@ -258,7 +262,7 @@ export function AppShell() {
               className="inline-flex w-full items-center gap-2 whitespace-nowrap rounded-lg bg-white px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-white/95"
             >
               <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
-              Logout
+              {t('shell.logout')}
             </button>
           </div>
         </aside>
@@ -279,7 +283,7 @@ export function AppShell() {
                     type="button"
                     onClick={() => setIsMobileNavOpen(true)}
                     className="grid h-10 w-10 place-items-center rounded-lg border border-white/20 bg-white/10 text-white md:hidden"
-                    aria-label="Open sidebar"
+                    aria-label={t('shell.openSidebar')}
                   >
                     <Menu className="h-5 w-5" aria-hidden="true" />
                   </button>
@@ -288,7 +292,7 @@ export function AppShell() {
                     type="button"
                     onClick={() => setIsDesktopSidebarVisible((current) => !current)}
                     className="hidden h-10 min-w-10 place-items-center rounded-lg border border-white/20 bg-white/10 text-white md:grid"
-                    aria-label={isDesktopSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+                    aria-label={isDesktopSidebarVisible ? t('shell.hideSidebar') : t('shell.showSidebar')}
                     aria-pressed={isDesktopSidebarVisible}
                   >
                     {isDesktopSidebarVisible ? (
@@ -304,7 +308,7 @@ export function AppShell() {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-white/95 px-3 py-1.5 text-xs font-medium text-[#173C7F] shadow-sm transition hover:bg-white"
                 >
                   <ArrowLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  Back to website
+                  {t('shell.backToWebsite')}
                 </a>
               )}
 
@@ -320,23 +324,27 @@ export function AppShell() {
                   aria-controls="student-header-nav"
                 >
                   <Menu className="h-3.5 w-3.5" aria-hidden="true" />
-                  Links
+                  {t('shell.links')}
                 </button>
               ) : null}
 
               <div className="ml-auto flex items-center gap-2">
                 <span className="hidden text-sm font-medium text-white sm:inline">
-                  Hello, {superAdmin ? 'Admin' : (auth.me?.firstName ?? 'Admin')}
+                  {t('shell.hello', { name: superAdmin ? 'Admin' : (auth.me?.firstName ?? 'Admin') })}
                 </span>
                 {!superAdmin ? (
                   <button className="inline-flex items-center gap-2 rounded border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-medium text-white">
                     <Building2 className="h-4 w-4" aria-hidden="true" />
-                    {auth.me?.tenant.name ?? 'Tenant'}
+                    {auth.me?.tenant.name ?? t('shell.tenant')}
                   </button>
                 ) : null}
+                <div className="hidden items-center gap-2 lg:flex">
+                  <LowBandwidthToggle />
+                  <LanguageSwitcher className="[&_span]:text-white/85 [&_select]:border-white/25 [&_select]:bg-white/10 [&_select]:text-white" />
+                </div>
                 <button
                   className="relative inline-flex h-9 w-9 items-center justify-center text-white"
-                  aria-label="Notifications"
+                  aria-label={t('shell.notifications')}
                 >
                   <Bell className="h-5 w-5" aria-hidden="true" />
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger-500 text-[10px] font-bold text-white">
@@ -345,7 +353,7 @@ export function AppShell() {
                 </button>
                 <button
                   className="inline-flex h-9 w-9 items-center justify-center text-white"
-                  aria-label="Messages"
+                  aria-label={t('shell.messages')}
                 >
                   <Mail className="h-5 w-5" aria-hidden="true" />
                 </button>
@@ -376,7 +384,7 @@ export function AppShell() {
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                     className="grid h-10 w-10 place-items-center rounded-lg bg-white text-brand-600 transition hover:bg-white/90 sm:hidden"
                     title={userDisplayName}
-                    aria-label={`Logged in as ${userDisplayName}, click for profile menu`}
+                    aria-label={t('shell.loggedInAs', { name: userDisplayName })}
                     aria-pressed={isProfileMenuOpen}
                   >
                     <User className="h-5 w-5" aria-hidden="true" />
@@ -402,7 +410,7 @@ export function AppShell() {
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700"
                         >
                           <LogOut className="h-4 w-4" />
-                          Logout
+                          {t('shell.logout')}
                         </button>
                       </div>
                     </>
@@ -426,31 +434,31 @@ export function AppShell() {
                     className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 overflow-x-auto pb-0.5 text-sm sm:gap-2"
                     aria-hidden={!studentNavExpanded}
                   >
-                    {[
-                      { to: '/student/dashboard', label: 'Dashboard' },
-                      { to: '/student/courses', label: 'Courses' },
-                      { to: '/student/my-learning', label: 'Progress' },
-                      { to: '/student/report-cards', label: 'Reports', title: 'Report cards' },
-                      { to: '/student/assessments', label: 'Tests' },
-                      { to: '/student/announcements', label: 'News', title: 'Announcements' },
-                    ].map((item) => (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
+                {[
+                  { to: '/student/dashboard', label: t('studentHeader.dashboard') },
+                      { to: '/student/courses', label: t('studentHeader.courses') },
+                      { to: '/student/my-learning', label: t('studentHeader.progress') },
+                      { to: '/student/report-cards', label: t('studentHeader.reports'), title: t('studentHeader.reportCards') },
+                  { to: '/student/assessments', label: t('studentHeader.tests') },
+                      { to: '/student/announcements', label: t('studentHeader.news'), title: t('studentHeader.announcements') },
+                ].map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
                         title={item.title ?? item.label}
-                        className={({ isActive }) =>
-                          clsx(
+                    className={({ isActive }) =>
+                      clsx(
                             'whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:text-sm',
-                            isActive
-                              ? 'bg-white text-[#173C7F] shadow-sm'
-                              : 'text-white/85 hover:text-white',
-                          )
-                        }
-                      >
-                        {item.label}
-                      </NavLink>
-                    ))}
-                  </nav>
+                        isActive
+                          ? 'bg-white text-[#173C7F] shadow-sm'
+                          : 'text-white/85 hover:text-white',
+                      )
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </nav>
                   {studentHeaderActions ? (
                     <div className="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
                       {studentHeaderActions}
@@ -470,7 +478,7 @@ export function AppShell() {
                 className="mb-4 rounded-lg border border-accent-100 bg-white px-4 py-3 text-sm text-slate-900"
                 role="status"
               >
-                Action required: complete the school profile and setup wizard to unlock academics, classes, students, subjects, and staff pages.
+                {t('shell.actionRequired')}
               </div>
             ) : null}
             <Outlet />

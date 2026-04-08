@@ -11,7 +11,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
 import { RichContent } from '../components/rich-content';
@@ -126,6 +126,7 @@ export function StudentAssessmentAttemptPage() {
   const [draftAnswers, setDraftAnswers] = useState<Record<string, DraftAnswer>>({});
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error' | 'local'>('idle');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [hintRevealed, setHintRevealed] = useState(false);
   const [now, setNow] = useState(Date.now());
   const lastSavedAnswersRef = useRef('');
   const attemptRef = useRef<AssessmentAttemptDetail | null>(null);
@@ -327,6 +328,11 @@ export function StudentAssessmentAttemptPage() {
   }, [attempt?.assessment.timeLimitMinutes, attempt?.status]);
 
   const currentQuestion = attempt?.questions[currentQuestionIndex] ?? null;
+
+  useEffect(() => {
+    setHintRevealed(false);
+  }, [currentQuestionIndex, currentQuestion?.id]);
+
   const answeredCount = useMemo(() => {
     if (!attempt) {
       return 0;
@@ -544,15 +550,31 @@ export function StudentAssessmentAttemptPage() {
                       )}
                     </div>
 
-                    {question.explanation && (
-                      <div className="mt-6 rounded-2xl bg-brand-50/50 p-5 ring-1 ring-brand-100">
-                        <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.1em] text-brand-600">
-                          <Sparkles className="h-3.5 w-3.5" />
-                          Explanation
-                        </div>
-                        <p className="text-sm leading-relaxed text-slate-700">
-                          {question.explanation}
-                        </p>
+                    {(question.explanation || question.hint) && (
+                      <div className="mt-6 space-y-3">
+                        {question.hint ? (
+                          <div className="rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-sm text-amber-950">
+                            <p className="text-xs font-bold uppercase tracking-wide text-amber-800">Hint</p>
+                            <p className="mt-1 leading-relaxed">{question.hint}</p>
+                          </div>
+                        ) : null}
+                        {question.explanation ? (
+                          <div className="rounded-2xl bg-brand-50/50 p-5 ring-1 ring-brand-100">
+                            <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.1em] text-brand-600">
+                              <Sparkles className="h-3.5 w-3.5" />
+                              Explanation
+                            </div>
+                            <p className="text-sm leading-relaxed text-slate-700">{question.explanation}</p>
+                          </div>
+                        ) : null}
+                        {question.remedialLessonId ? (
+                          <Link
+                            to={`/student/courses/${attempt.assessment.course.id}/lessons/${question.remedialLessonId}`}
+                            className="inline-flex text-sm font-semibold text-brand-600 underline-offset-2 hover:underline"
+                          >
+                            Open suggested lesson for review
+                          </Link>
+                        ) : null}
                       </div>
                     )}
                   </div>
@@ -653,6 +675,33 @@ export function StudentAssessmentAttemptPage() {
                     ? `Write your answer before you continue. This question is worth ${currentQuestion.points} point${currentQuestion.points === 1 ? '' : 's'}.`
                     : `Choose one answer to continue. This question is worth ${currentQuestion.points} point${currentQuestion.points === 1 ? '' : 's'}.`}
                 </p>
+                {currentQuestion.hint ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {!hintRevealed ? (
+                      <button
+                        type="button"
+                        onClick={() => setHintRevealed(true)}
+                        className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100"
+                      >
+                        Show hint
+                      </button>
+                    ) : (
+                      <p className="rounded-lg border border-amber-100 bg-amber-50/90 px-3 py-2 text-sm text-amber-950">
+                        {currentQuestion.hint}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+                {currentQuestion.remedialLessonId ? (
+                  <p className="mt-1 text-sm">
+                    <Link
+                      to={`/student/courses/${attempt.assessment.course.id}/lessons/${currentQuestion.remedialLessonId}`}
+                      className="font-semibold text-brand-600 underline-offset-2 hover:underline"
+                    >
+                      Review related lesson
+                    </Link>
+                  </p>
+                ) : null}
               </div>
 
               <div className="grid gap-3">

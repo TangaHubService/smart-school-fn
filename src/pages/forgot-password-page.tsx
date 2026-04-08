@@ -3,12 +3,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { forgotPasswordApi } from '../features/auth/auth.api';
 import { forgotPasswordSchema, ForgotPasswordInput } from '../features/auth/auth.schema';
 import { ApiClientError } from '../types/api';
 
 export function ForgotPasswordPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -41,18 +43,18 @@ export function ForgotPasswordPage() {
           <header className="mb-8">
             <Link to="/login" className="inline-flex items-center text-sm font-medium text-brand-600 hover:text-brand-700 transition mb-6">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Login
+              {t('forgot.backToLogin')}
             </Link>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Forgot Password</h1>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{t('forgot.title')}</h1>
             <p className="mt-3 text-slate-600 leading-relaxed">
-              Enter your registered email below. We'll send you a One-Time Password (OTP) to reset your account.
+              {t('forgot.subtitle')}
             </p>
           </header>
 
           <form className="space-y-6" onSubmit={handleSubmit((data) => mutation.mutate(data))}>
             <div>
               <label htmlFor="email" className="mb-2 block text-sm font-bold text-slate-800 uppercase tracking-wide">
-                Registered Email
+                {t('forgot.registeredEmail')}
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -61,7 +63,7 @@ export function ForgotPasswordPage() {
                 <input
                   id="email"
                   type="email"
-                  placeholder="e.g. name@example.com"
+                  placeholder={t('forgot.emailPlaceholder')}
                   className="w-full rounded-2xl border border-brand-100 pl-10 px-4 py-3 text-base outline-none ring-brand-400 transition focus:ring-2 bg-white/50"
                   {...register('email')}
                 />
@@ -82,7 +84,7 @@ export function ForgotPasswordPage() {
               disabled={mutation.isPending}
               className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg shadow-brand-500/20 text-sm font-bold uppercase tracking-widest text-white bg-brand-600 hover:bg-brand-700 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
             >
-              {mutation.isPending ? 'Sending...' : 'Send OTP'}
+              {mutation.isPending ? t('forgot.sending') : t('forgot.sendOtp')}
             </button>
           </form>
         </div>
@@ -90,7 +92,7 @@ export function ForgotPasswordPage() {
         {/* Info Side */}
         <div className="hidden md:flex w-80 lg:w-96 flex-col border-l border-white/20 p-8 sm:p-12">
           <div className="space-y-8">
-            <h3 className="text-sm font-black text-brand-700 uppercase tracking-[0.2em]">Recovery Guidelines</h3>
+            <h3 className="text-sm font-black text-brand-700 uppercase tracking-[0.2em]">{t('forgot.guidelines')}</h3>
             
             <ul className="space-y-6">
               {[

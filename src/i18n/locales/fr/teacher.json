@@ -1,0 +1,24 @@
+{
+  "dashboard": {
+    "errorTitle": "Impossible de charger le tableau de bord",
+    "errorMessage": "Réessayez pour charger votre tableau de bord enseignant.",
+    "retry": "Réessayer",
+    "portal": "Portail Enseignant",
+    "subtitle": "Vos classes, présences et devoirs en un coup d'œil.",
+    "today": "Aujourd'hui: {{date}}",
+    "metrics": {
+      "myCourses": "Mes cours",
+      "myClasses": "Mes classes",
+      "pendingToGrade": "En attente de correction",
+      "markedToday": "Marqués aujourd'hui"
+    },
+    "attendanceTitle": "Présence du jour",
+    "classesWithSessions": "Classes avec séance",
+    "studentsMarked": "Étudiants marqués",
+    "pendingClasses_one": "{{count}} classe a encore besoin de présence",
+    "pendingClasses_other": "{{count}} classes ont encore besoin de présence",
+    "upcomingExams": "Examens à venir",
+    "viewAll": "Voir tout",
+    "noUpcomingExams": "Aucun examen à venir"
+  }
+}

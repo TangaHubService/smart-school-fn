@@ -66,6 +66,7 @@ export interface LessonItem {
   sequence: number;
   isPublished: boolean;
   publishedAt: string | null;
+  mustPassAssessmentId?: string | null;
   createdAt: string;
   updatedAt: string;
   fileAsset: FileAsset | null;
@@ -195,6 +196,7 @@ export interface MyCoursesResponse {
       lessons: LessonItem[];
       assignments: Array<AssignmentItem & { mySubmission: SubmissionItem | null }>;
       completedLessonIds: string[];
+      submittedAssessmentIds?: string[];
     }
   >;
   pagination: {
@@ -560,6 +562,39 @@ export function markLessonCompleteApi(
       body: {},
     },
   );
+}
+
+export function recordLessonActivityApi(
+  accessToken: string,
+  lessonId: string,
+  secondsDelta: number,
+) {
+  return apiRequest<{
+    lessonId: string;
+    timeSpentSeconds: number;
+    lastActivityAt: string;
+  }>(`/lessons/${lessonId}/activity`, {
+    method: 'POST',
+    accessToken,
+    body: { secondsDelta },
+  });
+}
+
+export type TeacherLearningInsightRow = {
+  courseId: string;
+  courseTitle: string;
+  enrolledStudents: number;
+  publishedLessons: number;
+  avgCompletionPercent: number | null;
+  atRiskCount: number;
+  avgQuizScorePercent: number | null;
+};
+
+export function listTeacherLearningInsightsApi(accessToken: string) {
+  return apiRequest<{ items: TeacherLearningInsightRow[] }>('/teacher/learning-insights', {
+    method: 'GET',
+    accessToken,
+  });
 }
 
 export function signUploadApi(

@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FieldError, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
@@ -10,6 +11,7 @@ import { LoginFormValues, loginFormSchema } from '../features/auth/auth.schema';
 import { ApiClientError } from '../types/api';
 
 export function LoginPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const auth = useAuth();
@@ -63,8 +65,8 @@ export function LoginPage() {
       <div className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
 
       <section className="relative z-10 w-full max-w-md rounded-3xl border border-white/30 bg-white/75 p-6 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.65)] ring-1 ring-white/20 backdrop-blur-xl transition-transform duration-300 hover:-translate-y-0.5 sm:p-8">
-        <h1 className="text-2xl font-bold text-slate-900">Smart School Rwanda</h1>
-        <p className="mt-2 text-sm text-slate-700">Sign in to your school workspace.</p>
+        <h1 className="text-2xl font-bold text-slate-900">{t('login.brand')}</h1>
+        <p className="mt-2 text-sm text-slate-700">{t('login.subtitle')}</p>
 
         <form
           className="mt-6 space-y-4"
@@ -73,13 +75,13 @@ export function LoginPage() {
         >
           <div>
             <label htmlFor="identifier" className="mb-1 block text-sm font-semibold text-slate-800">
-              Email or Username
+              {t('login.identifier')}
             </label>
             <input
               id="identifier"
               type="text"
               autoComplete="username"
-              placeholder="e.g. teacher@school.com or STU001"
+              placeholder={t('login.identifierPlaceholder')}
               className="w-full rounded-xl border border-brand-200 px-3 py-2 text-sm outline-none ring-brand-400 transition focus:ring"
               {...form.register('identifier')}
             />
@@ -92,7 +94,7 @@ export function LoginPage() {
 
           <div>
             <label htmlFor="password" className="mb-1 block text-sm font-semibold text-slate-800">
-              Password
+              {t('login.password')}
             </label>
             <div className="relative">
               <input
@@ -106,10 +108,10 @@ export function LoginPage() {
                 type="button"
                 onClick={() => setShowPassword((current) => !current)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded px-1 text-xs font-semibold text-brand-600 transition hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? t('login.hidePasswordAria') : t('login.showPasswordAria')}
                 aria-pressed={showPassword}
               >
-                {showPassword ? 'Hide' : 'Show'}
+                {showPassword ? t('login.hidePassword') : t('login.showPassword')}
               </button>
             </div>
             {formErrors.password ? (
@@ -133,7 +135,7 @@ export function LoginPage() {
             disabled={loginMutation.isPending}
             className="w-full rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loginMutation.isPending ? 'Signing in...' : 'Sign in'}
+            {loginMutation.isPending ? t('login.signingIn') : t('login.signIn')}
           </button>
         </form>
 
@@ -143,7 +145,7 @@ export function LoginPage() {
             className="flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition"
           >
             <HelpCircle className="h-4 w-4" />
-            Forgot Password?
+            {t('login.forgotPassword')}
           </Link>
         </div>
       </section>

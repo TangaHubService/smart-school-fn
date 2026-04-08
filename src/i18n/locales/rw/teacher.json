@@ -1,0 +1,24 @@
+{
+  "dashboard": {
+    "errorTitle": "Ntibyashobotse gufungura ikibaho",
+    "errorMessage": "Ongera ugerageze gufungura ikibaho cya mwarimu.",
+    "retry": "Ongera",
+    "portal": "Portal ya Mwarimu",
+    "subtitle": "Amasomo yawe, ubwitabire n'imikoro byose hamwe.",
+    "today": "Uyu munsi: {{date}}",
+    "metrics": {
+      "myCourses": "Amasomo yanjye",
+      "myClasses": "Amashuri yanjye",
+      "pendingToGrade": "Bitegereje amanota",
+      "markedToday": "Byashyizweho uyu munsi"
+    },
+    "attendanceTitle": "Ubwitabire bw'uyu munsi",
+    "classesWithSessions": "Amashuri afite session",
+    "studentsMarked": "Abanyeshuri bashyizweho",
+    "pendingClasses_one": "Ishuri {{count}} riracyakeneye ubwitabire",
+    "pendingClasses_other": "Amashuri {{count}} aracyakeneye ubwitabire",
+    "upcomingExams": "Ibizamini biri imbere",
+    "viewAll": "Reba byose",
+    "noUpcomingExams": "Nta bizamini biri imbere"
+  }
+}

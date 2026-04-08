@@ -25,6 +25,7 @@ import {
   listMyCoursesApi,
   submitAssignmentApi,
   markLessonCompleteApi,
+  recordLessonActivityApi,
 } from '../features/sprint4/lms.api';
 import {
   addPendingLessonComplete,
@@ -421,6 +422,7 @@ export function StudentCoursesPage() {
     selectedCourse?.assignments.find((assignment) => assignment.id === activeAssignmentId) ?? null;
 
   const sortedLessons = selectedCourse?.lessons.slice().sort((a, b) => a.sequence - b.sequence) ?? [];
+  const submittedAssessmentIds = selectedCourse?.submittedAssessmentIds ?? [];
   const currentLessonIndex = selectedLesson
     ? sortedLessons.findIndex((lesson) => lesson.id === selectedLesson.id)
     : -1;
@@ -462,6 +464,21 @@ export function StudentCoursesPage() {
       void queryClient.invalidateQueries({ queryKey: ['dashboard', 'student'] });
     },
   });
+
+  useEffect(() => {
+    const token = auth.accessToken;
+    if (!token || !activeLessonId || activeCoursePanel !== 'lessons') {
+      return;
+    }
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return;
+    }
+    const tick = () => {
+      void recordLessonActivityApi(token, activeLessonId, 30).catch(() => {});
+    };
+    const id = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(id);
+  }, [auth.accessToken, activeLessonId, activeCoursePanel]);
 
   const flushPendingLessonCompletes = useCallback(async () => {
     const token = auth.accessToken;
@@ -841,8 +858,12 @@ export function StudentCoursesPage() {
                       {sortedLessons.map((lesson, index) => {
                         const isCompleted = isLessonCompleted(lesson.id);
                         const previousLesson = index > 0 ? sortedLessons[index - 1] : null;
-                        const isLocked =
+                        const sequentialLocked =
                           index > 0 && Boolean(previousLesson && !isLessonCompleted(previousLesson.id));
+                        const mustPassId = lesson.mustPassAssessmentId;
+                        const assessmentLocked =
+                          mustPassId != null && !submittedAssessmentIds.includes(mustPassId);
+                        const isLocked = sequentialLocked || assessmentLocked;
 
                         return (
                           <button

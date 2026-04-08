@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '../components/empty-state';
 import { Modal } from '../components/modal';
@@ -7,6 +8,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import {
+  getMyChildLearningApi,
   listMyChildAttendanceApi,
   listMyChildrenApi,
 } from '../features/sprint2/sprint2.api';
@@ -33,8 +35,10 @@ interface SelectedStudent {
 }
 
 export function ParentMyChildrenPage() {
+  const { t } = useTranslation('parent');
   const auth = useAuth();
   const [selectedStudent, setSelectedStudent] = useState<SelectedStudent | null>(null);
+  const [learningStudent, setLearningStudent] = useState<SelectedStudent | null>(null);
   const [historyFrom, setHistoryFrom] = useState(() => {
     const today = new Date(`${getTodayKigaliDate()}T00:00:00.000Z`);
     today.setUTCDate(today.getUTCDate() - 30);
@@ -57,13 +61,19 @@ export function ParentMyChildrenPage() {
       }),
   });
 
+  const childLearningQuery = useQuery({
+    queryKey: ['parent', 'my-children', 'learning', learningStudent?.id ?? null],
+    enabled: Boolean(learningStudent?.id && auth.accessToken),
+    queryFn: () => getMyChildLearningApi(auth.accessToken!, learningStudent!.id),
+  });
+
   const parent = childrenQuery.data?.parent;
   const students = childrenQuery.data?.students ?? [];
 
   return (
     <SectionCard
-      title="My Children"
-      subtitle="View linked student profiles, active enrollment, and attendance history."
+      title={t('children.title')}
+      subtitle={t('children.subtitle')}
     >
       {childrenQuery.isPending ? (
         <div className="grid gap-2" role="status" aria-live="polite">
@@ -74,15 +84,15 @@ export function ParentMyChildrenPage() {
 
       {childrenQuery.isError ? (
         <StateView
-          title="Could not load linked students"
-          message="Please retry."
+          title={t('children.errorTitle')}
+          message={t('children.errorMessage')}
           action={
             <button
               type="button"
               onClick={() => void childrenQuery.refetch()}
               className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
             >
-              Retry
+              {t('children.retry')}
             </button>
           }
         />
@@ -90,12 +100,12 @@ export function ParentMyChildrenPage() {
 
       {!childrenQuery.isPending && !childrenQuery.isError ? (
         <div className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-sm text-slate-700">
-          Parent profile: {parent ? `${parent.firstName} ${parent.lastName}` : 'Not linked yet'}
+          {t('children.parentProfile')}: {parent ? `${parent.firstName} ${parent.lastName}` : t('children.notLinkedYet')}
         </div>
       ) : null}
 
       {!childrenQuery.isPending && !childrenQuery.isError && students.length === 0 ? (
-        <EmptyState message="No children linked to your account yet. Contact school administration." />
+        <EmptyState message={t('children.emptyMessage')} />
       ) : null}
 
       {!childrenQuery.isPending && !childrenQuery.isError && students.length > 0 ? (
@@ -103,12 +113,12 @@ export function ParentMyChildrenPage() {
           <table className="w-full min-w-full table-auto text-left text-sm">
             <thead>
               <tr className="border-b border-brand-100 text-slate-700">
-                <th className="px-2 py-2 font-semibold">Student</th>
-                <th className="px-2 py-2 font-semibold">Code</th>
-                <th className="px-2 py-2 font-semibold">Relationship</th>
-                <th className="px-2 py-2 font-semibold">Class</th>
-                <th className="px-2 py-2 font-semibold">Attendance (30d)</th>
-                <th className="px-2 py-2 font-semibold">Actions</th>
+                <th className="px-2 py-2 font-semibold">{t('children.table.student')}</th>
+                <th className="px-2 py-2 font-semibold">{t('children.table.code')}</th>
+                <th className="px-2 py-2 font-semibold">{t('children.table.relationship')}</th>
+                <th className="px-2 py-2 font-semibold">{t('children.table.class')}</th>
+                <th className="px-2 py-2 font-semibold">{t('children.table.attendance30d')}</th>
+                <th className="px-2 py-2 font-semibold">{t('children.table.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -120,7 +130,7 @@ export function ParentMyChildrenPage() {
                   <td className="px-2 py-2 align-middle">{student.studentCode}</td>
                   <td className="px-2 py-2 align-middle">
                     {student.relationship}
-                    {student.isPrimary ? ' (Primary)' : ''}
+                    {student.isPrimary ? ` (${t('children.primary')})` : ''}
                   </td>
                   <td className="px-2 py-2 align-middle">
                     {student.currentEnrollment?.classRoom.name ?? '-'}
@@ -141,22 +151,36 @@ export function ParentMyChildrenPage() {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      Last marked: {student.attendanceLast30Days.lastMarkedDate ?? 'No records'}
+                      {t('children.lastMarked')}: {student.attendanceLast30Days.lastMarkedDate ?? t('children.noRecords')}
                     </p>
                   </td>
                   <td className="px-2 py-2 align-middle">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedStudent({
-                          id: student.id,
-                          fullName: `${student.firstName} ${student.lastName}`,
-                        })
-                      }
-                      className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
-                    >
-                      View history
-                    </button>
+                    <div className="flex flex-wrap gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedStudent({
+                            id: student.id,
+                            fullName: `${student.firstName} ${student.lastName}`,
+                          })
+                        }
+                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
+                      >
+                        {t('children.attendanceAction')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLearningStudent({
+                            id: student.id,
+                            fullName: `${student.firstName} ${student.lastName}`,
+                          })
+                        }
+                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
+                      >
+                        {t('children.learningAction')}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -253,6 +277,104 @@ export function ParentMyChildrenPage() {
                 </table>
               </div>
             )}
+          </div>
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={Boolean(learningStudent)}
+        onClose={() => setLearningStudent(null)}
+        title="Learning summary"
+        description={learningStudent?.fullName}
+      >
+        {childLearningQuery.isPending ? (
+          <div className="grid gap-2" role="status" aria-live="polite">
+            <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
+            <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
+          </div>
+        ) : null}
+
+        {childLearningQuery.isError ? (
+          <StateView
+            title="Could not load learning data"
+            message="Retry in a moment."
+            action={
+              <button
+                type="button"
+                onClick={() => void childLearningQuery.refetch()}
+                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+              >
+                Retry
+              </button>
+            }
+          />
+        ) : null}
+
+        {!childLearningQuery.isPending && !childLearningQuery.isError && childLearningQuery.data ? (
+          <div className="grid gap-6">
+            <div>
+              <h3 className="mb-2 text-sm font-bold text-slate-900">Course progress</h3>
+              {childLearningQuery.data.courses.length === 0 ? (
+                <EmptyState message="No enrolled courses with published lessons yet." />
+              ) : (
+                <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
+                  <table className="w-full min-w-full table-auto text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-brand-100 text-slate-700">
+                        <th className="px-2 py-2 font-semibold">Course</th>
+                        <th className="px-2 py-2 font-semibold">Lessons done</th>
+                        <th className="px-2 py-2 font-semibold">Progress</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {childLearningQuery.data.courses.map((c) => (
+                        <tr key={c.courseId} className="border-b border-brand-50">
+                          <td className="px-2 py-2 font-medium text-slate-800">{c.title}</td>
+                          <td className="px-2 py-2 text-slate-700">
+                            {c.completedLessons} / {c.totalPublishedLessons}
+                          </td>
+                          <td className="px-2 py-2 text-slate-700">{c.progressPercent}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="mb-2 text-sm font-bold text-slate-900">Recent quiz attempts</h3>
+              {childLearningQuery.data.recentAttempts.length === 0 ? (
+                <EmptyState message="No submitted tests yet." />
+              ) : (
+                <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
+                  <table className="w-full min-w-full table-auto text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-brand-100 text-slate-700">
+                        <th className="px-2 py-2 font-semibold">Assessment</th>
+                        <th className="px-2 py-2 font-semibold">Course</th>
+                        <th className="px-2 py-2 font-semibold">Score</th>
+                        <th className="px-2 py-2 font-semibold">Submitted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {childLearningQuery.data.recentAttempts.map((a) => (
+                        <tr key={a.id} className="border-b border-brand-50">
+                          <td className="px-2 py-2 font-medium text-slate-800">{a.assessmentTitle}</td>
+                          <td className="px-2 py-2 text-slate-700">{a.courseTitle}</td>
+                          <td className="px-2 py-2 text-slate-700">
+                            {a.maxScore > 0 ? `${a.score} / ${a.maxScore}` : `${a.score}`}
+                          </td>
+                          <td className="px-2 py-2 text-slate-600">
+                            {new Date(a.submittedAt).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         ) : null}
       </Modal>

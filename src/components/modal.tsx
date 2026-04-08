@@ -1,4 +1,5 @@
 import { PropsWithChildren, ReactNode, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ModalProps extends PropsWithChildren {
   open: boolean;
@@ -16,6 +17,7 @@ export function Modal({
   children,
   footer,
 }: ModalProps) {
+  const { t } = useTranslation('common');
   useEffect(() => {
     if (!open) {
       return;
@@ -46,7 +48,7 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center sm:p-4">
       <button
         type="button"
-        aria-label="Close dialog"
+        aria-label={t('actions.close')}
         className="absolute inset-0 bg-brand-900/40"
         onClick={onClose}
       />
@@ -67,7 +69,7 @@ export function Modal({
             onClick={onClose}
             className="rounded-md border border-brand-200 bg-brand-50 px-2.5 py-1 text-sm font-semibold text-slate-700"
           >
-            Close
+            {t('actions.close')}
           </button>
         </header>
 

@@ -1,0 +1,98 @@
+{
+  "appName": "Smart School",
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "rw": "Kinyarwanda",
+    "fr": "French"
+  },
+  "lowBandwidth": {
+    "toggleOn": "Low data mode on",
+    "toggleOff": "Low data mode off",
+    "hint": "Reduces heavy images on marketing pages."
+  },
+  "shell": {
+    "navigation": "Navigation",
+    "close": "Close",
+    "backToWebsite": "Back to website",
+    "logout": "Logout",
+    "openSidebar": "Open sidebar",
+    "hideSidebar": "Hide sidebar",
+    "showSidebar": "Show sidebar",
+    "links": "Links",
+    "hello": "Hello, {{name}}",
+    "tenant": "Tenant",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "loggedInAs": "Logged in as {{name}}, click for profile menu",
+    "actionRequired": "Action required: complete the school profile and setup wizard to unlock academics, classes, students, subjects, and staff pages."
+  },
+  "headerTitle": {
+    "superAdmin": "Super Admin Dashboard",
+    "dashboard": "Dashboard",
+    "studentPortal": "Student Portal",
+    "teacherPortal": "Teacher Portal"
+  },
+  "studentHeader": {
+    "dashboard": "Dashboard",
+    "courses": "Courses",
+    "progress": "Progress",
+    "reports": "Reports",
+    "tests": "Tests",
+    "news": "News",
+    "reportCards": "Report cards",
+    "announcements": "Announcements"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "tenants": "School Management",
+    "setup": "Schools Management",
+    "system-settings": "System Settings",
+    "years": "Academic Years",
+    "class-management": "Class Management",
+    "students": "Students",
+    "attendance": "Attendance",
+    "subjects": "Subjects",
+    "learning-content": "Course Management",
+    "learning-insights": "Learning insights",
+    "academy-programs": "Academy programs",
+    "continuous-assessment": "Continuous Assessment Test",
+    "exams": "Examination Portal",
+    "class-marks": "Marks",
+    "conduct-marks-settings": "Conduct marks",
+    "report-cards": "Report cards",
+    "timetable": "Timetable",
+    "announcements": "Announcements",
+    "parents": "Parents",
+    "staff": "Staff",
+    "access-control": "Access Control",
+    "reports-analytics": "Reports & Analytics",
+    "notifications": "Notifications",
+    "support-center": "Support Center",
+    "audit-logs": "Activity Logs",
+    "subscriptions": "Subscription Management",
+    "parent-report-cards": "Report Cards",
+    "gov-dashboard": "Gov Dashboard",
+    "gov-schools": "Gov Schools",
+    "gov-incidents": "Gov Incidents",
+    "gov-auditors": "Auditor Management",
+    "student-dashboard": "Dashboard",
+    "student-my-learning": "My Learning",
+    "student-courses": "Course Curriculum",
+    "student-assignments": "Assignments",
+    "student-report-cards": "Report Cards",
+    "student-assessments": "Tests",
+    "student-announcements": "Announcements"
+  },
+  "connection": {
+    "offlineTitle": "You are offline. Reconnect to submit quizzes and sync progress.",
+    "queueHintZero": " Quiz drafts on open tests are saved on this device until you reconnect.",
+    "queueHintCount_one": " {{count}} lesson completion will sync when you are back online.",
+    "queueHintCount_other": " {{count}} lesson completions will sync when you are back online."
+  },
+  "actions": {
+    "close": "Close",
+    "retry": "Retry"
+  }
+}

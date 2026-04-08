@@ -1,0 +1,25 @@
+{
+  "children": {
+    "title": "My Children",
+    "subtitle": "View linked student profiles, active enrollment, and attendance history.",
+    "errorTitle": "Could not load linked students",
+    "errorMessage": "Please retry.",
+    "retry": "Retry",
+    "parentProfile": "Parent profile",
+    "notLinkedYet": "Not linked yet",
+    "emptyMessage": "No children linked to your account yet. Contact school administration.",
+    "primary": "Primary",
+    "lastMarked": "Last marked",
+    "noRecords": "No records",
+    "attendanceAction": "Attendance",
+    "learningAction": "Learning",
+    "table": {
+      "student": "Student",
+      "code": "Code",
+      "relationship": "Relationship",
+      "class": "Class",
+      "attendance30d": "Attendance (30d)",
+      "actions": "Actions"
+    }
+  }
+}

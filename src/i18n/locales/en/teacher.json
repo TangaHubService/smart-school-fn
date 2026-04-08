@@ -1,0 +1,24 @@
+{
+  "dashboard": {
+    "errorTitle": "Could not load dashboard",
+    "errorMessage": "Retry to load your teacher dashboard.",
+    "retry": "Retry",
+    "portal": "Teacher Portal",
+    "subtitle": "Your classes, attendance, and assignments at a glance.",
+    "today": "Today: {{date}}",
+    "metrics": {
+      "myCourses": "My Courses",
+      "myClasses": "My Classes",
+      "pendingToGrade": "Pending to grade",
+      "markedToday": "Marked today"
+    },
+    "attendanceTitle": "Today's attendance",
+    "classesWithSessions": "Classes with sessions",
+    "studentsMarked": "Students marked",
+    "pendingClasses_one": "{{count}} class still needs attendance",
+    "pendingClasses_other": "{{count}} classes still need attendance",
+    "upcomingExams": "Upcoming exams",
+    "viewAll": "View all",
+    "noUpcomingExams": "No upcoming exams"
+  }
+}

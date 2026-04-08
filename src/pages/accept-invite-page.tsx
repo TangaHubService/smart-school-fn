@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
@@ -20,6 +21,7 @@ const acceptInviteSchema = z.object({
 type AcceptInviteForm = z.infer<typeof acceptInviteSchema>;
 
 export function AcceptInvitePage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { showToast } = useToast();
@@ -44,8 +46,8 @@ export function AcceptInvitePage() {
     onSuccess: (result) => {
       showToast({
         type: 'success',
-        title: 'Invitation accepted',
-        message: 'Sign in with your email and password.',
+        title: t('invite.acceptedTitle'),
+        message: t('invite.acceptedMessage'),
       });
       navigate(`/login?email=${encodeURIComponent((result as any).email)}`, {
         replace: true,
@@ -54,8 +56,8 @@ export function AcceptInvitePage() {
     onError: (error) => {
       showToast({
         type: 'error',
-        title: 'Invite acceptance failed',
-        message: error instanceof Error ? error.message : 'Failed to accept invite',
+        title: t('invite.failedTitle'),
+        message: error instanceof Error ? error.message : t('invite.failedFallback'),
       });
     },
   });
@@ -75,7 +77,7 @@ export function AcceptInvitePage() {
         <div className="absolute -top-48 left-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl" aria-hidden="true" />
         <div className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
         <div className="relative z-10 w-full px-2 sm:px-0">
-          <StateView title="Invalid invite" message="Invite token is missing from the URL." />
+          <StateView title={t('invite.invalidInviteTitle')} message={t('invite.invalidInviteMessage')} />
         </div>
       </main>
     );
@@ -93,32 +95,32 @@ export function AcceptInvitePage() {
       <div className="absolute -top-48 left-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl" aria-hidden="true" />
       <div className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
       <section className="relative z-10 w-full max-w-md rounded-3xl border border-white/30 bg-white/75 p-5 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.6)] ring-1 ring-white/20 backdrop-blur-xl sm:p-8">
-        <h1 className="text-xl font-bold text-slate-900">Accept staff invite</h1>
-        <p className="mt-1 text-sm text-slate-700">Create your account to join the school.</p>
+        <h1 className="text-xl font-bold text-slate-900">{t('invite.title')}</h1>
+        <p className="mt-1 text-sm text-slate-700">{t('invite.subtitle')}</p>
 
         <form className="mt-4 grid gap-3" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
           <div className="grid gap-1">
-            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="First name" {...form.register('firstName')} />
+            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder={t('invite.firstName')} {...form.register('firstName')} />
             {form.formState.errors.firstName ? <p className="text-xs text-red-700">{form.formState.errors.firstName.message}</p> : null}
           </div>
           <div className="grid gap-1">
-            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="Last name" {...form.register('lastName')} />
+            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder={t('invite.lastName')} {...form.register('lastName')} />
             {form.formState.errors.lastName ? <p className="text-xs text-red-700">{form.formState.errors.lastName.message}</p> : null}
           </div>
           <div className="grid gap-1">
-            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="Phone number" {...form.register('phone')} />
+            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder={t('invite.phone')} {...form.register('phone')} />
             {form.formState.errors.phone ? <p className="text-xs text-red-700">{form.formState.errors.phone.message}</p> : null}
           </div>
           <div className="grid gap-1">
-            <input type="password" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="Password" {...form.register('password')} />
+            <input type="password" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder={t('invite.password')} {...form.register('password')} />
             {form.formState.errors.password ? <p className="text-xs text-red-700">{form.formState.errors.password.message}</p> : null}
           </div>
           <button className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white" type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Accepting...' : 'Accept invite'}
+            {mutation.isPending ? t('invite.accepting') : t('invite.accept')}
           </button>
         </form>
 
-        {apiError ? <StateView title="Could not accept invite" message={apiError.message} /> : null}
+        {apiError ? <StateView title={t('invite.couldNotAccept')} message={apiError.message} /> : null}
       </section>
     </main>
   );

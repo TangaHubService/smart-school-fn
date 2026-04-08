@@ -186,6 +186,8 @@ export interface AssessmentAttemptDetail {
     id: string;
     prompt: string;
     explanation: string | null;
+    hint?: string | null;
+    remedialLessonId?: string | null;
     type: AssessmentQuestionType;
     sequence: number;
     points: number;

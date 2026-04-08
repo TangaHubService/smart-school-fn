@@ -500,3 +500,29 @@ export function listMyChildAttendanceApi(
     },
   );
 }
+
+export interface MyChildLearningResponse {
+  student: { id: string; firstName: string; lastName: string };
+  courses: Array<{
+    courseId: string;
+    title: string;
+    completedLessons: number;
+    totalPublishedLessons: number;
+    progressPercent: number;
+  }>;
+  recentAttempts: Array<{
+    id: string;
+    assessmentTitle: string;
+    courseTitle: string;
+    score: number;
+    maxScore: number;
+    submittedAt: string;
+  }>;
+}
+
+export function getMyChildLearningApi(accessToken: string, studentId: string) {
+  return apiRequest<MyChildLearningResponse>(`/parents/me/students/${studentId}/learning`, {
+    method: 'GET',
+    accessToken,
+  });
+}

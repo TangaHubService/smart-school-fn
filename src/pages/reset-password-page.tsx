@@ -8,6 +8,7 @@ import { useState, useRef } from 'react';
 import { resetPasswordApi, verifyOtpApi } from '../features/auth/auth.api';
 import { resetPasswordSchema, ResetPasswordInput } from '../features/auth/auth.schema';
 import { ApiClientError } from '../types/api';
+import { useTranslation } from 'react-i18next';
 
 function OtpBoxes({ length = 6, value, onChange }: { length?: number, value: string, onChange: (val: string) => void }) {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
@@ -79,6 +80,7 @@ function OtpBoxes({ length = 6, value, onChange }: { length?: number, value: str
 }
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const step = searchParams.get('step') || 'otp';
@@ -102,14 +104,14 @@ export function ResetPasswordPage() {
       setSearchParams({ step: 'new_password', email, otp: localOtp });
     },
     onError: (error: ApiClientError) => {
-      setOtpError(error.message || 'Invalid or expired OTP');
+      setOtpError(error.message || t('reset.invalidOtp'));
     }
   });
 
   const mutation = useMutation({
     mutationFn: resetPasswordApi,
     onSuccess: () => {
-      alert('Password reset successfully! Please login with your new password.');
+      alert(t('reset.successAlert'));
       navigate('/login');
     },
   });
@@ -119,7 +121,7 @@ export function ResetPasswordPage() {
   const onOtpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (localOtp.length < 6 || localOtp.includes(' ')) {
-      setOtpError('Please enter a valid 6-digit code');
+      setOtpError(t('reset.otpRequired'));
       return;
     }
     setOtpError('');
@@ -143,11 +145,11 @@ export function ResetPasswordPage() {
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-xl shadow-brand-500/30">
             {step === 'otp' ? <Key className="h-8 w-8" /> : <ShieldCheck className="h-8 w-8" />}
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Security Reset</h1>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{t('reset.title')}</h1>
           <p className="mt-3 text-slate-600 leading-relaxed">
             {step === 'otp' 
-              ? `We sent a 6-digit code to ${email || 'your email'}. Enter it below.`
-              : 'Secure your account by creating a new password.'}
+              ? t('reset.otpSent', { email: email || t('reset.otpSentFallback') })
+              : t('reset.newPasswordPrompt')}
           </p>
         </header>
 
@@ -155,7 +157,7 @@ export function ResetPasswordPage() {
           <form className="space-y-6" onSubmit={onOtpSubmit}>
             <div>
               <label className="mb-2 block text-sm font-bold text-center text-slate-800 uppercase tracking-wide">
-                Verification Code (OTP)
+                {t('reset.otpLabel')}
               </label>
               <OtpBoxes value={localOtp} onChange={setLocalOtp} length={6} />
               {otpError && <p className="mt-2 text-sm text-center text-red-600 font-medium italic">{otpError}</p>}
@@ -166,14 +168,14 @@ export function ResetPasswordPage() {
               disabled={verifyMutation.isPending}
               className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg shadow-brand-500/20 text-sm font-bold uppercase tracking-widest text-white bg-brand-600 hover:bg-brand-700 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
             >
-              {verifyMutation.isPending ? 'Verifying...' : 'Verify Code'}
+              {verifyMutation.isPending ? t('reset.verifying') : t('reset.verifyCode')}
             </button>
             <Link
               to="/forgot-password"
               className="flex items-center justify-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t('reset.back')}
             </Link>
           </form>
         ) : (
@@ -184,7 +186,7 @@ export function ResetPasswordPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="newPassword" className="mb-2 block text-sm font-bold text-slate-800 uppercase tracking-wide">
-                  New Password
+                  {t('reset.newPassword')}
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -203,7 +205,7 @@ export function ResetPasswordPage() {
 
               <div>
                 <label htmlFor="confirmPassword" className="mb-2 block text-sm font-bold text-slate-800 uppercase tracking-wide">
-                  Confirm
+                  {t('reset.confirm')}
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -232,7 +234,7 @@ export function ResetPasswordPage() {
               disabled={mutation.isPending}
               className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg shadow-brand-500/20 text-sm font-bold uppercase tracking-widest text-white bg-brand-600 hover:bg-brand-700 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
             >
-              {mutation.isPending ? 'Updating Account...' : 'Update Password'}
+              {mutation.isPending ? t('reset.updating') : t('reset.updatePassword')}
             </button>
 
             <button
@@ -241,7 +243,7 @@ export function ResetPasswordPage() {
               className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to OTP
+              {t('reset.backToOtp')}
             </button>
           </form>
         )}

@@ -1,10 +1,59 @@
-import { ArrowRight, BookOpen, Check, Star, TrendingUp, Users, Award } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { ArrowRight, BookOpen, Check, TrendingUp, Users, Award } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { academyApi, type Program } from '../api/academy-api';
 import { PublicCommunityCTA } from '../components/public/public-community-cta';
 import { PublicAcademyProgramsShowcase } from '../components/public/public-academy-showcase';
 
 import backgroundImage from '../asset/background.jpg';
+import { getLowBandwidthPreferred } from '../utils/low-bandwidth-preference';
+
+const CATALOG_FILTERS = [
+  { id: 'all', label: 'All', keywords: [] as readonly string[] },
+  {
+    id: 'governance',
+    label: 'Governance & admin',
+    keywords: ['governance', 'administration', 'policy', 'accounting', 'hr', 'procurement'],
+  },
+  {
+    id: 'education',
+    label: 'Education',
+    keywords: ['education', 'research', 'training', 'teaching', 'curriculum'],
+  },
+  {
+    id: 'health',
+    label: 'Health & social',
+    keywords: ['health', 'social', 'welfare', 'care'],
+  },
+  {
+    id: 'ict',
+    label: 'ICT & technology',
+    keywords: ['ict', 'technology', 'innovation', 'software', 'digital'],
+  },
+  {
+    id: 'infrastructure',
+    label: 'Infrastructure',
+    keywords: ['infrastructure', 'manufacturing', 'construction', 'production'],
+  },
+  {
+    id: 'business',
+    label: 'Business & finance',
+    keywords: ['business', 'finance', 'trade', 'hospitality', 'sales'],
+  },
+] as const;
+
+function matchesCatalogFilter(program: Program, filterId: string): boolean {
+  if (filterId === 'all') {
+    return true;
+  }
+  const entry = CATALOG_FILTERS.find((c) => c.id === filterId);
+  if (!entry || entry.keywords.length === 0) {
+    return true;
+  }
+  const hay = `${program.title} ${program.description ?? ''}`.toLowerCase();
+  return entry.keywords.some((kw) => hay.includes(kw));
+}
 
 const courses = [
   {
@@ -74,7 +123,21 @@ const cpaPlans = [
 
 export function PublicCoursesPage() {
   const [showTuition, setShowTuition] = useState(false);
+  const [catalogFilter, setCatalogFilter] = useState<string>('all');
   const tuitionRef = useRef<HTMLDivElement>(null);
+  const lowBandwidth = getLowBandwidthPreferred();
+
+  const programsQuery = useQuery({
+    queryKey: ['academy-programs', 'public-catalog'],
+    queryFn: academyApi.getPrograms,
+    staleTime: 60_000,
+  });
+
+  const allPrograms = programsQuery.data ?? [];
+  const filteredPrograms = useMemo(
+    () => allPrograms.filter((p) => matchesCatalogFilter(p, catalogFilter)),
+    [allPrograms, catalogFilter],
+  );
 
   const handleViewTuition = () => {
     setShowTuition(true);
@@ -87,9 +150,13 @@ export function PublicCoursesPage() {
     <main className="bg-white">
       <section
         className="relative flex h-[65vh] items-center justify-center bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        style={
+          lowBandwidth
+            ? { backgroundColor: '#0f172a' }
+            : { backgroundImage: `url(${backgroundImage})` }
+        }
       >
-        <div className="absolute inset-0 bg-black/65" />
+        <div className={`absolute inset-0 ${lowBandwidth ? 'bg-black/40' : 'bg-black/65'}`} />
         <div className="relative mx-auto w-full max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Our Programs</p>
           <h1 className="text-3xl font-bold uppercase tracking-tight text-white sm:text-5xl">Welcome to Smart School Rwanda After Class Programs!</h1>
@@ -114,11 +181,55 @@ export function PublicCoursesPage() {
         </div>
       </section>
 
+      <section className="border-b border-slate-100 bg-slate-50 py-8">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">Live catalog</p>
+              <h2 className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">Academy programs from the API</h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                {programsQuery.isPending
+                  ? 'Loading program count…'
+                  : programsQuery.isError
+                    ? 'Program list unavailable — open the academy page to browse.'
+                    : `${allPrograms.length} program${allPrograms.length === 1 ? '' : 's'} live${
+                        catalogFilter !== 'all'
+                          ? ` · ${filteredPrograms.length} match “${
+                              CATALOG_FILTERS.find((f) => f.id === catalogFilter)?.label ?? catalogFilter
+                            }”`
+                          : ''
+                      }`}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {CATALOG_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setCatalogFilter(f.id)}
+                className={[
+                  'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                  catalogFilter === f.id
+                    ? 'border-brand-500 bg-brand-500 text-white'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-brand-200',
+                ].join(' ')}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <PublicAcademyProgramsShowcase
-        eyebrow="Advertised this week"
+        eyebrow="Filtered from public API"
         title="Enroll in live programs"
-        subtitle="These listings are public—they match what buyers see on the academy checkout."
-        limit={9}
+        subtitle="Same data as academy checkout — filter chips match common program themes."
+        limit={null}
+        programs={filteredPrograms}
+        programsLoading={programsQuery.isPending}
+        programsError={programsQuery.isError}
         ctaHref="/academy"
         ctaLabel="Go to academy"
       />

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export function UnauthorizedPage() {
+  const { t } = useTranslation('auth');
   return (
     <main
       className="relative min-h-screen flex items-center justify-center px-4 py-8 bg-cover bg-center overflow-hidden"
@@ -17,15 +19,15 @@ export function UnauthorizedPage() {
       />
 
       <section className="relative z-10 w-full max-w-md rounded-3xl border-white/30 bg-white/75 p-6 text-center shadow-[0_40px_120px_-40px_rgba(0,0,0,0.6)] ring-1 ring-white/20 backdrop-blur-xl sm:p-8">
-        <h1 className="text-xl font-bold text-slate-900">Access denied</h1>
+        <h1 className="text-xl font-bold text-slate-900">{t('unauthorized.title')}</h1>
         <p className="mt-2 text-sm text-slate-700">
-          Your current role does not include permission for this page.
+          {t('unauthorized.message')}
         </p>
         <Link
           to="/"
           className="mt-4 inline-block rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
         >
-          Back to dashboard
+          {t('unauthorized.backToDashboard')}
         </Link>
       </section>
     </main>

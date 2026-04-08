@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   BookOpen,
   ClipboardCheck,
   FileBarChart2,
@@ -6,6 +7,7 @@ import {
   School,
   Users,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import {
@@ -53,9 +55,16 @@ const TEACHER_QUICK_ACTIONS: DashboardQuickActionItem[] = [
     icon: BookOpen,
     to: '/admin/courses',
   },
+  {
+    label: 'Learning insights',
+    description: 'See class completion and quiz performance.',
+    icon: BarChart3,
+    to: '/admin/learning-insights',
+  },
 ];
 
 export function TeacherDashboardPage() {
+  const { t } = useTranslation('teacher');
   const auth = useAuth();
   const todayStr = getTodayKigaliDate();
 
@@ -68,15 +77,15 @@ export function TeacherDashboardPage() {
   if (isError) {
     return (
       <StateView
-        title="Could not load dashboard"
-        message="Retry to load your teacher dashboard."
+        title={t('dashboard.errorTitle')}
+        message={t('dashboard.errorMessage')}
         action={
           <button
             type="button"
             onClick={() => void refetch()}
             className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
           >
-            Retry
+            {t('dashboard.retry')}
           </button>
         }
       />
@@ -101,7 +110,7 @@ export function TeacherDashboardPage() {
       <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Teacher Portal
+            {t('dashboard.portal')}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-900">
@@ -111,37 +120,37 @@ export function TeacherDashboardPage() {
             <DashboardQuickActionsDropdown actions={TEACHER_QUICK_ACTIONS} />
           </div>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Your classes, attendance, and assignments at a glance.
+            {t('dashboard.subtitle')}
           </p>
         </div>
-        <span className="text-sm text-slate-600">Today: {todayStr}</span>
+        <span className="text-sm text-slate-600">{t('dashboard.today', { date: todayStr })}</span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <TeacherMetricCard
           icon={BookOpen}
-          label="My Courses"
+          label={t('dashboard.metrics.myCourses')}
           value={data.metrics.myCourses}
           to="/admin/courses"
           color="green"
         />
         <TeacherMetricCard
           icon={School}
-          label="My Classes"
+          label={t('dashboard.metrics.myClasses')}
           value={data.metrics.myClasses}
           to="/admin/my-classes"
           color="blue"
         />
         <TeacherMetricCard
           icon={ClipboardCheck}
-          label="Pending to grade"
+          label={t('dashboard.metrics.pendingToGrade')}
           value={data.metrics.pendingSubmissions}
           to="/admin/assignments"
           color="orange"
         />
         <TeacherMetricCard
           icon={Users}
-          label="Marked today"
+          label={t('dashboard.metrics.markedToday')}
           value={data.todayAttendance.markedStudents}
           to="/admin/attendance"
           color="green"
@@ -150,17 +159,17 @@ export function TeacherDashboardPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900">Today&apos;s attendance</h2>
+          <h2 className="text-lg font-bold text-slate-900">{t('dashboard.attendanceTitle')}</h2>
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-              <span className="text-sm font-medium text-slate-700">Classes with sessions</span>
+              <span className="text-sm font-medium text-slate-700">{t('dashboard.classesWithSessions')}</span>
               <span className="font-semibold text-slate-900">
                 {data.todayAttendance.totalClasses - data.todayAttendance.pendingClasses} /{' '}
                 {data.todayAttendance.totalClasses}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-              <span className="text-sm font-medium text-slate-700">Students marked</span>
+              <span className="text-sm font-medium text-slate-700">{t('dashboard.studentsMarked')}</span>
               <span className="font-semibold text-slate-900">{data.todayAttendance.markedStudents}</span>
             </div>
             {data.todayAttendance.pendingClasses > 0 && (
@@ -168,7 +177,7 @@ export function TeacherDashboardPage() {
                 to="/admin/attendance"
                 className="block rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800"
               >
-                {data.todayAttendance.pendingClasses} classes still need attendance →
+                {t('dashboard.pendingClasses', { count: data.todayAttendance.pendingClasses })} →
               </Link>
             )}
           </div>
@@ -176,9 +185,9 @@ export function TeacherDashboardPage() {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Upcoming exams</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t('dashboard.upcomingExams')}</h2>
             <Link to="/admin/exams" className="text-sm font-semibold text-brand-500">
-              View all →
+              {t('dashboard.viewAll')} →
             </Link>
           </div>
           <div className="mt-4 space-y-3">
@@ -197,7 +206,7 @@ export function TeacherDashboardPage() {
                 </Link>
               ))
             ) : (
-              <p className="py-6 text-center text-sm text-slate-500">No upcoming exams</p>
+              <p className="py-6 text-center text-sm text-slate-500">{t('dashboard.noUpcomingExams')}</p>
             )}
           </div>
         </div>

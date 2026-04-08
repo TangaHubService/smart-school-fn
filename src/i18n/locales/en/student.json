@@ -1,0 +1,40 @@
+{
+  "assessments": {
+    "title": "My tests",
+    "subtitle": "Open a test to read the instructions, then start when you are ready.",
+    "searchLabel": "Search tests",
+    "searchPlaceholder": "Search by title or course",
+    "studentFallback": "Student",
+    "noCode": "No code",
+    "errorTitle": "Could not load tests",
+    "errorMessage": "Retry to load your available assessments.",
+    "retry": "Retry",
+    "awaitingReview": "Awaiting review",
+    "inProgress": "In progress",
+    "openTest": "Open test",
+    "emptyTitle": "No tests available",
+    "emptyMessage": "Published assessments for your classes will appear here."
+  },
+  "reportCards": {
+    "title": "My report cards",
+    "subtitle": "View or download published report cards for your terms.",
+    "term": "Term",
+    "allTerms": "All terms",
+    "studentFallback": "Student",
+    "loadErrorTitle": "Could not load report cards",
+    "loadErrorMessage": "Retry to load your report cards.",
+    "retry": "Retry",
+    "average": "Average",
+    "grade": "Grade",
+    "position": "Position",
+    "viewPdf": "View PDF",
+    "download": "Download",
+    "emptyTitle": "No report cards yet",
+    "emptyMessage": "Published report cards will appear here after your school finalizes results.",
+    "previewTitle": "Report card preview",
+    "close": "Close",
+    "previewErrorTitle": "Could not load report card",
+    "downloadErrorTitle": "Could not download report card",
+    "requestFailed": "Request failed"
+  }
+}

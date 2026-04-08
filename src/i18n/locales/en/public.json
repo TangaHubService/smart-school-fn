@@ -1,0 +1,55 @@
+{
+  "header": {
+    "home": "Home",
+    "about": "About",
+    "programs": "Programs",
+    "jobs": "Jobs",
+    "contact": "Contact",
+    "openWorkspace": "Open Workspace",
+    "signIn": "Sign in",
+    "toggleNav": "Toggle navigation"
+  },
+  "footer": {
+    "tagline": "Empowering the next generation of leaders in Rwanda through practical digital education.",
+    "platform": "Platform",
+    "courses": "Courses",
+    "academy": "Professional Academy",
+    "pricing": "Pricing & Tuition",
+    "careerPortal": "Career Portal",
+    "mission": "Our Mission",
+    "support": "Support",
+    "contactUs": "Contact Us",
+    "helpCenter": "Help Center",
+    "studentPortal": "Student Portal",
+    "examAccess": "Exam Access",
+    "connect": "Connect",
+    "rights": "Smart school Learning Platform. All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "cookies": "Cookies"
+  },
+  "legal": {
+    "privacyTitle": "Privacy policy",
+    "privacySubtitle": "How Smart School handles personal data (summary for demo).",
+    "termsTitle": "Terms of use",
+    "termsSubtitle": "Rules for using Smart School (demo placeholder).",
+    "cookiesTitle": "Cookies",
+    "cookiesSubtitle": "How we use browser storage."
+  },
+  "community": {
+    "title": "Join Our Community",
+    "subtitle": "Whether you're an educator, a learner, or looking for what's next, we have a place for you.",
+    "staffTitle": "For Staff",
+    "staffDesc": "Access your dashboard to manage courses, track attendance, and support student success with powerful digital tools.",
+    "staffAction": "Staff Login",
+    "studentTitle": "For Students",
+    "studentDesc": "Start your learning journey, access course materials, and track your academic performance in real-time.",
+    "studentAction": "Student Entry",
+    "parentTitle": "For Parent",
+    "parentDesc": "Parents access performance, attendance, assignments, feedback, communication and resources to support learning.",
+    "parentAction": "Parent Login",
+    "afterClassTitle": "After Class",
+    "afterClassDesc": "Continue your growth beyond the classroom. Explore advanced courses or browse career-ready opportunities.",
+    "afterClassAction": "Explore More"
+  }
+}

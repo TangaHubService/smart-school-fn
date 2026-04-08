@@ -1,5 +1,6 @@
 import { WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { getPendingLessonIds } from '../utils/offline-learning-cache';
 
@@ -7,6 +8,7 @@ import { getPendingLessonIds } from '../utils/offline-learning-cache';
  * Surfaces offline state so learners know drafts may not sync (low / no connectivity).
  */
 export function ConnectionStatusBanner() {
+  const { t } = useTranslation('common');
   const [online, setOnline] = useState(
     () => (typeof navigator !== 'undefined' ? navigator.onLine : true),
   );
@@ -40,8 +42,8 @@ export function ConnectionStatusBanner() {
 
   const queueHint =
     pendingLessons > 0
-      ? ` ${pendingLessons} lesson completion${pendingLessons === 1 ? '' : 's'} will sync when you are back online.`
-      : ' Quiz drafts on open tests are saved on this device until you reconnect.';
+      ? t('connection.queueHintCount', { count: pendingLessons })
+      : t('connection.queueHintZero');
 
   return (
     <div
@@ -52,7 +54,7 @@ export function ConnectionStatusBanner() {
       <div className="pointer-events-auto flex max-w-lg items-center gap-2 rounded-t-xl border border-amber-200/80 bg-amber-50 px-4 py-2.5 text-center text-sm font-medium text-amber-950 shadow-lg">
         <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
         <span>
-          You are offline. Reconnect to submit quizzes and sync progress.
+          {t('connection.offlineTitle')}
           {queueHint}
         </span>
       </div>
