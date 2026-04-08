@@ -342,6 +342,34 @@ export function createCourseApi(
   });
 }
 
+export function updateCourseApi(
+  accessToken: string,
+  courseId: string,
+  payload: {
+    academicYearId?: string;
+    classRoomId?: string;
+    subjectId?: string | null;
+    title?: string;
+    description?: string | null;
+  },
+) {
+  return apiRequest<CourseSummary>(`/courses/${courseId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function deleteCourseApi(
+  accessToken: string,
+  courseId: string,
+) {
+  return apiRequest<{ id: string; deleted: boolean }>(`/courses/${courseId}`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}
+
 export function assignCourseTeacherApi(
   accessToken: string,
   courseId: string,
@@ -389,6 +417,37 @@ export function createLessonApi(
     method: 'POST',
     accessToken,
     body: payload,
+  });
+}
+
+export function updateLessonApi(
+  accessToken: string,
+  lessonId: string,
+  payload: {
+    title?: string;
+    summary?: string | null;
+    contentType?: LessonContentType;
+    body?: string | null;
+    externalUrl?: string | null;
+    sequence?: number;
+    asset?: UploadedAssetPayload;
+    removeAsset?: boolean;
+  },
+) {
+  return apiRequest<LessonItem>(`/lessons/${lessonId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function deleteLessonApi(
+  accessToken: string,
+  lessonId: string,
+) {
+  return apiRequest<{ id: string; deleted: boolean }>(`/lessons/${lessonId}`, {
+    method: 'DELETE',
+    accessToken,
   });
 }
 

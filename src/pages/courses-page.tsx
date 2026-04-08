@@ -4,10 +4,15 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  Eye,
   ExternalLink,
   FilePlus2,
   Lock,
+  Pencil,
   Plus,
+  RotateCcw,
+  Send,
+  Trash2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -31,11 +36,15 @@ import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import {
   createCourseApi,
   createLessonApi,
+  deleteCourseApi,
+  deleteLessonApi,
   getCourseDetailApi,
   listCourseSubjectOptionsApi,
   listCoursesApi,
   LessonContentType,
   publishLessonApi,
+  updateCourseApi,
+  updateLessonApi,
 } from '../features/sprint4/lms.api';
 
 interface AcademicYearOption {
@@ -119,6 +128,45 @@ const lessonFormSchema = z
 
 type CourseFormValues = z.infer<typeof courseFormSchema>;
 type LessonFormValues = z.infer<typeof lessonFormSchema>;
+
+type EditableCourse = {
+  id: string;
+  title: string;
+  description?: string | null;
+  academicYear: { id: string; name: string };
+  classRoom: { id: string; name: string };
+  subject?: { id: string; name?: string } | null;
+};
+
+type EditableLesson = {
+  id: string;
+  title: string;
+  summary: string | null;
+  contentType: LessonContentType;
+  body: string | null;
+  externalUrl: string | null;
+  sequence: number;
+  isPublished: boolean;
+  fileAsset: {
+    secureUrl: string;
+    mimeType: string | null;
+    originalName: string;
+  } | null;
+};
+
+type DeletableItem =
+  | {
+      type: 'course';
+      id: string;
+      title: string;
+      description: string;
+    }
+  | {
+      type: 'lesson';
+      id: string;
+      title: string;
+      description: string;
+    };
 
 const defaultCourseForm: CourseFormValues = {
   title: '',
@@ -333,10 +381,14 @@ export function CoursesPage() {
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedLessonId, setSelectedLessonId] = useState('');
 
-  const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false);
-  const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false);
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [courseModalMode, setCourseModalMode] = useState<'create' | 'edit'>('create');
+  const [courseModalCourseId, setCourseModalCourseId] = useState('');
+  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+  const [lessonModalMode, setLessonModalMode] = useState<'create' | 'edit'>('create');
   const [lessonFile, setLessonFile] = useState<File | null>(null);
   const [lessonFileError, setLessonFileError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<DeletableItem | null>(null);
 
   const courseForm = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -393,7 +445,7 @@ export function CoursesPage() {
     onSuccess: (course) => {
       void queryClient.invalidateQueries({ queryKey: ['lms', 'courses'] });
       setSelectedCourseId(course.id);
-      setIsCreateCourseOpen(false);
+      setIsCourseModalOpen(false);
       courseForm.reset(defaultCourseForm);
       showToast({
         type: 'success',
@@ -405,6 +457,60 @@ export function CoursesPage() {
       showToast({
         type: 'error',
         title: 'Could not create course',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const updateCourseMutation = useMutation({
+    mutationFn: (values: CourseFormValues) =>
+      updateCourseApi(auth.accessToken!, courseModalCourseId, {
+        title: values.title,
+        description: values.description?.trim() ? values.description : null,
+        academicYearId: values.academicYearId,
+        classRoomId: values.classRoomId,
+        subjectId: values.subjectId?.trim() ? values.subjectId : isTeacherOnly ? undefined : null,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'courses'] });
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'course-detail', courseModalCourseId] });
+      setIsCourseModalOpen(false);
+      setCourseModalCourseId('');
+      showToast({
+        type: 'success',
+        title: 'Course updated',
+        message: 'Your course details were saved.',
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not update course',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const deleteCourseMutation = useMutation({
+    mutationFn: (courseId: string) => deleteCourseApi(auth.accessToken!, courseId),
+    onSuccess: (_result, courseId) => {
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'courses'] });
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'course-detail', courseId] });
+      setPendingDelete(null);
+      if (selectedCourseId === courseId) {
+        setSelectedCourseId('');
+        setSelectedLessonId('');
+      }
+      showToast({
+        type: 'success',
+        title: 'Course deleted',
+        message: 'The course was removed from your active list.',
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not delete course',
         message: error instanceof Error ? error.message : 'Request failed',
       });
     },
@@ -432,7 +538,7 @@ export function CoursesPage() {
       void queryClient.invalidateQueries({ queryKey: ['lms', 'courses'] });
       setLessonFile(null);
       setLessonFileError(null);
-      setIsCreateLessonOpen(false);
+      setIsLessonModalOpen(false);
       lessonForm.reset(defaultLessonForm);
       showToast({
         type: 'success',
@@ -443,6 +549,79 @@ export function CoursesPage() {
       showToast({
         type: 'error',
         title: 'Could not save lesson',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const updateLessonMutation = useMutation({
+    mutationFn: async (values: LessonFormValues) => {
+      let asset;
+      if (lessonFile) {
+        asset = await uploadFileToCloudinary(auth.accessToken!, 'lesson', lessonFile);
+      }
+
+      const shouldKeepUrl =
+        values.contentType === 'LINK' ||
+        (values.contentType === 'VIDEO' && Boolean(values.externalUrl?.trim()));
+      const shouldKeepBody = values.contentType === 'TEXT';
+      const shouldRemoveAsset =
+        !asset &&
+        Boolean(selectedLesson?.fileAsset) &&
+        (values.contentType === 'TEXT' || values.contentType === 'LINK');
+
+      return updateLessonApi(auth.accessToken!, selectedLessonId, {
+        title: values.title,
+        summary: values.summary?.trim() ? values.summary : null,
+        contentType: values.contentType as LessonContentType,
+        body: shouldKeepBody ? values.body || null : null,
+        externalUrl: shouldKeepUrl ? values.externalUrl?.trim() || null : null,
+        sequence: values.sequence,
+        asset,
+        removeAsset: shouldRemoveAsset || undefined,
+      });
+    },
+    onSuccess: (lesson) => {
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'course-detail', selectedCourseId] });
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'courses'] });
+      setLessonFile(null);
+      setLessonFileError(null);
+      setIsLessonModalOpen(false);
+      setSelectedLessonId(lesson.id);
+      showToast({
+        type: 'success',
+        title: 'Lesson updated',
+        message: 'Your curriculum changes were saved.',
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not update lesson',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const deleteLessonMutation = useMutation({
+    mutationFn: (lessonId: string) => deleteLessonApi(auth.accessToken!, lessonId),
+    onSuccess: (_result, lessonId) => {
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'course-detail', selectedCourseId] });
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'courses'] });
+      setPendingDelete(null);
+      if (selectedLessonId === lessonId) {
+        setSelectedLessonId('');
+      }
+      showToast({
+        type: 'success',
+        title: 'Lesson deleted',
+        message: 'The lesson was removed from this course.',
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not delete lesson',
         message: error instanceof Error ? error.message : 'Request failed',
       });
     },
@@ -510,6 +689,8 @@ export function CoursesPage() {
   }, [courseDetailQuery.data?.lessons.items, selectedLessonId]);
 
   function openCreateCourse() {
+    setCourseModalMode('create');
+    setCourseModalCourseId('');
     const currentAcademicYear = academicYears.find((item) => item.isCurrent) ?? academicYears[0];
     courseForm.reset({
       ...defaultCourseForm,
@@ -517,7 +698,24 @@ export function CoursesPage() {
       classRoomId: classRooms[0]?.id || '',
       subjectId: subjects[0]?.id || '',
     });
-    setIsCreateCourseOpen(true);
+    setIsCourseModalOpen(true);
+  }
+
+  function openEditCourse(course?: EditableCourse | null) {
+    if (!course) {
+      return;
+    }
+
+    setCourseModalMode('edit');
+    setCourseModalCourseId(course.id);
+    courseForm.reset({
+      title: course.title,
+      description: course.description ?? '',
+      academicYearId: course.academicYear.id,
+      classRoomId: course.classRoom.id,
+      subjectId: course.subject?.id ?? '',
+    });
+    setIsCourseModalOpen(true);
   }
 
   function submitCourse(values: CourseFormValues) {
@@ -529,10 +727,16 @@ export function CoursesPage() {
       return;
     }
 
+    if (courseModalMode === 'edit' && courseModalCourseId) {
+      updateCourseMutation.mutate(values);
+      return;
+    }
+
     createCourseMutation.mutate(values);
   }
 
   function openCreateLesson() {
+    setLessonModalMode('create');
     lessonForm.reset({
       ...defaultLessonForm,
       sequence:
@@ -541,16 +745,47 @@ export function CoursesPage() {
     });
     setLessonFile(null);
     setLessonFileError(null);
-    setIsCreateLessonOpen(true);
+    setIsLessonModalOpen(true);
+  }
+
+  function openEditLesson(lesson?: EditableLesson | null) {
+    if (!lesson) {
+      return;
+    }
+
+    setSelectedLessonId(lesson.id);
+    setLessonModalMode('edit');
+    lessonForm.reset({
+      title: lesson.title,
+      summary: lesson.summary ?? '',
+      contentType: lesson.contentType,
+      body: lesson.body ?? '<p></p>',
+      externalUrl: lesson.externalUrl ?? '',
+      sequence: lesson.sequence,
+    });
+    setLessonFile(null);
+    setLessonFileError(null);
+    setIsLessonModalOpen(true);
   }
 
   async function submitLesson(values: LessonFormValues) {
-    if (values.contentType === 'PDF' && !lessonFile) {
+    const hasExistingLessonAsset = Boolean(selectedLesson?.fileAsset);
+
+    if (
+      values.contentType === 'PDF' &&
+      !lessonFile &&
+      !(lessonModalMode === 'edit' && hasExistingLessonAsset)
+    ) {
       setLessonFileError('PDF lessons require a file attachment.');
       return;
     }
 
-    if (values.contentType === 'VIDEO' && !lessonFile && !values.externalUrl?.trim()) {
+    if (
+      values.contentType === 'VIDEO' &&
+      !lessonFile &&
+      !values.externalUrl?.trim() &&
+      !(lessonModalMode === 'edit' && hasExistingLessonAsset)
+    ) {
       lessonForm.setError('externalUrl', {
         message: 'Provide a video URL or attach a video file.',
       });
@@ -558,52 +793,69 @@ export function CoursesPage() {
     }
 
     setLessonFileError(null);
+    if (lessonModalMode === 'edit' && selectedLessonId) {
+      await updateLessonMutation.mutateAsync(values);
+      return;
+    }
+
     await createLessonMutation.mutateAsync(values);
+  }
+
+  function requestDeleteCourse(course?: Pick<EditableCourse, 'id' | 'title'> | null) {
+    if (!course) {
+      return;
+    }
+
+    setPendingDelete({
+      type: 'course',
+      id: course.id,
+      title: course.title,
+      description: `Delete "${course.title}"? Students will no longer see it in active courses.`,
+    });
+  }
+
+  function requestDeleteLesson(lesson?: Pick<EditableLesson, 'id' | 'title'> | null) {
+    if (!lesson) {
+      return;
+    }
+
+    setPendingDelete({
+      type: 'lesson',
+      id: lesson.id,
+      title: lesson.title,
+      description: `Delete lesson "${lesson.title}" from this course?`,
+    });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) {
+      return;
+    }
+
+    if (pendingDelete.type === 'course') {
+      await deleteCourseMutation.mutateAsync(pendingDelete.id).catch(() => undefined);
+      return;
+    }
+
+    await deleteLessonMutation.mutateAsync(pendingDelete.id).catch(() => undefined);
   }
 
   const selectedCourse = courseDetailQuery.data?.course ?? null;
   const selectedLesson =
     courseDetailQuery.data?.lessons.items.find((lesson) => lesson.id === selectedLessonId) ?? null;
+  const isDeletePending = deleteCourseMutation.isPending || deleteLessonMutation.isPending;
 
   return (
     <div className="grid gap-5">
-      {auth.me?.permissions.includes('courses.manage') ? (
-        <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-950">
-          <p className="font-semibold">Public Smart School Academy</p>
-          <p className="mt-1 text-violet-900/90">
-            Courses below are for classes at your school. The public <strong>/academy</strong> page lists separate{' '}
-            <strong>programs</strong> (with a price). Create them under Academy programs.
-          </p>
-          <Link
-            to="/admin/academy-programs"
-            className="mt-2 inline-flex items-center gap-1 font-semibold text-brand-700 hover:underline"
-          >
-            Manage academy programs
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-      ) : null}
       <SectionCard
-        title="Courses"
+        title={selectedCourseId ? undefined : 'Courses'}
         subtitle={
           selectedCourseId
-            ? 'Review lessons and publish course content.'
+            ? undefined
             : 'Create class courses and publish lessons for students.'
         }
         action={
-          selectedCourseId ? (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCourseId('');
-                setSelectedLessonId('');
-              }}
-              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-brand-50"
-            >
-              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-              Back to courses
-            </button>
-          ) : (
+          selectedCourseId ? undefined : (
             <button
               type="button"
               onClick={openCreateCourse}
@@ -729,40 +981,86 @@ export function CoursesPage() {
                             courseIndex % COURSE_CARD_BACKGROUNDS.length
                           ];
                           const courseLabel = `${course.subject?.name ?? 'General Studies'} / ${course.classRoom.name}`;
+                          const lastUpdated = new Intl.DateTimeFormat('en-RW', {
+                            dateStyle: 'medium',
+                          }).format(new Date(course.updatedAt));
 
                           return (
-                          <button
-                            type="button"
-                            key={course.id}
-                            onClick={() => {
-                              setSelectedCourseId(course.id);
-                              setSelectedLessonId('');
-                            }}
-                            className="overflow-hidden rounded-2xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
-                          >
-                            <div
-                              className="relative h-40 bg-[length:140px_140px]"
-                              style={cover}
+                            <article
+                              key={course.id}
+                              className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
                             >
-                              <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
-                                {courseLabel}
-                              </span>
-                              <span className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-xl bg-white text-[#184f8f] shadow-md">
-                                <Lock className="h-5 w-5" aria-hidden="true" />
-                              </span>
-                            </div>
-                            <div className="space-y-2 px-4 py-3">
-                              <p className="text-lg font-medium text-slate-800">{course.title}</p>
-                              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                                <span>
-                                  {course.academicYear.name} · {course.counts.lessons} lessons
-                                </span>
-                                <span>
-                                  {course.teacher.firstName} {course.teacher.lastName}
-                                </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCourseId(course.id);
+                                  setSelectedLessonId('');
+                                }}
+                                className="block w-full text-left"
+                              >
+                                <div
+                                  className="relative h-40 bg-[length:140px_140px]"
+                                  style={cover}
+                                >
+                                  <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
+                                    {courseLabel}
+                                  </span>
+                                  <span className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-xl bg-white text-[#184f8f] shadow-md">
+                                    <Lock className="h-5 w-5" aria-hidden="true" />
+                                  </span>
+                                </div>
+                                <div className="space-y-3 px-4 py-4">
+                                  <div className="space-y-1">
+                                    <p className="text-lg font-semibold text-slate-900">
+                                      {course.title}
+                                    </p>
+                                    <p className="text-sm text-slate-600">
+                                      {course.description?.trim() || 'Open this course to review lessons and publish content.'}
+                                    </p>
+                                  </div>
+
+                                  <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
+                                    <span>{course.academicYear.name}</span>
+                                    <span>{course.counts.lessons} lessons</span>
+                                    <span>
+                                      {course.teacher.firstName} {course.teacher.lastName}
+                                    </span>
+                                    <span>Updated {lastUpdated}</span>
+                                  </div>
+                                </div>
+                              </button>
+
+                              <div className="grid grid-cols-3 gap-2 border-t border-brand-100 px-4 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedCourseId(course.id);
+                                    setSelectedLessonId('');
+                                  }}
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-100"
+                                >
+                                  <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Open
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditCourse(course)}
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => requestDeleteCourse(course)}
+                                  disabled={isDeletePending}
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Delete
+                                </button>
                               </div>
-                            </div>
-                          </button>
+                            </article>
                           );
                         })}
                       </div>
@@ -813,66 +1111,39 @@ export function CoursesPage() {
               {selectedCourse && !courseDetailQuery.isPending && !courseDetailQuery.isError ? (
                 <>
                   <SectionCard
-                    title={selectedCourse.title}
-                    subtitle={`${selectedCourse.classRoom.name} · ${selectedCourse.academicYear.name}`}
                     action={
-                      <button
-                        type="button"
-                        onClick={openCreateLesson}
-                        className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-                      >
-                        <FilePlus2 className="h-4 w-4" aria-hidden="true" />
-                        Add lesson
-                      </button>
-                    }
-                  >
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <InfoBox
-                        label="Teacher"
-                        value={`${selectedCourse.teacher.firstName} ${selectedCourse.teacher.lastName}`}
-                      />
-                      <InfoBox label="Subject" value={selectedCourse.subject?.name ?? 'Not linked'} />
-                      <InfoBox
-                        label="Last update"
-                        value={new Intl.DateTimeFormat('en-RW', {
-                          dateStyle: 'medium',
-                        }).format(new Date(selectedCourse.updatedAt))}
-                      />
-                    </div>
-                    {selectedCourse.description ? (
-                      <p className="mt-4 text-sm leading-6 text-slate-700">
-                        {selectedCourse.description}
-                      </p>
-                    ) : null}
-                  </SectionCard>
-
-                  <SectionCard
-                    title="Lessons"
-                    subtitle="Draft content first, then publish it when ready for students."
-                    action={
-                      selectedLesson ? (
-                        <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCourseId('');
+                            setSelectedLessonId('');
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700"
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                          Courses
+                        </button>
+                        {selectedLesson ? (
                           <button
                             type="button"
                             onClick={() => setSelectedLessonId('')}
-                            className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700"
                           >
-                            Back to lessons
+                            <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                            Lessons
                           </button>
+                        ) : (
                           <button
                             type="button"
-                            onClick={() =>
-                              publishLessonMutation.mutate({
-                                lessonId: selectedLesson.id,
-                                isPublished: !selectedLesson.isPublished,
-                              })
-                            }
-                            className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+                            onClick={openCreateLesson}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-2.5 py-2 text-xs font-semibold text-white hover:bg-brand-600"
                           >
-                            {selectedLesson.isPublished ? 'Move to draft' : 'Publish'}
+                            <FilePlus2 className="h-3.5 w-3.5" aria-hidden="true" />
+                            Add lesson
                           </button>
-                        </div>
-                      ) : undefined
+                        )}
+                      </div>
                     }
                   >
                     {courseDetailQuery.data?.lessons.items.length ? (
@@ -941,32 +1212,81 @@ export function CoursesPage() {
                               ];
 
                             return (
-                              <button
+                              <article
                                 key={lesson.id}
-                                type="button"
-                                onClick={() => setSelectedLessonId(lesson.id)}
-                                className="overflow-hidden rounded-2xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
+                                className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
                               >
-                                <div
-                                  className="relative h-40 bg-[length:140px_140px]"
-                                  style={cover}
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedLessonId(lesson.id)}
+                                  className="block w-full text-left"
                                 >
-                                  <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
-                                    Lesson {lesson.sequence} / {lesson.contentType}
-                                  </span>
-                                  <span className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-md">
-                                    {lesson.isPublished ? 'Published' : 'Draft'}
-                                  </span>
+                                  <div
+                                    className="relative h-40 bg-[length:140px_140px]"
+                                    style={cover}
+                                  >
+                                    <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
+                                      Lesson {lesson.sequence} / {lesson.contentType}
+                                    </span>
+                                    <span className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-md">
+                                      {lesson.isPublished ? 'Published' : 'Draft'}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-2 px-4 py-3">
+                                    <p className="text-lg font-medium text-slate-800">
+                                      {lesson.title}
+                                    </p>
+                                    <p className="line-clamp-2 text-sm text-slate-600">
+                                      {lesson.summary ?? 'Open this lesson to read the content.'}
+                                    </p>
+                                  </div>
+                                </button>
+
+                                <div className="grid grid-cols-2 gap-2 border-t border-brand-100 px-4 py-3 xl:grid-cols-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedLessonId(lesson.id)}
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-100"
+                                  >
+                                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Open
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditLesson(lesson)}
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      publishLessonMutation.mutate({
+                                        lessonId: lesson.id,
+                                        isPublished: !lesson.isPublished,
+                                      })
+                                    }
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  >
+                                    {lesson.isPublished ? (
+                                      <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                                    ) : (
+                                      <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                                    )}
+                                    {lesson.isPublished ? 'Draft' : 'Publish'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => requestDeleteLesson(lesson)}
+                                    disabled={deleteLessonMutation.isPending}
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Delete
+                                  </button>
                                 </div>
-                                <div className="space-y-2 px-4 py-3">
-                                  <p className="text-lg font-medium text-slate-800">
-                                    {lesson.title}
-                                  </p>
-                                  <p className="line-clamp-2 text-sm text-slate-600">
-                                    {lesson.summary ?? 'Open this lesson to read the content.'}
-                                  </p>
-                                </div>
-                              </button>
+                              </article>
                             );
                           })}
                         </div>
@@ -994,10 +1314,17 @@ export function CoursesPage() {
       </SectionCard>
 
       <Modal
-        open={isCreateCourseOpen}
-        title="Create course"
-        description="Set the class, academic year, and subject first."
-        onClose={() => setIsCreateCourseOpen(false)}
+        open={isCourseModalOpen}
+        title={courseModalMode === 'edit' ? 'Edit course' : 'Create course'}
+        description={
+          courseModalMode === 'edit'
+            ? 'Update the class, academic year, and subject details for this course.'
+            : 'Set the class, academic year, and subject first.'
+        }
+        onClose={() => {
+          setIsCourseModalOpen(false);
+          setCourseModalCourseId('');
+        }}
       >
         <form className="grid gap-4" onSubmit={courseForm.handleSubmit(submitCourse)}>
           {isCourseSetupLookupError ? (
@@ -1080,7 +1407,10 @@ export function CoursesPage() {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setIsCreateCourseOpen(false)}
+              onClick={() => {
+                setIsCourseModalOpen(false);
+                setCourseModalCourseId('');
+              }}
               className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
@@ -1089,23 +1419,67 @@ export function CoursesPage() {
               type="submit"
               disabled={
                 createCourseMutation.isPending ||
+                updateCourseMutation.isPending ||
                 isCourseSetupLookupError ||
                 isCourseSetupMissing ||
                 isTeacherSubjectMissing
               }
               className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {createCourseMutation.isPending ? 'Saving...' : 'Create course'}
+              {createCourseMutation.isPending || updateCourseMutation.isPending
+                ? 'Saving...'
+                : courseModalMode === 'edit'
+                  ? 'Save changes'
+                  : 'Create course'}
             </button>
           </div>
         </form>
       </Modal>
 
       <Modal
-        open={isCreateLessonOpen}
-        title="Add lesson"
-        description="Students only see lessons after you publish them."
-        onClose={() => setIsCreateLessonOpen(false)}
+        open={Boolean(pendingDelete)}
+        title={pendingDelete?.type === 'lesson' ? 'Delete lesson' : 'Delete course'}
+        description={pendingDelete?.description}
+        onClose={() => {
+          if (!isDeletePending) {
+            setPendingDelete(null);
+          }
+        }}
+        footer={
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setPendingDelete(null)}
+              disabled={isDeletePending}
+              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmDelete()}
+              disabled={isDeletePending}
+              className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
+            >
+              {isDeletePending ? 'Deleting...' : 'Confirm delete'}
+            </button>
+          </div>
+        }
+      >
+        <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-800">
+          This action cannot be undone.
+        </div>
+      </Modal>
+
+      <Modal
+        open={isLessonModalOpen}
+        title={lessonModalMode === 'edit' ? 'Edit lesson' : 'Add lesson'}
+        description={
+          lessonModalMode === 'edit'
+            ? 'Update lesson content, links, or attached media.'
+            : 'Students only see lessons after you publish them.'
+        }
+        onClose={() => setIsLessonModalOpen(false)}
       >
         <form className="grid gap-4" onSubmit={lessonForm.handleSubmit(submitLesson)}>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -1184,22 +1558,31 @@ export function CoursesPage() {
               }}
               className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-slate-700"
             />
+            {lessonModalMode === 'edit' && selectedLesson?.fileAsset ? (
+              <span className="text-xs text-slate-500">
+                Current file: {selectedLesson.fileAsset.originalName}. Upload a new file to replace it.
+              </span>
+            ) : null}
           </FormField>
 
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setIsCreateLessonOpen(false)}
+              onClick={() => setIsLessonModalOpen(false)}
               className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={createLessonMutation.isPending}
+              disabled={createLessonMutation.isPending || updateLessonMutation.isPending}
               className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {createLessonMutation.isPending ? 'Saving...' : 'Save lesson'}
+              {createLessonMutation.isPending || updateLessonMutation.isPending
+                ? 'Saving...'
+                : lessonModalMode === 'edit'
+                  ? 'Save changes'
+                  : 'Save lesson'}
             </button>
           </div>
         </form>
@@ -1224,20 +1607,5 @@ function FormField({
       {children}
       {error ? <span className="text-xs text-red-600">{error}</span> : null}
     </label>
-  );
-}
-
-function InfoBox({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-slate-900">{value}</p>
-    </div>
   );
 }
