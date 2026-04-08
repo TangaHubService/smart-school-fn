@@ -1,0 +1,25 @@
+{
+  "children": {
+    "title": "Mes enfants",
+    "subtitle": "Consultez les profils liés, l'inscription active et l'historique de présence.",
+    "errorTitle": "Impossible de charger les élèves liés",
+    "errorMessage": "Veuillez réessayer.",
+    "retry": "Réessayer",
+    "parentProfile": "Profil parent",
+    "notLinkedYet": "Pas encore lié",
+    "emptyMessage": "Aucun enfant n'est encore lié à votre compte. Contactez l'administration.",
+    "primary": "Principal",
+    "lastMarked": "Dernier marquage",
+    "noRecords": "Aucun dossier",
+    "attendanceAction": "Présence",
+    "learningAction": "Apprentissage",
+    "table": {
+      "student": "Étudiant",
+      "code": "Code",
+      "relationship": "Relation",
+      "class": "Classe",
+      "attendance30d": "Présence (30j)",
+      "actions": "Actions"
+    }
+  }
+}

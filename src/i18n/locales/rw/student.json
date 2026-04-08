@@ -1,0 +1,40 @@
+{
+  "assessments": {
+    "title": "Ibizamini byanjye",
+    "subtitle": "Fungura ikizamini usome amabwiriza, hanyuma utangire igihe witeguye.",
+    "searchLabel": "Shakisha ibizamini",
+    "searchPlaceholder": "Shakisha ku mutwe cyangwa isomo",
+    "studentFallback": "Umunyeshuri",
+    "noCode": "Nta kode",
+    "errorTitle": "Ntibyashobotse gutangiza ibizamini",
+    "errorMessage": "Ongera ugerageze gutangiza ibizamini byawe.",
+    "retry": "Ongera",
+    "awaitingReview": "Bitegereje isuzuma",
+    "inProgress": "Birakorwa",
+    "openTest": "Fungura ikizamini",
+    "emptyTitle": "Nta bizamini bihari",
+    "emptyMessage": "Ibizamini byasohotse ku masomo yawe bizagaragara hano."
+  },
+  "reportCards": {
+    "title": "Ikarita y'amanota yanjye",
+    "subtitle": "Reba cyangwa ukuremo ikarita y'amanota yasohotse ku gihembwe.",
+    "term": "Igihembwe",
+    "allTerms": "Ibihembwe byose",
+    "studentFallback": "Umunyeshuri",
+    "loadErrorTitle": "Ntibyashobotse gutangiza ikarita y'amanota",
+    "loadErrorMessage": "Ongera ugerageze gutangiza ikarita y'amanota.",
+    "retry": "Ongera",
+    "average": "Impuzandengo",
+    "grade": "Amanota",
+    "position": "Umwanya",
+    "viewPdf": "Reba PDF",
+    "download": "Kuramo",
+    "emptyTitle": "Nta karita y'amanota iraboneka",
+    "emptyMessage": "Ikarita y'amanota yasohotse izagaragara hano ishuri rirangije ibisubizo.",
+    "previewTitle": "Igaragaza ry'ikarita y'amanota",
+    "close": "Funga",
+    "previewErrorTitle": "Ntibyashobotse gufungura ikarita y'amanota",
+    "downloadErrorTitle": "Ntibyashobotse gukuramo ikarita y'amanota",
+    "requestFailed": "Icyifuzo cyanze"
+  }
+}

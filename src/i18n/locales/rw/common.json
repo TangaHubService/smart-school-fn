@@ -1,0 +1,98 @@
+{
+  "appName": "Smart School",
+  "language": {
+    "label": "Ururimi",
+    "en": "Icyongereza",
+    "rw": "Ikinyarwanda",
+    "fr": "Igifaransa"
+  },
+  "lowBandwidth": {
+    "toggleOn": "Uburyo bwo kuzigama data burafunguye",
+    "toggleOff": "Uburyo bwo kuzigama data burafunze",
+    "hint": "Bugabanya amashusho aremereye ku mapaji rusange."
+  },
+  "shell": {
+    "navigation": "Uyobora",
+    "close": "Funga",
+    "backToWebsite": "Subira ku rubuga",
+    "logout": "Sohoka",
+    "openSidebar": "Fungura urutonde",
+    "hideSidebar": "Hisha urutonde",
+    "showSidebar": "Erekana urutonde",
+    "links": "Amahuza",
+    "hello": "Muraho, {{name}}",
+    "tenant": "Ikigo",
+    "notifications": "Amakuru",
+    "messages": "Ubutumwa",
+    "loggedInAs": "Winjiye nka {{name}}, kanda ufungure menu ya profile",
+    "actionRequired": "Igikorwa gisabwa: zuzuza umwirondoro w'ishuri na setup wizard kugira ngo ufungure amasomo, ibyumba, abanyeshuri, amasomo n'abakozi."
+  },
+  "headerTitle": {
+    "superAdmin": "Ikibaho cya Super Admin",
+    "dashboard": "Ikibaho",
+    "studentPortal": "Portal y'Umunyeshuri",
+    "teacherPortal": "Portal ya Mwarimu"
+  },
+  "studentHeader": {
+    "dashboard": "Ikibaho",
+    "courses": "Amasomo",
+    "progress": "Iterambere",
+    "reports": "Raporo",
+    "tests": "Ibizamini",
+    "news": "Amakuru",
+    "reportCards": "Ikarita y'amanota",
+    "announcements": "Amatangazo"
+  },
+  "nav": {
+    "dashboard": "Ikibaho",
+    "users": "Abakoresha",
+    "tenants": "Imicungire y'amashuri",
+    "setup": "Imicungire y'ishuri",
+    "system-settings": "Igenamiterere rya sisitemu",
+    "years": "Imyaka y'amashuri",
+    "class-management": "Imicungire y'ibyumba",
+    "students": "Abanyeshuri",
+    "attendance": "Ubitabira",
+    "subjects": "Amasomo",
+    "learning-content": "Imicungire y'amasomo",
+    "learning-insights": "Isesengura ry'amasomo",
+    "academy-programs": "Porogaramu za academy",
+    "continuous-assessment": "Ikizamini cy'igenzura rihoraho",
+    "exams": "Portal y'ibizamini",
+    "class-marks": "Amanota",
+    "conduct-marks-settings": "Amanota y'imyitwarire",
+    "report-cards": "Ikarita y'amanota",
+    "timetable": "Gahunda y'amasaha",
+    "announcements": "Amatangazo",
+    "parents": "Ababyeyi",
+    "staff": "Abakozi",
+    "access-control": "Kugenzura uburenganzira",
+    "reports-analytics": "Raporo & Isesengura",
+    "notifications": "Amenyesha",
+    "support-center": "Ikigo cy'ubufasha",
+    "audit-logs": "Inyandiko z'ibikorwa",
+    "subscriptions": "Imicungire y'abafatabuguzi",
+    "parent-report-cards": "Ikarita y'amanota",
+    "gov-dashboard": "Ikibaho cya Leta",
+    "gov-schools": "Amashuri ya Leta",
+    "gov-incidents": "Ibibazo bya Leta",
+    "gov-auditors": "Imicungire y'abagenzuzi",
+    "student-dashboard": "Ikibaho",
+    "student-my-learning": "Kwiga kwanjye",
+    "student-courses": "Gahunda y'amasomo",
+    "student-assignments": "Imikoro",
+    "student-report-cards": "Ikarita y'amanota",
+    "student-assessments": "Ibizamini",
+    "student-announcements": "Amatangazo"
+  },
+  "connection": {
+    "offlineTitle": "Nta internet mufite. Ongera uhuze kugira ngo wohereze ibizamini kandi usincronize iterambere.",
+    "queueHintZero": " Draft z'ibisubizo bibikwa kuri iki gikoresho kugeza uhuye na internet.",
+    "queueHintCount_one": " Isomo {{count}} rizarangizwa risincronizwe nimara kugaruka internet.",
+    "queueHintCount_other": " Amasomo {{count}} yarangijwe azasincronizwa nimara kugaruka internet."
+  },
+  "actions": {
+    "close": "Funga",
+    "retry": "Ongera ugerageze"
+  }
+}

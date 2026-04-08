@@ -1,4 +1,5 @@
 import {
+  Activity,
   BookOpen,
   Building2,
   CheckCircle2,
@@ -32,6 +33,7 @@ import {
   type SuperAdminDashboardFilters,
   type SuperAdminDashboardFilterOptions,
 } from '../features/dashboard/dashboard.api';
+import { fetchPublicHealthInfo } from '../features/platform/health-info.api';
 import { useQuery } from '@tanstack/react-query';
 
 const USER_OVERVIEW_ITEMS: Record<
@@ -98,6 +100,13 @@ export function SuperAdminDashboardPage() {
     queryKey: ['dashboard', 'super-admin', appliedFilters],
     enabled: Boolean(auth.accessToken),
     queryFn: () => getSuperAdminDashboardApi(auth.accessToken!, appliedFilters),
+  });
+
+  const healthInfoQuery = useQuery({
+    queryKey: ['health', 'public-info'],
+    queryFn: fetchPublicHealthInfo,
+    staleTime: 30_000,
+    retry: 1,
   });
 
   if (isError) {
@@ -254,6 +263,69 @@ export function SuperAdminDashboardPage() {
             </p>
           </article>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <Activity className="h-4 w-4 text-brand-600" aria-hidden />
+          <h2 className="text-sm font-bold text-slate-900">Platform / ops</h2>
+        </div>
+        <p className="mb-3 text-xs text-slate-600">
+          Read-only snapshot from the public <span className="font-mono text-[11px]">GET /health/info</span> endpoint
+          (build metadata, DB reachability, non-revoked refresh sessions).
+        </p>
+        {healthInfoQuery.isPending ? (
+          <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
+        ) : null}
+        {healthInfoQuery.isError ? (
+          <p className="text-xs text-amber-700">
+            Health info could not be loaded (check API URL and CORS). Dashboard data above is unaffected.
+          </p>
+        ) : null}
+        {healthInfoQuery.data ? (
+          <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <dt className="font-medium text-slate-500">Status</dt>
+              <dd className="font-semibold text-slate-900">{healthInfoQuery.data.status}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Database</dt>
+              <dd className="font-semibold text-slate-900">{healthInfoQuery.data.db}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Deploy region</dt>
+              <dd className="font-semibold text-slate-900">
+                {healthInfoQuery.data.deployRegion ?? '—'}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Active refresh sessions</dt>
+              <dd className="font-semibold text-slate-900">
+                {healthInfoQuery.data.activeRefreshSessions.toLocaleString()}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Version</dt>
+              <dd className="font-mono text-[11px] text-slate-800">
+                {healthInfoQuery.data.version ?? '—'}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Commit</dt>
+              <dd className="font-mono text-[11px] text-slate-800 break-all">
+                {healthInfoQuery.data.commit ?? '—'}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Uptime (s)</dt>
+              <dd className="font-semibold text-slate-900">{healthInfoQuery.data.uptimeSec}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-slate-500">Node env</dt>
+              <dd className="font-semibold text-slate-900">{healthInfoQuery.data.nodeEnv}</dd>
+            </div>
+          </dl>
+        ) : null}
       </div>
 
       <div className="grid gap-2 lg:grid-cols-2">

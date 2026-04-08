@@ -53,6 +53,10 @@ type PublicAcademyProgramsShowcaseProps = {
   ctaHref?: string;
   ctaLabel?: string;
   className?: string;
+  /** When set, skips internal fetch and renders this list (e.g. parent-filtered catalog). */
+  programs?: Program[];
+  programsLoading?: boolean;
+  programsError?: boolean;
 };
 
 export function PublicAcademyProgramsShowcase({
@@ -63,12 +67,20 @@ export function PublicAcademyProgramsShowcase({
   ctaHref = '/academy',
   ctaLabel = 'View full catalog',
   className = '',
+  programs: programsProp,
+  programsLoading: programsLoadingProp,
+  programsError: programsErrorProp,
 }: PublicAcademyProgramsShowcaseProps) {
-  const { data: programs, isLoading, isError } = useQuery({
+  const internalQuery = useQuery({
     queryKey: ['academy-programs'],
     queryFn: academyApi.getPrograms,
     staleTime: 60_000,
+    enabled: programsProp === undefined,
   });
+
+  const programs = programsProp ?? internalQuery.data;
+  const isLoading = programsProp !== undefined ? Boolean(programsLoadingProp) : internalQuery.isPending;
+  const isError = programsProp !== undefined ? Boolean(programsErrorProp) : internalQuery.isError;
 
   const raw = programs ?? [];
   const slice = limit === null ? raw : raw.slice(0, limit ?? 6);

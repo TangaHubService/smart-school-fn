@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -61,6 +62,7 @@ export function useToast() {
 }
 
 function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: () => void }) {
+  const { t } = useTranslation('common');
   const styleByType: Record<ToastType, string> = {
     success: 'border-success-100 bg-success-50 text-success-700',
     error: 'border-danger-100 bg-danger-50 text-danger-700',
@@ -83,7 +85,7 @@ function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: () => void }
           onClick={onClose}
           className="rounded-md border border-current/20 bg-white/70 px-2 py-1 text-xs font-semibold"
         >
-          Close
+          {t('actions.close')}
         </button>
       </div>
     </section>

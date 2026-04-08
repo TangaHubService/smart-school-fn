@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   ChevronRight,
   CircleDashed,
+  Clock,
   FileBarChart2,
   Home,
   Loader2,
@@ -137,6 +138,37 @@ export function StudentDashboardPage() {
         onRetry={() => void coursesQuery.refetch()}
         items={coursesQuery.data?.items}
       />
+
+      {data.learningStats ? (
+        <section className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-brand-600" aria-hidden />
+            <span className="font-medium text-slate-900">
+              {Math.round((data.learningStats.timeSpentSecondsTotal ?? 0) / 60)} min
+            </span>
+            <span className="text-slate-500">time on lessons</span>
+          </div>
+          {data.learningStats.lastLessonActivityAt ? (
+            <span className="text-slate-500">
+              Last activity{' '}
+              {new Date(data.learningStats.lastLessonActivityAt).toLocaleString(undefined, {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })}
+            </span>
+          ) : (
+            <span className="text-slate-500">Open a lesson to start tracking time</span>
+          )}
+          {data.learningStats.avgAssessmentScorePercent != null ? (
+            <span className="text-slate-500">
+              Avg quiz score:{' '}
+              <span className="font-semibold text-slate-800">
+                {data.learningStats.avgAssessmentScorePercent}%
+              </span>
+            </span>
+          ) : null}
+        </section>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StudentStatCard

@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import {
   BadgeCheck,
+  BarChart3,
   Bell,
   ClipboardCheck,
   BookOpen,
@@ -22,6 +23,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../features/auth/auth.context';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
@@ -152,6 +154,16 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Course Management',
     to: '/admin/courses',
     icon: BookOpen,
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    requiredPermissionsOr: ['courses.read', 'subject.manage'],
+    requiredPermissions: [],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'learning-insights',
+    label: 'Learning insights',
+    to: '/admin/learning-insights',
+    icon: BarChart3,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissionsOr: ['courses.read', 'subject.manage'],
     requiredPermissions: [],
@@ -419,15 +431,16 @@ interface RoleNavProps {
 }
 
 export function RoleNav({ onNavigate }: RoleNavProps) {
+  const { t } = useTranslation('common');
   const auth = useAuth();
   const setupComplete = isSchoolSetupComplete(auth.me);
   const superAdmin = hasRole(auth.me, 'SUPER_ADMIN');
   const schoolAdmin = hasPermission(auth.me, 'school.setup.manage') && !superAdmin;
 
   const getDashboardLabel = () => {
-    if (superAdmin) return 'Super Admin Dashboard';
-    if (schoolAdmin) return 'Dashboard';
-    return 'Dashboard';
+    if (superAdmin) return t('headerTitle.superAdmin');
+    if (schoolAdmin) return t('headerTitle.dashboard');
+    return t('headerTitle.dashboard');
   };
 
   const SUPER_ADMIN_KEYS = new Set([
@@ -446,6 +459,11 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     }
 
     if (!govAuditingFeatureEnabled && item.key.startsWith('gov-')) {
+      return false;
+    }
+
+    // Hide academy programs for non-academy schools.
+    if (item.key === 'academy-programs' && !auth.me?.tenant?.isAcademyCatalog) {
       return false;
     }
 
@@ -483,13 +501,13 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
         const label =
           item.key === 'dashboard' || item.key === 'student-dashboard'
             ? item.key === 'student-dashboard'
-              ? 'Dashboard'
+              ? t('headerTitle.dashboard')
               : superAdmin
-                ? 'Dashboard'
+                ? t('headerTitle.dashboard')
                 : getDashboardLabel()
             : superAdmin && SUPER_ADMIN_NAV_OVERRIDES[item.key]
-              ? SUPER_ADMIN_NAV_OVERRIDES[item.key]
-              : item.label;
+              ? t(`nav.${item.key}`, { defaultValue: SUPER_ADMIN_NAV_OVERRIDES[item.key] })
+              : t(`nav.${item.key}`, { defaultValue: item.label });
         return (
           <div key={item.key}>
             <NavLink

@@ -165,3 +165,13 @@ body {
 .progress-bar-fill {
   transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1);
 }
+
+/* Low-bandwidth / low-data mode (toggle sets html.ss-low-bandwidth) */
+html.ss-low-bandwidth img[loading='lazy'],
+html.ss-low-bandwidth .ss-low-bw-hide {
+  content-visibility: auto;
+}
+
+html.ss-low-bandwidth video {
+  display: none;
+}

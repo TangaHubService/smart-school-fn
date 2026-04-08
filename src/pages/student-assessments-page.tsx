@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Trophy } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
@@ -11,6 +12,7 @@ import { listMyAssessmentsApi } from '../features/assessments/assessments.api';
 import { formatAssessmentDateTime, formatAssessmentTypeLabel } from '../features/assessments/assessment-ui';
 
 export function StudentAssessmentsPage() {
+  const { t } = useTranslation('student');
   const auth = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -31,13 +33,13 @@ export function StudentAssessmentsPage() {
   return (
     <div className="grid gap-5">
       <SectionCard
-        title="My tests"
-        subtitle="Open a test to read the instructions, then start when you are ready."
+        title={t('assessments.title')}
+        subtitle={t('assessments.subtitle')}
       >
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Search tests</span>
+              <span>{t('assessments.searchLabel')}</span>
               <input
                 type="search"
                 value={search}
@@ -45,13 +47,13 @@ export function StudentAssessmentsPage() {
                   setPage(1);
                   setSearch(event.target.value);
                 }}
-                placeholder="Search by title or course"
+                placeholder={t('assessments.searchPlaceholder')}
                 className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
               />
             </label>
 
             <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-              {myAssessmentsQuery.data?.student.firstName ?? 'Student'} · {myAssessmentsQuery.data?.student.studentCode ?? 'No code'}
+              {myAssessmentsQuery.data?.student.firstName ?? t('assessments.studentFallback')} · {myAssessmentsQuery.data?.student.studentCode ?? t('assessments.noCode')}
             </div>
           </div>
 
@@ -65,15 +67,15 @@ export function StudentAssessmentsPage() {
 
           {myAssessmentsQuery.isError ? (
             <StateView
-              title="Could not load tests"
-              message="Retry to load your available assessments."
+              title={t('assessments.errorTitle')}
+              message={t('assessments.errorMessage')}
               action={
                 <button
                   type="button"
                   onClick={() => void myAssessmentsQuery.refetch()}
                   className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
                 >
-                  Retry
+                  {t('assessments.retry')}
                 </button>
               }
             />
@@ -128,22 +130,22 @@ export function StudentAssessmentsPage() {
                             {assessment.latestAttempt.score}/{assessment.latestAttempt.maxScore ?? 0}
                           </span>
                         ) : (
-                          <span className="rounded-full bg-brand-100 px-2.5 py-1">Awaiting review</span>
+                          <span className="rounded-full bg-brand-100 px-2.5 py-1">{t('assessments.awaitingReview')}</span>
                         )
                       ) : assessment.latestAttempt?.status === 'IN_PROGRESS' ? (
-                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-900">In progress</span>
+                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-900">{t('assessments.inProgress')}</span>
                       ) : null}
                     </div>
 
                     <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      Open test
+                      {t('assessments.openTest')}
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <EmptyState title="No tests available" message="Published assessments for your classes will appear here." />
+              <EmptyState title={t('assessments.emptyTitle')} message={t('assessments.emptyMessage')} />
             )
           ) : null}
         </div>

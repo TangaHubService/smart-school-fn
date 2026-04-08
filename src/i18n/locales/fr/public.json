@@ -1,0 +1,55 @@
+{
+  "header": {
+    "home": "Accueil",
+    "about": "À propos",
+    "programs": "Programmes",
+    "jobs": "Emplois",
+    "contact": "Contact",
+    "openWorkspace": "Ouvrir l'espace",
+    "signIn": "Connexion",
+    "toggleNav": "Basculer la navigation"
+  },
+  "footer": {
+    "tagline": "Nous renforçons la nouvelle génération de leaders au Rwanda grâce à une éducation numérique pratique.",
+    "platform": "Plateforme",
+    "courses": "Cours",
+    "academy": "Académie Professionnelle",
+    "pricing": "Tarifs & frais",
+    "careerPortal": "Portail Carrière",
+    "mission": "Notre mission",
+    "support": "Support",
+    "contactUs": "Contactez-nous",
+    "helpCenter": "Centre d'aide",
+    "studentPortal": "Portail étudiant",
+    "examAccess": "Accès examens",
+    "connect": "Coordonnées",
+    "rights": "Plateforme Smart school. Tous droits réservés.",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "cookies": "Cookies"
+  },
+  "legal": {
+    "privacyTitle": "Politique de confidentialité",
+    "privacySubtitle": "Comment Smart School traite les données personnelles (résumé démo).",
+    "termsTitle": "Conditions d'utilisation",
+    "termsSubtitle": "Règles d'utilisation de Smart School (texte de démonstration).",
+    "cookiesTitle": "Cookies",
+    "cookiesSubtitle": "Comment nous utilisons le stockage du navigateur."
+  },
+  "community": {
+    "title": "Rejoignez notre communauté",
+    "subtitle": "Que vous soyez éducateur, apprenant ou en recherche d'une nouvelle étape, nous avons une place pour vous.",
+    "staffTitle": "Pour le personnel",
+    "staffDesc": "Accédez à votre tableau de bord pour gérer les cours, suivre la présence et soutenir la réussite des élèves.",
+    "staffAction": "Connexion personnel",
+    "studentTitle": "Pour les étudiants",
+    "studentDesc": "Commencez votre parcours d'apprentissage, accédez aux cours et suivez vos performances en temps réel.",
+    "studentAction": "Entrée étudiant",
+    "parentTitle": "Pour les parents",
+    "parentDesc": "Les parents consultent résultats, présence, devoirs, retours et communication pour soutenir l'apprentissage.",
+    "parentAction": "Connexion parent",
+    "afterClassTitle": "Après les cours",
+    "afterClassDesc": "Continuez votre progression au-delà de la classe. Explorez des cours avancés et des opportunités professionnelles.",
+    "afterClassAction": "Explorer plus"
+  }
+}

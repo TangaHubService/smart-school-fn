@@ -1,0 +1,25 @@
+{
+  "children": {
+    "title": "Abana banjye",
+    "subtitle": "Reba imyirondoro y'abana bafatanye, kwiyandikisha no amateka y'ubwitabire.",
+    "errorTitle": "Ntibyashobotse gufungura abana bafatanye",
+    "errorMessage": "Ongera ugerageze.",
+    "retry": "Ongera",
+    "parentProfile": "Umwirondoro w'umubyeyi",
+    "notLinkedYet": "Ntabwo birafatana",
+    "emptyMessage": "Nta mwana wafatanyijwe konti yawe. Hamagara ubuyobozi bw'ishuri.",
+    "primary": "Nyamukuru",
+    "lastMarked": "Iheruka gushyirwaho",
+    "noRecords": "Nta nyandiko",
+    "attendanceAction": "Ubwitabire",
+    "learningAction": "Kwiga",
+    "table": {
+      "student": "Umunyeshuri",
+      "code": "Kode",
+      "relationship": "Isano",
+      "class": "Ishuri",
+      "attendance30d": "Ubwitabire (iminsi 30)",
+      "actions": "Ibikorwa"
+    }
+  }
+}

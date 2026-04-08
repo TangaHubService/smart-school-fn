@@ -1,0 +1,98 @@
+{
+  "appName": "Smart School",
+  "language": {
+    "label": "Langue",
+    "en": "Anglais",
+    "rw": "Kinyarwanda",
+    "fr": "Français"
+  },
+  "lowBandwidth": {
+    "toggleOn": "Mode faible données activé",
+    "toggleOff": "Mode faible données désactivé",
+    "hint": "Réduit les images lourdes sur les pages publiques."
+  },
+  "shell": {
+    "navigation": "Navigation",
+    "close": "Fermer",
+    "backToWebsite": "Retour au site",
+    "logout": "Déconnexion",
+    "openSidebar": "Ouvrir le menu latéral",
+    "hideSidebar": "Masquer le menu latéral",
+    "showSidebar": "Afficher le menu latéral",
+    "links": "Liens",
+    "hello": "Bonjour, {{name}}",
+    "tenant": "Établissement",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "loggedInAs": "Connecté en tant que {{name}}, cliquez pour ouvrir le menu profil",
+    "actionRequired": "Action requise: complétez le profil de l'école et l'assistant de configuration pour débloquer les modules académiques, classes, élèves, matières et personnel."
+  },
+  "headerTitle": {
+    "superAdmin": "Tableau de bord Super Admin",
+    "dashboard": "Tableau de bord",
+    "studentPortal": "Portail Étudiant",
+    "teacherPortal": "Portail Enseignant"
+  },
+  "studentHeader": {
+    "dashboard": "Tableau de bord",
+    "courses": "Cours",
+    "progress": "Progression",
+    "reports": "Rapports",
+    "tests": "Tests",
+    "news": "Actualités",
+    "reportCards": "Bulletins",
+    "announcements": "Annonces"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "users": "Utilisateurs",
+    "tenants": "Gestion des écoles",
+    "setup": "Gestion de l'école",
+    "system-settings": "Paramètres système",
+    "years": "Années académiques",
+    "class-management": "Gestion des classes",
+    "students": "Étudiants",
+    "attendance": "Présence",
+    "subjects": "Matières",
+    "learning-content": "Gestion des cours",
+    "learning-insights": "Analyse d'apprentissage",
+    "academy-programs": "Programmes académie",
+    "continuous-assessment": "Test d'évaluation continue",
+    "exams": "Portail des examens",
+    "class-marks": "Notes",
+    "conduct-marks-settings": "Notes de conduite",
+    "report-cards": "Bulletins",
+    "timetable": "Emploi du temps",
+    "announcements": "Annonces",
+    "parents": "Parents",
+    "staff": "Personnel",
+    "access-control": "Contrôle d'accès",
+    "reports-analytics": "Rapports & Analyses",
+    "notifications": "Notifications",
+    "support-center": "Centre de support",
+    "audit-logs": "Journaux d'activité",
+    "subscriptions": "Gestion des abonnements",
+    "parent-report-cards": "Bulletins",
+    "gov-dashboard": "Tableau de bord gouvernement",
+    "gov-schools": "Écoles gouvernementales",
+    "gov-incidents": "Incidents gouvernement",
+    "gov-auditors": "Gestion des auditeurs",
+    "student-dashboard": "Tableau de bord",
+    "student-my-learning": "Mon apprentissage",
+    "student-courses": "Programme des cours",
+    "student-assignments": "Devoirs",
+    "student-report-cards": "Bulletins",
+    "student-assessments": "Tests",
+    "student-announcements": "Annonces"
+  },
+  "connection": {
+    "offlineTitle": "Vous êtes hors ligne. Reconnectez-vous pour envoyer les quiz et synchroniser la progression.",
+    "queueHintZero": " Les brouillons des quiz ouverts sont enregistrés sur cet appareil jusqu'à reconnexion.",
+    "queueHintCount_one": " {{count}} validation de leçon sera synchronisée quand vous serez de nouveau en ligne.",
+    "queueHintCount_other": " {{count}} validations de leçon seront synchronisées quand vous serez de nouveau en ligne."
+  },
+  "actions": {
+    "close": "Fermer",
+    "retry": "Réessayer"
+  }
+}

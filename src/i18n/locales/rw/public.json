@@ -1,0 +1,55 @@
+{
+  "header": {
+    "home": "Ahabanza",
+    "about": "Ibyerekeye",
+    "programs": "Porogaramu",
+    "jobs": "Akazi",
+    "contact": "Twandikire",
+    "openWorkspace": "Fungura workspace",
+    "signIn": "Injira",
+    "toggleNav": "Fungura/Kinga navigation"
+  },
+  "footer": {
+    "tagline": "Duteza imbere urubyiruko rw'ejo muri Rwanda binyuze mu burezi bwa digitale bufatika.",
+    "platform": "Sisitemu",
+    "courses": "Amasomo",
+    "academy": "Akademi y'Umwuga",
+    "pricing": "Ibiciro & amafaranga",
+    "careerPortal": "Umuyoboro w'akazi",
+    "mission": "Intego yacu",
+    "support": "Ubufasha",
+    "contactUs": "Twandikire",
+    "helpCenter": "Ikigo cy'ubufasha",
+    "studentPortal": "Portal y'umunyeshuri",
+    "examAccess": "Kwinjira ku bizamini",
+    "connect": "Twandikire",
+    "rights": "Sisitemu ya Smart school. Uburenganzira bwose burarinzwe.",
+    "privacy": "Ubwihugiko",
+    "terms": "Amategeko",
+    "cookies": "Cookies"
+  },
+  "legal": {
+    "privacyTitle": "Politiki y'ubwihugiko",
+    "privacySubtitle": "Uko Smart School ifata amakuru bwite (incamake ya demo).",
+    "termsTitle": "Amabwiriza yo gukoresha",
+    "termsSubtitle": "Amategeko yo gukoresha Smart School (inyandiko ya demo).",
+    "cookiesTitle": "Cookies",
+    "cookiesSubtitle": "Uko dukoresha ububiko bwa browser."
+  },
+  "community": {
+    "title": "Injira mu muryango wacu",
+    "subtitle": "Waba uri umwarimu, umunyeshuri, cyangwa ushaka intambwe ikurikira, dufite umwanya wawe.",
+    "staffTitle": "Ku bakozi",
+    "staffDesc": "Injira ku kibaho cyawe ucunge amasomo, igenzura ry'ubwitabire, kandi ushyigikire intsinzi y'abanyeshuri.",
+    "staffAction": "Injira nk'umukozi",
+    "studentTitle": "Ku banyeshuri",
+    "studentDesc": "Tangira urugendo rwo kwiga, ubone ibikoresho by'amasomo, kandi ukurikirane amanota yawe mu gihe nyacyo.",
+    "studentAction": "Kwinjira kw'umunyeshuri",
+    "parentTitle": "Ku babyeyi",
+    "parentDesc": "Ababyeyi babona amanota, ubwitabire, imikoro, ibisubizo n'itumanaho bifasha imyigire.",
+    "parentAction": "Injira nk'umubyeyi",
+    "afterClassTitle": "Nyuma y'amasomo",
+    "afterClassDesc": "Komeza gukura nyuma y'ishuri. Shakisha amasomo yisumbuye cyangwa amahirwe y'umwuga.",
+    "afterClassAction": "Shakisha byinshi"
+  }
+}

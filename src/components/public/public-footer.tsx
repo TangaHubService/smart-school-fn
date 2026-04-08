@@ -1,9 +1,11 @@
 import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Twitter } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import logo from '../../asset/logo.jpg';
 
 export function PublicFooter() {
+  const { t } = useTranslation('public');
   return (
     <footer className="border-t border-white/5 bg-slate-950 py-16 text-slate-300">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -14,7 +16,7 @@ export function PublicFooter() {
               <span className="text-xl font-bold tracking-tight text-white">Smart school</span>
             </Link>
             <p className="max-w-xs text-[13px] leading-relaxed text-slate-400">
-              Empowering the next generation of leaders in Rwanda through practical digital education.
+              {t('footer.tagline')}
             </p>
             <div className="flex gap-3">
               {[Facebook, Twitter, Instagram, Linkedin].map((Icon, index) => (
@@ -30,64 +32,64 @@ export function PublicFooter() {
           </div>
 
           <div>
-            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">Platform</h4>
+            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">{t('footer.platform')}</h4>
             <ul className="space-y-3 text-[13px]">
               <li>
                 <Link to="/courses" className="transition-colors hover:text-brand-300">
-                  Courses
+                  {t('footer.courses')}
                 </Link>
               </li>
               <li>
                 <Link to="/academy" className="transition-colors hover:text-brand-300">
-                  Professional Academy
+                  {t('footer.academy')}
                 </Link>
               </li>
               <li>
                 <Link to="/tuition" className="transition-colors hover:text-brand-300">
-                  Pricing & Tuition
+                  {t('footer.pricing')}
                 </Link>
               </li>
               <li>
                 <Link to="/job-listing" className="transition-colors hover:text-brand-300">
-                  Career Portal
+                  {t('footer.careerPortal')}
                 </Link>
               </li>
               <li>
                 <Link to="/about" className="transition-colors hover:text-brand-300">
-                  Our Mission
+                  {t('footer.mission')}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">Support</h4>
+            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">{t('footer.support')}</h4>
             <ul className="space-y-3 text-[13px]">
               <li>
                 <Link to="/contact" className="transition-colors hover:text-brand-300">
-                  Contact Us
+                  {t('footer.contactUs')}
                 </Link>
               </li>
               <li>
                 <Link to="/login" className="transition-colors hover:text-brand-300">
-                  Help Center
+                  {t('footer.helpCenter')}
                 </Link>
               </li>
               <li>
                 <Link to="/login" className="transition-colors hover:text-brand-300">
-                  Student Portal
+                  {t('footer.studentPortal')}
                 </Link>
               </li>
               <li>
                 <Link to="/login" className="transition-colors hover:text-brand-300">
-                  Exam Access
+                  {t('footer.examAccess')}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">Connect</h4>
+            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">{t('footer.connect')}</h4>
             <ul className="space-y-4 text-[13px]">
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 text-brand-300" />
@@ -107,18 +109,18 @@ export function PublicFooter() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 md:flex-row">
           <p className="text-[11px] uppercase tracking-wider text-slate-500">
-            © {new Date().getFullYear()} Smart school Learning Platform. All rights reserved.
+            © {new Date().getFullYear()} {t('footer.rights')}
           </p>
           <div className="flex gap-6 text-[11px] uppercase tracking-wider text-slate-500">
-            <a href="#" className="transition-colors hover:text-brand-300">
-              Privacy
-            </a>
-            <a href="#" className="transition-colors hover:text-brand-300">
-              Terms
-            </a>
-            <a href="#" className="transition-colors hover:text-brand-300">
-              Cookies
-            </a>
+            <Link to="/privacy" className="transition-colors hover:text-brand-300">
+              {t('footer.privacy')}
+            </Link>
+            <Link to="/terms" className="transition-colors hover:text-brand-300">
+              {t('footer.terms')}
+            </Link>
+            <Link to="/cookies" className="transition-colors hover:text-brand-300">
+              {t('footer.cookies')}
+            </Link>
           </div>
         </div>
       </div>

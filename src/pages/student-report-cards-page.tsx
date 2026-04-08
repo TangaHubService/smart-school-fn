@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Eye, FileDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '../components/empty-state';
 import { Modal } from '../components/modal';
@@ -15,6 +16,7 @@ import {
 import { listTermsApi } from '../features/sprint1/sprint1.api';
 
 export function StudentReportCardsPage() {
+  const { t } = useTranslation('student');
   const auth = useAuth();
   const { showToast } = useToast();
   const [termId, setTermId] = useState('');
@@ -52,8 +54,8 @@ export function StudentReportCardsPage() {
     onError: (error) => {
       showToast({
         type: 'error',
-        title: 'Could not load report card',
-        message: error instanceof Error ? error.message : 'Request failed',
+        title: t('reportCards.previewErrorTitle'),
+        message: error instanceof Error ? error.message : t('reportCards.requestFailed'),
       });
     },
   });
@@ -73,8 +75,8 @@ export function StudentReportCardsPage() {
     onError: (error) => {
       showToast({
         type: 'error',
-        title: 'Could not download report card',
-        message: error instanceof Error ? error.message : 'Request failed',
+        title: t('reportCards.downloadErrorTitle'),
+        message: error instanceof Error ? error.message : t('reportCards.requestFailed'),
       });
     },
   });
@@ -86,22 +88,22 @@ export function StudentReportCardsPage() {
   return (
     <div className="grid gap-5">
       <SectionCard
-        title="My report cards"
-        subtitle="View or download published report cards for your terms."
+        title={t('reportCards.title')}
+        subtitle={t('reportCards.subtitle')}
       >
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[220px_auto] lg:items-end">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Term</span>
+              <span>{t('reportCards.term')}</span>
               <select value={termId} onChange={(event) => setTermId(event.target.value)} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400">
-                <option value="">All terms</option>
+                <option value="">{t('reportCards.allTerms')}</option>
                 {terms.map((term) => (
                   <option key={term.id} value={term.id}>{term.name}</option>
                 ))}
               </select>
             </label>
             <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-              {student ? `${student.firstName} ${student.lastName} · ${student.studentCode}` : 'Student'}
+              {student ? `${student.firstName} ${student.lastName} · ${student.studentCode}` : t('reportCards.studentFallback')}
             </div>
           </div>
 
@@ -109,9 +111,9 @@ export function StudentReportCardsPage() {
             <div className="h-56 animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
           ) : reportCardsQuery.isError ? (
             <StateView
-              title="Could not load report cards"
-              message="Retry to load your report cards."
-              action={<button type="button" onClick={() => void reportCardsQuery.refetch()} className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white">Retry</button>}
+              title={t('reportCards.loadErrorTitle')}
+              message={t('reportCards.loadErrorMessage')}
+              action={<button type="button" onClick={() => void reportCardsQuery.refetch()} className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white">{t('reportCards.retry')}</button>}
             />
           ) : reportCards.length ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -122,32 +124,32 @@ export function StudentReportCardsPage() {
                     <p className="text-sm text-slate-600">{item.classRoom.name} · {item.academicYear.name}</p>
                   </div>
                   <div className="grid gap-2 text-sm text-slate-700">
-                    <p>Average: <span className="font-semibold text-slate-900">{item.totals.averagePercentage.toFixed(2)}%</span></p>
-                    <p>Grade: <span className="font-semibold text-slate-900">{item.totals.grade}</span></p>
-                    <p>Position: <span className="font-semibold text-slate-900">{item.totals.position}/{item.totals.classSize}</span></p>
+                    <p>{t('reportCards.average')}: <span className="font-semibold text-slate-900">{item.totals.averagePercentage.toFixed(2)}%</span></p>
+                    <p>{t('reportCards.grade')}: <span className="font-semibold text-slate-900">{item.totals.grade}</span></p>
+                    <p>{t('reportCards.position')}: <span className="font-semibold text-slate-900">{item.totals.position}/{item.totals.classSize}</span></p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" onClick={() => previewMutation.mutate(item.id)} className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
                       <Eye className="h-4 w-4" aria-hidden="true" />
-                      View PDF
+                      {t('reportCards.viewPdf')}
                     </button>
                     <button type="button" onClick={() => downloadMutation.mutate({ id: item.id, termName: item.term.name })} className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white">
                       <FileDown className="h-4 w-4" aria-hidden="true" />
-                      Download
+                      {t('reportCards.download')}
                     </button>
                   </div>
                 </article>
               ))}
             </div>
           ) : (
-            <EmptyState title="No report cards yet" message="Published report cards will appear here after your school finalizes results." />
+            <EmptyState title={t('reportCards.emptyTitle')} message={t('reportCards.emptyMessage')} />
           )}
         </div>
       </SectionCard>
 
       <Modal
         open={Boolean(previewUrl)}
-        title="Report card preview"
+        title={t('reportCards.previewTitle')}
         onClose={() => {
           if (previewUrl) {
             URL.revokeObjectURL(previewUrl);
@@ -161,11 +163,11 @@ export function StudentReportCardsPage() {
                 URL.revokeObjectURL(previewUrl);
               }
               setPreviewUrl('');
-            }} className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Close</button>
+            }} className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">{t('reportCards.close')}</button>
           </div>
         }
       >
-        {previewUrl ? <iframe title="Report card PDF" src={previewUrl} className="h-[70vh] w-full rounded-xl border border-brand-100" /> : null}
+        {previewUrl ? <iframe title={t('reportCards.previewTitle')} src={previewUrl} className="h-[70vh] w-full rounded-xl border border-brand-100" /> : null}
       </Modal>
     </div>
   );

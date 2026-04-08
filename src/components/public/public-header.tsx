@@ -1,18 +1,13 @@
 import { Menu, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
 
 import logo from '../../asset/logo.jpg';
+import { LanguageSwitcher } from '../language-switcher';
+import { LowBandwidthToggle } from '../low-bandwidth-toggle';
 import { useAuth } from '../../features/auth/auth.context';
 import { getDefaultLandingPath } from '../../features/auth/auth-helpers';
-
-const publicNav = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/about', label: 'About' },
-  { to: '/courses', label: 'Programs' },
-  { to: '/job-listing', label: 'Jobs' },
-  { to: '/contact', label: 'Contact' },
-];
 
 function navClass(isActive: boolean) {
   return [
@@ -22,6 +17,7 @@ function navClass(isActive: boolean) {
 }
 
 export function PublicHeader() {
+  const { t } = useTranslation('public');
   const auth = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -32,6 +28,14 @@ export function PublicHeader() {
 
     return '/login';
   }, [auth.me]);
+
+  const publicNav = [
+    { to: '/', label: t('header.home'), end: true },
+    { to: '/about', label: t('header.about') },
+    { to: '/courses', label: t('header.programs') },
+    { to: '/job-listing', label: t('header.jobs') },
+    { to: '/contact', label: t('header.contact') },
+  ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-brand-100 bg-white/90 shadow-sm backdrop-blur-lg">
@@ -60,11 +64,13 @@ export function PublicHeader() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <LowBandwidthToggle />
+          <LanguageSwitcher className="text-slate-600 [&_span]:text-slate-600" />
           <Link
             to={workspaceLink}
             className="rounded-full bg-brand-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.13em] text-white transition hover:bg-brand-600"
           >
-            {auth.isAuthenticated ? 'Open Workspace' : 'Sign in'}
+            {auth.isAuthenticated ? t('header.openWorkspace') : t('header.signIn')}
           </Link>
         </div>
 
@@ -72,7 +78,7 @@ export function PublicHeader() {
           type="button"
           onClick={() => setIsOpen((current) => !current)}
           className="inline-flex items-center justify-center rounded-lg border border-brand-200 bg-white p-2 text-brand-600 lg:hidden"
-          aria-label="Toggle navigation"
+          aria-label={t('header.toggleNav')}
         >
           {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -97,12 +103,16 @@ export function PublicHeader() {
                 {item.label}
               </NavLink>
             ))}
+            <div className="flex flex-wrap items-center gap-2 border-t border-brand-100 pt-2">
+              <LowBandwidthToggle />
+              <LanguageSwitcher />
+            </div>
             <Link
               to={workspaceLink}
               onClick={() => setIsOpen(false)}
               className="mt-1 rounded-lg bg-brand-500 px-3 py-2 text-center text-sm font-semibold text-white"
             >
-              {auth.isAuthenticated ? 'Open Workspace' : 'Sign in'}
+              {auth.isAuthenticated ? t('header.openWorkspace') : t('header.signIn')}
             </Link>
           </div>
         </div>

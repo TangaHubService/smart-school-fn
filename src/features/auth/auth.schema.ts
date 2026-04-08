@@ -40,6 +40,7 @@ export interface MeResponse {
     id: string;
     code: string;
     name: string;
+    isAcademyCatalog?: boolean;
   };
   school: {
     id: string;

@@ -73,6 +73,10 @@ import { PublicProgramsAdvertPage } from '../pages/public-programs-advert-page';
 import { PublicTuitionPage } from '../pages/public-tuition-page';
 import { PublicJobsPage } from '../pages/public-jobs-page';
 import { PublicJobDetailPage } from '../pages/public-job-detail-page';
+import { PrivacyPage } from '../pages/privacy-page';
+import { TermsPage } from '../pages/terms-page';
+import { CookiesPage } from '../pages/cookies-page';
+import { TeacherLearningInsightsPage } from '../pages/teacher-learning-insights-page';
 
 export function AppRoutes() {
   return (
@@ -92,6 +96,9 @@ export function AppRoutes() {
         <Route path="/job-listing" element={<PublicJobsPage />} />
         <Route path="/job-listing/:slug" element={<PublicJobDetailPage />} />
         <Route path="/contact" element={<PublicContactPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/cookies" element={<CookiesPage />} />
       </Route>
 
       <Route path="/login" element={<LoginPage />} />
@@ -192,6 +199,11 @@ export function AppRoutes() {
               <Route path="/admin/academy-programs" element={<AcademyProgramsAdminPage />} />
               <Route path="/admin/my-classes" element={<TeacherMyClassesPage />} />
               <Route path="/admin/subjects" element={<SubjectsPage />} />
+            </Route>
+            <Route
+              element={<RequireAnyPermission permissions={['courses.read', 'subject.manage']} />}
+            >
+              <Route path="/admin/learning-insights" element={<TeacherLearningInsightsPage />} />
             </Route>
             {assessmentsFeatureEnabled ? (
               <>

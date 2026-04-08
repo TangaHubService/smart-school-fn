@@ -1,6 +1,9 @@
 /**
  * Local persistence for learner progress on flaky / offline connections.
  * Draft quiz answers and pending lesson completions sync when the device is back online.
+ *
+ * For deeper offline (IndexedDB lesson cache, background sync, PWA install), extend this module or
+ * pair it with a service worker — see docs/load-test-results.md for capacity / ops notes.
  */
 
 const PREFIX = 'ss:v1:';
