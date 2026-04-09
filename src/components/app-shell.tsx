@@ -103,6 +103,14 @@ export function AppShell() {
   }, [isStudent, location.pathname]);
 
   useEffect(() => {
+    if (!isStudent || !studentHeaderActions) {
+      return;
+    }
+
+    setStudentNavExpanded(true);
+  }, [isStudent, studentHeaderActions]);
+
+  useEffect(() => {
     if (!isStudent) {
       return;
     }
@@ -295,8 +303,9 @@ export function AppShell() {
         <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-white md:h-screen">
           <header
             className={clsx(
-              'sticky top-0 z-20 shrink-0 bg-[#173C7F] px-5 transition-[padding] duration-200',
+              'sticky top-0 z-30 shrink-0 bg-[#173C7F] px-5 transition-[padding] duration-200',
               isStudent && !studentNavExpanded ? 'py-2' : 'py-3',
+              isStudent && studentNavExpanded && 'shadow-[0_6px_18px_rgba(15,23,42,0.14)]',
             )}
           >
             <div className="flex flex-wrap items-center gap-2">

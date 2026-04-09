@@ -91,7 +91,7 @@ export function MyLearningPage() {
           </div>
         </SectionCard>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => {
             const metrics = getCourseProgressMetrics(course, course.completedLessonIds ?? []);
             const nextId = getResumeLessonId(course, course.completedLessonIds ?? []);
