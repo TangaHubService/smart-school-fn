@@ -317,18 +317,22 @@ export function AssessmentsPage() {
                 {assessmentItems.map((assessment) => (
                   <article
                     key={assessment.id}
-                    className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
+                    className="grid min-h-[320px] grid-rows-[auto_auto_1fr_auto] gap-4 overflow-hidden rounded-2xl border border-brand-100 bg-white p-5 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-lg font-bold text-slate-900">{assessment.title}</p>
-                        <p className="mt-1 text-sm text-slate-600">{assessment.course.title}</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
+                    <div className="grid gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
                         <AssessmentStatusPill isPublished={assessment.isPublished} />
                         <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                           {formatAssessmentTypeLabel(assessment.type)}
                         </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="break-words text-lg font-bold leading-7 text-slate-900">
+                          {assessment.title}
+                        </p>
+                        <p className="mt-1 break-words text-sm leading-5 text-slate-600">
+                          {assessment.course.title}
+                        </p>
                       </div>
                     </div>
 
@@ -338,16 +342,16 @@ export function AssessmentsPage() {
                       <span className="rounded-full bg-brand-100 px-2.5 py-1">{formatAssessmentDateTime(assessment.dueAt)}</span>
                     </div>
 
-                    <div className="grid gap-1 text-sm text-slate-700">
-                      <p>{assessment.course.classRoom.name}</p>
-                      <p>{assessment.course.academicYear.name}</p>
+                    <div className="grid gap-1 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                      <p className="break-words font-medium text-slate-900">{assessment.course.classRoom.name}</p>
+                      <p className="break-words">{assessment.course.academicYear.name}</p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="mt-auto grid gap-2 sm:grid-cols-2">
                       <button
                         type="button"
                         onClick={() => navigate(`/admin/assessments/${assessment.id}`)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
                       >
                         Manage
                         <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -363,7 +367,7 @@ export function AssessmentsPage() {
                               ? 'Results appear after students submit attempts.'
                               : 'Review submitted attempts'
                         }
-                        className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <Eye className="h-4 w-4" aria-hidden="true" />
                         Results
@@ -378,7 +382,7 @@ export function AssessmentsPage() {
                             })
                           }
                           disabled={publishAssessmentMutation.isPending}
-                          className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
                         >
                           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                           {publishAssessmentMutation.isPending &&
@@ -404,7 +408,7 @@ export function AssessmentsPage() {
                               ? 'Assessments cannot be deleted after students start attempting them.'
                               : 'Delete this assessment'
                           }
-                          className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
                           {deleteAssessmentMutation.isPending &&
