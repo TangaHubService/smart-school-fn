@@ -161,6 +161,14 @@ body {
   color: #1f2937;
 }
 
+.lms-reader-pdf-frame {
+  display: block;
+  width: 100%;
+  height: clamp(24rem, calc(100vh - 16rem), 72rem);
+  border: 0;
+  background: #ffffff;
+}
+
 /* Progress bar transitions */
 .progress-bar-fill {
   transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1);

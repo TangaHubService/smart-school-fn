@@ -316,7 +316,7 @@ function LessonMediaEmbed({
         <iframe
           title={lesson.fileAsset?.originalName ?? 'Lesson PDF'}
           src={mediaUrl}
-          className="h-[560px] w-full"
+          className="lms-reader-pdf-frame"
         />
       </div>
     );

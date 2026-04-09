@@ -452,9 +452,9 @@ export function AppShell() {
                     : 'pointer-events-none max-h-0 border-0 opacity-0',
                 )}
               >
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <div className="grid w-full gap-2">
                   <nav
-                    className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 overflow-x-auto pb-0.5 text-sm sm:gap-2"
+                    className="flex min-w-0 w-full items-center gap-1.5 overflow-x-auto pb-0.5 text-sm sm:gap-2"
                     aria-hidden={!studentNavExpanded}
                   >
                 {studentHeaderNavItems.map((item) => (
@@ -464,7 +464,7 @@ export function AppShell() {
                         title={item.title ?? item.label}
                     className={({ isActive }) =>
                       clsx(
-                            'whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:text-sm',
+                            'shrink-0 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:text-sm',
                         isActive
                           ? 'bg-white text-[#173C7F] shadow-sm'
                           : 'text-white/85 hover:text-white',
@@ -476,7 +476,7 @@ export function AppShell() {
                 ))}
               </nav>
                   {studentHeaderActions ? (
-                    <div className="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+                    <div className="flex w-full items-center gap-1.5 overflow-x-auto pb-0.5 sm:justify-end sm:gap-2">
                       {studentHeaderActions}
                     </div>
                   ) : null}

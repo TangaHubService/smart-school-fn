@@ -181,7 +181,7 @@ function LessonMediaEmbed({
         <iframe
           title={lesson.fileAsset?.originalName ?? 'Lesson PDF'}
           src={mediaUrl}
-          className="h-[560px] w-full"
+          className="lms-reader-pdf-frame"
         />
       </div>
     );
@@ -225,7 +225,7 @@ function getAssignmentStatus(assignment: AssignmentItem) {
 }
 
 const STUDENT_HEADER_ACTION_BTN =
-  'rounded-lg border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20 sm:text-sm';
+  'shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20 sm:text-sm';
 
 function StatusPill({
   label,

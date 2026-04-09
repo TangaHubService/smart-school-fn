@@ -227,7 +227,7 @@ function StudentCourseProgressStrip({
         notStarted += 1;
       } else if (s === 'in_progress') {
         inProgress += 1;
-        if (inProgressCourses.length < 4) {
+        if (inProgressCourses.length < 3) {
           inProgressCourses.push({ id: c.id, title: c.title, pct: m.overallProgress });
         }
       } else {
@@ -329,12 +329,12 @@ function StudentCourseProgressStrip({
       {breakdown.inProgressCourses.length > 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-900">Continue learning</h3>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 grid gap-3 lg:grid-cols-3">
             {breakdown.inProgressCourses.map((c) => (
               <li key={c.id}>
                 <Link
                   to={`/student/courses/${c.id}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5 text-left transition hover:border-brand-200 hover:bg-brand-50/40"
+                  className="flex h-full items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-3 text-left transition hover:border-brand-200 hover:bg-brand-50/40"
                 >
                   <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">{c.title}</span>
                   <span className="shrink-0 text-xs font-semibold text-brand-700">{c.pct}%</span>
