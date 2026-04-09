@@ -141,7 +141,7 @@ export function StudentAssessmentsPage() {
                       ) : null}
                     </div>
 
-                    <div className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className="mt-auto inline-flex w-fit items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3.5 py-2 text-sm font-semibold text-brand-800">
                       {t('assessments.openTest')}
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </div>
