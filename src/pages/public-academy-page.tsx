@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { BookOpen, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -42,7 +42,7 @@ const ACADEMY_PLANS = [
     name: 'Quarterly',
     durationDays: 90,
     price: 10000,
-    description: 'Longer runway for deeper progress across your selected courses.',
+    description: 'Longer runway for deeper progress across your selected subjects.',
   },
   {
     id: 'yearly',
@@ -60,9 +60,19 @@ const ACADEMY_PLANS = [
 }>;
 
 type PurchasableAcademyPlan = (typeof ACADEMY_PLANS)[number];
+type AcademyCatalogSubject = {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  thumbnail: string | null;
+  courseCount: number;
+  courseTitles: string[];
+  programs: Program[];
+};
 
-function programCardImage(program: Program) {
-  const thumbnail = program.thumbnail?.trim();
+function cardImage(item: { thumbnail?: string | null }) {
+  const thumbnail = item.thumbnail?.trim();
   return thumbnail ? thumbnail : backgroundImage;
 }
 
@@ -88,6 +98,59 @@ function formatExpiry(value: string | null) {
   }).format(new Date(value));
 }
 
+function buildSubjectDescription(subject: AcademyCatalogSubject) {
+  return (
+    subject.description?.trim() ||
+    subject.programs.find((program) => program.description?.trim())?.description?.trim() ||
+    'Unlock every academy course currently available under this subject.'
+  );
+}
+
+function groupProgramsBySubject(programs: Program[]): AcademyCatalogSubject[] {
+  const groups = new Map<string, AcademyCatalogSubject>();
+
+  for (const program of programs) {
+    if (!program.subjectId || !program.subjectName || !program.subjectCode) {
+      continue;
+    }
+
+    const current = groups.get(program.subjectId) ?? {
+      id: program.subjectId,
+      name: program.subjectName,
+      code: program.subjectCode,
+      description: program.subjectDescription ?? null,
+      thumbnail: program.thumbnail ?? null,
+      courseCount: program.subjectCourseCount ?? (program.courseId ? 1 : 0),
+      courseTitles: [...(program.subjectCourseTitles ?? [])],
+      programs: [],
+    };
+
+    if (!current.thumbnail && program.thumbnail) {
+      current.thumbnail = program.thumbnail;
+    }
+    if (!current.description && program.subjectDescription) {
+      current.description = program.subjectDescription;
+    }
+    if (typeof program.subjectCourseCount === 'number' && program.subjectCourseCount > 0) {
+      current.courseCount = program.subjectCourseCount;
+    }
+    if (program.subjectCourseTitles?.length) {
+      current.courseTitles = [...program.subjectCourseTitles];
+    }
+
+    current.programs.push(program);
+    groups.set(program.subjectId, current);
+  }
+
+  return [...groups.values()]
+    .map((subject) => ({
+      ...subject,
+      programs: [...subject.programs].sort((a, b) => a.title.localeCompare(b.title)),
+      courseTitles: [...new Set(subject.courseTitles)].slice(0, 6),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function PublicAcademyPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -101,7 +164,7 @@ export function PublicAcademyPage() {
   const [selectedPlan, setSelectedPlan] = useState<PurchasableAcademyPlan>(
     ACADEMY_PLANS.find((plan) => plan.id === requestedPlanId) ?? defaultPlan,
   );
-  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<AcademyCatalogSubject | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -137,26 +200,34 @@ export function PublicAcademyPage() {
   });
 
   const selectMutation = useMutation({
-    mutationFn: (programId: string) => academyApi.selectProgram(programId),
+    mutationFn: (subjectId: string) => academyApi.selectSubject(subjectId),
     onSuccess: (data) => {
       queryClient.setQueryData(['academy-subscription-summary'], data);
       void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
-      showToast({ type: 'success', title: 'Course added', message: 'This course is now part of your active plan.' });
+      showToast({
+        type: 'success',
+        title: 'Subject added',
+        message: 'All courses under this subject are now part of your active plan.',
+      });
     },
     onError: (error: any) => {
-      showToast({ type: 'error', title: 'Could not add course', message: error.message });
+      showToast({ type: 'error', title: 'Could not add subject', message: error.message });
     },
   });
 
   const removeMutation = useMutation({
-    mutationFn: (programId: string) => academyApi.removeProgram(programId),
+    mutationFn: (subjectId: string) => academyApi.removeSubject(subjectId),
     onSuccess: (data) => {
       queryClient.setQueryData(['academy-subscription-summary'], data);
       void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
-      showToast({ type: 'success', title: 'Course removed', message: 'You now have a free slot to choose another course.' });
+      showToast({
+        type: 'success',
+        title: 'Subject removed',
+        message: 'You now have a free slot to choose another subject.',
+      });
     },
     onError: (error: any) => {
-      showToast({ type: 'error', title: 'Could not remove course', message: error.message });
+      showToast({ type: 'error', title: 'Could not remove subject', message: error.message });
     },
   });
 
@@ -189,7 +260,7 @@ export function PublicAcademyPage() {
         showToast({
           type: 'success',
           title: 'Plan activated',
-          message: 'Your academy plan is active. Choose up to 3 courses below.',
+          message: 'Your academy plan is active. Choose up to 3 subjects below.',
         });
       } else if (data.status === 'FAILED' || data.status === 'CANCELLED') {
         setPaymentStatus('FAILED');
@@ -207,38 +278,54 @@ export function PublicAcademyPage() {
     };
   }, [paypackRef, queryClient, showToast]);
 
+  const catalogSubjects = useMemo(
+    () => groupProgramsBySubject(programsQuery.data ?? []),
+    [programsQuery.data],
+  );
+
+  const highlightSubjectId = useMemo(() => {
+    if (!highlightProgramId) {
+      return null;
+    }
+
+    return programsQuery.data?.find((program) => program.id === highlightProgramId)?.subjectId ?? null;
+  }, [highlightProgramId, programsQuery.data]);
+
   useEffect(() => {
-    if (!highlightProgramId || !programsQuery.data?.length || programsQuery.isPending) {
+    if (!highlightSubjectId || !catalogSubjects.length || programsQuery.isPending) {
       return;
     }
     const timer = window.setTimeout(() => {
-      document.getElementById(`academy-program-${highlightProgramId}`)?.scrollIntoView({
+      document.getElementById(`academy-subject-${highlightSubjectId}`)?.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
       });
     }, 100);
     return () => window.clearTimeout(timer);
-  }, [highlightProgramId, programsQuery.data, programsQuery.isPending]);
+  }, [catalogSubjects.length, highlightSubjectId, programsQuery.isPending]);
 
-  const selectedProgramsById = useMemo(() => {
-    const map = new Map<string, AcademySubscriptionSummary['selectedPrograms'][number]>();
-    for (const item of subscriptionQuery.data?.selectedPrograms ?? []) {
-      map.set(item.programId, item);
+  const selectedSubjectsById = useMemo(() => {
+    const map = new Map<string, AcademySubscriptionSummary['selectedSubjects'][number]>();
+    for (const item of subscriptionQuery.data?.selectedSubjects ?? []) {
+      map.set(item.subjectId, item);
     }
     return map;
-  }, [subscriptionQuery.data?.selectedPrograms]);
+  }, [subscriptionQuery.data?.selectedSubjects]);
 
-  const accessibleProgramsById = useMemo(() => {
-    const map = new Map<string, AcademySubscriptionSummary['accessiblePrograms'][number]>();
-    for (const item of subscriptionQuery.data?.accessiblePrograms ?? []) {
-      map.set(item.programId, item);
+  const accessibleSubjectsById = useMemo(() => {
+    const map = new Map<string, AcademySubscriptionSummary['accessibleSubjects'][number]>();
+    for (const item of subscriptionQuery.data?.accessibleSubjects ?? []) {
+      map.set(item.subjectId, item);
     }
     return map;
-  }, [subscriptionQuery.data?.accessiblePrograms]);
+  }, [subscriptionQuery.data?.accessibleSubjects]);
 
   const currentSubscription = subscriptionQuery.data?.subscription ?? null;
   const hasActivePlan =
     currentSubscription?.status === 'ACTIVE' || currentSubscription?.status === 'TRIAL';
+  const subjectLimit = currentSubscription?.subjectLimit ?? currentSubscription?.courseLimit ?? 3;
+  const remainingSubjectSlots =
+    currentSubscription?.remainingSubjectSlots ?? currentSubscription?.remainingSlots ?? subjectLimit;
 
   function navigateToLogin(planId: PurchasableAcademyPlan['id']) {
     const params = new URLSearchParams({
@@ -249,17 +336,8 @@ export function PublicAcademyPage() {
     navigate(`/login?${params.toString()}`);
   }
 
-  function openCourse(programId: string) {
-    const access = accessibleProgramsById.get(programId);
-    if (!access?.courseId) {
-      showToast({
-        type: 'error',
-        title: 'Course unavailable',
-        message: 'This program is not linked to a ready course yet.',
-      });
-      return;
-    }
-    navigate(`/student/courses/${access.courseId}`);
+  function openSubject(subjectId: string) {
+    navigate(`/student/courses?subjectId=${encodeURIComponent(subjectId)}`);
   }
 
   function handlePlanClick(plan: PurchasableAcademyPlan) {
@@ -282,10 +360,10 @@ export function PublicAcademyPage() {
     setShowCheckoutModal(true);
   }
 
-  function handleProgramAction(program: Program) {
-    const access = accessibleProgramsById.get(program.id);
-    if (access?.courseId) {
-      openCourse(program.id);
+  function handleSubjectAction(subject: AcademyCatalogSubject) {
+    const access = accessibleSubjectsById.get(subject.id);
+    if (access) {
+      openSubject(subject.id);
       return;
     }
 
@@ -298,7 +376,7 @@ export function PublicAcademyPage() {
       showToast({
         type: 'error',
         title: 'Learner account required',
-        message: 'Use a public academy learner account to choose academy courses.',
+        message: 'Use a public academy learner account to choose academy subjects.',
       });
       return;
     }
@@ -307,25 +385,25 @@ export function PublicAcademyPage() {
       showToast({
         type: 'info',
         title: 'Choose a plan first',
-        message: 'Activate or renew a plan before selecting your courses.',
+        message: 'Activate or renew a plan before selecting your subjects.',
       });
       return;
     }
 
-    if (currentSubscription && currentSubscription.remainingSlots <= 0) {
+    if (currentSubscription && remainingSubjectSlots <= 0) {
       showToast({
         type: 'info',
         title: 'All slots in use',
-        message: 'Remove one selected course to free a slot for another choice.',
+        message: 'Remove one selected subject to free a slot for another choice.',
       });
       return;
     }
 
-    selectMutation.mutate(program.id);
+    selectMutation.mutate(subject.id);
   }
 
   const slotUsage = currentSubscription
-    ? `${currentSubscription.courseLimit - currentSubscription.remainingSlots}/${currentSubscription.courseLimit}`
+    ? `${subjectLimit - remainingSubjectSlots}/${subjectLimit}`
     : '0/3';
 
   return (
@@ -344,7 +422,7 @@ export function PublicAcademyPage() {
             Smart School <span className="text-brand-400">Academy</span>
           </h1>
           <p className="mx-auto mt-6 max-w-3xl text-lg font-medium text-gray-100">
-            Activate a plan, then choose up to 3 academy courses you want to access.
+            Activate a plan, then choose up to 3 academy subjects and unlock every course under each selected subject.
           </p>
         </div>
       </section>
@@ -353,8 +431,16 @@ export function PublicAcademyPage() {
         <div className="mx-auto grid w-full max-w-6xl gap-4 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
           {[
             { step: 1, title: 'Create account', desc: 'Register or sign in with your academy learner account.' },
-            { step: 2, title: 'Activate plan', desc: 'Choose the access plan that fits your testing or learning needs and pay with MoMo.' },
-            { step: 3, title: 'Choose 3 courses', desc: 'Pick up to 3 linked courses under your active plan and swap later if needed.' },
+            {
+              step: 2,
+              title: 'Activate plan',
+              desc: 'Choose the access plan that fits your testing or learning needs and pay with MoMo.',
+            },
+            {
+              step: 3,
+              title: 'Choose 3 subjects',
+              desc: 'Pick up to 3 academy subjects and access every course currently published under them.',
+            },
           ].map((item) => (
             <div key={item.step} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
               <div className="flex items-start gap-3">
@@ -378,7 +464,7 @@ export function PublicAcademyPage() {
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">Step 1</p>
               <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">Choose your plan</h2>
               <p className="mt-3 max-w-2xl text-slate-600">
-                All plans unlock the same academy catalog flow. The difference is how long your chosen 3-course access stays active.
+                All plans unlock the same academy catalog flow. The difference is how long your chosen subject access stays active.
               </p>
             </div>
             {currentSubscription ? (
@@ -446,9 +532,9 @@ export function PublicAcademyPage() {
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">Step 2</p>
-              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">Choose up to 3 courses</h2>
+              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">Choose up to 3 subjects</h2>
               <p className="mt-3 max-w-2xl text-slate-600">
-                Your plan controls time. Your selected courses control content access. Remove one selected course any time to free a slot.
+                Your plan controls time. Your selected subjects unlock every course under them. Remove one selected subject any time to free a slot.
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-700 shadow-sm">
@@ -461,38 +547,45 @@ export function PublicAcademyPage() {
             <div className="flex justify-center py-20">
               <Loader2 className="h-10 w-10 animate-spin text-brand-500" />
             </div>
+          ) : programsQuery.isError ? (
+            <div className="rounded-3xl border border-rose-200 bg-rose-50 px-6 py-12 text-center text-rose-700 shadow-sm">
+              We could not load academy subjects right now. Please refresh the page and try again.
+            </div>
+          ) : catalogSubjects.length === 0 ? (
+            <div className="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center text-slate-600 shadow-sm">
+              No academy subjects are ready yet. Link public academy programs to subject-based courses to show them here.
+            </div>
           ) : (
             <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {programsQuery.data?.map((program) => {
-                const selected = selectedProgramsById.get(program.id);
-                const accessible = accessibleProgramsById.get(program.id);
+              {catalogSubjects.map((subject) => {
+                const selected = selectedSubjectsById.get(subject.id);
+                const accessible = accessibleSubjectsById.get(subject.id);
                 const canAdd =
                   Boolean(auth.me && isPublicLearner && hasActivePlan) &&
                   !selected &&
                   !accessible &&
-                  Boolean(currentSubscription && currentSubscription.remainingSlots > 0) &&
-                  Boolean(program.courseId);
+                  Boolean(currentSubscription && remainingSubjectSlots > 0);
 
                 return (
                   <article
-                    key={program.id}
-                    id={`academy-program-${program.id}`}
+                    key={subject.id}
+                    id={`academy-subject-${subject.id}`}
                     className={[
                       'group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition',
-                      highlightProgramId === program.id
+                      highlightSubjectId === subject.id
                         ? 'border-brand-500 ring-2 ring-brand-400/30'
                         : 'border-slate-200 hover:border-brand-200',
                     ].join(' ')}
                   >
                     <div className="relative h-56 overflow-hidden">
                       <img
-                        src={programCardImage(program)}
-                        alt={program.title}
+                        src={cardImage(subject)}
+                        alt={subject.name}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                       <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-brand-700 shadow-sm">
-                        {program.durationDays} days default
+                        {subject.courseCount} {subject.courseCount === 1 ? 'course' : 'courses'}
                       </div>
                     </div>
                     <div className="flex flex-1 flex-col p-7">
@@ -502,21 +595,36 @@ export function PublicAcademyPage() {
                             {accessible.isLegacy ? 'Legacy access' : 'Accessible now'}
                           </span>
                         ) : null}
-                        {selected && !accessible ? (
+                        {selected ? (
                           <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">
                             Selected on plan
                           </span>
                         ) : null}
-                        {!program.courseId ? (
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                            Course link pending
-                          </span>
-                        ) : null}
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{subject.code}</span>
                       </div>
-                      <h3 className="text-2xl font-bold tracking-tight text-slate-900">{program.title}</h3>
+                      <h3 className="text-2xl font-bold tracking-tight text-slate-900">{subject.name}</h3>
                       <p className="mt-4 flex-1 text-[15px] leading-relaxed text-slate-600">
-                        {program.description?.trim() || 'Professional academy track.'}
+                        {buildSubjectDescription(subject)}
                       </p>
+
+                      <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        <p className="flex items-center gap-2 font-semibold text-slate-900">
+                          <BookOpen className="h-4 w-4 text-brand-600" />
+                          {subject.courseCount} course{subject.courseCount === 1 ? '' : 's'} available
+                        </p>
+                        <p className="mt-1">
+                          {subject.courseTitles.length > 0
+                            ? subject.courseTitles.slice(0, 3).join(' • ')
+                            : `${subject.programs.length} academy catalog item${subject.programs.length === 1 ? '' : 's'} linked to this subject.`}
+                        </p>
+                      </div>
+
+                      {subject.courseTitles.length > 3 ? (
+                        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          +{subject.courseTitles.length - 3} more courses in this subject
+                        </p>
+                      ) : null}
+
                       <div className="mt-6 space-y-3">
                         {accessible?.expiresAt ? (
                           <p className="text-sm text-slate-500">Access ends {formatExpiry(accessible.expiresAt)}</p>
@@ -528,7 +636,7 @@ export function PublicAcademyPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              setSelectedProgram(program);
+                              setSelectedSubject(subject);
                               setShowDetailsModal(true);
                             }}
                             className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-700 transition hover:bg-slate-50"
@@ -538,34 +646,28 @@ export function PublicAcademyPage() {
                           <button
                             type="button"
                             disabled={selectMutation.isPending || removeMutation.isPending}
-                            onClick={() => handleProgramAction(program)}
+                            onClick={() => handleSubjectAction(subject)}
                             className={[
                               'flex-[1.35] rounded-2xl px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition',
-                              accessible?.courseId || canAdd
-                                ? 'bg-brand-500 hover:bg-brand-600'
-                                : 'bg-slate-400',
+                              accessible || canAdd ? 'bg-brand-500 hover:bg-brand-600' : 'bg-slate-400',
                             ].join(' ')}
                           >
-                            {accessible?.courseId
-                              ? 'Open course'
+                            {accessible
+                              ? 'View courses'
                               : !auth.me
                                 ? 'Login first'
                                 : !hasActivePlan
                                   ? 'Choose plan first'
-                                  : currentSubscription && currentSubscription.remainingSlots <= 0 && !selected
-                                    ? '3/3 selected'
-                                    : !program.courseId
-                                      ? 'Coming soon'
-                                      : selected
-                                        ? 'Selected'
-                                        : 'Add to plan'}
+                                  : currentSubscription && remainingSubjectSlots <= 0 && !selected
+                                    ? `${subjectLimit}/${subjectLimit} selected`
+                                    : 'Add subject'}
                           </button>
                         </div>
 
                         {selected ? (
                           <button
                             type="button"
-                            onClick={() => removeMutation.mutate(program.id)}
+                            onClick={() => removeMutation.mutate(subject.id)}
                             disabled={removeMutation.isPending}
                             className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-rose-700 transition hover:bg-rose-100"
                           >
@@ -590,7 +692,7 @@ export function PublicAcademyPage() {
           setPaypackRef(null);
         }}
         title={`${selectedPlan.name} plan`}
-        description="Activate your plan with MoMo. Your selected courses stay under the same 3-slot limit."
+        description="Activate your plan with MoMo. Your selected subjects stay under the same 3-slot limit."
       >
         {paymentStatus === 'IDLE' ? (
           <form
@@ -613,7 +715,7 @@ export function PublicAcademyPage() {
                 <span>{selectedPlan.price.toLocaleString()} RWF</span>
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                After payment, choose up to 3 linked academy courses. Renewing extends the same selected set until you change it.
+                After payment, choose up to 3 academy subjects. Renewing extends the same selected set until you change it.
               </p>
             </div>
 
@@ -662,7 +764,7 @@ export function PublicAcademyPage() {
             </div>
             <h3 className="mt-8 text-2xl font-bold text-slate-900">Plan activated</h3>
             <p className="mt-4 text-slate-600">
-              Your academy plan is now active. Close this window and choose up to 3 courses from the catalog below.
+              Your academy plan is now active. Close this window and choose up to 3 subjects from the catalog below.
             </p>
             <button
               type="button"
@@ -694,35 +796,52 @@ export function PublicAcademyPage() {
       <Modal
         open={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
-        title={selectedProgram?.title || 'Program details'}
-        description="Review this academy course before adding it to your plan."
+        title={selectedSubject?.name || 'Subject details'}
+        description="Review this academy subject before adding it to your plan."
       >
         <div className="space-y-6">
           <div className="aspect-video w-full overflow-hidden rounded-2xl bg-slate-100">
             <img
-              src={selectedProgram ? programCardImage(selectedProgram) : undefined}
-              alt={selectedProgram?.title}
+              src={selectedSubject ? cardImage(selectedSubject) : undefined}
+              alt={selectedSubject?.name}
               className="h-full w-full object-cover"
             />
           </div>
           <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-            <p className="font-semibold text-slate-900">Default course length</p>
-            <p className="mt-1">{selectedProgram?.durationDays} days</p>
+            <p className="font-semibold text-slate-900">Subject code</p>
+            <p className="mt-1">{selectedSubject?.code}</p>
+            <p className="mt-4 font-semibold text-slate-900">Courses available</p>
+            <p className="mt-1">{selectedSubject?.courseCount ?? 0}</p>
             <p className="mt-4 font-semibold text-slate-900">Description</p>
             <p className="mt-1 whitespace-pre-wrap text-slate-600">
-              {selectedProgram?.description?.trim() || 'Professional academy track.'}
+              {selectedSubject ? buildSubjectDescription(selectedSubject) : 'Academy subject details.'}
             </p>
+            {selectedSubject?.courseTitles.length ? (
+              <>
+                <p className="mt-4 font-semibold text-slate-900">Included courses</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedSubject.courseTitles.map((title) => (
+                    <span
+                      key={title}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+                    >
+                      {title}
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
-          {selectedProgram ? (
+          {selectedSubject ? (
             <button
               type="button"
               onClick={() => {
                 setShowDetailsModal(false);
-                handleProgramAction(selectedProgram);
+                handleSubjectAction(selectedSubject);
               }}
               className="w-full rounded-2xl bg-brand-500 py-4 text-sm font-black uppercase tracking-widest text-white transition hover:bg-brand-600"
             >
-              {accessibleProgramsById.get(selectedProgram.id)?.courseId ? 'Open course' : 'Use this course'}
+              {accessibleSubjectsById.get(selectedSubject.id) ? 'View subject courses' : 'Use this subject'}
             </button>
           ) : null}
         </div>

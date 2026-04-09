@@ -122,7 +122,7 @@ export function LoginPage() {
 
   const helperText =
     returnTo === '/academy' || returnTo?.startsWith('/academy?')
-      ? 'Create or sign in to your academy learner account, then choose your plan and courses.'
+      ? 'Create or sign in to your academy learner account, then choose your plan and subjects.'
       : t('login.subtitle');
 
   function switchTab(nextTab: AuthTab) {

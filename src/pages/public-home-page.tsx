@@ -107,7 +107,7 @@ export function PublicHomePage() {
       <PublicAcademyProgramsShowcase
         eyebrow="Open enrollment"
         title="Featured academy programs"
-        subtitle="Real offerings from your catalog. Activate a plan on the academy page, then choose up to 3 courses."
+        subtitle="Real offerings from your catalog. Activate a plan on the academy page, then choose up to 3 subjects."
         limit={6}
         ctaHref="/academy"
         ctaLabel="Full catalog & plans"

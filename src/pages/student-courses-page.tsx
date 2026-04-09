@@ -289,12 +289,13 @@ export function StudentCoursesPage() {
   const [searchParams] = useSearchParams();
   const legacyCourseId = searchParams.get('courseId');
   const legacyAssignmentId = searchParams.get('assignmentId');
+  const requestedSubjectId = searchParams.get('subjectId');
   const activeCourseId = params.courseId ?? legacyCourseId ?? '';
   const activeLessonId = params.lessonId ?? '';
   const activeAssignmentId = params.assignmentId ?? legacyAssignmentId ?? '';
 
   const [search, setSearch] = useState('');
-  const [subjectFilter, setSubjectFilter] = useState('ALL');
+  const [subjectFilter, setSubjectFilter] = useState(requestedSubjectId ?? 'ALL');
   const [page, setPage] = useState(1);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeCoursePanel, setActiveCoursePanel] = useState<CoursePanel>('lessons');
@@ -414,6 +415,10 @@ export function StudentCoursesPage() {
 
     return visibleCourses.filter((course) => course.subject?.id === subjectFilter);
   }, [subjectFilter, visibleCourses]);
+
+  useEffect(() => {
+    setSubjectFilter(requestedSubjectId ?? 'ALL');
+  }, [requestedSubjectId]);
 
   const selectedCourse = allCourses.find((course) => course.id === activeCourseId) ?? null;
   const selectedLesson =

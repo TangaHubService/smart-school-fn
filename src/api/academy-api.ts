@@ -8,6 +8,12 @@ export interface Program {
   price: number;
   durationDays: number;
   courseId?: string | null;
+  subjectId?: string | null;
+  subjectName?: string | null;
+  subjectCode?: string | null;
+  subjectDescription?: string | null;
+  subjectCourseCount?: number;
+  subjectCourseTitles?: string[];
 }
 
 export interface ProgramEnrollment {
@@ -53,9 +59,41 @@ export interface AcademySubscriptionSummary {
     status: AcademySubscriptionStatus;
     isTrial: boolean;
     expiresAt: string | null;
+    subjectLimit: number;
+    remainingSubjectSlots: number;
     courseLimit: number;
     remainingSlots: number;
   };
+  selectedSubjects: Array<{
+    subjectId: string;
+    subjectName: string;
+    subjectCode: string;
+    subjectDescription: string | null;
+    thumbnail: string | null;
+    courseCount: number;
+    programCount: number;
+    courseIds: string[];
+    programIds: string[];
+    programTitles: string[];
+    expiresAt: string | null;
+    isTrial: boolean;
+    isLegacy: boolean;
+  }>;
+  accessibleSubjects: Array<{
+    subjectId: string;
+    subjectName: string;
+    subjectCode: string;
+    subjectDescription: string | null;
+    thumbnail: string | null;
+    courseCount: number;
+    programCount: number;
+    courseIds: string[];
+    programIds: string[];
+    programTitles: string[];
+    expiresAt: string | null;
+    isTrial: boolean;
+    isLegacy: boolean;
+  }>;
   selectedPrograms: Array<{
     enrollmentId: string;
     programId: string;
@@ -63,6 +101,8 @@ export interface AcademySubscriptionSummary {
     description: string | null;
     thumbnail: string | null;
     courseId: string | null;
+    subjectId: string | null;
+    subjectName: string | null;
     expiresAt: string | null;
     isTrial: boolean;
   }>;
@@ -73,6 +113,8 @@ export interface AcademySubscriptionSummary {
     description: string | null;
     thumbnail: string | null;
     courseId: string | null;
+    subjectId: string | null;
+    subjectName: string | null;
     expiresAt: string | null;
     isTrial: boolean;
     isLegacy: boolean;
@@ -111,6 +153,17 @@ export const academyApi = {
     apiRequest<AcademyPlanCheckoutResponse>('/public-academy/subscription/checkout', {
       method: 'POST',
       body: data,
+    }),
+
+  selectSubject: (subjectId: string) =>
+    apiRequest<AcademySubscriptionSummary>('/public-academy/subscription/subjects/select', {
+      method: 'POST',
+      body: { subjectId },
+    }),
+
+  removeSubject: (subjectId: string) =>
+    apiRequest<AcademySubscriptionSummary>(`/public-academy/subscription/subjects/${subjectId}`, {
+      method: 'DELETE',
     }),
 
   selectProgram: (programId: string) =>

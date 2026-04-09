@@ -85,7 +85,7 @@ export function PublicCoursesPage() {
             Welcome to Smart School Rwanda After Class Programs
           </h1>
           <p className="mx-auto mt-6 hidden max-w-3xl text-lg font-medium text-gray-100 md:block">
-            Explore the live academy catalog, compare program themes, then activate a plan on the academy page and choose the 3 courses you want to access.
+            Explore the live academy catalog, compare program themes, then activate a plan on the academy page and choose the 3 subjects you want to access.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
@@ -132,7 +132,7 @@ export function PublicCoursesPage() {
       <PublicAcademyProgramsShowcase
         eyebrow="Live academy catalog"
         title="Browse available programs"
-        subtitle="Choose a plan on the academy page, then add up to 3 linked courses from the live catalog."
+        subtitle="Choose a plan on the academy page, then add up to 3 academy subjects from the live catalog."
         limit={null}
         programs={filteredPrograms}
         programsLoading={programsQuery.isPending}
