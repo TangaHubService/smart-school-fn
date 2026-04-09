@@ -16,6 +16,7 @@ import { useAuth } from '../features/auth/auth.context';
 import {
   AssessmentQuestion,
   addAssessmentQuestionApi,
+  deleteAssessmentApi,
   deleteAssessmentQuestionApi,
   getAssessmentAttemptApi,
   getAssessmentDetailApi,
@@ -59,6 +60,7 @@ export function AssessmentDetailPage() {
 
   const [isQuestionOpen, setIsQuestionOpen] = useState(false);
   const [isAssessmentEditOpen, setIsAssessmentEditOpen] = useState(false);
+  const [isDeleteAssessmentOpen, setIsDeleteAssessmentOpen] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState('');
   const [questionToDelete, setQuestionToDelete] = useState<{
     id: string;
@@ -227,6 +229,24 @@ export function AssessmentDetailPage() {
     },
   });
 
+  const deleteAssessmentMutation = useMutation({
+    mutationFn: () => deleteAssessmentApi(auth.accessToken!, assessmentId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['assessments'] });
+      void queryClient.removeQueries({ queryKey: ['assessment-detail', assessmentId] });
+      setIsDeleteAssessmentOpen(false);
+      showToast({ type: 'success', title: 'Assessment deleted' });
+      navigate('/admin/assessments');
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not delete assessment',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
   const regradeAttemptMutation = useMutation({
     mutationFn: (payload: { manualFeedback?: string; answers: Array<{ questionId: string; pointsAwarded: number }> }) =>
       regradeAssessmentAttemptApi(auth.accessToken!, reviewAttemptId, payload),
@@ -256,6 +276,7 @@ export function AssessmentDetailPage() {
   const resultRows = useMemo(() => resultsQuery.data?.items ?? [], [resultsQuery.data?.items]);
   const selectedAttempt = reviewAttemptQuery.data ?? null;
   const assessmentEditingLocked = Boolean(assessment && assessment.counts.attempts > 0);
+  const assessmentDeletionLocked = Boolean(assessment && assessment.counts.attempts > 0);
   const questionEditingLocked = Boolean(
     assessment && (assessment.isPublished || assessment.counts.attempts > 0),
   );
@@ -447,6 +468,20 @@ export function AssessmentDetailPage() {
             >
               <Pencil className="h-4 w-4" aria-hidden="true" />
               Edit assessment
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDeleteAssessmentOpen(true)}
+              disabled={assessmentDeletionLocked || deleteAssessmentMutation.isPending}
+              title={
+                assessmentDeletionLocked
+                  ? 'Assessment cannot be deleted after students start attempting it'
+                  : 'Delete assessment'
+              }
+              className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              {deleteAssessmentMutation.isPending ? 'Deleting...' : 'Delete assessment'}
             </button>
             <button
               type="button"
@@ -923,6 +958,37 @@ export function AssessmentDetailPage() {
         <p className="text-sm text-slate-700">
           Question {questionToDelete?.sequence}: {questionToDelete?.prompt}
         </p>
+      </Modal>
+
+      <Modal
+        open={isDeleteAssessmentOpen}
+        title="Delete assessment"
+        description="This permanently removes the assessment and all of its questions. Students must not have started any attempts."
+        onClose={() => setIsDeleteAssessmentOpen(false)}
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setIsDeleteAssessmentOpen(false)}
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => deleteAssessmentMutation.mutate()}
+              disabled={deleteAssessmentMutation.isPending}
+              className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Delete assessment
+            </button>
+          </div>
+        }
+      >
+        <div className="grid gap-2 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">{assessment.title}</p>
+          <p>This action cannot be undone.</p>
+        </div>
       </Modal>
 
       <Modal

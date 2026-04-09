@@ -273,6 +273,13 @@ export function updateAssessmentApi(
   });
 }
 
+export function deleteAssessmentApi(accessToken: string, assessmentId: string) {
+  return apiRequest<{ id: string; deleted: boolean }>(`/assessments/${assessmentId}`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}
+
 export function addAssessmentQuestionApi(
   accessToken: string,
   assessmentId: string,

@@ -1,12 +1,13 @@
 /**
  * Single source of truth for student course completion %.
- * Formula: (completedLessons + completedAssignments) / (totalLessons + totalAssignments) × 100.
+ * Formula: (completedLessons + completedWorkItems) / (totalLessons + totalWorkItems) × 100.
  * All items weighted equally; empty course → 0%.
  */
 
 export type CourseProgressSource = {
   lessons: { id: string; sequence: number }[];
   assignments?: Array<{ mySubmission?: unknown }>;
+  assessments?: Array<{ latestAttempt?: { status?: string } | null }>;
   completedLessonIds?: string[];
 };
 
@@ -28,10 +29,13 @@ export function getCourseProgressMetrics(
 ): CourseProgressMetrics {
   const ids = completedLessonIds ?? course.completedLessonIds ?? [];
   const assignments = course.assignments ?? [];
+  const assessments = course.assessments ?? [];
   const totalLessons = course.lessons.length;
   const completedLessons = course.lessons.filter((lesson) => ids.includes(lesson.id)).length;
-  const totalAssignments = assignments.length;
-  const completedAssignments = assignments.filter((a) => Boolean(a.mySubmission)).length;
+  const totalAssignments = assignments.length + assessments.length;
+  const completedAssignments =
+    assignments.filter((a) => Boolean(a.mySubmission)).length +
+    assessments.filter((assessment) => assessment.latestAttempt?.status === 'SUBMITTED').length;
 
   const lessonProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
   const assignmentProgress =

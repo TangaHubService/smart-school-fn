@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, CheckCircle2, Eye, Plus } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, Plus, Trash2 } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +14,7 @@ import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
   createAssessmentApi,
+  deleteAssessmentApi,
   listAssessmentsApi,
   publishAssessmentApi,
 } from '../features/assessments/assessments.api';
@@ -56,6 +57,10 @@ export function AssessmentsPage() {
   const [courseFilter, setCourseFilter] = useState('');
   const [page, setPage] = useState(1);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [assessmentToDelete, setAssessmentToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   const assessmentForm = useForm<AssessmentFormValues>({
     resolver: zodResolver(assessmentFormSchema),
@@ -63,6 +68,7 @@ export function AssessmentsPage() {
   });
 
   const selectedCreateCourseId = assessmentForm.watch('courseId');
+  const canManageAssessments = hasPermission(auth.me, 'assessments.manage');
   const canPublishAssessments = hasPermission(auth.me, 'assessments.publish');
   const canReviewAssessmentResults = hasPermission(auth.me, 'assessment_results.read');
 
@@ -150,6 +156,22 @@ export function AssessmentsPage() {
       showToast({
         type: 'error',
         title: 'Could not update assessment',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const deleteAssessmentMutation = useMutation({
+    mutationFn: (assessmentId: string) => deleteAssessmentApi(auth.accessToken!, assessmentId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['assessments'] });
+      setAssessmentToDelete(null);
+      showToast({ type: 'success', title: 'Assessment deleted' });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not delete assessment',
         message: error instanceof Error ? error.message : 'Request failed',
       });
     },
@@ -367,6 +389,30 @@ export function AssessmentsPage() {
                               : 'Publish'}
                         </button>
                       ) : null}
+                      {canManageAssessments ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAssessmentToDelete({
+                              id: assessment.id,
+                              title: assessment.title,
+                            })
+                          }
+                          disabled={assessment.counts.attempts > 0 || deleteAssessmentMutation.isPending}
+                          title={
+                            assessment.counts.attempts > 0
+                              ? 'Assessments cannot be deleted after students start attempting them.'
+                              : 'Delete this assessment'
+                          }
+                          className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          {deleteAssessmentMutation.isPending &&
+                          deleteAssessmentMutation.variables === assessment.id
+                            ? 'Deleting...'
+                            : 'Delete'}
+                        </button>
+                      ) : null}
                     </div>
                   </article>
                 ))}
@@ -522,6 +568,37 @@ export function AssessmentsPage() {
             </label>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(assessmentToDelete)}
+        title="Delete assessment"
+        description="This permanently removes the assessment and all of its questions. Students must not have started any attempts."
+        onClose={() => setAssessmentToDelete(null)}
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setAssessmentToDelete(null)}
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => assessmentToDelete && deleteAssessmentMutation.mutate(assessmentToDelete.id)}
+              disabled={deleteAssessmentMutation.isPending}
+              className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Delete assessment
+            </button>
+          </div>
+        }
+      >
+        <div className="grid gap-2 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">{assessmentToDelete?.title}</p>
+          <p>This action cannot be undone.</p>
+        </div>
       </Modal>
     </div>
   );

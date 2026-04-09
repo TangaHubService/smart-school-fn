@@ -89,14 +89,18 @@ export function StudentAssessmentsPage() {
                     key={assessment.id}
                     type="button"
                     onClick={() => navigate(`/student/assessments/${assessment.id}`)}
-                    className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
+                    className="grid min-h-[250px] grid-rows-[auto_auto_1fr_auto] gap-4 overflow-hidden rounded-2xl border border-brand-100 bg-white p-5 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-lg font-bold text-slate-900">{assessment.title}</p>
-                        <p className="mt-1 text-sm text-slate-600">{assessment.course.title}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-lg font-bold leading-6 text-slate-900">
+                          {assessment.title}
+                        </p>
+                        <p className="mt-1 break-words text-sm leading-5 text-slate-600">
+                          {assessment.course.title}
+                        </p>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex shrink-0 flex-col items-end gap-2">
                         <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                           {assessment.counts.questions} Qs
                         </span>
@@ -107,11 +111,11 @@ export function StudentAssessmentsPage() {
                     </div>
 
                     <div className="grid gap-2 text-sm text-slate-700">
-                      <p>{assessment.course.classRoom.name}</p>
-                      <p>{formatAssessmentDateTime(assessment.dueAt)}</p>
+                      <p className="break-words">{assessment.course.classRoom.name}</p>
+                      <p className="break-words">{formatAssessmentDateTime(assessment.dueAt)}</p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
+                    <div className="flex flex-wrap gap-2 self-start text-xs font-semibold text-slate-700">
                       <span className="rounded-full bg-brand-100 px-2.5 py-1">
                         {assessment.timeLimitMinutes ? `${assessment.timeLimitMinutes} min` : 'No timer'}
                       </span>
@@ -137,7 +141,7 @@ export function StudentAssessmentsPage() {
                       ) : null}
                     </div>
 
-                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
                       {t('assessments.openTest')}
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </div>

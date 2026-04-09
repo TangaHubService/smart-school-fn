@@ -29,7 +29,9 @@ export function CourseOverviewPanel({
   const state = courseEnrollmentState(metrics);
   const sortedLessons = [...course.lessons].sort((a, b) => a.sequence - b.sequence);
   const resumeLessonId = getResumeLessonId(course, completedLessonIds);
-  const pendingTests = course.assignments.filter((a) => !a.mySubmission).length;
+  const pendingTests =
+    course.assignments.filter((assignment) => !assignment.mySubmission).length +
+    course.assessments.filter((assessment) => assessment.latestAttempt?.status !== 'SUBMITTED').length;
 
   const instructor = `${course.teacher.firstName} ${course.teacher.lastName}`;
   const estHours = metrics.estimatedMinutes >= 60
@@ -98,7 +100,7 @@ export function CourseOverviewPanel({
                   {state === 'completed' ? 'Revisit first lesson' : 'From beginning'}
                 </button>
               ) : null}
-              {course.assignments.length > 0 ? (
+              {course.assignments.length > 0 || course.assessments.length > 0 ? (
                 <button
                   type="button"
                   onClick={onOpenTests}
@@ -122,7 +124,7 @@ export function CourseOverviewPanel({
                 {metrics.completedLessons}/{metrics.totalLessons} lessons
               </p>
               <p className="text-slate-600">
-                {metrics.completedAssignments}/{metrics.totalAssignments} assessments
+                {metrics.completedAssignments}/{metrics.totalAssignments} tests & tasks
               </p>
               <p className="inline-flex items-center justify-center gap-1.5 text-xs font-medium text-slate-500">
                 <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />

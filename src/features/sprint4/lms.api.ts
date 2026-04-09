@@ -1,4 +1,5 @@
 import { apiRequest } from '../../api/client';
+import type { MyAssessmentItem } from '../assessments/assessments.api';
 
 export type LessonContentType = 'TEXT' | 'PDF' | 'VIDEO' | 'LINK';
 export type SubmissionStatus = 'SUBMITTED' | 'GRADED';
@@ -128,6 +129,8 @@ export interface AssignmentItem {
   mySubmission?: SubmissionItem | null;
 }
 
+export type CourseAssessmentItem = MyAssessmentItem;
+
 export interface CourseListResponse {
   items: Array<
     CourseSummary & {
@@ -195,6 +198,7 @@ export interface MyCoursesResponse {
     CourseSummary & {
       lessons: LessonItem[];
       assignments: Array<AssignmentItem & { mySubmission: SubmissionItem | null }>;
+      assessments: CourseAssessmentItem[];
       completedLessonIds: string[];
       submittedAssessmentIds?: string[];
     }

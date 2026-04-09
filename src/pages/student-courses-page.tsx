@@ -33,6 +33,7 @@ import {
   removePendingLessonComplete,
 } from '../utils/offline-learning-cache';
 import { getCourseProgressMetrics, getResumeLessonId } from '../utils/course-progress';
+import { formatAssessmentTypeLabel } from '../features/assessments/assessment-ui';
 const submissionSchema = z
   .object({
     textAnswer: z.string().trim().max(10000).optional(),
@@ -50,6 +51,7 @@ const submissionSchema = z
 
 type SubmissionFormValues = z.infer<typeof submissionSchema>;
 type StudentCourseItem = MyCoursesResponse['items'][number];
+type CourseAssessmentItem = StudentCourseItem['assessments'][number];
 type CoursePanel = 'lessons' | 'tests';
 type SubjectCourseGroup = {
   key: string;
@@ -224,6 +226,42 @@ function getAssignmentStatus(assignment: AssignmentItem) {
   };
 }
 
+function getAssessmentStatus(assessment: CourseAssessmentItem) {
+  if (assessment.latestAttempt?.status === 'SUBMITTED') {
+    if (
+      assessment.type === 'GENERAL' ||
+      assessment.type === 'PSYCHOMETRIC' ||
+      assessment.latestAttempt.manualScore !== null
+    ) {
+      return {
+        label: `${assessment.latestAttempt.score}/${assessment.latestAttempt.maxScore ?? 0}`,
+        tone: 'graded' as const,
+      };
+    }
+
+    return {
+      label: 'Awaiting review',
+      tone: 'submitted' as const,
+    };
+  }
+
+  if (assessment.latestAttempt?.status === 'IN_PROGRESS') {
+    return {
+      label: 'In progress',
+      tone: 'submitted' as const,
+    };
+  }
+
+  return {
+    label: 'Not started',
+    tone: 'published' as const,
+  };
+}
+
+function getTotalCourseWorkItems(course: StudentCourseItem) {
+  return course.assignments.length + course.assessments.length;
+}
+
 const STUDENT_HEADER_ACTION_BTN =
   'shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20 sm:text-sm';
 
@@ -378,14 +416,14 @@ export function StudentCoursesPage() {
           code: course.subject?.code ?? 'GEN',
           courses: [course],
           totalLessons: course.lessons.length,
-          totalAssignments: course.assignments.length,
+          totalAssignments: getTotalCourseWorkItems(course),
         });
         continue;
       }
 
       current.courses.push(course);
       current.totalLessons += course.lessons.length;
-      current.totalAssignments += course.assignments.length;
+      current.totalAssignments += getTotalCourseWorkItems(course);
     }
 
     return [...groups.values()]
@@ -660,6 +698,10 @@ export function StudentCoursesPage() {
     navigate(`/student/courses/${courseId}/tests/${assignmentId}`);
   }
 
+  function handleOpenAssessment(assessmentId: string) {
+    navigate(`/student/assessments/${assessmentId}`);
+  }
+
   function handleGoPrevious(courseId: string, lessonId: string) {
     const lessons = selectedCourse?.lessons.slice().sort((a, b) => a.sequence - b.sequence) ?? [];
     const index = lessons.findIndex((lesson) => lesson.id === lessonId);
@@ -844,11 +886,11 @@ export function StudentCoursesPage() {
                             <p className="text-sm font-medium text-slate-900">
                               {selectedCourseProgress?.overallProgress ?? 0}% complete
                             </p>
-                            <p className="mt-0.5 text-xs text-slate-500">
-                              {selectedCourseProgress?.completedLessons ?? 0}/{selectedCourseProgress?.totalLessons ?? 0}{' '}
-                              lessons · {selectedCourseProgress?.completedAssignments ?? 0}/
-                              {selectedCourseProgress?.totalAssignments ?? 0} tests
-                            </p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {selectedCourseProgress?.completedLessons ?? 0}/{selectedCourseProgress?.totalLessons ?? 0}{' '}
+                          lessons · {selectedCourseProgress?.completedAssignments ?? 0}/
+                          {selectedCourseProgress?.totalAssignments ?? 0} tests & tasks
+                        </p>
                             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
                               <div
                                 className="h-full rounded-full bg-brand-500 transition-all duration-500"
@@ -922,40 +964,96 @@ export function StudentCoursesPage() {
                     </div>
 
                     <div className="mt-4 border-t border-slate-100 pt-4">
-                      <p className="text-xs font-medium text-slate-500">Assessments</p>
-                      <div className="mt-3 space-y-1.5">
-                        {selectedCourse.assignments.map((assignment) => {
-                          const isCompleted = Boolean(assignment.mySubmission);
-                          const isSelected = activeAssignmentId === assignment.id;
-                          return (
-                            <button
-                              key={assignment.id}
-                              type="button"
-                              onClick={() => handleSelectAssignment(selectedCourse.id, assignment.id)}
-                              className={`flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
-                                isSelected
-                                  ? 'bg-slate-900 text-white shadow-lg'
-                                  : 'bg-transparent text-slate-700 hover:bg-slate-100'
-                              }`}
-                            >
-                              <span className="mt-0.5 flex-shrink-0">
-                                {isCompleted ? (
-                                  <CheckCircle2 className={`h-4 w-4 ${isSelected ? 'text-white' : 'text-emerald-500'}`} />
-                                ) : (
-                                  <Circle className="h-4 w-4 text-slate-300" />
-                                )}{' '}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <p className={`truncate font-medium ${isSelected ? 'text-white' : 'text-slate-900'}`}>
-                                  {assignment.title}
-                                </p>
-                                <p className={`text-xs ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
-                                  {isCompleted ? 'Completed' : 'Pending'}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
+                      <p className="text-xs font-medium text-slate-500">Tests & tasks</p>
+                      <div className="mt-3 space-y-3">
+                        {selectedCourse.assessments.length ? (
+                          <div className="space-y-1.5">
+                            <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                              Tests
+                            </p>
+                            {selectedCourse.assessments.map((assessment) => {
+                              const status = getAssessmentStatus(assessment);
+
+                              return (
+                                <button
+                                  key={assessment.id}
+                                  type="button"
+                                  onClick={() => handleOpenAssessment(assessment.id)}
+                                  className="flex w-full items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 transition-all hover:border-brand-200 hover:bg-brand-50/40"
+                                >
+                                  <span className="mt-0.5 flex-shrink-0">
+                                    {assessment.latestAttempt?.status === 'SUBMITTED' ? (
+                                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                    ) : assessment.latestAttempt?.status === 'IN_PROGRESS' ? (
+                                      <Play className="h-4 w-4 text-brand-500" />
+                                    ) : (
+                                      <Circle className="h-4 w-4 text-slate-300" />
+                                    )}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="break-words font-medium leading-5 text-slate-900">
+                                      {assessment.title}
+                                    </p>
+                                    <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-400">
+                                      <span>{formatAssessmentTypeLabel(assessment.type)}</span>
+                                      <span>{assessment.counts.questions} Qs</span>
+                                      <span>{formatDateTime(assessment.dueAt)}</span>
+                                    </div>
+                                  </div>
+                                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                    {status.label}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+
+                        {selectedCourse.assignments.length ? (
+                          <div className="space-y-1.5">
+                            <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                              Tasks
+                            </p>
+                            {selectedCourse.assignments.map((assignment) => {
+                              const isCompleted = Boolean(assignment.mySubmission);
+                              const isSelected = activeAssignmentId === assignment.id;
+                              return (
+                                <button
+                                  key={assignment.id}
+                                  type="button"
+                                  onClick={() => handleSelectAssignment(selectedCourse.id, assignment.id)}
+                                  className={`flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
+                                    isSelected
+                                      ? 'bg-slate-900 text-white shadow-lg'
+                                      : 'bg-transparent text-slate-700 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  <span className="mt-0.5 flex-shrink-0">
+                                    {isCompleted ? (
+                                      <CheckCircle2 className={`h-4 w-4 ${isSelected ? 'text-white' : 'text-emerald-500'}`} />
+                                    ) : (
+                                      <Circle className="h-4 w-4 text-slate-300" />
+                                    )}{' '}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className={`break-words font-medium leading-5 ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                                      {assignment.title}
+                                    </p>
+                                    <p className={`mt-1 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
+                                      {isCompleted ? 'Completed' : 'Pending'}
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+
+                        {!selectedCourse.assessments.length && !selectedCourse.assignments.length ? (
+                          <p className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-500">
+                            No tests or tasks are published for this course yet.
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                     </div>
@@ -1006,11 +1104,24 @@ export function StudentCoursesPage() {
                           onOpenLesson={(lessonId) => handleSelectLesson(selectedCourse.id, lessonId)}
                           onOpenTests={() => {
                             setActiveCoursePanel('tests');
-                            const next =
-                              selectedCourse.assignments.find((a) => !a.mySubmission) ??
+                            const nextAssessment =
+                              selectedCourse.assessments.find(
+                                (assessment) => assessment.latestAttempt?.status === 'IN_PROGRESS',
+                              ) ??
+                              selectedCourse.assessments.find(
+                                (assessment) => assessment.latestAttempt?.status !== 'SUBMITTED',
+                              ) ??
+                              selectedCourse.assessments[0];
+                            if (nextAssessment) {
+                              handleOpenAssessment(nextAssessment.id);
+                              return;
+                            }
+
+                            const nextAssignment =
+                              selectedCourse.assignments.find((assignment) => !assignment.mySubmission) ??
                               selectedCourse.assignments[0];
-                            if (next) {
-                              handleSelectAssignment(selectedCourse.id, next.id);
+                            if (nextAssignment) {
+                              handleSelectAssignment(selectedCourse.id, nextAssignment.id);
                             }
                           }}
                         />
@@ -1262,6 +1373,8 @@ function SubjectCourseGallery({
                     <span>{course.academicYear.name}</span>
                     <span>·</span>
                     <span>{course.lessons.length} lessons</span>
+                    <span>·</span>
+                    <span>{getTotalCourseWorkItems(course)} tests & tasks</span>
                     {progress.overallProgress >= 100 ? (
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
                         Done
