@@ -338,7 +338,7 @@ export function acceptInviteApi(payload: {
   phone?: string;
   password: string;
 }) {
-  return apiRequest('/staff/accept-invite', {
+  return apiRequest('/auth/accept-invite', {
     method: 'POST',
     body: payload,
   });

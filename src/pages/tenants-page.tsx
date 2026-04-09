@@ -163,6 +163,13 @@ export function TenantsPage() {
       });
       closeCreateModal();
     },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not send invitation',
+        message: error instanceof Error ? error.message : 'Invitation request failed.',
+      });
+    },
   });
 
   const updateSchoolMutation = useMutation({
@@ -273,7 +280,6 @@ export function TenantsPage() {
   }
 
   const createError = createSchoolMutation.error as ApiClientError | null;
-  const inviteError = inviteAdminMutation.error as ApiClientError | null;
   const detailError = schoolDetailQuery.error as ApiClientError | null;
   const updateError = updateSchoolMutation.error as ApiClientError | null;
   const updateStatusError = updateSchoolStatusMutation.error as ApiClientError | null;
@@ -543,8 +549,6 @@ export function TenantsPage() {
               />
             </label>
             <FieldError message={inviteForm.formState.errors.email?.message} />
-
-            {inviteError ? <StateView title="Could not send invitation" message={inviteError.message} /> : null}
 
             <div className="flex justify-between gap-2">
               <button

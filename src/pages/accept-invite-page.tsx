@@ -1,20 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
-import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { acceptInviteApi } from '../features/sprint1/sprint1.api';
-import { ApiClientError } from '../types/api';
 
 const acceptInviteSchema = z.object({
   firstName: z.string().trim().min(2).max(80),
   lastName: z.string().trim().min(2).max(80),
-  phone: z.string().trim().min(7).max(30),
+  phone: z.string().trim().min(7).max(30).or(z.literal('')),
   password: z.string().min(8).max(128),
 });
 
@@ -26,6 +24,19 @@ export function AcceptInvitePage() {
   const [searchParams] = useSearchParams();
   const { showToast } = useToast();
   const token = useMemo(() => searchParams.get('token') ?? '', [searchParams]);
+
+  useEffect(() => {
+    if (token) {
+      return;
+    }
+
+    showToast({
+      type: 'error',
+      title: t('invite.invalidInviteTitle'),
+      message: t('invite.invalidInviteMessage'),
+    });
+    navigate('/login', { replace: true });
+  }, [navigate, showToast, t, token]);
 
   const form = useForm<AcceptInviteForm>({
     resolver: zodResolver(acceptInviteSchema),
@@ -42,6 +53,7 @@ export function AcceptInvitePage() {
       acceptInviteApi({
         token,
         ...values,
+        phone: values.phone.trim() ? values.phone.trim() : undefined,
       }),
     onSuccess: (result) => {
       showToast({
@@ -62,25 +74,8 @@ export function AcceptInvitePage() {
     },
   });
 
-  const apiError = mutation.error as ApiClientError | null;
-
   if (!token) {
-    return (
-      <main
-        className="relative min-h-screen flex items-center justify-center px-4 py-8 bg-cover bg-center overflow-hidden"
-        style={{ backgroundImage: 'url(/authbac.jpeg)' }}
-      >
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-[#173C7F]/60 via-black/40 to-black/70"
-          aria-hidden="true"
-        />
-        <div className="absolute -top-48 left-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl" aria-hidden="true" />
-        <div className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
-        <div className="relative z-10 w-full px-2 sm:px-0">
-          <StateView title={t('invite.invalidInviteTitle')} message={t('invite.invalidInviteMessage')} />
-        </div>
-      </main>
-    );
+    return null;
   }
 
   return (
@@ -119,8 +114,6 @@ export function AcceptInvitePage() {
             {mutation.isPending ? t('invite.accepting') : t('invite.accept')}
           </button>
         </form>
-
-        {apiError ? <StateView title={t('invite.couldNotAccept')} message={apiError.message} /> : null}
       </section>
     </main>
   );

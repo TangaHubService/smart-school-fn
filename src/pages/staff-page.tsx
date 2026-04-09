@@ -28,7 +28,6 @@ import {
   assignTeacherBySubjectApi,
   listCoursesApi,
 } from '../features/sprint4/lms.api';
-import { ApiClientError } from '../types/api';
 
 interface AcademicYearOption {
   id: string;
@@ -243,7 +242,6 @@ export function StaffPage() {
   const [searchText, setSearchText] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [inviteFeedback, setInviteFeedback] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<StaffMember | null>(null);
@@ -363,7 +361,6 @@ export function StaffPage() {
       void queryClient.invalidateQueries({ queryKey: ['staff-invites'] });
       inviteForm.reset(defaultInviteValues);
       const email = (result as { email?: string }).email ?? 'staff member';
-      setInviteFeedback(`Invitation email sent to ${email}. The user should check inbox to accept.`);
       setIsInviteModalOpen(false);
       showToast({
         type: 'success',
@@ -683,8 +680,6 @@ export function StaffPage() {
           </button>
         </div>
 
-        {inviteFeedback ? <StateView title="Invite created" message={inviteFeedback} /> : null}
-
         {(membersQuery.isPending || invitesQuery.isPending) ? (
           <div className="grid gap-2" role="status" aria-live="polite">
             <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
@@ -901,12 +896,6 @@ export function StaffPage() {
           </label>
           {inviteForm.formState.errors.expiresInDays ? (
             <p className="text-xs text-red-700">{inviteForm.formState.errors.expiresInDays.message}</p>
-          ) : null}
-
-          {(inviteMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700" aria-live="polite">
-              {(inviteMutation.error as ApiClientError).message}
-            </p>
           ) : null}
 
           <div className="mt-2 flex justify-end gap-2">
