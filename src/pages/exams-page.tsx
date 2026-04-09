@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, FileLock2, FileSpreadsheet, Plus, RefreshCcw } from 'lucide-react';
+import { AlertTriangle, FileLock2, FileSpreadsheet, Pencil, Plus, RefreshCcw, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -18,6 +18,7 @@ import {
   bulkSaveExamMarksApi,
   createExamApi,
   createGradingSchemeApi,
+  deleteExamApi,
   getExamDetailApi,
   listConductGradesForEntryApi,
   listExamsApi,
@@ -25,6 +26,8 @@ import {
   lockResultsApi,
   publishResultsApi,
   unlockResultsApi,
+  updateExamApi,
+  type ExamSummary,
 } from '../features/sprint5/exams.api';
 import {
   listClassRoomsApi,
@@ -45,6 +48,7 @@ const examSchema = z.object({
 });
 
 type ExamFormValues = z.infer<typeof examSchema>;
+type ExamModalMode = 'create' | 'edit';
 
 const defaultExamForm: ExamFormValues = {
   termId: '',
@@ -76,6 +80,15 @@ const secondaryButtonClassName =
 const primaryButtonClassName =
   'inline-flex items-center gap-2 rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60';
 
+function toDateTimeLocalValue(value: string | null | undefined) {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
 export function ExamsPage() {
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -92,6 +105,8 @@ export function ExamsPage() {
   const [page, setPage] = useState(1);
 
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+  const [examModalMode, setExamModalMode] = useState<ExamModalMode>('create');
+  const [examModalExam, setExamModalExam] = useState<ExamSummary | null>(null);
   const [isSchemeModalOpen, setIsSchemeModalOpen] = useState(false);
   const [schemeName, setSchemeName] = useState('Standard grading');
   const [schemeDescription, setSchemeDescription] = useState('Default school grading bands');
@@ -100,6 +115,7 @@ export function ExamsPage() {
 
   const [marksExamId, setMarksExamId] = useState('');
   const [marksDraft, setMarksDraft] = useState<Record<string, string>>({});
+  const [pendingDeleteExam, setPendingDeleteExam] = useState<ExamSummary | null>(null);
   const [isConductModalOpen, setIsConductModalOpen] = useState(false);
   const [conductDraft, setConductDraft] = useState<Record<string, { grade: string; remark: string }>>({});
 
@@ -220,6 +236,8 @@ export function ExamsPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['exams'] });
       setIsExamModalOpen(false);
+      setExamModalMode('create');
+      setExamModalExam(null);
       examForm.reset({
         ...defaultExamForm,
         gradingSchemeId: schemesQuery.data?.find((scheme) => scheme.isDefault)?.id ?? schemesQuery.data?.[0]?.id ?? '',
@@ -230,6 +248,62 @@ export function ExamsPage() {
       showToast({
         type: 'error',
         title: 'Could not create exam',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const updateExamMutation = useMutation({
+    mutationFn: (values: ExamFormValues) => {
+      if (!examModalExam) {
+        throw new Error('Select an exam to edit');
+      }
+
+      return updateExamApi(auth.accessToken!, examModalExam.id, {
+        termId: values.termId,
+        classRoomId: values.classRoomId,
+        subjectId: values.subjectId,
+        gradingSchemeId: values.gradingSchemeId || null,
+        examType: values.examType,
+        name: values.name,
+        description: values.description?.trim() ? values.description.trim() : null,
+        totalMarks: values.totalMarks,
+        weight: values.weight,
+        examDate: values.examDate ? new Date(values.examDate).toISOString() : null,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['exams'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-detail'] });
+      setIsExamModalOpen(false);
+      setExamModalMode('create');
+      setExamModalExam(null);
+      showToast({ type: 'success', title: 'Exam updated' });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not update exam',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const deleteExamMutation = useMutation({
+    mutationFn: (examId: string) => deleteExamApi(auth.accessToken!, examId),
+    onSuccess: (_, examId) => {
+      void queryClient.invalidateQueries({ queryKey: ['exams'] });
+      void queryClient.invalidateQueries({ queryKey: ['exam-detail'] });
+      if (marksExamId === examId) {
+        setMarksExamId('');
+      }
+      setPendingDeleteExam(null);
+      showToast({ type: 'success', title: 'Exam deleted' });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not delete exam',
         message: error instanceof Error ? error.message : 'Request failed',
       });
     },
@@ -374,10 +448,15 @@ export function ExamsPage() {
   const selectedExamSubjectId = examForm.watch('subjectId');
   const isTeacherExamSubjectMissing = isTeacherOnly && !selectedExamSubjectId?.trim();
   const schemes = schemesQuery.data ?? [];
+  const isSavingExam = createExamMutation.isPending || updateExamMutation.isPending;
+  const isMarksEditable = examDetailQuery.data?.resultStatus === 'UNLOCKED';
+  const isExamScopeLockedByMarks = examModalMode === 'edit' && (examModalExam?.marksEnteredCount ?? 0) > 0;
 
   const currentScopeStatus = useMemo(() => exams[0]?.resultStatus ?? 'UNLOCKED', [exams]);
 
-  function openExamModal() {
+  function openCreateExamModal() {
+    setExamModalMode('create');
+    setExamModalExam(null);
     examForm.reset({
       ...defaultExamForm,
       termId: termFilter || terms[0]?.id || '',
@@ -388,11 +467,52 @@ export function ExamsPage() {
     setIsExamModalOpen(true);
   }
 
+  function openEditExamModal(exam: ExamSummary) {
+    setExamModalMode('edit');
+    setExamModalExam(exam);
+    examForm.reset({
+      termId: exam.term.id,
+      classRoomId: exam.classRoom.id,
+      subjectId: exam.subject.id,
+      gradingSchemeId: exam.gradingScheme.id,
+      examType: exam.examType ?? 'EXAM',
+      name: exam.name,
+      description: exam.description ?? '',
+      totalMarks: exam.totalMarks,
+      weight: exam.weight,
+      examDate: toDateTimeLocalValue(exam.examDate),
+    });
+    setIsExamModalOpen(true);
+  }
+
+  function closeExamModal() {
+    setIsExamModalOpen(false);
+    setExamModalMode('create');
+    setExamModalExam(null);
+  }
+
   function handleMarkChange(studentId: string, value: string) {
     if (value !== '' && (!/^\d+$/.test(value) || Number(value) < 0)) {
       return;
     }
     setMarksDraft((current) => ({ ...current, [studentId]: value }));
+  }
+
+  function submitExam(values: ExamFormValues) {
+    if (examModalMode === 'edit' && examModalExam) {
+      updateExamMutation.mutate(values);
+      return;
+    }
+
+    createExamMutation.mutate(values);
+  }
+
+  async function confirmDeleteExam() {
+    if (!pendingDeleteExam) {
+      return;
+    }
+
+    await deleteExamMutation.mutateAsync(pendingDeleteExam.id).catch(() => undefined);
   }
 
   const canManageResults = Boolean(termFilter && classFilter);
@@ -401,7 +521,7 @@ export function ExamsPage() {
     <div className="grid gap-5">
       <SectionCard
         title="Exams & results"
-        subtitle="Create exams, enter marks in bulk, then lock and publish clean report cards."
+        subtitle="Create tests and exams, enter marks in bulk, then lock and publish clean report cards."
         action={
           <div className="flex flex-wrap gap-2">
             <button
@@ -414,12 +534,12 @@ export function ExamsPage() {
             </button>
             <button
               type="button"
-              onClick={openExamModal}
+              onClick={openCreateExamModal}
               disabled={isTeacherOnly && !subjects.length}
               className={primaryButtonClassName}
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
-              New exam
+              New test / exam
             </button>
           </div>
         }
@@ -604,13 +724,43 @@ export function ExamsPage() {
                           </span>
                         </td>
                         <td className="border-b border-brand-100 px-3 py-3 text-right align-top">
-                          <button
-                            type="button"
-                            onClick={() => setMarksExamId(exam.id)}
-                            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-slate-700"
-                          >
-                            Enter marks
-                          </button>
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setMarksExamId(exam.id)}
+                              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-slate-700"
+                            >
+                              {exam.resultStatus === 'UNLOCKED' ? 'Enter marks' : 'View marks'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openEditExamModal(exam)}
+                              disabled={exam.resultStatus !== 'UNLOCKED'}
+                              title={
+                                exam.resultStatus !== 'UNLOCKED'
+                                  ? 'Unlock results for this class and term before editing the exam.'
+                                  : 'Edit this exam'
+                              }
+                              className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPendingDeleteExam(exam)}
+                              disabled={exam.resultStatus !== 'UNLOCKED'}
+                              title={
+                                exam.resultStatus !== 'UNLOCKED'
+                                  ? 'Unlock results for this class and term before deleting the exam.'
+                                  : 'Delete this exam'
+                              }
+                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -618,7 +768,7 @@ export function ExamsPage() {
                 </table>
               </div>
             ) : (
-              <EmptyState title="No exams yet" message="Create the first exam for the selected term, class, and subject." />
+              <EmptyState title="No exams yet" message="Create the first test or exam for the selected term, class, and subject." />
             )
           ) : null}
         </div>
@@ -626,25 +776,29 @@ export function ExamsPage() {
 
       <Modal
         open={isExamModalOpen}
-        title="Create exam"
-        description="Set the class, subject, and grading scheme before entering marks."
-        onClose={() => setIsExamModalOpen(false)}
+        title={examModalMode === 'edit' ? 'Edit test / exam' : 'Create test / exam'}
+        description={
+          examModalMode === 'edit'
+            ? 'Update the exam setup, naming, and assessment weights for this record.'
+            : 'Set the class, subject, and grading scheme before entering marks.'
+        }
+        onClose={closeExamModal}
         footer={
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              onClick={() => setIsExamModalOpen(false)}
+              onClick={closeExamModal}
               className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               type="button"
-              onClick={examForm.handleSubmit((values) => createExamMutation.mutate(values))}
-              disabled={createExamMutation.isPending || isTeacherExamSubjectMissing}
+              onClick={examForm.handleSubmit(submitExam)}
+              disabled={isSavingExam || isTeacherExamSubjectMissing}
               className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
-              Save exam
+              {isSavingExam ? 'Saving...' : examModalMode === 'edit' ? 'Save changes' : 'Save exam'}
             </button>
           </div>
         }
@@ -657,10 +811,18 @@ export function ExamsPage() {
             </div>
           ) : null}
 
+          {isExamScopeLockedByMarks ? (
+            <div className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-slate-700">
+              This exam already has marks entered. You can still update details like the name,
+              weight, date, or grading scheme, but term, class, and subject stay fixed until the
+              marks are removed.
+            </div>
+          ) : null}
+
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Term</span>
-              <select {...examForm.register('termId')} className={inputClassName}>
+              <select {...examForm.register('termId')} disabled={isExamScopeLockedByMarks} className={inputClassName}>
                 <option value="">Select term</option>
                 {terms.map((term) => (
                   <option key={term.id} value={term.id}>{term.name}</option>
@@ -669,7 +831,7 @@ export function ExamsPage() {
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Class</span>
-              <select {...examForm.register('classRoomId')} className={inputClassName}>
+              <select {...examForm.register('classRoomId')} disabled={isExamScopeLockedByMarks} className={inputClassName}>
                 <option value="">Select class</option>
                 {classRooms.map((classRoom) => (
                   <option key={classRoom.id} value={classRoom.id}>{classRoom.name}</option>
@@ -678,7 +840,7 @@ export function ExamsPage() {
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Subject</span>
-              <select {...examForm.register('subjectId')} className={inputClassName}>
+              <select {...examForm.register('subjectId')} disabled={isExamScopeLockedByMarks} className={inputClassName}>
                 <option value="">Select subject</option>
                 {subjects.map((subject) => (
                   <option key={subject.id} value={subject.id}>{subject.name}</option>
@@ -788,7 +950,7 @@ export function ExamsPage() {
             </div>
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => setMarksExamId('')} className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700">Close</button>
-              <button type="button" onClick={() => saveMarksMutation.mutate()} disabled={saveMarksMutation.isPending || !examDetailQuery.data} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save marks</button>
+              <button type="button" onClick={() => saveMarksMutation.mutate()} disabled={saveMarksMutation.isPending || !examDetailQuery.data || !isMarksEditable} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save marks</button>
             </div>
           </div>
         }
@@ -799,6 +961,12 @@ export function ExamsPage() {
           <StateView title="Could not load exam" message="Retry to load the marks grid." action={<button type="button" onClick={() => void examDetailQuery.refetch()} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white">Retry</button>} />
         ) : (
           <div className="grid gap-4">
+            {!isMarksEditable ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                Results are currently {examDetailQuery.data.resultStatus.toLowerCase()}. Unlock this class term before editing marks.
+              </div>
+            ) : null}
+
             <div className="grid gap-3 rounded-xl bg-brand-50/70 p-4 md:grid-cols-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Class</p>
@@ -839,7 +1007,8 @@ export function ExamsPage() {
                           value={marksDraft[student.id] ?? ''}
                           onChange={(event) => handleMarkChange(student.id, event.target.value)}
                           inputMode="numeric"
-                          className="h-10 w-28 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+                          disabled={!isMarksEditable}
+                          className="h-10 w-28 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400 disabled:bg-slate-100 disabled:text-slate-500"
                           placeholder="0"
                         />
                       </td>
@@ -850,6 +1019,47 @@ export function ExamsPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={Boolean(pendingDeleteExam)}
+        title="Delete test / exam"
+        description="This removes the exam record and any marks entered for it."
+        onClose={() => {
+          if (!deleteExamMutation.isPending) {
+            setPendingDeleteExam(null);
+          }
+        }}
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setPendingDeleteExam(null)}
+              disabled={deleteExamMutation.isPending}
+              className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmDeleteExam()}
+              disabled={deleteExamMutation.isPending}
+              className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
+            >
+              {deleteExamMutation.isPending ? 'Deleting...' : 'Delete exam'}
+            </button>
+          </div>
+        }
+      >
+        <div className="grid gap-3">
+          <p className="text-sm text-slate-700">
+            Delete <span className="font-semibold text-slate-900">{pendingDeleteExam?.name}</span> from{' '}
+            <span className="font-semibold text-slate-900">{pendingDeleteExam?.classRoom.name}</span>?
+          </p>
+          <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800">
+            This action cannot be undone.
+          </div>
+        </div>
       </Modal>
 
       <Modal

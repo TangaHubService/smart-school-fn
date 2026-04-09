@@ -316,6 +316,36 @@ export function createExamApi(
   });
 }
 
+export function updateExamApi(
+  accessToken: string,
+  examId: string,
+  payload: {
+    termId?: string;
+    classRoomId?: string;
+    subjectId?: string;
+    gradingSchemeId?: string | null;
+    examType?: 'CAT' | 'EXAM';
+    name?: string;
+    description?: string | null;
+    totalMarks?: number;
+    weight?: number;
+    examDate?: string | null;
+  },
+) {
+  return apiRequest<ExamSummary>(`/exams/${examId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function deleteExamApi(accessToken: string, examId: string) {
+  return apiRequest<{ id: string; deleted: boolean }>(`/exams/${examId}`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}
+
 export function listExamsApi(
   accessToken: string,
   params: {

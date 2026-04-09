@@ -254,6 +254,25 @@ export function getAssessmentDetailApi(accessToken: string, assessmentId: string
   });
 }
 
+export function updateAssessmentApi(
+  accessToken: string,
+  assessmentId: string,
+  payload: {
+    lessonId?: string | null;
+    title?: string;
+    instructions?: string | null;
+    dueAt?: string | null;
+    timeLimitMinutes?: number | null;
+    maxAttempts?: number;
+  },
+) {
+  return apiRequest<AssessmentSummary>(`/assessments/${assessmentId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
 export function addAssessmentQuestionApi(
   accessToken: string,
   assessmentId: string,

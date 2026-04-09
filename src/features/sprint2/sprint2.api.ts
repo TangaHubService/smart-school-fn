@@ -299,10 +299,12 @@ export function importStudentsApi(
     allowPartial?: boolean;
     defaultAcademicYearId?: string;
     defaultClassRoomId?: string;
+    targetTenantId?: string;
   },
 ) {
   return apiRequest<{
     mode: 'preview' | 'commit';
+    targetTenantId?: string;
     summary: {
       totalRows: number;
       validRows: number;
@@ -312,12 +314,15 @@ export function importStudentsApi(
     };
     rows: Array<{
       rowNumber: number;
-      source: Record<string, string>;
       studentCode: string;
       firstName: string;
       lastName: string;
+      gender?: string | null;
+      dateOfBirth?: string | null;
       academicYearId: string | null;
       classRoomId: string | null;
+      enrolledAt?: string | null;
+      source: Record<string, string>;
       errors: string[];
     }>;
   }>('/students/import', {

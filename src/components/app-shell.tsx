@@ -37,7 +37,6 @@ export function AppShell() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isDesktopSidebarVisible, setIsDesktopSidebarVisible] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [studentNavExpanded, setStudentNavExpanded] = useState(true);
   const [studentHeaderActions, setStudentHeaderActions] = useState<ReactNode | null>(null);
 
   const setupComplete = isSchoolSetupComplete(auth.me);
@@ -45,7 +44,6 @@ export function AppShell() {
   const superAdmin = isSuperAdmin(auth.me);
 
   const isStudent = hasRole(auth.me, 'STUDENT') || hasRole(auth.me, 'PUBLIC_LEARNER');
-  const isPublicLearner = hasRole(auth.me, 'PUBLIC_LEARNER');
   const isTeacher =
     hasRole(auth.me, 'TEACHER') &&
     !hasRole(auth.me, 'SCHOOL_ADMIN') &&
@@ -66,7 +64,7 @@ export function AppShell() {
     'User';
   const userDisplayEmail = auth.me?.email ?? '-';
   const studentHeaderNavItems = [
-    !isPublicLearner ? { to: '/student/dashboard', label: t('studentHeader.dashboard') } : null,
+    { to: '/student/dashboard', label: t('studentHeader.dashboard') },
     { to: '/student/courses', label: t('studentHeader.courses') },
     { to: '/student/my-learning', label: t('studentHeader.progress') },
     hasPermission(auth.me, 'report_cards.my_read')
@@ -93,133 +91,9 @@ export function AppShell() {
   }
 
   useEffect(() => {
-    setStudentNavExpanded(true);
-  }, [location.pathname]);
-
-  useEffect(() => {
     if (isStudent) {
       setStudentHeaderActions(null);
     }
-  }, [isStudent, location.pathname]);
-
-  useEffect(() => {
-    if (!isStudent || !studentHeaderActions) {
-      return;
-    }
-
-    setStudentNavExpanded(true);
-  }, [isStudent, studentHeaderActions]);
-
-  useEffect(() => {
-    if (!isStudent) {
-      return;
-    }
-
-    let cancelled = false;
-    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-    const cleanups: Array<() => void> = [];
-    const bound = new Set<HTMLElement>();
-    const scrollStates = new Map<Element, number>();
-    let mo: MutationObserver | null = null;
-
-    const getScrollRoots = (): HTMLElement[] => {
-      const shell = contentScrollRef.current;
-      if (!shell) {
-        return [];
-      }
-      const out: HTMLElement[] = [shell];
-      shell.querySelectorAll<HTMLElement>('[data-student-scroll-root]').forEach((el) => {
-        if (!out.includes(el)) {
-          out.push(el);
-        }
-      });
-      return out;
-    };
-
-    const applyScrollDelta = (root: HTMLElement) => {
-      const st = root.scrollTop;
-      const prev = scrollStates.get(root) ?? 0;
-      scrollStates.set(root, st);
-
-      const roots = getScrollRoots();
-      const allNearTop = roots.length > 0 && roots.every((r) => r.scrollTop < 28);
-
-      if (allNearTop) {
-        setStudentNavExpanded(true);
-        return;
-      }
-
-      if (st > prev + 10) {
-        setStudentNavExpanded(false);
-      } else if (st < prev - 10) {
-        setStudentNavExpanded(true);
-      }
-    };
-
-    const bindRoot = (root: HTMLElement) => {
-      if (bound.has(root)) {
-        return;
-      }
-      bound.add(root);
-      const onScroll = () => applyScrollDelta(root);
-      root.addEventListener('scroll', onScroll, { passive: true });
-      cleanups.push(() => {
-        root.removeEventListener('scroll', onScroll);
-        bound.delete(root);
-        scrollStates.delete(root);
-      });
-    };
-
-    const discover = () => {
-      const shell = contentScrollRef.current;
-      if (!shell || cancelled) {
-        return;
-      }
-      cleanups.forEach((fn) => fn());
-      cleanups.length = 0;
-      bound.clear();
-      scrollStates.clear();
-
-      bindRoot(shell);
-      shell.querySelectorAll<HTMLElement>('[data-student-scroll-root]').forEach((el) => {
-        if (el !== shell) {
-          bindRoot(el);
-        }
-      });
-    };
-
-    const start = () => {
-      requestAnimationFrame(() => {
-        if (cancelled) {
-          return;
-        }
-        discover();
-        const shell = contentScrollRef.current;
-        if (!shell || cancelled) {
-          return;
-        }
-        if (!mo) {
-          mo = new MutationObserver(() => {
-            window.clearTimeout(debounceTimer);
-            debounceTimer = window.setTimeout(() => {
-              if (!cancelled) {
-                discover();
-              }
-            }, 80);
-          });
-          mo.observe(shell, { childList: true, subtree: true });
-        }
-      });
-    };
-
-    start();
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(debounceTimer);
-      mo?.disconnect();
-      cleanups.forEach((fn) => fn());
-    };
   }, [isStudent, location.pathname]);
 
   return (
@@ -304,8 +178,8 @@ export function AppShell() {
           <header
             className={clsx(
               'sticky top-0 z-30 shrink-0 bg-[#173C7F] px-5 transition-[padding] duration-200',
-              isStudent && !studentNavExpanded ? 'py-2' : 'py-3',
-              isStudent && studentNavExpanded && 'shadow-[0_6px_18px_rgba(15,23,42,0.14)]',
+              'py-3',
+              isStudent && 'shadow-[0_6px_18px_rgba(15,23,42,0.14)]',
             )}
           >
             <div className="flex flex-wrap items-center gap-2">
@@ -346,19 +220,6 @@ export function AppShell() {
 
               <Home className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
               <span className="text-sm font-bold text-white">{headerTitle}</span>
-
-              {isStudent && !studentNavExpanded ? (
-                <button
-                  type="button"
-                  onClick={() => setStudentNavExpanded(true)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-white/25 bg-white/10 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-white/20"
-                  aria-expanded={false}
-                  aria-controls="student-header-nav"
-                >
-                  <Menu className="h-3.5 w-3.5" aria-hidden="true" />
-                  {t('shell.links')}
-                </button>
-              ) : null}
 
               <div className="ml-auto flex items-center gap-2">
                 <span className="hidden text-sm font-medium text-white sm:inline">
@@ -453,18 +314,13 @@ export function AppShell() {
             {isStudent ? (
               <div
                 id="student-header-nav"
-                aria-hidden={!studentNavExpanded}
                 className={clsx(
-                  'overflow-hidden transition-[max-height,opacity,margin,padding] duration-200 ease-out',
-                  studentNavExpanded
-                    ? 'mt-3 max-h-80 border-t border-white/10 pt-3 opacity-100 sm:max-h-96'
-                    : 'pointer-events-none max-h-0 border-0 opacity-0',
+                  'mt-3 overflow-hidden border-t border-white/10 pt-3 opacity-100',
                 )}
               >
                 <div className="grid w-full gap-2">
                   <nav
                     className="flex min-w-0 w-full items-center gap-1.5 overflow-x-auto pb-0.5 text-sm sm:gap-2"
-                    aria-hidden={!studentNavExpanded}
                   >
                 {studentHeaderNavItems.map((item) => (
                   <NavLink

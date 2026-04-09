@@ -1,4 +1,5 @@
 import { PropsWithChildren, ReactNode, useEffect } from 'react';
+import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 
 interface ModalProps extends PropsWithChildren {
@@ -7,6 +8,7 @@ interface ModalProps extends PropsWithChildren {
   description?: string;
   onClose: () => void;
   footer?: ReactNode;
+  size?: 'default' | 'wide';
 }
 
 export function Modal({
@@ -16,6 +18,7 @@ export function Modal({
   onClose,
   children,
   footer,
+  size = 'default',
 }: ModalProps) {
   const { t } = useTranslation('common');
   useEffect(() => {
@@ -57,7 +60,10 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 w-full max-w-xl rounded-xl bg-white"
+        className={clsx(
+          'relative z-10 w-full rounded-xl bg-white',
+          size === 'wide' ? 'max-w-6xl' : 'max-w-xl',
+        )}
       >
         <header className="flex items-start justify-between gap-3 border-b border-brand-100 px-4 py-3 sm:px-5">
           <div>

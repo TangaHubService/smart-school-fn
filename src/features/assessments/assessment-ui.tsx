@@ -26,9 +26,24 @@ export const assessmentFormSchema = z.object({
   title: z.string().trim().min(2, 'Assessment title is required').max(160),
   instructions: z.string().max(20000).optional(),
   dueAt: z.string().optional(),
-  timeLimitMinutes: z.coerce.number().int().min(1).max(240).optional(),
+  timeLimitMinutes: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : Number(value)),
+    z.number().int().min(1).max(240).optional(),
+  ),
   maxAttempts: z.coerce.number().int().min(1).max(5),
   isPublished: z.boolean().default(false),
+});
+
+export const assessmentEditFormSchema = z.object({
+  lessonId: z.string().optional(),
+  title: z.string().trim().min(2, 'Assessment title is required').max(160),
+  instructions: z.string().max(20000).optional(),
+  dueAt: z.string().optional(),
+  timeLimitMinutes: z.preprocess(
+    (value) => (value === '' || value == null ? undefined : Number(value)),
+    z.number().int().min(1).max(240).optional(),
+  ),
+  maxAttempts: z.coerce.number().int().min(1).max(5),
 });
 
 export const questionFormSchema = z
@@ -67,6 +82,7 @@ export const questionFormSchema = z
   });
 
 export type AssessmentFormValues = z.infer<typeof assessmentFormSchema>;
+export type AssessmentEditFormValues = z.infer<typeof assessmentEditFormSchema>;
 export type QuestionFormValues = z.infer<typeof questionFormSchema>;
 
 export const defaultAssessmentForm: AssessmentFormValues = {
@@ -91,6 +107,15 @@ export const defaultQuestionForm: QuestionFormValues = {
   optionB: '',
   optionC: '',
   optionD: '',
+};
+
+export const defaultAssessmentEditForm: AssessmentEditFormValues = {
+  lessonId: '',
+  title: '',
+  instructions: '<p></p>',
+  dueAt: '',
+  timeLimitMinutes: undefined,
+  maxAttempts: 1,
 };
 
 export const assessmentTypeOptions = [

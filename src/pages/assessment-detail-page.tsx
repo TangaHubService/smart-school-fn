@@ -22,16 +22,33 @@ import {
   listAssessmentResultsApi,
   publishAssessmentApi,
   regradeAssessmentAttemptApi,
+  updateAssessmentApi,
   updateAssessmentQuestionApi,
 } from '../features/assessments/assessments.api';
 import {
+  AssessmentEditFormValues,
   AssessmentStatusPill,
+  assessmentEditFormSchema,
+  defaultAssessmentEditForm,
   defaultQuestionForm,
   formatAssessmentTypeLabel,
   formatAssessmentDateTime,
+  htmlToPlainText,
   QuestionFormValues,
   questionFormSchema,
 } from '../features/assessments/assessment-ui';
+import { getCourseDetailApi } from '../features/sprint4/lms.api';
+
+function toDateTimeLocalInput(value: string | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  const pad = (part: number) => String(part).padStart(2, '0');
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 export function AssessmentDetailPage() {
   const auth = useAuth();
@@ -41,6 +58,7 @@ export function AssessmentDetailPage() {
   const queryClient = useQueryClient();
 
   const [isQuestionOpen, setIsQuestionOpen] = useState(false);
+  const [isAssessmentEditOpen, setIsAssessmentEditOpen] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState('');
   const [questionToDelete, setQuestionToDelete] = useState<{
     id: string;
@@ -56,6 +74,10 @@ export function AssessmentDetailPage() {
     resolver: zodResolver(questionFormSchema),
     defaultValues: defaultQuestionForm,
   });
+  const assessmentForm = useForm<AssessmentEditFormValues>({
+    resolver: zodResolver(assessmentEditFormSchema),
+    defaultValues: defaultAssessmentEditForm,
+  });
   const selectedQuestionType = questionForm.watch('type');
 
   const assessmentDetailQuery = useQuery({
@@ -68,6 +90,14 @@ export function AssessmentDetailPage() {
     queryKey: ['assessment-results', assessmentId || null],
     enabled: Boolean(assessmentId),
     queryFn: () => listAssessmentResultsApi(auth.accessToken!, assessmentId, { page: 1, pageSize: 20 }),
+  });
+
+  const assessment = assessmentDetailQuery.data ?? null;
+
+  const courseDetailQuery = useQuery({
+    queryKey: ['assessment-course-detail', assessment?.course.id ?? null],
+    enabled: Boolean(assessment?.course.id),
+    queryFn: () => getCourseDetailApi(auth.accessToken!, assessment!.course.id),
   });
 
   const reviewAttemptQuery = useQuery({
@@ -172,6 +202,31 @@ export function AssessmentDetailPage() {
     },
   });
 
+  const updateAssessmentMutation = useMutation({
+    mutationFn: (values: AssessmentEditFormValues) =>
+      updateAssessmentApi(auth.accessToken!, assessmentId, {
+        lessonId: values.lessonId || null,
+        title: values.title,
+        instructions: htmlToPlainText(values.instructions) ? values.instructions : null,
+        dueAt: values.dueAt ? new Date(values.dueAt).toISOString() : null,
+        timeLimitMinutes: values.timeLimitMinutes ?? null,
+        maxAttempts: values.maxAttempts,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['assessment-detail', assessmentId] });
+      void queryClient.invalidateQueries({ queryKey: ['assessments'] });
+      setIsAssessmentEditOpen(false);
+      showToast({ type: 'success', title: 'Assessment updated' });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not update assessment',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
   const regradeAttemptMutation = useMutation({
     mutationFn: (payload: { manualFeedback?: string; answers: Array<{ questionId: string; pointsAwarded: number }> }) =>
       regradeAssessmentAttemptApi(auth.accessToken!, reviewAttemptId, payload),
@@ -198,12 +253,45 @@ export function AssessmentDetailPage() {
     },
   });
 
-  const assessment = assessmentDetailQuery.data ?? null;
   const resultRows = useMemo(() => resultsQuery.data?.items ?? [], [resultsQuery.data?.items]);
   const selectedAttempt = reviewAttemptQuery.data ?? null;
+  const assessmentEditingLocked = Boolean(assessment && assessment.counts.attempts > 0);
   const questionEditingLocked = Boolean(
     assessment && (assessment.isPublished || assessment.counts.attempts > 0),
   );
+  const lessonOptions = useMemo(() => {
+    const items = courseDetailQuery.data?.lessons.items ?? [];
+    if (!assessment?.lesson) {
+      return items;
+    }
+
+    return items.some((lesson) => lesson.id === assessment.lesson?.id)
+      ? items
+      : [
+          {
+            id: assessment.lesson.id,
+            title: assessment.lesson.title,
+            sequence: assessment.lesson.sequence,
+          },
+          ...items,
+        ];
+  }, [assessment?.lesson, courseDetailQuery.data?.lessons.items]);
+
+  function openAssessmentEditModal() {
+    if (!assessment) {
+      return;
+    }
+
+    assessmentForm.reset({
+      lessonId: assessment.lesson?.id ?? '',
+      title: assessment.title,
+      instructions: assessment.instructions ?? '<p></p>',
+      dueAt: toDateTimeLocalInput(assessment.dueAt),
+      timeLimitMinutes: assessment.timeLimitMinutes ?? undefined,
+      maxAttempts: assessment.maxAttempts,
+    });
+    setIsAssessmentEditOpen(true);
+  }
 
   function openQuestionModal(question?: AssessmentQuestion) {
     if (!question) {
@@ -352,6 +440,16 @@ export function AssessmentDetailPage() {
             </button>
             <button
               type="button"
+              onClick={openAssessmentEditModal}
+              disabled={assessmentEditingLocked}
+              title={assessmentEditingLocked ? 'Assessment settings are locked after students start attempting it' : undefined}
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+              Edit assessment
+            </button>
+            <button
+              type="button"
               onClick={() => openQuestionModal()}
               disabled={questionEditingLocked}
               title={questionEditingLocked ? 'Questions are locked after publish or after students start attempting' : undefined}
@@ -403,10 +501,15 @@ export function AssessmentDetailPage() {
               </div>
             </div>
 
-            {questionEditingLocked ? (
-              <p className="max-w-sm text-sm text-slate-600">
-                Questions are locked once the assessment is published or after students start attempting it.
-              </p>
+            {assessmentEditingLocked || questionEditingLocked ? (
+              <div className="grid max-w-sm gap-2 text-sm text-slate-600">
+                {assessmentEditingLocked ? (
+                  <p>Assessment settings are locked after students start attempting it.</p>
+                ) : null}
+                {questionEditingLocked ? (
+                  <p>Questions are locked once the assessment is published or after students start attempting it.</p>
+                ) : null}
+              </div>
             ) : null}
           </div>
 
@@ -419,7 +522,7 @@ export function AssessmentDetailPage() {
             </div>
           ) : null}
 
-          <div className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
+          <div id="questions" className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
             <div className="flex items-center gap-2">
               <BookCheck className="h-5 w-5 text-slate-600" aria-hidden="true" />
               <h3 className="text-base font-bold text-slate-900">Questions</h3>
@@ -497,7 +600,7 @@ export function AssessmentDetailPage() {
             )}
           </div>
 
-          <div className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
+          <div id="results" className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
             <div className="flex items-center gap-2">
               <Clock3 className="h-5 w-5 text-slate-600" aria-hidden="true" />
               <h3 className="text-base font-bold text-slate-900">Results</h3>
@@ -578,6 +681,121 @@ export function AssessmentDetailPage() {
           </div>
         </div>
       </SectionCard>
+
+      <Modal
+        open={isAssessmentEditOpen}
+        title="Edit assessment"
+        description="Update the instructions, lesson link, timing, and attempt settings for this assessment."
+        onClose={() => setIsAssessmentEditOpen(false)}
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setIsAssessmentEditOpen(false)}
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={assessmentForm.handleSubmit((values) => updateAssessmentMutation.mutate(values))}
+              disabled={updateAssessmentMutation.isPending}
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Save changes
+            </button>
+          </div>
+        }
+      >
+        <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
+          <div className="rounded-2xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm text-slate-700">
+            {assessment.course.title} · {assessment.course.classRoom.name} · {assessment.course.academicYear.name}
+          </div>
+
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Lesson (optional)</span>
+            <select
+              {...assessmentForm.register('lessonId')}
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+            >
+              <option value="">Course-level assessment</option>
+              {lessonOptions.map((lesson) => (
+                <option key={lesson.id} value={lesson.id}>
+                  {lesson.sequence}. {lesson.title}
+                </option>
+              ))}
+            </select>
+            {courseDetailQuery.isError ? (
+              <span className="text-xs text-amber-700">Could not refresh course lessons. You can still save the current lesson selection.</span>
+            ) : null}
+          </label>
+
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Assessment title</span>
+            <input
+              {...assessmentForm.register('title')}
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+              placeholder="End of unit quick check"
+            />
+            {assessmentForm.formState.errors.title ? (
+              <span className="text-xs text-rose-600">{assessmentForm.formState.errors.title.message}</span>
+            ) : null}
+          </label>
+
+          <Controller
+            control={assessmentForm.control}
+            name="instructions"
+            render={({ field }) => (
+              <div className="grid gap-1 text-sm font-medium text-slate-700">
+                <span>Instructions</span>
+                <RichTextEditor
+                  value={field.value ?? '<p></p>'}
+                  onChange={field.onChange}
+                  placeholder="Explain how students should take this test."
+                  minHeightClassName="min-h-[180px]"
+                />
+              </div>
+            )}
+          />
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <span>Due at</span>
+              <input
+                type="datetime-local"
+                {...assessmentForm.register('dueAt')}
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <span>Timer (minutes)</span>
+              <input
+                type="number"
+                min={1}
+                max={240}
+                {...assessmentForm.register('timeLimitMinutes')}
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+              />
+              {assessmentForm.formState.errors.timeLimitMinutes ? (
+                <span className="text-xs text-rose-600">{assessmentForm.formState.errors.timeLimitMinutes.message}</span>
+              ) : null}
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <span>Max attempts</span>
+              <input
+                type="number"
+                min={1}
+                max={5}
+                {...assessmentForm.register('maxAttempts')}
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+              />
+              {assessmentForm.formState.errors.maxAttempts ? (
+                <span className="text-xs text-rose-600">{assessmentForm.formState.errors.maxAttempts.message}</span>
+              ) : null}
+            </label>
+          </div>
+        </form>
+      </Modal>
 
       <Modal
         open={isQuestionOpen}

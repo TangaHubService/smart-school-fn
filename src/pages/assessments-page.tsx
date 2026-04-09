@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, Plus } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,7 @@ import { useAuth } from '../features/auth/auth.context';
 import {
   createAssessmentApi,
   listAssessmentsApi,
+  publishAssessmentApi,
 } from '../features/assessments/assessments.api';
 import {
   AssessmentFormValues,
@@ -26,6 +27,7 @@ import {
   formatAssessmentDateTime,
   htmlToPlainText,
 } from '../features/assessments/assessment-ui';
+import { hasPermission } from '../features/auth/auth-helpers';
 import {
   listAcademicYearsApi,
   listClassRoomsApi,
@@ -61,6 +63,8 @@ export function AssessmentsPage() {
   });
 
   const selectedCreateCourseId = assessmentForm.watch('courseId');
+  const canPublishAssessments = hasPermission(auth.me, 'assessments.publish');
+  const canReviewAssessmentResults = hasPermission(auth.me, 'assessment_results.read');
 
   const yearsQuery = useQuery({
     queryKey: ['academic-years'],
@@ -126,6 +130,26 @@ export function AssessmentsPage() {
       showToast({
         type: 'error',
         title: 'Could not create assessment',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const publishAssessmentMutation = useMutation({
+    mutationFn: ({ assessmentId, isPublished }: { assessmentId: string; isPublished: boolean }) =>
+      publishAssessmentApi(auth.accessToken!, assessmentId, isPublished),
+    onSuccess: (_result, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['assessments'] });
+      void queryClient.invalidateQueries({ queryKey: ['assessment-detail', variables.assessmentId] });
+      showToast({
+        type: 'success',
+        title: variables.isPublished ? 'Assessment published' : 'Assessment moved back to draft',
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not update assessment',
         message: error instanceof Error ? error.message : 'Request failed',
       });
     },
@@ -269,10 +293,8 @@ export function AssessmentsPage() {
             assessmentItems.length ? (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {assessmentItems.map((assessment) => (
-                  <button
+                  <article
                     key={assessment.id}
-                    type="button"
-                    onClick={() => navigate(`/admin/assessments/${assessment.id}`)}
                     className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 text-left shadow-soft transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -299,11 +321,54 @@ export function AssessmentsPage() {
                       <p>{assessment.course.academicYear.name}</p>
                     </div>
 
-                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      Open assessment
-                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/assessments/${assessment.id}`)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+                      >
+                        Manage
+                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/assessments/${assessment.id}#results`)}
+                        disabled={!canReviewAssessmentResults || assessment.counts.attempts === 0}
+                        title={
+                          !canReviewAssessmentResults
+                            ? 'You do not have permission to review assessment results.'
+                            : assessment.counts.attempts === 0
+                              ? 'Results appear after students submit attempts.'
+                              : 'Review submitted attempts'
+                        }
+                        className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                        Results
+                      </button>
+                      {canPublishAssessments ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            publishAssessmentMutation.mutate({
+                              assessmentId: assessment.id,
+                              isPublished: !assessment.isPublished,
+                            })
+                          }
+                          disabled={publishAssessmentMutation.isPending}
+                          className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                        >
+                          <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                          {publishAssessmentMutation.isPending &&
+                          publishAssessmentMutation.variables?.assessmentId === assessment.id
+                            ? 'Saving...'
+                            : assessment.isPublished
+                              ? 'Unpublish'
+                              : 'Publish'}
+                        </button>
+                      ) : null}
                     </div>
-                  </button>
+                  </article>
                 ))}
               </div>
             ) : (
