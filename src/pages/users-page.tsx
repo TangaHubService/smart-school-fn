@@ -10,9 +10,11 @@ import {
 
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { Pagination } from '../components/pagination';
 import { SummaryCards, type SummaryCardItem } from '../components/dashboard/summary-cards';
 import { useAuth } from '../features/auth/auth.context';
 import { listUsersApi } from '../features/users/users.api';
+import { getSuperAdminDashboardFiltersApi } from '../features/dashboard/dashboard.api';
 import { ApiClientError } from '../types/api';
 
 export function UsersPage() {
@@ -25,15 +27,33 @@ export function UsersPage() {
   const [schoolFilter, setSchoolFilter] = useState<'ALL' | string>('ALL');
   const [roleFilter, setRoleFilter] = useState<'ALL' | string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
+  const schoolsQuery = useQuery({
+    queryKey: ['superAdminSchools'],
+    queryFn: () => getSuperAdminDashboardFiltersApi(auth.accessToken!),
+    enabled: isSuperAdmin,
+  });
+
+  const schoolOptions = useMemo(() => {
+    const items = schoolsQuery.data?.schools ?? [];
+    return items.map((school) => ({
+      label: school.name,
+      value: school.id,
+    }));
+  }, [schoolsQuery.data]);
 
   const usersQuery = useQuery({
-    queryKey: ['users', search, schoolFilter, roleFilter, statusFilter],
+    queryKey: ['users', search, schoolFilter, roleFilter, statusFilter, page, pageSize],
     queryFn: () =>
       listUsersApi(auth.accessToken!, {
         search: search.trim() || undefined,
         tenantId: schoolFilter === 'ALL' ? undefined : schoolFilter,
         role: roleFilter === 'ALL' ? undefined : roleFilter,
         status: statusFilter,
+        page,
+        pageSize,
       }),
   });
 
@@ -51,17 +71,6 @@ export function UsersPage() {
     }));
   }, [usersQuery.data]);
 
-  const schoolOptions = useMemo(() => {
-    const items = usersQuery.data?.items ?? [];
-    const names = new Set<string>();
-    items.forEach((user) => {
-      if (user.tenant?.name) {
-        names.add(user.tenant.name);
-      }
-    });
-    return Array.from(names).sort();
-  }, [usersQuery.data]);
-
   const roleOptions = useMemo(() => {
     const items = usersQuery.data?.items ?? [];
     const roles = new Set<string>();
@@ -70,6 +79,10 @@ export function UsersPage() {
     });
     return Array.from(roles).sort();
   }, [usersQuery.data]);
+
+  const currentPagination = usersQuery.data?.pagination;
+  const totalPages = currentPagination?.totalPages ?? 1;
+  const currentPage = currentPagination?.page ?? page;
 
   const summaryItems: SummaryCardItem[] = [
     {
@@ -141,27 +154,36 @@ export function UsersPage() {
           <input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
             placeholder="Search by name, email, phone..."
             className="h-10 min-w-[240px] flex-1 rounded-xl border border-brand-200 bg-white px-4 text-sm text-slate-900 outline-none focus:border-brand-400"
           />
           {isSuperAdmin && (
             <select
               value={schoolFilter}
-              onChange={(event) => setSchoolFilter(event.target.value)}
-              className="h-10 rounded-xl border border-brand-200 bg-white px-4 text-sm text-slate-900 outline-none focus:border-brand-400"
+              onChange={(event) => {
+                setSchoolFilter(event.target.value);
+                setPage(1);
+              }}
+              className="h-10 max-h-60 overflow-y-auto rounded-xl border border-brand-200 bg-white px-4 text-sm text-slate-900 outline-none focus:border-brand-400"
             >
               <option value="ALL">All Schools</option>
-              {schoolOptions.map((name) => (
-                <option key={name} value={name}>
-                  {name}
+              {schoolOptions.map((school) => (
+                <option key={school.value} value={school.value}>
+                  {school.label}
                 </option>
               ))}
             </select>
           )}
           <select
             value={roleFilter}
-            onChange={(event) => setRoleFilter(event.target.value)}
+            onChange={(event) => {
+              setRoleFilter(event.target.value);
+              setPage(1);
+            }}
             className="h-10 rounded-xl border border-brand-200 bg-white px-4 text-sm text-slate-900 outline-none focus:border-brand-400"
           >
             <option value="ALL">All Roles</option>
@@ -173,7 +195,10 @@ export function UsersPage() {
           </select>
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as any)}
+            onChange={(event) => {
+              setStatusFilter(event.target.value as any);
+              setPage(1);
+            }}
             className="h-10 rounded-xl border border-brand-200 bg-white px-4 text-sm text-slate-900 outline-none focus:border-brand-400"
           >
             <option value="all">All Statuses</option>
@@ -222,7 +247,7 @@ export function UsersPage() {
                     className="group transition-colors hover:bg-brand-50/30"
                   >
                     <td className="px-5 py-4 border-b border-brand-50 text-xs text-slate-400">
-                      # {row.no}
+                      # {((currentPage - 1) * pageSize) + index + 1}
                     </td>
                     <td className="px-5 py-4 border-b border-brand-50">
                       <div className="font-bold text-slate-900">{row.name}</div>
@@ -263,6 +288,17 @@ export function UsersPage() {
                 ))}
               </tbody>
             </table>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={currentPagination?.totalItems ?? 0}
+              onPageChange={(newPage) => setPage(newPage)}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setPage(1);
+              }}
+            />
           </div>
         ) : null}
       </section>
