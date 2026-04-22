@@ -16,10 +16,11 @@ import { StateView } from '../components/state-view';
 import { Pagination } from '../components/pagination';
 import { SummaryCards, type SummaryCardItem } from '../components/dashboard/summary-cards';
 import { useAuth } from '../features/auth/auth.context';
-import { listUsersApi } from '../features/users/users.api';
+import { listUsersApi, fetchAllUsers } from '../features/users/users.api';
 import { getSuperAdminDashboardFiltersApi } from '../features/dashboard/dashboard.api';
 import { ApiClientError } from '../types/api';
 import { exportToExcel, exportToPDF, type UserRow } from '../utils/export';
+import type { UserListItem } from '../features/users/users.api';
 
 export function UsersPage() {
   const auth = useAuth();
@@ -76,10 +77,16 @@ export function UsersPage() {
     }));
   }, [usersQuery.data]);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
       setExporting('excel');
-      const exportData: UserRow[] = (usersQuery.data?.items ?? []).map(user => ({
+      const allUsers = await fetchAllUsers(auth.accessToken!, {
+        search: search.trim() || undefined,
+        tenantId: schoolFilter === 'ALL' ? undefined : schoolFilter,
+        role: roleFilter === 'ALL' ? undefined : roleFilter,
+        status: statusFilter,
+      });
+      const exportData: UserRow[] = allUsers.map(user => ({
         name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
         email: user.email,
         phone: user.phone || '',
@@ -87,7 +94,7 @@ export function UsersPage() {
         roles: user.roles.join(', '),
         status: user.status,
       }));
-      exportToExcel(exportData, 'users-list.xlsx');
+      await exportToExcel(exportData, 'users-list.xlsx');
     } catch (err) {
       console.error('Export Excel failed:', err);
     } finally {
@@ -95,10 +102,16 @@ export function UsersPage() {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
       setExporting('pdf');
-      const exportData: UserRow[] = (usersQuery.data?.items ?? []).map(user => ({
+      const allUsers = await fetchAllUsers(auth.accessToken!, {
+        search: search.trim() || undefined,
+        tenantId: schoolFilter === 'ALL' ? undefined : schoolFilter,
+        role: roleFilter === 'ALL' ? undefined : roleFilter,
+        status: statusFilter,
+      });
+      const exportData: UserRow[] = allUsers.map(user => ({
         name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
         email: user.email,
         phone: user.phone || '',
@@ -106,7 +119,7 @@ export function UsersPage() {
         roles: user.roles.join(', '),
         status: user.status,
       }));
-      exportToPDF(exportData, 'users-list.pdf');
+      await exportToPDF(exportData, 'users-list.pdf');
     } catch (err) {
       console.error('Export PDF failed:', err);
     } finally {
