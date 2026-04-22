@@ -51,8 +51,8 @@ export async function listUsersApi(
   if (params?.role && params.role !== 'ALL') query.set('role', params.role);
   if (params?.tenantId && params.tenantId !== 'ALL') query.set('tenantId', params.tenantId);
   if (params?.status && params.status !== 'all') query.set('status', params.status);
-  if (params?.page && params.page > 1) query.set('page', String(params.page));
-  if (params?.pageSize && params.pageSize !== 50) query.set('pageSize', String(params.pageSize));
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
 
   const queryString = query.toString();
   const path = queryString ? `/users?${queryString}` : '/users';

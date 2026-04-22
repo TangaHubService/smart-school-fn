@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import {
   GraduationCap,
   Plus,
   Shield,
   UserCheck,
   Users,
+  Download,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react';
 
 import { SectionCard } from '../components/section-card';
@@ -16,6 +19,7 @@ import { useAuth } from '../features/auth/auth.context';
 import { listUsersApi } from '../features/users/users.api';
 import { getSuperAdminDashboardFiltersApi } from '../features/dashboard/dashboard.api';
 import { ApiClientError } from '../types/api';
+import { exportToExcel, exportToPDF, type UserRow } from '../utils/export';
 
 export function UsersPage() {
   const auth = useAuth();
@@ -28,7 +32,8 @@ export function UsersPage() {
   const [roleFilter, setRoleFilter] = useState<'ALL' | string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('all');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(100);
+  const [exporting, setExporting] = useState<'excel' | 'pdf' | null>(null);
 
   const schoolsQuery = useQuery({
     queryKey: ['superAdminSchools'],
@@ -70,6 +75,44 @@ export function UsersPage() {
       raw: user,
     }));
   }, [usersQuery.data]);
+
+  const handleExportExcel = () => {
+    try {
+      setExporting('excel');
+      const exportData: UserRow[] = (usersQuery.data?.items ?? []).map(user => ({
+        name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
+        email: user.email,
+        phone: user.phone || '',
+        school: user.tenant?.name ?? '—',
+        roles: user.roles.join(', '),
+        status: user.status,
+      }));
+      exportToExcel(exportData, 'users-list.xlsx');
+    } catch (err) {
+      console.error('Export Excel failed:', err);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      setExporting('pdf');
+      const exportData: UserRow[] = (usersQuery.data?.items ?? []).map(user => ({
+        name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
+        email: user.email,
+        phone: user.phone || '',
+        school: user.tenant?.name ?? '—',
+        roles: user.roles.join(', '),
+        status: user.status,
+      }));
+      exportToPDF(exportData, 'users-list.pdf');
+    } catch (err) {
+      console.error('Export PDF failed:', err);
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const roleOptions = useMemo(() => {
     const items = usersQuery.data?.items ?? [];
@@ -137,13 +180,41 @@ export function UsersPage() {
         title="User Management"
         subtitle="Manage and monitor platform users across schools."
         action={
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-600"
-          >
-            <Plus className="h-4 w-4" />
-            Add New User
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              disabled={!!exporting}
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-soft hover:bg-slate-50 disabled:opacity-50"
+            >
+              {exporting === 'excel' ? (
+                <span className="animate-spin h-4 w-4 border-2 border-slate-500 border-t-transparent rounded-full" />
+              ) : (
+                <FileSpreadsheet className="h-4 w-4" />
+              )}
+              {exporting === 'excel' ? 'Exporting...' : 'Excel'}
+            </button>
+            <button
+              type="button"
+              onClick={handleExportPDF}
+              disabled={!!exporting}
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-soft hover:bg-slate-50 disabled:opacity-50"
+            >
+              {exporting === 'pdf' ? (
+                <span className="animate-spin h-4 w-4 border-2 border-slate-500 border-t-transparent rounded-full" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              {exporting === 'pdf' ? 'Exporting...' : 'PDF'}
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-600"
+            >
+              <Plus className="h-4 w-4" />
+              Add New User
+            </button>
+          </div>
         }
       />
 
