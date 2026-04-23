@@ -25,6 +25,7 @@ import {
   saveAssessmentAttemptAnswersApi,
   submitAssessmentAttemptApi,
 } from '../features/assessments/assessments.api';
+import { AssessmentQuestionImage } from '../features/assessments/assessment-question-image';
 import { formatAssessmentDateTime, formatAssessmentTypeLabel } from '../features/assessments/assessment-ui';
 import {
   clearAssessmentDraft,
@@ -506,6 +507,13 @@ export function StudentAssessmentAttemptPage() {
                     <p className="mt-4 text-base font-medium leading-relaxed text-slate-800">
                       {question.prompt}
                     </p>
+                    {question.imageUrl ? (
+                      <AssessmentQuestionImage
+                        src={question.imageUrl}
+                        alt={`Illustration for question ${question.sequence}`}
+                        className="mt-4 max-w-3xl"
+                      />
+                    ) : null}
                   </div>
 
                   <div className="p-6">
@@ -670,6 +678,13 @@ export function StudentAssessmentAttemptPage() {
                   Question {currentQuestion.sequence}
                 </p>
                 <h2 className="text-2xl font-bold text-slate-900">{currentQuestion.prompt}</h2>
+                {currentQuestion.imageUrl ? (
+                  <AssessmentQuestionImage
+                    src={currentQuestion.imageUrl}
+                    alt={`Illustration for question ${currentQuestion.sequence}`}
+                    className="max-w-3xl"
+                  />
+                ) : null}
                 <p className="text-sm text-slate-600">
                   {currentQuestion.type === 'OPEN_TEXT'
                     ? `Write your answer before you continue. This question is worth ${currentQuestion.points} point${currentQuestion.points === 1 ? '' : 's'}.`

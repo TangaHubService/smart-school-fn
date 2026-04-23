@@ -663,7 +663,7 @@ export function listTeacherLearningInsightsApi(accessToken: string) {
 export function signUploadApi(
   accessToken: string,
   payload: {
-    purpose: 'lesson' | 'assignment' | 'submission' | 'logo';
+    purpose: 'lesson' | 'assignment' | 'submission' | 'logo' | 'assessment-question';
     fileName: string;
   },
 ) {

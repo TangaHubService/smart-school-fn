@@ -55,6 +55,7 @@ export interface AssessmentQuestionOption {
 export interface AssessmentQuestion {
   id: string;
   prompt: string;
+  imageUrl: string | null;
   explanation: string | null;
   type: AssessmentQuestionType;
   sequence: number;
@@ -185,6 +186,7 @@ export interface AssessmentAttemptDetail {
   questions: Array<{
     id: string;
     prompt: string;
+    imageUrl: string | null;
     explanation: string | null;
     hint?: string | null;
     remedialLessonId?: string | null;
@@ -285,6 +287,7 @@ export function addAssessmentQuestionApi(
   assessmentId: string,
   payload: {
     prompt: string;
+    imageUrl?: string | null;
     explanation?: string;
     type?: AssessmentQuestionType;
     sequence?: number;
@@ -301,6 +304,34 @@ export function addAssessmentQuestionApi(
     accessToken,
     body: payload,
   });
+}
+
+export function bulkAddAssessmentQuestionsApi(
+  accessToken: string,
+  assessmentId: string,
+  payload: {
+    questions: Array<{
+      prompt: string;
+      imageUrl?: string | null;
+      explanation?: string;
+      type?: AssessmentQuestionType;
+      points?: number;
+      options?: Array<{
+        label: string;
+        isCorrect: boolean;
+        sequence?: number;
+      }>;
+    }>;
+  },
+) {
+  return apiRequest<{ createdCount: number; questions: AssessmentQuestion[] }>(
+    `/assessments/${assessmentId}/questions/bulk`,
+    {
+      method: 'POST',
+      accessToken,
+      body: payload,
+    },
+  );
 }
 
 export function publishAssessmentApi(
@@ -320,6 +351,7 @@ export function updateAssessmentQuestionApi(
   questionId: string,
   payload: {
     prompt: string;
+    imageUrl?: string | null;
     explanation?: string;
     type?: AssessmentQuestionType;
     sequence?: number;

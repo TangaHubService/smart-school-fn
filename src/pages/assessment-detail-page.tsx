@@ -1,8 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, BookCheck, CheckCircle2, Clock3, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  BookCheck,
+  CheckCircle2,
+  Clock3,
+  Download,
+  Eye,
+  FileSpreadsheet,
+  ImagePlus,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
@@ -16,6 +30,7 @@ import { useAuth } from '../features/auth/auth.context';
 import {
   AssessmentQuestion,
   addAssessmentQuestionApi,
+  bulkAddAssessmentQuestionsApi,
   deleteAssessmentApi,
   deleteAssessmentQuestionApi,
   getAssessmentAttemptApi,
@@ -26,6 +41,7 @@ import {
   updateAssessmentApi,
   updateAssessmentQuestionApi,
 } from '../features/assessments/assessments.api';
+import { AssessmentQuestionImage } from '../features/assessments/assessment-question-image';
 import {
   AssessmentEditFormValues,
   AssessmentStatusPill,
@@ -38,6 +54,12 @@ import {
   QuestionFormValues,
   questionFormSchema,
 } from '../features/assessments/assessment-ui';
+import {
+  downloadAssessmentQuestionTemplate,
+  parseAssessmentQuestionExcel,
+  type ParsedAssessmentQuestionImportRow,
+} from '../features/assessments/question-import';
+import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import { getCourseDetailApi } from '../features/sprint4/lms.api';
 
 function toDateTimeLocalInput(value: string | null | undefined): string {
@@ -57,6 +79,8 @@ export function AssessmentDetailPage() {
   const { assessmentId = '' } = useParams();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const questionImageInputRef = useRef<HTMLInputElement | null>(null);
+  const bulkImportInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isQuestionOpen, setIsQuestionOpen] = useState(false);
   const [isAssessmentEditOpen, setIsAssessmentEditOpen] = useState(false);
@@ -71,6 +95,11 @@ export function AssessmentDetailPage() {
   const [isRegradeOpen, setIsRegradeOpen] = useState(false);
   const [regradePoints, setRegradePoints] = useState<Record<string, string>>({});
   const [regradeFeedback, setRegradeFeedback] = useState('');
+  const [isUploadingQuestionImage, setIsUploadingQuestionImage] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [isReadingBulkFile, setIsReadingBulkFile] = useState(false);
+  const [bulkImportFileName, setBulkImportFileName] = useState('');
+  const [bulkImportRows, setBulkImportRows] = useState<ParsedAssessmentQuestionImportRow[]>([]);
 
   const questionForm = useForm<QuestionFormValues>({
     resolver: zodResolver(questionFormSchema),
@@ -81,6 +110,7 @@ export function AssessmentDetailPage() {
     defaultValues: defaultAssessmentEditForm,
   });
   const selectedQuestionType = questionForm.watch('type');
+  const questionImageUrl = questionForm.watch('imageUrl');
 
   const assessmentDetailQuery = useQuery({
     queryKey: ['assessment-detail', assessmentId || null],
@@ -112,6 +142,7 @@ export function AssessmentDetailPage() {
     mutationFn: (values: QuestionFormValues) =>
       addAssessmentQuestionApi(auth.accessToken!, assessmentId, {
         prompt: values.prompt,
+        imageUrl: values.imageUrl?.trim() || null,
         explanation: values.explanation || undefined,
         type: values.type,
         points: values.points,
@@ -143,6 +174,7 @@ export function AssessmentDetailPage() {
     mutationFn: (values: QuestionFormValues) =>
       updateAssessmentQuestionApi(auth.accessToken!, editingQuestionId, {
         prompt: values.prompt,
+        imageUrl: values.imageUrl?.trim() || null,
         explanation: values.explanation || undefined,
         type: values.type,
         points: values.points,
@@ -164,6 +196,30 @@ export function AssessmentDetailPage() {
       showToast({
         type: 'error',
         title: 'Could not update question',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const bulkAddQuestionsMutation = useMutation({
+    mutationFn: (questions: NonNullable<ParsedAssessmentQuestionImportRow['payload']>[]) =>
+      bulkAddAssessmentQuestionsApi(auth.accessToken!, assessmentId, { questions }),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ['assessment-detail', assessmentId] });
+      void queryClient.invalidateQueries({ queryKey: ['assessment-results', assessmentId] });
+      setIsBulkImportOpen(false);
+      setBulkImportFileName('');
+      setBulkImportRows([]);
+      showToast({
+        type: 'success',
+        title: 'Questions imported',
+        message: `${result.createdCount} question${result.createdCount === 1 ? '' : 's'} added to this assessment.`,
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not import questions',
         message: error instanceof Error ? error.message : 'Request failed',
       });
     },
@@ -275,6 +331,14 @@ export function AssessmentDetailPage() {
 
   const resultRows = useMemo(() => resultsQuery.data?.items ?? [], [resultsQuery.data?.items]);
   const selectedAttempt = reviewAttemptQuery.data ?? null;
+  const validImportRows = useMemo(
+    () => bulkImportRows.filter((row) => row.payload && row.errors.length === 0),
+    [bulkImportRows],
+  );
+  const invalidImportRows = useMemo(
+    () => bulkImportRows.filter((row) => row.errors.length > 0),
+    [bulkImportRows],
+  );
   const assessmentEditingLocked = Boolean(assessment && assessment.counts.attempts > 0);
   const assessmentDeletionLocked = Boolean(assessment && assessment.counts.attempts > 0);
   const questionEditingLocked = Boolean(
@@ -319,6 +383,7 @@ export function AssessmentDetailPage() {
       setEditingQuestionId('');
       questionForm.reset({
         ...defaultQuestionForm,
+        imageUrl: '',
         type: assessment?.type === 'OPENENDED' || assessment?.type === 'INTERVIEW' ? 'OPEN_TEXT' : 'MCQ_SINGLE',
       });
       setIsQuestionOpen(true);
@@ -329,6 +394,7 @@ export function AssessmentDetailPage() {
     setEditingQuestionId(question.id);
     questionForm.reset({
       prompt: question.prompt,
+      imageUrl: question.imageUrl ?? '',
       explanation: question.explanation ?? '',
       type: question.type,
       points: question.points,
@@ -344,7 +410,128 @@ export function AssessmentDetailPage() {
   function closeQuestionModal() {
     setIsQuestionOpen(false);
     setEditingQuestionId('');
+    setIsUploadingQuestionImage(false);
     questionForm.reset(defaultQuestionForm);
+  }
+
+  function closeBulkImportModal() {
+    if (bulkAddQuestionsMutation.isPending) {
+      return;
+    }
+
+    setIsBulkImportOpen(false);
+    setBulkImportFileName('');
+    setBulkImportRows([]);
+  }
+
+  function openBulkImportPicker() {
+    bulkImportInputRef.current?.click();
+  }
+
+  async function handleBulkFileSelect(file: File) {
+    const isExcel =
+      file.name.endsWith('.xlsx') ||
+      file.name.endsWith('.xls') ||
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.type === 'application/vnd.ms-excel';
+
+    if (!isExcel) {
+      showToast({
+        type: 'error',
+        title: 'Invalid file',
+        message: 'Please upload an Excel file (.xlsx or .xls).',
+      });
+      return;
+    }
+
+    setIsReadingBulkFile(true);
+    try {
+      const rows = await parseAssessmentQuestionExcel(file);
+      setBulkImportFileName(file.name);
+      setBulkImportRows(rows);
+      setIsBulkImportOpen(true);
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Could not read Excel file',
+        message: error instanceof Error ? error.message : 'Check the file and try again.',
+      });
+    } finally {
+      setIsReadingBulkFile(false);
+    }
+  }
+
+  async function handleDownloadTemplate() {
+    try {
+      await downloadAssessmentQuestionTemplate();
+      showToast({
+        type: 'info',
+        title: 'Template downloaded',
+        message: 'Fill the sheet and upload it here to add questions in bulk.',
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Could not download template',
+        message: error instanceof Error ? error.message : 'Try again in a moment.',
+      });
+    }
+  }
+
+  async function handleQuestionImageFile(file: File) {
+    if (!file.type.startsWith('image/')) {
+      showToast({
+        type: 'error',
+        title: 'Invalid image',
+        message: 'Choose an image file such as PNG, JPG, or WEBP.',
+      });
+      return;
+    }
+
+    setIsUploadingQuestionImage(true);
+    try {
+      const asset = await uploadFileToCloudinary(auth.accessToken!, 'assessment-question', file);
+      questionForm.setValue('imageUrl', asset.secureUrl, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+      showToast({ type: 'success', title: 'Question image uploaded' });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Could not upload question image',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    } finally {
+      setIsUploadingQuestionImage(false);
+    }
+  }
+
+  function handleImportQuestions() {
+    const payload = validImportRows
+      .map((row) => row.payload)
+      .filter((row): row is NonNullable<typeof row> => Boolean(row));
+
+    if (!payload.length) {
+      showToast({
+        type: 'error',
+        title: 'No valid rows to import',
+        message: 'Fix the Excel rows marked with errors, then try again.',
+      });
+      return;
+    }
+
+    if (invalidImportRows.length > 0) {
+      showToast({
+        type: 'error',
+        title: 'Fix import errors first',
+        message: 'The preview still has invalid rows.',
+      });
+      return;
+    }
+
+    bulkAddQuestionsMutation.mutate(payload);
   }
 
   function openReviewModal(attemptId: string) {
@@ -451,6 +638,19 @@ export function AssessmentDetailPage() {
         subtitle="Manage questions, publish the test, and review student results from one page."
         action={
           <div className="flex flex-wrap gap-2">
+            <input
+              ref={bulkImportInputRef}
+              type="file"
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  void handleBulkFileSelect(file);
+                }
+                event.target.value = '';
+              }}
+            />
             <button
               type="button"
               onClick={() => navigate('/admin/assessments')}
@@ -492,6 +692,24 @@ export function AssessmentDetailPage() {
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Add question
+            </button>
+            <button
+              type="button"
+              onClick={openBulkImportPicker}
+              disabled={questionEditingLocked || isReadingBulkFile || bulkAddQuestionsMutation.isPending}
+              title={questionEditingLocked ? 'Questions are locked after publish or after students start attempting' : undefined}
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Upload className="h-4 w-4" aria-hidden="true" />
+              {isReadingBulkFile ? 'Reading Excel...' : 'Upload Excel'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDownloadTemplate()}
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Template
             </button>
             <button
               type="button"
@@ -572,6 +790,13 @@ export function AssessmentDetailPage() {
                         Question {question.sequence} · {question.type === 'OPEN_TEXT' ? 'Open text' : 'MCQ'} · {question.points} pt{question.points === 1 ? '' : 's'}
                       </p>
                       <p className="text-sm text-slate-900">{question.prompt}</p>
+                      {question.imageUrl ? (
+                        <AssessmentQuestionImage
+                          src={question.imageUrl}
+                          alt={`Illustration for question ${question.sequence}`}
+                          className="max-w-2xl"
+                        />
+                      ) : null}
                     </div>
                     {!questionEditingLocked ? (
                       <div className="flex items-center gap-2">
@@ -851,7 +1076,7 @@ export function AssessmentDetailPage() {
               onClick={questionForm.handleSubmit((values) =>
                 editingQuestionId ? updateQuestionMutation.mutate(values) : addQuestionMutation.mutate(values),
               )}
-              disabled={addQuestionMutation.isPending || updateQuestionMutation.isPending}
+              disabled={addQuestionMutation.isPending || updateQuestionMutation.isPending || isUploadingQuestionImage}
               className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {editingQuestionId ? 'Save changes' : 'Save question'}
@@ -860,6 +1085,20 @@ export function AssessmentDetailPage() {
         }
       >
         <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
+          <input
+            ref={questionImageInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                void handleQuestionImageFile(file);
+              }
+              event.target.value = '';
+            }}
+          />
+
           <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Question prompt</span>
             <textarea
@@ -868,6 +1107,50 @@ export function AssessmentDetailPage() {
               className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"
             />
           </label>
+
+          <div className="grid gap-3">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <span>Question image URL (optional)</span>
+              <input
+                {...questionForm.register('imageUrl')}
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+                placeholder="https://..."
+              />
+              {questionForm.formState.errors.imageUrl ? (
+                <span className="text-xs text-rose-600">{questionForm.formState.errors.imageUrl.message}</span>
+              ) : null}
+            </label>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => questionImageInputRef.current?.click()}
+                disabled={isUploadingQuestionImage}
+                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
+              >
+                <ImagePlus className="h-4 w-4" aria-hidden="true" />
+                {isUploadingQuestionImage ? 'Uploading image...' : 'Upload image'}
+              </button>
+              {questionImageUrl ? (
+                <button
+                  type="button"
+                  onClick={() => questionForm.setValue('imageUrl', '', { shouldDirty: true, shouldValidate: true })}
+                  className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                  Remove image
+                </button>
+              ) : null}
+            </div>
+
+            {questionImageUrl ? (
+              <AssessmentQuestionImage
+                src={questionImageUrl}
+                alt="Question image preview"
+                className="max-w-2xl"
+              />
+            ) : null}
+          </div>
 
           <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Explanation (optional)</span>
@@ -928,6 +1211,117 @@ export function AssessmentDetailPage() {
             </div>
           )}
         </form>
+      </Modal>
+
+      <Modal
+        open={isBulkImportOpen}
+        title="Import questions from Excel"
+        description="Use the template headers. MCQ rows should fill options A-D and set the correct option as A, B, C, or D."
+        onClose={closeBulkImportModal}
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={closeBulkImportModal}
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleImportQuestions}
+              disabled={bulkAddQuestionsMutation.isPending || validImportRows.length === 0 || invalidImportRows.length > 0}
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
+              {bulkAddQuestionsMutation.isPending ? 'Importing...' : 'Import questions'}
+            </button>
+          </div>
+        }
+      >
+        <div className="grid gap-4">
+          <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-slate-700 md:grid-cols-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">File</p>
+              <p className="mt-2 font-semibold text-slate-900">{bulkImportFileName || 'No file selected'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Rows</p>
+              <p className="mt-2 font-semibold text-slate-900">{bulkImportRows.length}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Valid</p>
+              <p className="mt-2 font-semibold text-emerald-700">{validImportRows.length}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Errors</p>
+              <p className="mt-2 font-semibold text-rose-700">{invalidImportRows.length}</p>
+            </div>
+          </div>
+
+          {bulkImportRows.length ? (
+            <div className="max-h-[28rem] overflow-auto rounded-2xl border border-brand-100">
+              <table className="w-full min-w-[760px] border-separate border-spacing-0 text-left text-sm text-slate-800">
+                <thead className="sticky top-0 bg-white">
+                  <tr className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                    <th className="border-b border-brand-100 px-3 py-3">Row</th>
+                    <th className="border-b border-brand-100 px-3 py-3">Prompt</th>
+                    <th className="border-b border-brand-100 px-3 py-3">Type</th>
+                    <th className="border-b border-brand-100 px-3 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bulkImportRows.map((row) => (
+                    <tr key={row.rowNumber} className="align-top">
+                      <td className="border-b border-brand-100 px-3 py-3 font-semibold text-slate-900">
+                        {row.rowNumber}
+                      </td>
+                      <td className="border-b border-brand-100 px-3 py-3">
+                        <div className="grid gap-2">
+                          <p className="font-medium text-slate-900">{row.prompt || 'Missing prompt'}</p>
+                          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
+                            {row.imageUrl ? (
+                              <span className="rounded-full bg-brand-100 px-2.5 py-1">Image</span>
+                            ) : null}
+                            {row.payload?.type === 'MCQ_SINGLE' ? (
+                              <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                                {row.optionA} | {row.optionB} | {row.optionC} | {row.optionD}
+                              </span>
+                            ) : null}
+                          </div>
+                          {row.errors.length ? (
+                            <div className="grid gap-1 text-xs text-rose-600">
+                              {row.errors.map((error) => (
+                                <p key={error}>{error}</p>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="border-b border-brand-100 px-3 py-3">{row.payload?.type ?? row.type}</td>
+                      <td className="border-b border-brand-100 px-3 py-3">
+                        {row.errors.length ? (
+                          <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700">
+                            Needs fixes
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                            Ready
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState
+              title="No rows found"
+              message="Upload an Excel sheet with at least one question row."
+            />
+          )}
+        </div>
       </Modal>
 
       <Modal
@@ -1080,6 +1474,13 @@ export function AssessmentDetailPage() {
                         Question {question.sequence} · max {question.points}
                       </p>
                       <p className="mt-2 text-sm text-slate-800">{question.prompt}</p>
+                      {question.imageUrl ? (
+                        <AssessmentQuestionImage
+                          src={question.imageUrl}
+                          alt={`Illustration for question ${question.sequence}`}
+                          className="mt-3 max-w-2xl"
+                        />
+                      ) : null}
                     </div>
                     <label className="grid gap-1 text-sm font-medium text-slate-700">
                       <span>Manual points</span>

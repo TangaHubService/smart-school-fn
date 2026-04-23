@@ -49,6 +49,12 @@ export const assessmentEditFormSchema = z.object({
 export const questionFormSchema = z
   .object({
     prompt: z.string().trim().min(2, 'Question prompt is required').max(5000),
+    imageUrl: z
+      .string()
+      .trim()
+      .max(2000, 'Image URL is too long')
+      .refine((value) => !value || /^https?:\/\//i.test(value), 'Enter a valid image URL')
+      .optional(),
     explanation: z.string().trim().max(5000).optional(),
     type: z.enum(['MCQ_SINGLE', 'OPEN_TEXT']),
     points: z.coerce.number().int().min(1).max(100),
@@ -99,6 +105,7 @@ export const defaultAssessmentForm: AssessmentFormValues = {
 
 export const defaultQuestionForm: QuestionFormValues = {
   prompt: '',
+  imageUrl: '',
   explanation: '',
   type: 'MCQ_SINGLE',
   points: 1,
