@@ -1,14 +1,41 @@
-import { Download, Filter, Search } from 'lucide-react';
+import { Download, Filter, Search, Eye, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { listActivityLogsApi } from '../features/audit/audit.api';
 import { SectionCard } from '../components/section-card';
+import { Modal } from '../components/modal';
+
+interface ActivityLog {
+  id: string;
+  event: string;
+  entity: string | null;
+  entityId: string | null;
+  createdAt: string;
+  ipAddress: string | null;
+  actor: {
+    id: string;
+    email: string;
+    name: string;
+  } | null;
+  payload: unknown;
+}
+
+function formatIpAddress(ip: string | null): string {
+  if (!ip) return '-';
+  if (ip === '::1') return '127.0.0.1 (localhost)';
+  return ip;
+}
+
+function formatAction(event: string): string {
+  return event.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
+  const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['activity-logs', page, search, actionFilter],
@@ -66,14 +93,19 @@ export function AuditLogsPage() {
             >
               <option value="">All actions</option>
               <option value="AUTH_LOGIN_SUCCESS">Login</option>
+              <option value="AUTH_LOGOUT">Logout</option>
               <option value="STUDENT_CREATED">Student created</option>
               <option value="STUDENT_UPDATED">Student updated</option>
+              <option value="STUDENT_DELETED">Student deleted</option>
               <option value="COURSE_CREATED">Course created</option>
+              <option value="COURSE_UPDATED">Course updated</option>
               <option value="LESSON_CREATED">Lesson created</option>
               <option value="LESSON_PUBLISHED">Lesson published</option>
+              <option value="LESSON_UPDATED">Lesson updated</option>
               <option value="ASSIGNMENT_CREATED">Assignment created</option>
               <option value="ASSESSMENT_CREATED">Assessment created</option>
               <option value="EXAM_CREATED">Exam created</option>
+              <option value="EXAM_MARKS_SAVED">Exam marks saved</option>
             </select>
           </div>
         </div>
@@ -86,18 +118,19 @@ export function AuditLogsPage() {
                 <th className="pb-3 text-left font-semibold text-slate-700">User</th>
                 <th className="pb-3 text-left font-semibold text-slate-700">Date</th>
                 <th className="pb-3 text-left font-semibold text-slate-700">IP Address</th>
+                <th className="pb-3 text-left font-semibold text-slate-700">Details</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-500">
+                  <td colSpan={5} className="py-8 text-center text-slate-500">
                     Loading...
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-500">
+                  <td colSpan={5} className="py-8 text-center text-slate-500">
                     No activity logs found
                   </td>
                 </tr>
@@ -105,7 +138,7 @@ export function AuditLogsPage() {
                 logs.map((log) => (
                   <tr key={log.id} className="border-b border-brand-50">
                     <td className="py-3 font-medium text-slate-900">
-                      {log.event.replace(/_/g, ' ')}
+                      {formatAction(log.event)}
                     </td>
                     <td className="py-3 text-slate-600">
                       {log.actor?.name || log.actor?.email || 'System'}
@@ -113,7 +146,19 @@ export function AuditLogsPage() {
                     <td className="py-3 text-slate-600">
                       {new Date(log.createdAt).toLocaleString()}
                     </td>
-                    <td className="py-3 text-slate-600">{log.ipAddress || '-'}</td>
+                    <td className="py-3 text-slate-600 font-mono text-xs">
+                      {formatIpAddress(log.ipAddress)}
+                    </td>
+                    <td className="py-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedLog(log)}
+                        className="inline-flex items-center gap-1 rounded border border-brand-200 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+                      >
+                        <Eye className="h-3 w-3" />
+                        View
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -145,6 +190,81 @@ export function AuditLogsPage() {
           </div>
         )}
       </SectionCard>
+
+      <Modal
+        isOpen={!!selectedLog}
+        onClose={() => setSelectedLog(null)}
+        title="Activity Details"
+      >
+        {selectedLog && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-slate-500">Action</p>
+                <p className="font-medium text-slate-900">
+                  {formatAction(selectedLog.event)}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Date & Time</p>
+                <p className="font-medium text-slate-900">
+                  {new Date(selectedLog.createdAt).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">User</p>
+                <p className="font-medium text-slate-900">
+                  {selectedLog.actor?.name || 'System'}
+                </p>
+                {selectedLog.actor?.email && (
+                  <p className="text-xs text-slate-500">
+                    {selectedLog.actor.email}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-slate-500">IP Address</p>
+                <p className="font-medium text-slate-900 font-mono text-xs">
+                  {formatIpAddress(selectedLog.ipAddress)}
+                </p>
+              </div>
+              {selectedLog.entity && (
+                <div>
+                  <p className="text-slate-500">Entity</p>
+                  <p className="font-medium text-slate-900">
+                    {selectedLog.entity}
+                  </p>
+                </div>
+              )}
+              {selectedLog.entityId && (
+                <div>
+                  <p className="text-slate-500">Entity ID</p>
+                  <p className="font-medium text-slate-900 font-mono text-xs break-all">
+                    {selectedLog.entityId}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {selectedLog.payload && (
+              <div>
+                <p className="text-slate-500 text-sm">Additional Data</p>
+                <pre className="mt-1 max-h-60 overflow-auto rounded bg-slate-100 p-3 text-xs font-mono">
+                  {JSON.stringify(selectedLog.payload, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setSelectedLog(null)}
+              className="w-full rounded-lg bg-brand-600 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </Modal>
     </section>
   );
 }
