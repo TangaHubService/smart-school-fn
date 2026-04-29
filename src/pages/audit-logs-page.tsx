@@ -21,8 +21,8 @@ export function AuditLogsPage() {
       }),
   });
 
-  const logs = data?.data?.items ?? [];
-  const pagination = data?.data?.pagination;
+  const logs = data?.items ?? [];
+  const pagination = data?.pagination;
 
   return (
     <section className="space-y-6">
