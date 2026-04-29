@@ -48,21 +48,20 @@ export const assessmentEditFormSchema = z.object({
 
 export const questionFormSchema = z
   .object({
-    prompt: z.string().trim().min(2, 'Question prompt is required').max(5000),
+    prompt: z.string().trim().min(2, 'Question prompt is required'),
     imageUrl: z
       .string()
       .trim()
-      .max(2000, 'Image URL is too long')
       .refine((value) => !value || /^https?:\/\//i.test(value), 'Enter a valid image URL')
       .optional(),
-    explanation: z.string().trim().max(5000).optional(),
+    explanation: z.string().trim().optional(),
     type: z.enum(['MCQ_SINGLE', 'OPEN_TEXT']),
     points: z.coerce.number().int().min(1).max(100),
     correctOptionIndex: z.coerce.number().int().min(0).max(3).optional(),
-    optionA: z.string().trim().max(500).optional(),
-    optionB: z.string().trim().max(500).optional(),
-    optionC: z.string().trim().max(500).optional(),
-    optionD: z.string().trim().max(500).optional(),
+    optionA: z.string().trim().optional(),
+    optionB: z.string().trim().optional(),
+    optionC: z.string().trim().optional(),
+    optionD: z.string().trim().optional(),
   })
   .superRefine((value, context) => {
     if (value.type === 'MCQ_SINGLE') {
