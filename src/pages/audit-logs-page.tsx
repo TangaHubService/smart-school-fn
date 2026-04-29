@@ -48,8 +48,8 @@ export function AuditLogsPage() {
       }),
   });
 
-  const logs = data?.items ?? [];
-  const pagination = data?.pagination;
+  const logs = data?.data?.items ?? [];
+  const pagination = data?.data?.pagination;
 
   return (
     <section className="space-y-6">
@@ -135,7 +135,7 @@ export function AuditLogsPage() {
                   </td>
                 </tr>
               ) : (
-                logs.map((log) => (
+                logs.map((log: ActivityLog) => (
                   <tr key={log.id} className="border-b border-brand-50">
                     <td className="py-3 font-medium text-slate-900">
                       {formatAction(log.event)}
@@ -246,7 +246,7 @@ export function AuditLogsPage() {
               )}
             </div>
 
-            {selectedLog.payload && (
+            {selectedLog.payload !== null && (
               <div>
                 <p className="text-slate-500 text-sm">Additional Data</p>
                 <pre className="mt-1 max-h-60 overflow-auto rounded bg-slate-100 p-3 text-xs font-mono">
