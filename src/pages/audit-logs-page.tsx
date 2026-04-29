@@ -192,7 +192,7 @@ export function AuditLogsPage() {
       </SectionCard>
 
       <Modal
-        isOpen={!!selectedLog}
+        open={!!selectedLog}
         onClose={() => setSelectedLog(null)}
         title="Activity Details"
       >
