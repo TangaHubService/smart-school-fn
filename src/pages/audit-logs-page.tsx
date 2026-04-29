@@ -1,36 +1,35 @@
 import { Download, Filter, Search } from 'lucide-react';
 import { useState } from 'react';
 
+import { useQuery } from '@tanstack/react-query';
+import { listActivityLogsApi } from '../features/audit/audit.api';
 import { SectionCard } from '../components/section-card';
 
-// TODO: Replace with API call when backend is ready
-// import { useQuery } from '@tanstack/react-query';
-// import { listAuditLogsApi } from '../features/audit/audit.api';
-
-const DUMMY_LOGS = [
-  { id: '1', action: 'User login', user: 'admin@smartschool.rw', timestamp: '2025-03-12 14:32', ip: '192.168.1.1' },
-  { id: '2', action: 'School created', user: 'admin@smartschool.rw', timestamp: '2025-03-12 14:15', ip: '192.168.1.1' },
-  { id: '3', action: 'User updated', user: 'admin@smartschool.rw', timestamp: '2025-03-12 13:58', ip: '192.168.1.1' },
-  { id: '4', action: 'Settings changed', user: 'admin@smartschool.rw', timestamp: '2025-03-12 12:20', ip: '192.168.1.1' },
-  { id: '5', action: 'Report exported', user: 'admin@smartschool.rw', timestamp: '2025-03-12 11:45', ip: '192.168.1.1' },
-];
-
 export function AuditLogsPage() {
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [actionFilter, setActionFilter] = useState('all');
+  const [actionFilter, setActionFilter] = useState('');
 
-  // TODO: Integrate with backend when API is available
-  // const { data } = useQuery({
-  //   queryKey: ['audit-logs', search, actionFilter],
-  //   queryFn: () => listAuditLogsApi(accessToken, { search, action: actionFilter }),
-  // });
+  const { data, isLoading } = useQuery({
+    queryKey: ['activity-logs', page, search, actionFilter],
+    queryFn: () =>
+      listActivityLogsApi({
+        page,
+        pageSize: 30,
+        search: search || undefined,
+        event: actionFilter || undefined,
+      }),
+  });
+
+  const logs = data?.data?.items ?? [];
+  const pagination = data?.data?.pagination;
 
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Audit Logs</h1>
+        <h1 className="text-xl font-bold text-slate-900">Activity Logs</h1>
         <p className="mt-1 text-sm text-slate-600">
-          System activity and security logs. Ready for backend integration.
+          Track all system actions in your school
         </p>
       </div>
 
@@ -65,11 +64,16 @@ export function AuditLogsPage() {
               onChange={(e) => setActionFilter(e.target.value)}
               className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
             >
-              <option value="all">All actions</option>
-              <option value="login">Login</option>
-              <option value="create">Create</option>
-              <option value="update">Update</option>
-              <option value="delete">Delete</option>
+              <option value="">All actions</option>
+              <option value="AUTH_LOGIN_SUCCESS">Login</option>
+              <option value="STUDENT_CREATED">Student created</option>
+              <option value="STUDENT_UPDATED">Student updated</option>
+              <option value="COURSE_CREATED">Course created</option>
+              <option value="LESSON_CREATED">Lesson created</option>
+              <option value="LESSON_PUBLISHED">Lesson published</option>
+              <option value="ASSIGNMENT_CREATED">Assignment created</option>
+              <option value="ASSESSMENT_CREATED">Assessment created</option>
+              <option value="EXAM_CREATED">Exam created</option>
             </select>
           </div>
         </div>
@@ -80,22 +84,66 @@ export function AuditLogsPage() {
               <tr className="border-b border-brand-100">
                 <th className="pb-3 text-left font-semibold text-slate-700">Action</th>
                 <th className="pb-3 text-left font-semibold text-slate-700">User</th>
-                <th className="pb-3 text-left font-semibold text-slate-700">Timestamp</th>
+                <th className="pb-3 text-left font-semibold text-slate-700">Date</th>
                 <th className="pb-3 text-left font-semibold text-slate-700">IP Address</th>
               </tr>
             </thead>
             <tbody>
-              {DUMMY_LOGS.map((log) => (
-                <tr key={log.id} className="border-b border-brand-50">
-                  <td className="py-3 font-medium text-slate-900">{log.action}</td>
-                  <td className="py-3 text-slate-600">{log.user}</td>
-                  <td className="py-3 text-slate-600">{log.timestamp}</td>
-                  <td className="py-3 text-slate-600">{log.ip}</td>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-slate-500">
+                    Loading...
+                  </td>
                 </tr>
-              ))}
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-slate-500">
+                    No activity logs found
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log) => (
+                  <tr key={log.id} className="border-b border-brand-50">
+                    <td className="py-3 font-medium text-slate-900">
+                      {log.event.replace(/_/g, ' ')}
+                    </td>
+                    <td className="py-3 text-slate-600">
+                      {log.actor?.name || log.actor?.email || 'System'}
+                    </td>
+                    <td className="py-3 text-slate-600">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </td>
+                    <td className="py-3 text-slate-600">{log.ipAddress || '-'}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
+        {pagination && pagination.totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded border border-brand-200 px-3 py-1 text-sm disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-slate-600">
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= pagination.totalPages}
+              className="rounded border border-brand-200 px-3 py-1 text-sm disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </SectionCard>
     </section>
   );
