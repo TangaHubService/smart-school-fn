@@ -42,14 +42,14 @@ export function AuditLogsPage() {
     queryFn: () =>
       listActivityLogsApi({
         page,
-        pageSize: 30,
+        pageSize: 100,
         search: search || undefined,
         event: actionFilter || undefined,
       }),
   });
 
-  const logs = data?.data?.items ?? [];
-  const pagination = data?.data?.pagination;
+  const logs = data?.items ?? [];
+  const pagination = data?.pagination;
 
   return (
     <section className="space-y-6">

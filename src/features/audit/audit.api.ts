@@ -16,7 +16,6 @@ interface ActivityLog {
 }
 
 interface ListActivityLogsResponse {
-  data: {
     items: ActivityLog[];
     pagination: {
       page: number;
@@ -24,7 +23,6 @@ interface ListActivityLogsResponse {
       totalItems: number;
       totalPages: number;
     };
-  };
 }
 
 interface ListActivityLogsParams {
