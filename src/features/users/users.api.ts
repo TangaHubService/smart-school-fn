@@ -13,6 +13,7 @@ export interface UserListItem {
     code: string;
   } | null;
   roles: string[];
+  createdAt: string;
 }
 
 export interface PaginationMeta {
