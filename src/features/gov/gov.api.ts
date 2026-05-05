@@ -101,20 +101,23 @@ export function createGovAuditorApi(
 
 export function listGovAuditorsApi(
   accessToken: string,
-  params?: { q?: string },
+  params?: { q?: string; page?: number; pageSize?: number },
 ) {
   const query = new URLSearchParams();
   if (params?.q?.trim()) {
     query.set('q', params.q.trim());
   }
+  if (params?.page) {
+    query.set('page', String(params.page));
+  }
+  if (params?.pageSize) {
+    query.set('pageSize', String(params.pageSize));
+  }
 
-  return apiRequest<{ items: GovAuditor[] }>(
-    `/gov/admin/auditors${query.toString() ? `?${query.toString()}` : ''}`,
-    {
-      method: 'GET',
-      accessToken,
-    },
-  );
+  return apiRequest<{ items: GovAuditor[] }>(`/gov/admin/auditors${query.toString() ? `?${query.toString()}` : ''}`, {
+    method: 'GET',
+    accessToken,
+  });
 }
 
 export function listGovAuditorScopesApi(accessToken: string, auditorUserId: string) {

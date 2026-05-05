@@ -20,6 +20,7 @@ import { AcademyProgramsAdminPage } from '../pages/academy-programs-admin-page';
 import { CoursesPage } from '../pages/courses-page';
 import { DashboardPage } from '../pages/dashboard-page';
 import { ExamsPage } from '../pages/exams-page';
+import { GovMyScopePage } from '../pages/gov-my-scope-page';
 import { GovAuditorsPage } from '../pages/gov-auditors-page';
 import { GovDashboardPage } from '../pages/gov-dashboard-page';
 import { GovIncidentDetailPage } from '../pages/gov-incident-detail-page';
@@ -149,7 +150,7 @@ export function AppRoutes() {
               </Route>
               <Route element={<RequirePermission permission="gov.incidents.read" />}>
                 <Route path="/gov/incidents" element={<GovIncidentsPage />} />
-                <Route path="/gov/incidents/:incidentId" element={<GovIncidentDetailPage />} />
+                <Route path="/gov/my-scope" element={<GovMyScopePage />} />
               </Route>
               <Route element={<RequirePermission permission="gov.auditors.manage" />}>
                 <Route path="/gov/admin/auditors" element={<GovAuditorsPage />} />

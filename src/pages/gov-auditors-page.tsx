@@ -41,18 +41,9 @@ function formatScopeLabel(scope: {
   district: string | null;
   sector: string | null;
 }) {
-  if (scope.scopeLevel === 'COUNTRY') {
-    return scope.country;
-  }
-
-  if (scope.scopeLevel === 'PROVINCE') {
-    return `${scope.province ?? 'Unknown province'}, ${scope.country}`;
-  }
-
-  if (scope.scopeLevel === 'DISTRICT') {
-    return `${scope.district ?? 'Unknown district'}, ${scope.province ?? 'Unknown province'}`;
-  }
-
+  if (scope.scopeLevel === 'COUNTRY') return scope.country;
+  if (scope.scopeLevel === 'PROVINCE') return `${scope.province ?? 'Unknown province'}, ${scope.country}`;
+  if (scope.scopeLevel === 'DISTRICT') return `${scope.district ?? 'Unknown district'}, ${scope.province ?? 'Unknown province'}`;
   return `${scope.sector ?? 'Unknown sector'}, ${scope.district ?? 'Unknown district'}`;
 }
 
@@ -63,6 +54,7 @@ export function GovAuditorsPage() {
   const [search, setSearch] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedAuditor, setSelectedAuditor] = useState<GovAuditor | null>(null);
+  const [selectedAuditorForView, setSelectedAuditorForView] = useState<GovAuditor | null>(null);
   const [createForm, setCreateForm] = useState({
     email: '',
     password: '',
@@ -72,12 +64,17 @@ export function GovAuditorsPage() {
   });
   const [scopeForm, setScopeForm] = useState(buildDefaultScopeForm);
 
+  const requiresProvince = scopeForm.scopeLevel !== 'COUNTRY';
+  const requiresDistrict = scopeForm.scopeLevel === 'SECTOR' || scopeForm.scopeLevel === 'DISTRICT';
+  const requiresSector = scopeForm.scopeLevel === 'SECTOR';
+
+  const provinceOptions = getRwandaProvinces();
+  const districtOptions = scopeForm.province ? getRwandaDistricts(scopeForm.province) : [];
+  const sectorOptions = scopeForm.district ? getRwandaSectors(scopeForm.province, scopeForm.district) : [];
+
   const auditorsQuery = useQuery({
     queryKey: ['gov-auditors', search],
-    queryFn: () =>
-      listGovAuditorsApi(auth.accessToken!, {
-        q: search.trim() || undefined,
-      }),
+    queryFn: () => listGovAuditorsApi(auth.accessToken!, { q: search.trim() || undefined }),
   });
 
   const createMutation = useMutation({
@@ -92,17 +89,8 @@ export function GovAuditorsPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['gov-auditors'] });
       setIsCreateOpen(false);
-      setCreateForm({
-        email: '',
-        password: '',
-        firstName: '',
-        lastName: '',
-        phone: '',
-      });
-      showToast({
-        type: 'success',
-        title: 'Auditor created',
-      });
+      setCreateForm({ email: '', password: '', firstName: '', lastName: '', phone: '' });
+      showToast({ type: 'success', title: 'Auditor created' });
     },
     onError: (error) => {
       showToast({
@@ -114,23 +102,30 @@ export function GovAuditorsPage() {
   });
 
   const assignScopeMutation = useMutation({
-    mutationFn: () =>
-      assignGovAuditorScopeApi(auth.accessToken!, selectedAuditor!.id, {
+    mutationFn: () => {
+      const payload: any = {
         scopeLevel: scopeForm.scopeLevel,
         country: scopeForm.country.trim() || 'Rwanda',
-        province: scopeForm.province.trim() || undefined,
-        district: scopeForm.district.trim() || undefined,
-        sector: scopeForm.sector.trim() || undefined,
-        notes: scopeForm.notes.trim() || undefined,
-      }),
+      };
+      if (scopeForm.scopeLevel !== 'COUNTRY') {
+        payload.province = scopeForm.province.trim() || undefined;
+      }
+      if (scopeForm.scopeLevel === 'DISTRICT' || scopeForm.scopeLevel === 'SECTOR') {
+        payload.district = scopeForm.district.trim() || undefined;
+      }
+      if (scopeForm.scopeLevel === 'SECTOR') {
+        payload.sector = scopeForm.sector.trim() || undefined;
+      }
+      if (scopeForm.notes.trim()) {
+        payload.notes = scopeForm.notes.trim();
+      }
+      return assignGovAuditorScopeApi(auth.accessToken!, selectedAuditor!.id, payload);
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['gov-auditors'] });
       setSelectedAuditor(null);
       setScopeForm(buildDefaultScopeForm());
-      showToast({
-        type: 'success',
-        title: 'Scope assigned',
-      });
+      showToast({ type: 'success', title: 'Scope assigned' });
     },
     onError: (error) => {
       showToast({
@@ -142,16 +137,10 @@ export function GovAuditorsPage() {
   });
 
   const deactivateScopeMutation = useMutation({
-    mutationFn: (scopeId: string) =>
-      updateGovScopeApi(auth.accessToken!, scopeId, {
-        isActive: false,
-      }),
+    mutationFn: (scopeId: string) => updateGovScopeApi(auth.accessToken!, scopeId, { isActive: false }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['gov-auditors'] });
-      showToast({
-        type: 'success',
-        title: 'Scope deactivated',
-      });
+      showToast({ type: 'success', title: 'Scope deactivated' });
     },
     onError: (error) => {
       showToast({
@@ -173,127 +162,130 @@ export function GovAuditorsPage() {
   }
 
   const auditors = auditorsQuery.data?.items ?? [];
-  const requiresProvince =
-    scopeForm.scopeLevel === 'PROVINCE' ||
-    scopeForm.scopeLevel === 'DISTRICT' ||
-    scopeForm.scopeLevel === 'SECTOR';
-  const requiresDistrict =
-    scopeForm.scopeLevel === 'DISTRICT' || scopeForm.scopeLevel === 'SECTOR';
-  const requiresSector = scopeForm.scopeLevel === 'SECTOR';
-  const provinceOptions = getRwandaProvinces();
-  const districtOptions = getRwandaDistricts(scopeForm.province);
-  const sectorOptions = getRwandaSectors(scopeForm.province, scopeForm.district);
+
+  if (auditorsQuery.isPending) {
+    return (
+      <SectionCard title="Government Auditors">
+        <div className="grid gap-3">
+          <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
+          <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
+          <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
+        </div>
+      </SectionCard>
+    );
+  }
+
+  if (auditorsQuery.isError) {
+    return (
+      <SectionCard title="Government Auditors">
+        <StateView
+          title="Could not load auditors"
+          message="Retry the request. Existing scope assignments remain unchanged."
+          action={
+            <button
+              type="button"
+              onClick={() => void auditorsQuery.refetch()}
+              className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+            >
+              Retry
+            </button>
+          }
+        />
+      </SectionCard>
+    );
+  }
 
   return (
-    <>
-      <SectionCard
-        title="Auditor Management"
-        subtitle="List of auditors and their oversight scope."
-        action={
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-          >
-            Add new auditor
-          </button>
-        }
-      >
-        <div className="mb-4">
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search auditor by name or email"
-            className="h-10 w-full rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-          />
-        </div>
-
-        {auditorsQuery.isPending ? (
-          <div className="grid gap-3">
-            <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
-            <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
-            <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
-          </div>
-        ) : null}
-
-        {auditorsQuery.isError ? (
-          <StateView
-            title="Could not load auditors"
-            message="Retry the request. Existing scope assignments remain unchanged."
-            action={
-              <button
-                type="button"
-                onClick={() => void auditorsQuery.refetch()}
-                className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-              >
-                Retry
-              </button>
-            }
-          />
-        ) : null}
-
-        {!auditorsQuery.isPending && !auditorsQuery.isError && !auditors.length ? (
-          <EmptyState
-            title="No auditors yet"
-            message="Create the first government auditor to begin scoped oversight across schools."
-          />
-        ) : null}
-
-        {!auditorsQuery.isPending && !auditorsQuery.isError && auditors.length ? (
-          <div className="w-full overflow-x-auto rounded-xl border border-brand-100 bg-white">
-            <table className="w-full min-w-full border-separate border-spacing-0 text-sm">
-              <thead>
-                <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-3">No</th>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">Scope</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditors.map((auditor, index) => (
-                  <tr
-                    key={auditor.id}
-                    className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}
-                  >
-                    <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">
-                      {index + 1}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-slate-900">
-                      {auditor.firstName} {auditor.lastName}
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">{auditor.email}</td>
-                    <td className="px-4 py-3 text-slate-700">
-                      {auditor.phone || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-700">
-                      {auditor.scopes.length
-                        ? formatScopeLabel(auditor.scopes[0])
-                        : 'No scope assigned'}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+    <SectionCard
+      title="Government Auditors"
+      action={
+        <button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="rounded-lg border border-brand-300 bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+        >
+          + Create Auditor
+        </button>
+      }
+    >
+      {!auditors.length ? (
+        <EmptyState title="No auditors yet" message="Create the first government auditor to begin scoped oversight across schools." />
+      ) : (
+        <div className="w-full overflow-x-auto rounded-xl border border-brand-100 bg-white">
+          <table className="w-full min-w-full border-separate border-spacing-0 text-sm">
+            <thead>
+              <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="px-4 py-3">No</th>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Phone</th>
+                <th className="px-4 py-3">Scope</th>
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditors.map((auditor, index) => (
+                <tr
+                  key={auditor.id}
+                  className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}
+                >
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">{index + 1}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900">
+                    {auditor.firstName} {auditor.lastName}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{auditor.email}</td>
+                  <td className="px-4 py-3 text-slate-700">{auditor.phone || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-slate-700">
+                    {auditor.scopes.filter(s => s.isActive).length > 0
+                      ? formatScopeLabel(auditor.scopes.filter(s => s.isActive)[0])
+                      : 'No scope assigned'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (auditor.scopes.length) {
+                            const activeScope = auditor.scopes.find(s => s.isActive);
+                            if (activeScope) {
+                              void deactivateScopeMutation.mutate(activeScope.id);
+                            }
+                          }
+                        }}
+                        className="inline-flex items-center rounded-lg border border-red-400 bg-red-50 px-2 py-1 text-xs text-red-600 hover:bg-red-100"
+                      >
+                        Deactivate
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
                           setSelectedAuditor(auditor);
                           setScopeForm(buildDefaultScopeForm());
                         }}
-                        className="inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100"
+                        className="ml-2 inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100"
                       >
-                        View details
+                        View Details
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-      </SectionCard>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAuditor(auditor);
+                          setScopeForm(buildDefaultScopeForm());
+                        }}
+                        className="ml-2 inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100"
+                      >
+                        Assign Scope
+                      </button>
+                    </>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
+      {/* Create Auditor Modal */}
       <Modal
         open={isCreateOpen}
         title="Create Government Auditor"
@@ -305,10 +297,9 @@ export function GovAuditorsPage() {
             Email
             <input
               type="email"
+              required
               value={createForm.email}
-              onChange={(event) =>
-                setCreateForm((current) => ({ ...current, email: event.target.value }))
-              }
+              onChange={(e) => setCreateForm((c) => ({ ...c, email: e.target.value }))}
               className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-brand-400"
             />
           </label>
@@ -317,10 +308,9 @@ export function GovAuditorsPage() {
               First name
               <input
                 type="text"
+                required
                 value={createForm.firstName}
-                onChange={(event) =>
-                  setCreateForm((current) => ({ ...current, firstName: event.target.value }))
-                }
+                onChange={(e) => setCreateForm((c) => ({ ...c, firstName: e.target.value }))}
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-brand-400"
               />
             </label>
@@ -328,10 +318,9 @@ export function GovAuditorsPage() {
               Last name
               <input
                 type="text"
+                required
                 value={createForm.lastName}
-                onChange={(event) =>
-                  setCreateForm((current) => ({ ...current, lastName: event.target.value }))
-                }
+                onChange={(e) => setCreateForm((c) => ({ ...c, lastName: e.target.value }))}
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-brand-400"
               />
             </label>
@@ -339,11 +328,9 @@ export function GovAuditorsPage() {
           <label className="grid gap-2 text-sm font-semibold text-slate-700">
             Phone
             <input
-              type="text"
+              type="tel"
               value={createForm.phone}
-              onChange={(event) =>
-                setCreateForm((current) => ({ ...current, phone: event.target.value }))
-              }
+              onChange={(e) => setCreateForm((c) => ({ ...c, phone: e.target.value }))}
               className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-brand-400"
             />
           </label>
@@ -351,25 +338,32 @@ export function GovAuditorsPage() {
             Temporary password
             <input
               type="password"
+              required
               value={createForm.password}
-              onChange={(event) =>
-                setCreateForm((current) => ({ ...current, password: event.target.value }))
-              }
+              onChange={(e) => setCreateForm((c) => ({ ...c, password: e.target.value }))}
               className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-brand-400"
             />
           </label>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(false)}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="rounded-lg border border-brand-300 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-brand-300 bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {createMutation.isPending ? 'Creating...' : 'Create auditor'}
+              {createMutation.isPending ? 'Creating...' : 'Create Auditor'}
             </button>
           </div>
         </form>
       </Modal>
 
+      {/* Assign Scope Modal */}
       <Modal
         open={Boolean(selectedAuditor)}
         title="Assign Auditor Scope"
@@ -385,33 +379,26 @@ export function GovAuditorsPage() {
       >
         <form className="grid gap-3" onSubmit={handleAssignScopeSubmit}>
           <label className="grid gap-2 text-sm font-semibold text-slate-700">
-            Scope level
+            Scope Level
             <select
               value={scopeForm.scopeLevel}
-              onChange={(event) =>
-                setScopeForm((current) => ({
-                  ...current,
-                  scopeLevel: event.target.value as GovScopeLevel,
-                  province:
-                    event.target.value === 'COUNTRY'
-                      ? ''
-                      : current.province,
-                  district:
-                    event.target.value === 'COUNTRY' || event.target.value === 'PROVINCE'
-                      ? ''
-                      : current.district,
-                  sector: event.target.value === 'SECTOR' ? current.sector : '',
+              onChange={(e) =>
+                setScopeForm((c) => ({
+                  ...c,
+                  scopeLevel: e.target.value as GovScopeLevel,
+                  province: e.target.value === 'COUNTRY' ? '' : c.province,
+                  district: e.target.value === 'COUNTRY' || e.target.value === 'PROVINCE' ? '' : c.district,
+                  sector: e.target.value === 'SECTOR' ? c.sector : '',
                 }))
               }
               className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-brand-400"
             >
-              {scopeLevelOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
+              {scopeLevelOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
           </label>
+
           <label className="grid gap-2 text-sm font-semibold text-slate-700">
             Country
             <input
@@ -421,96 +408,89 @@ export function GovAuditorsPage() {
               className="h-10 rounded-lg border border-brand-200 bg-slate-50 px-3 text-sm font-normal text-slate-900 outline-none"
             />
           </label>
-          {requiresProvince ? (
+
+          {requiresProvince && (
             <label className="grid gap-2 text-sm font-semibold text-slate-700">
               Province
               <select
                 value={scopeForm.province}
-                onChange={(event) =>
-                  setScopeForm((current) => ({
-                    ...current,
-                    province: event.target.value,
-                    district: '',
-                    sector: '',
-                  }))
-                }
+                onChange={(e) => setScopeForm((c) => ({ ...c, province: e.target.value, district: '', sector: '' }))}
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-brand-400"
               >
                 <option value="">Select province</option>
-                {provinceOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+                {provinceOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
             </label>
-          ) : null}
-          {requiresDistrict ? (
+          )}
+
+          {requiresDistrict && (
             <label className="grid gap-2 text-sm font-semibold text-slate-700">
               District
               <select
                 value={scopeForm.district}
-                onChange={(event) =>
-                  setScopeForm((current) => ({
-                    ...current,
-                    district: event.target.value,
-                    sector: '',
-                  }))
-                }
+                onChange={(e) => setScopeForm((c) => ({ ...c, district: e.target.value, sector: '' }))}
                 disabled={!scopeForm.province}
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-brand-400 disabled:bg-slate-50 disabled:text-slate-400"
               >
                 <option value="">Select district</option>
-                {districtOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+                {districtOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
             </label>
-          ) : null}
-          {requiresSector ? (
+          )}
+
+          {requiresSector && (
             <label className="grid gap-2 text-sm font-semibold text-slate-700">
               Sector
               <select
                 value={scopeForm.sector}
-                onChange={(event) =>
-                  setScopeForm((current) => ({ ...current, sector: event.target.value }))
-                }
+                onChange={(e) => setScopeForm((c) => ({ ...c, sector: e.target.value }))}
                 disabled={!scopeForm.province || !scopeForm.district}
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-brand-400 disabled:bg-slate-50 disabled:text-slate-400"
               >
                 <option value="">Select sector</option>
-                {sectorOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+                {sectorOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
                 ))}
               </select>
             </label>
-          ) : null}
+          )}
+
           <label className="grid gap-2 text-sm font-semibold text-slate-700">
             Notes
             <textarea
               rows={3}
               value={scopeForm.notes}
-              onChange={(event) =>
-                setScopeForm((current) => ({ ...current, notes: event.target.value }))
-              }
+              onChange={(e) => setScopeForm((c) => ({ ...c, notes: e.target.value }))}
               className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-brand-400"
+              placeholder="Optional notes about this scope assignment..."
             />
           </label>
-          <div className="flex justify-end">
+
+          <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAuditor(null);
+                        setScopeForm(buildDefaultScopeForm());
+                      }}
+                      className="inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100"
+                    >
+                      Cancel
+                    </button>
             <button
               type="submit"
               disabled={assignScopeMutation.isPending}
-              className="rounded-lg border border-brand-300 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-brand-300 bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {assignScopeMutation.isPending ? 'Assigning...' : 'Assign scope'}
+              {assignScopeMutation.isPending ? 'Assigning...' : 'Assign Scope'}
             </button>
           </div>
         </form>
       </Modal>
-    </>
+    </SectionCard>
   );
 }

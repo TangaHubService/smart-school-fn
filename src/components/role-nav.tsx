@@ -353,6 +353,15 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'my-scope',
+    label: 'My Scope',
+    to: '/gov/my-scope',
+    icon: ShieldCheck,
+    roles: ['GOV_AUDITOR'],
+    requiredPermissions: ['gov.dashboard.read'],
+    setupState: 'ANY',
+  },
+  {
     key: 'gov-auditors',
     label: 'Auditor Admin',
     to: '/gov/admin/auditors',
