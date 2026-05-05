@@ -65,8 +65,14 @@ export function GovSchoolDetailPage() {
         action={
           <div className="flex flex-wrap gap-2">
             <Link
-              to={`/gov/incidents?tenantId=${detail.school.tenantId}`}
+              to={`/gov/audits/new?schoolId=${detail.school.id}`}
               className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+            >
+              Plan audit
+            </Link>
+            <Link
+              to={`/gov/incidents?tenantId=${detail.school.tenantId}`}
+              className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
             >
               View incidents
             </Link>
@@ -92,6 +98,11 @@ export function GovSchoolDetailPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Resolved</p>
             <p className="mt-2 text-3xl font-bold text-slate-950">{detail.summary.resolvedIncidents}</p>
           </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-brand-100 bg-white p-4 text-sm leading-6 text-slate-700">
+          This school is available because it matches the current government scope rules. Auditors can plan audits and
+          leave oversight feedback here, but school-owned conduct actions remain read-only.
         </div>
       </SectionCard>
 

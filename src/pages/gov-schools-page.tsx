@@ -144,7 +144,7 @@ export function GovSchoolsPage() {
       {!schoolsQuery.isPending && !schoolsQuery.isError && !schools.length ? (
         <EmptyState
           title="No schools in the current scope"
-          message="This auditor may not have an active assignment yet, or the search filters are too narrow."
+          message="This usually means there is no active assignment window yet, the selected filters are narrower than your scope, or no school matches the assigned location exactly."
         />
       ) : null}
 
@@ -163,13 +163,24 @@ export function GovSchoolsPage() {
                     Setup {school.setupCompletedAt ? 'completed' : 'pending'} •{' '}
                     {school.isActive ? 'Active' : 'Inactive'}
                   </p>
+                  {school.scopeLabel ? (
+                    <p className="mt-1 text-xs text-brand-700">Visible through {school.scopeLabel}</p>
+                  ) : null}
                 </div>
-                <Link
-                  to={`/gov/schools/${school.tenantId}`}
-                  className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-                >
-                  View school
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to={`/gov/audits/new?schoolId=${school.id}`}
+                    className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    Plan audit
+                  </Link>
+                  <Link
+                    to={`/gov/schools/${school.tenantId}`}
+                    className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                  >
+                    View school
+                  </Link>
+                </div>
               </div>
             </article>
           ))}

@@ -54,6 +54,8 @@ const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
   'gov-auditors': 'Auditor Management',
   announcements: 'Announcements',
   'audit-logs': 'Activity Logs',
+  'gov-audits': 'Audits',
+  'gov-reports': 'Reports',
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -341,6 +343,33 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Building2,
     roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
     requiredPermissions: ['gov.schools.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-audits',
+    label: 'Audits',
+    to: '/gov/audits',
+    icon: ClipboardCheck,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.schools.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-reports',
+    label: 'Reports',
+    to: '/gov/reports',
+    icon: FileBarChart2,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.dashboard.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-activity-logs',
+    label: 'Activity Logs',
+    to: '/gov/activity-logs',
+    icon: ClipboardList,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.dashboard.read'],
     setupState: 'ANY',
   },
   {

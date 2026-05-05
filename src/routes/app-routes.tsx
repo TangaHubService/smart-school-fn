@@ -21,10 +21,15 @@ import { CoursesPage } from '../pages/courses-page';
 import { DashboardPage } from '../pages/dashboard-page';
 import { ExamsPage } from '../pages/exams-page';
 import { GovMyScopePage } from '../pages/gov-my-scope-page';
+import { GovActivityLogsPage } from '../pages/gov-activity-logs-page';
+import { GovAuditsPage } from '../pages/gov-audits-page';
 import { GovAuditorsPage } from '../pages/gov-auditors-page';
+import { GovConductAuditPage } from '../pages/gov-conduct-audit-page';
 import { GovDashboardPage } from '../pages/gov-dashboard-page';
 import { GovIncidentDetailPage } from '../pages/gov-incident-detail-page';
 import { GovIncidentsPage } from '../pages/gov-incidents-page';
+import { GovPlanAuditPage } from '../pages/gov-plan-audit-page';
+import { GovReportsPage } from '../pages/gov-reports-page';
 import { GovSchoolDetailPage } from '../pages/gov-school-detail-page';
 import { GovSchoolsPage } from '../pages/gov-schools-page';
 import { LoginPage } from '../pages/login-page';
@@ -143,10 +148,17 @@ export function AppRoutes() {
             <>
               <Route element={<RequirePermission permission="gov.dashboard.read" />}>
                 <Route path="/gov" element={<GovDashboardPage />} />
+                <Route path="/gov/reports" element={<GovReportsPage />} />
+                <Route path="/gov/activity-logs" element={<GovActivityLogsPage />} />
               </Route>
               <Route element={<RequirePermission permission="gov.schools.read" />}>
                 <Route path="/gov/schools" element={<GovSchoolsPage />} />
                 <Route path="/gov/schools/:tenantId" element={<GovSchoolDetailPage />} />
+                <Route path="/gov/audits" element={<GovAuditsPage />} />
+                <Route path="/gov/audits/:auditId/conduct" element={<GovConductAuditPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="gov.feedback.manage" />}>
+                <Route path="/gov/audits/new" element={<GovPlanAuditPage />} />
               </Route>
               <Route element={<RequirePermission permission="gov.incidents.read" />}>
                 <Route path="/gov/incidents" element={<GovIncidentsPage />} />
