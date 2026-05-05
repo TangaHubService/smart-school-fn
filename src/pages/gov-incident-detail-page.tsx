@@ -11,6 +11,11 @@ import {
   addGovIncidentFeedbackApi,
   getGovIncidentDetailApi,
 } from '../features/gov/gov.api';
+import {
+  defaultGovIncidentFeedbackForm,
+  getFirstFormErrorMessage,
+  govIncidentFeedbackFormSchema,
+} from '../features/gov/gov.form-models';
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -28,7 +33,7 @@ export function GovIncidentDetailPage() {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState(defaultGovIncidentFeedbackForm.body);
 
   const incidentQuery = useQuery({
     queryKey: ['gov-incident', incidentId],
@@ -44,7 +49,7 @@ export function GovIncidentDetailPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['gov-incident', incidentId] });
       await queryClient.invalidateQueries({ queryKey: ['gov-incidents'] });
-      setFeedback('');
+      setFeedback(defaultGovIncidentFeedbackForm.body);
       showToast({
         type: 'success',
         title: 'Feedback added',
@@ -61,6 +66,17 @@ export function GovIncidentDetailPage() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    const parsed = govIncidentFeedbackFormSchema.safeParse({ body: feedback });
+    if (!parsed.success) {
+      showToast({
+        type: 'error',
+        title: 'Please review your feedback',
+        message: getFirstFormErrorMessage(parsed.error),
+      });
+      return;
+    }
+
     void feedbackMutation.mutate();
   }
 
@@ -104,6 +120,14 @@ export function GovIncidentDetailPage() {
         subtitle={`${incident.school?.displayName ?? 'Unknown school'} • ${incident.student.firstName} ${incident.student.lastName}`}
         action={
           <div className="flex flex-wrap gap-2">
+            {incident.school ? (
+              <Link
+                to={`/gov/audits/new?schoolId=${incident.school.id}`}
+                className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+              >
+                Plan audit
+              </Link>
+            ) : null}
             {incident.school ? (
               <Link
                 to={`/gov/schools/${incident.school.tenantId}`}
@@ -174,7 +198,7 @@ export function GovIncidentDetailPage() {
       </SectionCard>
 
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <SectionCard title="Follow-up Actions" subtitle="Actions remain read-only in the government oversight workflow.">
+        <SectionCard title="Follow-up Actions" subtitle="Auditors can review these actions, but the school team owns creating and editing them.">
           {incident.actions.length ? (
             <div className="grid gap-3">
               {incident.actions.map((action) => (

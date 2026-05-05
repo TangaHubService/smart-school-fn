@@ -9,15 +9,27 @@ import { Modal } from '../components/modal';
 interface ActivityLog {
   id: string;
   event: string;
+  actionType: string | null;
+  module: string | null;
+  description: string | null;
   entity: string | null;
   entityId: string | null;
+  recordId: string | null;
   createdAt: string;
+  timestamp: string;
   ipAddress: string | null;
+  device: string | null;
+  status: string | null;
+  sessionId: string | null;
   actor: {
-    id: string;
-    email: string;
-    name: string;
+    id: string | null;
+    email: string | null;
+    name: string | null;
+    role: string | null;
   } | null;
+  schoolName: string | null;
+  oldValue: unknown;
+  newValue: unknown;
   payload: unknown;
 }
 
@@ -35,16 +47,20 @@ export function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
+  const [moduleFilter, setModuleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['activity-logs', page, search, actionFilter],
+    queryKey: ['activity-logs', page, search, actionFilter, moduleFilter, statusFilter],
     queryFn: () =>
       listActivityLogsApi({
         page,
         pageSize: 100,
         search: search || undefined,
-        event: actionFilter || undefined,
+        actionType: actionFilter || undefined,
+        module: moduleFilter || undefined,
+        status: statusFilter || undefined,
       }),
   });
 
@@ -92,20 +108,37 @@ export function AuditLogsPage() {
               className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
             >
               <option value="">All actions</option>
-              <option value="AUTH_LOGIN_SUCCESS">Login</option>
-              <option value="AUTH_LOGOUT">Logout</option>
-              <option value="STUDENT_CREATED">Student created</option>
-              <option value="STUDENT_UPDATED">Student updated</option>
-              <option value="STUDENT_DELETED">Student deleted</option>
-              <option value="COURSE_CREATED">Course created</option>
-              <option value="COURSE_UPDATED">Course updated</option>
-              <option value="LESSON_CREATED">Lesson created</option>
-              <option value="LESSON_PUBLISHED">Lesson published</option>
-              <option value="LESSON_UPDATED">Lesson updated</option>
-              <option value="ASSIGNMENT_CREATED">Assignment created</option>
-              <option value="ASSESSMENT_CREATED">Assessment created</option>
-              <option value="EXAM_CREATED">Exam created</option>
-              <option value="EXAM_MARKS_SAVED">Exam marks saved</option>
+              <option value="LOGIN">Login</option>
+              <option value="LOGOUT">Logout</option>
+              <option value="CREATE">Create</option>
+              <option value="UPDATE">Update</option>
+              <option value="DELETE">Delete</option>
+            </select>
+            <select
+              value={moduleFilter}
+              onChange={(e) => setModuleFilter(e.target.value)}
+              className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
+            >
+              <option value="">All modules</option>
+              <option value="Authentication">Authentication</option>
+              <option value="Students">Students</option>
+              <option value="Attendance">Attendance</option>
+              <option value="Assessments">Assessments</option>
+              <option value="Exams">Exams</option>
+              <option value="Learning">Learning</option>
+              <option value="Timetable">Timetable</option>
+              <option value="Announcements">Announcements</option>
+              <option value="Finance">Finance</option>
+              <option value="Government">Government</option>
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
+            >
+              <option value="">All statuses</option>
+              <option value="SUCCESS">Success</option>
+              <option value="FAILED">Failed</option>
             </select>
           </div>
         </div>
@@ -115,22 +148,23 @@ export function AuditLogsPage() {
             <thead>
               <tr className="border-b border-brand-100">
                 <th className="pb-3 text-left font-semibold text-slate-700">Action</th>
+                <th className="pb-3 text-left font-semibold text-slate-700">Module</th>
                 <th className="pb-3 text-left font-semibold text-slate-700">User</th>
+                <th className="pb-3 text-left font-semibold text-slate-700">Status</th>
                 <th className="pb-3 text-left font-semibold text-slate-700">Date</th>
-                <th className="pb-3 text-left font-semibold text-slate-700">IP Address</th>
                 <th className="pb-3 text-left font-semibold text-slate-700">Details</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500">
+                  <td colSpan={6} className="py-8 text-center text-slate-500">
                     Loading...
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500">
+                  <td colSpan={6} className="py-8 text-center text-slate-500">
                     No activity logs found
                   </td>
                 </tr>
@@ -138,16 +172,30 @@ export function AuditLogsPage() {
                 logs.map((log: ActivityLog) => (
                   <tr key={log.id} className="border-b border-brand-50">
                     <td className="py-3 font-medium text-slate-900">
-                      {formatAction(log.event)}
+                      {formatAction(log.actionType || log.event)}
+                    </td>
+                    <td className="py-3 text-slate-600">
+                      {log.module || '-'}
                     </td>
                     <td className="py-3 text-slate-600">
                       {log.actor?.name || log.actor?.email || 'System'}
+                      {log.actor?.role && (
+                        <p className="text-xs text-slate-500">{log.actor.role}</p>
+                      )}
+                    </td>
+                    <td className="py-3">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                          log.status === 'FAILED'
+                            ? 'bg-rose-100 text-rose-700'
+                            : 'bg-emerald-100 text-emerald-700'
+                        }`}
+                      >
+                        {log.status || 'SUCCESS'}
+                      </span>
                     </td>
                     <td className="py-3 text-slate-600">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </td>
-                    <td className="py-3 text-slate-600 font-mono text-xs">
-                      {formatIpAddress(log.ipAddress)}
+                      {new Date(log.timestamp || log.createdAt).toLocaleString()}
                     </td>
                     <td className="py-3">
                       <button
@@ -202,13 +250,13 @@ export function AuditLogsPage() {
               <div>
                 <p className="text-slate-500">Action</p>
                 <p className="font-medium text-slate-900">
-                  {formatAction(selectedLog.event)}
+                  {formatAction(selectedLog.actionType || selectedLog.event)}
                 </p>
               </div>
               <div>
                 <p className="text-slate-500">Date & Time</p>
                 <p className="font-medium text-slate-900">
-                  {new Date(selectedLog.createdAt).toLocaleString()}
+                  {new Date(selectedLog.timestamp || selectedLog.createdAt).toLocaleString()}
                 </p>
               </div>
               <div>
@@ -223,9 +271,45 @@ export function AuditLogsPage() {
                 )}
               </div>
               <div>
+                <p className="text-slate-500">Role</p>
+                <p className="font-medium text-slate-900">
+                  {selectedLog.actor?.role || '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Module</p>
+                <p className="font-medium text-slate-900">
+                  {selectedLog.module || '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Status</p>
+                <p className="font-medium text-slate-900">
+                  {selectedLog.status || 'SUCCESS'}
+                </p>
+              </div>
+              <div>
                 <p className="text-slate-500">IP Address</p>
                 <p className="font-medium text-slate-900 font-mono text-xs">
                   {formatIpAddress(selectedLog.ipAddress)}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Device</p>
+                <p className="font-medium text-slate-900">
+                  {selectedLog.device || '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">School</p>
+                <p className="font-medium text-slate-900">
+                  {selectedLog.schoolName || '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Session ID</p>
+                <p className="font-medium text-slate-900 font-mono text-xs break-all">
+                  {selectedLog.sessionId || '-'}
                 </p>
               </div>
               {selectedLog.entity && (
@@ -244,7 +328,42 @@ export function AuditLogsPage() {
                   </p>
                 </div>
               )}
+              {selectedLog.recordId && (
+                <div>
+                  <p className="text-slate-500">Record ID</p>
+                  <p className="font-medium text-slate-900 font-mono text-xs break-all">
+                    {selectedLog.recordId}
+                  </p>
+                </div>
+              )}
             </div>
+
+            {selectedLog.description && (
+              <div>
+                <p className="text-slate-500 text-sm">Description</p>
+                <p className="mt-1 rounded bg-slate-100 p-3 text-sm text-slate-800">
+                  {selectedLog.description}
+                </p>
+              </div>
+            )}
+
+            {selectedLog.oldValue !== null && selectedLog.oldValue !== undefined && (
+              <div>
+                <p className="text-slate-500 text-sm">Old Value</p>
+                <pre className="mt-1 max-h-60 overflow-auto rounded bg-slate-100 p-3 text-xs font-mono">
+                  {JSON.stringify(selectedLog.oldValue, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {selectedLog.newValue !== null && selectedLog.newValue !== undefined && (
+              <div>
+                <p className="text-slate-500 text-sm">New Value</p>
+                <pre className="mt-1 max-h-60 overflow-auto rounded bg-slate-100 p-3 text-xs font-mono">
+                  {JSON.stringify(selectedLog.newValue, null, 2)}
+                </pre>
+              </div>
+            )}
 
             {selectedLog.payload !== null && (
               <div>

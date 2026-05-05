@@ -54,6 +54,8 @@ const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
   'gov-auditors': 'Auditor Management',
   announcements: 'Announcements',
   'audit-logs': 'Activity Logs',
+  'gov-audits': 'Audits',
+  'gov-reports': 'Reports',
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -344,12 +346,48 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'gov-audits',
+    label: 'Audits',
+    to: '/gov/audits',
+    icon: ClipboardCheck,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.schools.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-reports',
+    label: 'Reports',
+    to: '/gov/reports',
+    icon: FileBarChart2,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.dashboard.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'gov-activity-logs',
+    label: 'Activity Logs',
+    to: '/gov/activity-logs',
+    icon: ClipboardList,
+    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
+    requiredPermissions: ['gov.dashboard.read'],
+    setupState: 'ANY',
+  },
+  {
     key: 'gov-incidents',
     label: 'Gov Incidents',
     to: '/gov/incidents',
     icon: FileBarChart2,
     roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
     requiredPermissions: ['gov.incidents.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'my-scope',
+    label: 'My Scope',
+    to: '/gov/my-scope',
+    icon: ShieldCheck,
+    roles: ['GOV_AUDITOR'],
+    requiredPermissions: ['gov.dashboard.read'],
     setupState: 'ANY',
   },
   {

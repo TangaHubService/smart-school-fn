@@ -73,6 +73,7 @@ export function UsersPage() {
       school: user.tenant?.name ?? '—',
       role: user.roles.join(', '),
       status: user.status,
+      joined: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—',
       raw: user,
     }));
   }, [usersQuery.data]);
@@ -220,13 +221,7 @@ export function UsersPage() {
               )}
               {exporting === 'pdf' ? 'Exporting...' : 'PDF'}
             </button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-600"
-            >
-              <Plus className="h-4 w-4" />
-              Add New User
-            </button>
+
           </div>
         }
       />
@@ -317,8 +312,9 @@ export function UsersPage() {
                   <th className="px-5 py-3 border-b border-brand-100">Name</th>
                   <th className="px-5 py-3 border-b border-brand-100">Contacts</th>
                   <th className="px-5 py-3 border-b border-brand-100">School</th>
-                  <th className="px-5 py-3 border-b border-brand-100"> Role</th>
-                  <th className="px-5 py-3 border-b border-brand-100">Status</th>
+<th className="px-5 py-3 border-b border-brand-100"> Role</th>
+                   <th className="px-5 py-3 border-b border-brand-100">Status</th>
+                   <th className="px-5 py-3 border-b border-brand-100">Joined</th>
                   {isSchoolAdminOnly && (
                     <th className="px-5 py-3 border-b border-brand-100 text-right">Actions</th>
                   )}
@@ -345,19 +341,23 @@ export function UsersPage() {
                     <td className="px-5 py-4 border-b border-brand-50">
                       <div className="text-xs text-brand-600 font-medium">{row.role}</div>
                     </td>
-                    <td className="px-5 py-4 border-b border-brand-50">
-                      <span
-                        className={[
-                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider',
-                          row.status === 'ACTIVE'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                            : 'bg-slate-50 text-slate-600 border border-slate-100',
-                        ].join(' ')}
-                      >
-                        <span className={`h-1.5 w-1.5 rounded-full ${row.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                        {row.status}
-                      </span>
-                    </td>
+              <td className="px-5 py-4 border-b border-brand-50">
+                <span
+                  className={[
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider',
+                    row.status === 'ACTIVE'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                      : 'bg-slate-50 text-slate-600 border border-slate-100',
+                  ].join(' ')}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${row.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                  {row.status}
+                </span>
+
+              </td>
+              <td className="px-5 py-4 border-b border-brand-50">
+                <div className="text-xs text-slate-500">{row.joined}</div>
+              </td>
                     {isSchoolAdminOnly && (
                       <td className="px-5 py-4 border-b border-brand-50 text-right">
                         <button
