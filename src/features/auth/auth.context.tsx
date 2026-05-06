@@ -1,12 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 
 import { loginApi, logoutApi, meApi } from './auth.api';
 import { LoginFormValues, LoginResponse, MeResponse } from './auth.schema';
@@ -36,7 +29,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
   const [session, setSession] = useState(getSessionTokens);
   const [isBootstrappingSession, setIsBootstrappingSession] = useState(
-    () => !getSessionTokens().accessToken && Boolean(getSessionTokens().refreshToken),
+    () => !getSessionTokens().accessToken && Boolean(getSessionTokens().refreshToken)
   );
 
   const accessToken = session.accessToken;
@@ -123,7 +116,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setSessionTokens: handleSetSessionTokens,
       logout,
     }),
-    [accessToken, refreshToken, meQuery.data, meQuery.isLoading, isBootstrappingSession],
+    [accessToken, refreshToken, meQuery.data, meQuery.isLoading, isBootstrappingSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

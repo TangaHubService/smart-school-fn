@@ -238,7 +238,7 @@ export function listCoursesApi(
     teacherUserId?: string;
     page?: number;
     pageSize?: number;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.classId) {
@@ -257,10 +257,13 @@ export function listCoursesApi(
     query.set('pageSize', String(params.pageSize));
   }
 
-  return apiRequest<CourseListResponse>(`/courses${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
+  return apiRequest<CourseListResponse>(
+    `/courses${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
 
 export function getCourseDetailApi(
@@ -269,7 +272,7 @@ export function getCourseDetailApi(
   params: {
     lessonsPage?: number;
     lessonsPageSize?: number;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.lessonsPage) {
@@ -284,7 +287,7 @@ export function getCourseDetailApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -292,7 +295,7 @@ export function listCourseTeacherOptionsApi(
   accessToken: string,
   params: {
     q?: string;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.q?.trim()) {
@@ -304,7 +307,7 @@ export function listCourseTeacherOptionsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -312,7 +315,7 @@ export function listCourseSubjectOptionsApi(
   accessToken: string,
   params: {
     q?: string;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.q?.trim()) {
@@ -324,7 +327,7 @@ export function listCourseSubjectOptionsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -337,7 +340,7 @@ export function createCourseApi(
     teacherUserId?: string;
     title: string;
     description?: string;
-  },
+  }
 ) {
   return apiRequest<CourseSummary>('/courses', {
     method: 'POST',
@@ -355,7 +358,7 @@ export function updateCourseApi(
     subjectId?: string | null;
     title?: string;
     description?: string | null;
-  },
+  }
 ) {
   return apiRequest<CourseSummary>(`/courses/${courseId}`, {
     method: 'PATCH',
@@ -364,10 +367,7 @@ export function updateCourseApi(
   });
 }
 
-export function deleteCourseApi(
-  accessToken: string,
-  courseId: string,
-) {
+export function deleteCourseApi(accessToken: string, courseId: string) {
   return apiRequest<{ id: string; deleted: boolean }>(`/courses/${courseId}`, {
     method: 'DELETE',
     accessToken,
@@ -379,7 +379,7 @@ export function assignCourseTeacherApi(
   courseId: string,
   payload: {
     teacherUserId: string;
-  },
+  }
 ) {
   return apiRequest<CourseSummary>(`/courses/${courseId}/teacher`, {
     method: 'PATCH',
@@ -395,7 +395,7 @@ export function assignTeacherBySubjectApi(
     academicYearId: string;
     classRoomId: string;
     subjectId: string;
-  },
+  }
 ) {
   return apiRequest<CourseSummary>('/courses/assign-by-subject', {
     method: 'PATCH',
@@ -415,7 +415,7 @@ export function createLessonApi(
     externalUrl?: string;
     sequence?: number;
     asset?: UploadedAssetPayload;
-  },
+  }
 ) {
   return apiRequest<LessonItem>(`/courses/${courseId}/lessons`, {
     method: 'POST',
@@ -436,7 +436,7 @@ export function updateLessonApi(
     sequence?: number;
     asset?: UploadedAssetPayload;
     removeAsset?: boolean;
-  },
+  }
 ) {
   return apiRequest<LessonItem>(`/lessons/${lessonId}`, {
     method: 'PATCH',
@@ -445,21 +445,14 @@ export function updateLessonApi(
   });
 }
 
-export function deleteLessonApi(
-  accessToken: string,
-  lessonId: string,
-) {
+export function deleteLessonApi(accessToken: string, lessonId: string) {
   return apiRequest<{ id: string; deleted: boolean }>(`/lessons/${lessonId}`, {
     method: 'DELETE',
     accessToken,
   });
 }
 
-export function publishLessonApi(
-  accessToken: string,
-  lessonId: string,
-  isPublished: boolean,
-) {
+export function publishLessonApi(accessToken: string, lessonId: string, isPublished: boolean) {
   return apiRequest<LessonItem>(`/lessons/${lessonId}/publish`, {
     method: 'PATCH',
     accessToken,
@@ -480,7 +473,7 @@ export function createAssignmentApi(
     maxPoints: number;
     isPublished?: boolean;
     asset?: UploadedAssetPayload;
-  },
+  }
 ) {
   return apiRequest<AssignmentItem>('/assignments', {
     method: 'POST',
@@ -498,7 +491,7 @@ export function listAssignmentsApi(
     q?: string;
     page?: number;
     pageSize?: number;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.courseId) {
@@ -525,7 +518,7 @@ export function listAssignmentsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -536,7 +529,7 @@ export function listAssignmentSubmissionsApi(
     page?: number;
     pageSize?: number;
     status?: SubmissionStatus;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.page) {
@@ -554,7 +547,7 @@ export function listAssignmentSubmissionsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -565,7 +558,7 @@ export function submitAssignmentApi(
     textAnswer?: string;
     linkUrl?: string;
     asset?: UploadedAssetPayload;
-  },
+  }
 ) {
   return apiRequest<SubmissionItem>(`/assignments/${assignmentId}/submissions`, {
     method: 'POST',
@@ -580,7 +573,7 @@ export function gradeSubmissionApi(
   payload: {
     gradePoints: number;
     feedback?: string;
-  },
+  }
 ) {
   return apiRequest<SubmissionItem>(`/submissions/${submissionId}/grade`, {
     method: 'PATCH',
@@ -594,7 +587,7 @@ export function listMyCoursesApi(
   params: {
     page?: number;
     pageSize?: number;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.page) {
@@ -609,28 +602,25 @@ export function listMyCoursesApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
-export function markLessonCompleteApi(
-  accessToken: string,
-  lessonId: string,
-) {
+export function markLessonCompleteApi(accessToken: string, lessonId: string) {
   return apiRequest<{ isCompleted: boolean; completedAt: string }>(
     `/lessons/${lessonId}/mark-complete`,
     {
       method: 'POST',
       accessToken,
       body: {},
-    },
+    }
   );
 }
 
 export function recordLessonActivityApi(
   accessToken: string,
   lessonId: string,
-  secondsDelta: number,
+  secondsDelta: number
 ) {
   return apiRequest<{
     lessonId: string;
@@ -665,7 +655,7 @@ export function signUploadApi(
   payload: {
     purpose: 'lesson' | 'assignment' | 'submission' | 'logo' | 'assessment-question';
     fileName: string;
-  },
+  }
 ) {
   return apiRequest<SignedUploadResponse>('/files/sign-upload', {
     method: 'POST',
@@ -708,7 +698,7 @@ export function createAcademyProgramApi(
     isActive?: boolean;
     listedInPublicCatalog?: boolean;
     courseId?: string | null;
-  },
+  }
 ) {
   return apiRequest<AcademyProgram>('/academy-programs', {
     method: 'POST',
@@ -729,7 +719,7 @@ export function updateAcademyProgramApi(
     isActive?: boolean;
     listedInPublicCatalog?: boolean;
     courseId?: string | null;
-  },
+  }
 ) {
   return apiRequest<AcademyProgram>(`/academy-programs/${programId}`, {
     method: 'PATCH',

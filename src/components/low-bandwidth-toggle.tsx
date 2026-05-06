@@ -13,7 +13,7 @@ export function LowBandwidthToggle() {
   const [on, setOn] = useState(() => getLowBandwidthPreferred());
   const [bandwidth, setBandwidth] = useState<string | null>(null);
   const [online, setOnline] = useState(() =>
-    typeof navigator !== 'undefined' ? navigator.onLine : true,
+    typeof navigator !== 'undefined' ? navigator.onLine : true
   );
 
   useEffect(() => {
@@ -72,7 +72,11 @@ export function LowBandwidthToggle() {
       }`}
       aria-label={title}
     >
-      {online ? <Wifi className="h-4 w-4" aria-hidden /> : <WifiOff className="h-4 w-4" aria-hidden />}
+      {online ? (
+        <Wifi className="h-4 w-4" aria-hidden />
+      ) : (
+        <WifiOff className="h-4 w-4" aria-hidden />
+      )}
     </button>
   );
 }

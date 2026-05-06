@@ -356,7 +356,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     return years.filter((year) =>
       `${year.name} ${toDateInput(year.startDate)} ${toDateInput(year.endDate)}`
         .toLowerCase()
-        .includes(query),
+        .includes(query)
     );
   }, [years, yearFilter]);
 
@@ -369,7 +369,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     return terms.filter((term) =>
       `${term.name} ${term.sequence} ${yearNameMap.get(term.academicYearId) ?? ''}`
         .toLowerCase()
-        .includes(query),
+        .includes(query)
     );
   }, [terms, termFilter, yearNameMap]);
 
@@ -380,7 +380,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     }
 
     return gradeLevels.filter((level) =>
-      `${level.code} ${level.name} ${level.rank}`.toLowerCase().includes(query),
+      `${level.code} ${level.name} ${level.rank}`.toLowerCase().includes(query)
     );
   }, [gradeLevels, gradeFilter]);
 
@@ -391,7 +391,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     }
 
     return classRooms.filter((room) =>
-      `${room.code} ${room.name} ${room.gradeLevel?.name ?? ''}`.toLowerCase().includes(query),
+      `${room.code} ${room.name} ${room.gradeLevel?.name ?? ''}`.toLowerCase().includes(query)
     );
   }, [classRooms, classFilter]);
 
@@ -404,7 +404,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     return subjects.filter((subject) =>
       `${subject.code} ${subject.name} ${subject.isCore ? 'core' : 'elective'}`
         .toLowerCase()
-        .includes(query),
+        .includes(query)
     );
   }, [subjects, subjectFilter]);
 
@@ -782,15 +782,17 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
               ? 'List, update, and softly delete subjects.'
               : 'Browse the school subjects configured for courses and classes.'
           }
-          action={canManageSubjects ? (
-            <button
-              type="button"
-              onClick={openAddSubject}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-            >
-              Add subject
-            </button>
-          ) : null}
+          action={
+            canManageSubjects ? (
+              <button
+                type="button"
+                onClick={openAddSubject}
+                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+              >
+                Add subject
+              </button>
+            ) : null
+          }
         >
           <FilterInput
             value={subjectFilter}
@@ -818,7 +820,9 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
 
           {!subjectsQuery.isPending && !subjectsQuery.isError ? (
             <SimpleTable
-              columns={canManageSubjects ? ['Code', 'Name', 'Core', 'Actions'] : ['Code', 'Name', 'Core']}
+              columns={
+                canManageSubjects ? ['Code', 'Name', 'Core', 'Actions'] : ['Code', 'Name', 'Core']
+              }
               rows={filteredSubjects.map((subject) => [
                 subject.code,
                 subject.name,
@@ -868,18 +872,29 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         >
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Name
-            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...yearForm.register('name')} />
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...yearForm.register('name')}
+            />
           </label>
           <FieldError message={yearForm.formState.errors.name?.message} />
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Start date
-              <input type="date" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...yearForm.register('startDate')} />
+              <input
+                type="date"
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...yearForm.register('startDate')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               End date
-              <input type="date" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...yearForm.register('endDate')} />
+              <input
+                type="date"
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...yearForm.register('endDate')}
+              />
             </label>
           </div>
 
@@ -925,10 +940,15 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         >
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Academic year
-            <select className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('academicYearId')}>
+            <select
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...termForm.register('academicYearId')}
+            >
               <option value="">Select year</option>
               {years.map((year) => (
-                <option key={year.id} value={year.id}>{year.name}</option>
+                <option key={year.id} value={year.id}>
+                  {year.name}
+                </option>
               ))}
             </select>
           </label>
@@ -937,22 +957,37 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Name
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('name')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...termForm.register('name')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Sequence
-              <input type="number" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('sequence', { valueAsNumber: true })} />
+              <input
+                type="number"
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...termForm.register('sequence', { valueAsNumber: true })}
+              />
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Start date
-              <input type="date" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('startDate')} />
+              <input
+                type="date"
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...termForm.register('startDate')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               End date
-              <input type="date" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...termForm.register('endDate')} />
+              <input
+                type="date"
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...termForm.register('endDate')}
+              />
             </label>
           </div>
 
@@ -995,16 +1030,26 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Code
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...gradeForm.register('code')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...gradeForm.register('code')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Name
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...gradeForm.register('name')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...gradeForm.register('name')}
+              />
             </label>
           </div>
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Rank
-            <input type="number" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...gradeForm.register('rank', { valueAsNumber: true })} />
+            <input
+              type="number"
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...gradeForm.register('rank', { valueAsNumber: true })}
+            />
           </label>
 
           <ModalActions
@@ -1045,10 +1090,15 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         >
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Grade level
-            <select className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...classForm.register('gradeLevelId')}>
+            <select
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...classForm.register('gradeLevelId')}
+            >
               <option value="">Select grade level</option>
               {gradeLevels.map((level) => (
-                <option key={level.id} value={level.id}>{level.name}</option>
+                <option key={level.id} value={level.id}>
+                  {level.name}
+                </option>
               ))}
             </select>
           </label>
@@ -1057,17 +1107,27 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Code
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...classForm.register('code')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...classForm.register('code')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Name
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...classForm.register('name')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...classForm.register('name')}
+              />
             </label>
           </div>
 
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Capacity
-            <input type="number" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...classForm.register('capacity', { valueAsNumber: true })} />
+            <input
+              type="number"
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...classForm.register('capacity', { valueAsNumber: true })}
+            />
           </label>
 
           <ModalActions
@@ -1109,11 +1169,17 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Code
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...subjectForm.register('code')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...subjectForm.register('code')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Name
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...subjectForm.register('name')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...subjectForm.register('name')}
+              />
             </label>
           </div>
 
@@ -1278,7 +1344,9 @@ function SimpleTable({
           <tr className="border-b border-brand-100 text-slate-700">
             <th className="px-2 py-2 font-semibold">No.</th>
             {columns.map((column) => (
-              <th key={column} className="px-2 py-2 font-semibold">{column}</th>
+              <th key={column} className="px-2 py-2 font-semibold">
+                {column}
+              </th>
             ))}
           </tr>
         </thead>
@@ -1287,7 +1355,9 @@ function SimpleTable({
             <tr key={index} className="border-b border-brand-50">
               <td className="px-2 py-2 align-middle text-slate-600"># {index + 1}</td>
               {row.map((cell, cellIndex) => (
-                <td key={cellIndex} className="px-2 py-2 align-middle">{cell}</td>
+                <td key={cellIndex} className="px-2 py-2 align-middle">
+                  {cell}
+                </td>
               ))}
             </tr>
           ))}

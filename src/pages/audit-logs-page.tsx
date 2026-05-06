@@ -40,7 +40,10 @@ function formatIpAddress(ip: string | null): string {
 }
 
 function formatAction(event: string): string {
-  return event.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  return event
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function AuditLogsPage() {
@@ -71,9 +74,7 @@ export function AuditLogsPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-slate-900">Activity Logs</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Track all system actions in your school
-        </p>
+        <p className="mt-1 text-sm text-slate-600">Track all system actions in your school</p>
       </div>
 
       <SectionCard
@@ -174,9 +175,7 @@ export function AuditLogsPage() {
                     <td className="py-3 font-medium text-slate-900">
                       {formatAction(log.actionType || log.event)}
                     </td>
-                    <td className="py-3 text-slate-600">
-                      {log.module || '-'}
-                    </td>
+                    <td className="py-3 text-slate-600">{log.module || '-'}</td>
                     <td className="py-3 text-slate-600">
                       {log.actor?.name || log.actor?.email || 'System'}
                       {log.actor?.role && (
@@ -239,11 +238,7 @@ export function AuditLogsPage() {
         )}
       </SectionCard>
 
-      <Modal
-        open={!!selectedLog}
-        onClose={() => setSelectedLog(null)}
-        title="Activity Details"
-      >
+      <Modal open={!!selectedLog} onClose={() => setSelectedLog(null)} title="Activity Details">
         {selectedLog && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -261,32 +256,22 @@ export function AuditLogsPage() {
               </div>
               <div>
                 <p className="text-slate-500">User</p>
-                <p className="font-medium text-slate-900">
-                  {selectedLog.actor?.name || 'System'}
-                </p>
+                <p className="font-medium text-slate-900">{selectedLog.actor?.name || 'System'}</p>
                 {selectedLog.actor?.email && (
-                  <p className="text-xs text-slate-500">
-                    {selectedLog.actor.email}
-                  </p>
+                  <p className="text-xs text-slate-500">{selectedLog.actor.email}</p>
                 )}
               </div>
               <div>
                 <p className="text-slate-500">Role</p>
-                <p className="font-medium text-slate-900">
-                  {selectedLog.actor?.role || '-'}
-                </p>
+                <p className="font-medium text-slate-900">{selectedLog.actor?.role || '-'}</p>
               </div>
               <div>
                 <p className="text-slate-500">Module</p>
-                <p className="font-medium text-slate-900">
-                  {selectedLog.module || '-'}
-                </p>
+                <p className="font-medium text-slate-900">{selectedLog.module || '-'}</p>
               </div>
               <div>
                 <p className="text-slate-500">Status</p>
-                <p className="font-medium text-slate-900">
-                  {selectedLog.status || 'SUCCESS'}
-                </p>
+                <p className="font-medium text-slate-900">{selectedLog.status || 'SUCCESS'}</p>
               </div>
               <div>
                 <p className="text-slate-500">IP Address</p>
@@ -296,15 +281,11 @@ export function AuditLogsPage() {
               </div>
               <div>
                 <p className="text-slate-500">Device</p>
-                <p className="font-medium text-slate-900">
-                  {selectedLog.device || '-'}
-                </p>
+                <p className="font-medium text-slate-900">{selectedLog.device || '-'}</p>
               </div>
               <div>
                 <p className="text-slate-500">School</p>
-                <p className="font-medium text-slate-900">
-                  {selectedLog.schoolName || '-'}
-                </p>
+                <p className="font-medium text-slate-900">{selectedLog.schoolName || '-'}</p>
               </div>
               <div>
                 <p className="text-slate-500">Session ID</p>
@@ -315,9 +296,7 @@ export function AuditLogsPage() {
               {selectedLog.entity && (
                 <div>
                   <p className="text-slate-500">Entity</p>
-                  <p className="font-medium text-slate-900">
-                    {selectedLog.entity}
-                  </p>
+                  <p className="font-medium text-slate-900">{selectedLog.entity}</p>
                 </div>
               )}
               {selectedLog.entityId && (

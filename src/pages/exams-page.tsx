@@ -1,6 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, FileLock2, FileSpreadsheet, Pencil, Plus, RefreshCcw, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  FileLock2,
+  FileSpreadsheet,
+  Pencil,
+  Plus,
+  RefreshCcw,
+  Trash2,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -29,10 +37,7 @@ import {
   updateExamApi,
   type ExamSummary,
 } from '../features/sprint5/exams.api';
-import {
-  listClassRoomsApi,
-  listTermsApi,
-} from '../features/sprint1/sprint1.api';
+import { listClassRoomsApi, listTermsApi } from '../features/sprint1/sprint1.api';
 
 const examSchema = z.object({
   termId: z.string().min(1, 'Term is required'),
@@ -117,7 +122,9 @@ export function ExamsPage() {
   const [marksDraft, setMarksDraft] = useState<Record<string, string>>({});
   const [pendingDeleteExam, setPendingDeleteExam] = useState<ExamSummary | null>(null);
   const [isConductModalOpen, setIsConductModalOpen] = useState(false);
-  const [conductDraft, setConductDraft] = useState<Record<string, { grade: string; remark: string }>>({});
+  const [conductDraft, setConductDraft] = useState<
+    Record<string, { grade: string; remark: string }>
+  >({});
 
   const examForm = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
@@ -180,8 +187,8 @@ export function ExamsPage() {
         examDetailQuery.data.students.map((student) => [
           student.id,
           student.marksObtained == null ? '' : String(student.marksObtained),
-        ]),
-      ),
+        ])
+      )
     );
   }, [examDetailQuery.data?.id]);
 
@@ -192,8 +199,8 @@ export function ExamsPage() {
         conductQuery.data.students.map((s) => [
           s.id,
           { grade: s.grade ?? '', remark: s.remark ?? '' },
-        ]),
-      ),
+        ])
+      )
     );
   }, [conductQuery.data?.students]);
 
@@ -240,7 +247,10 @@ export function ExamsPage() {
       setExamModalExam(null);
       examForm.reset({
         ...defaultExamForm,
-        gradingSchemeId: schemesQuery.data?.find((scheme) => scheme.isDefault)?.id ?? schemesQuery.data?.[0]?.id ?? '',
+        gradingSchemeId:
+          schemesQuery.data?.find((scheme) => scheme.isDefault)?.id ??
+          schemesQuery.data?.[0]?.id ??
+          '',
       });
       showToast({ type: 'success', title: 'Exam created' });
     },
@@ -406,7 +416,11 @@ export function ExamsPage() {
       void queryClient.invalidateQueries({ queryKey: ['conduct-grades', termFilter, classFilter] });
       void queryClient.invalidateQueries({ queryKey: ['exams'] });
       setIsConductModalOpen(false);
-      showToast({ type: 'success', title: 'Conduct grades saved', message: `${result.savedCount} students updated.` });
+      showToast({
+        type: 'success',
+        title: 'Conduct grades saved',
+        message: `${result.savedCount} students updated.`,
+      });
     },
     onError: (error) => {
       showToast({
@@ -450,7 +464,8 @@ export function ExamsPage() {
   const schemes = schemesQuery.data ?? [];
   const isSavingExam = createExamMutation.isPending || updateExamMutation.isPending;
   const isMarksEditable = examDetailQuery.data?.resultStatus === 'UNLOCKED';
-  const isExamScopeLockedByMarks = examModalMode === 'edit' && (examModalExam?.marksEnteredCount ?? 0) > 0;
+  const isExamScopeLockedByMarks =
+    examModalMode === 'edit' && (examModalExam?.marksEnteredCount ?? 0) > 0;
 
   const currentScopeStatus = useMemo(() => exams[0]?.resultStatus ?? 'UNLOCKED', [exams]);
 
@@ -634,7 +649,11 @@ export function ExamsPage() {
                 onClick={() => setIsConductModalOpen(true)}
                 disabled={!canManageResults || currentScopeStatus !== 'UNLOCKED'}
                 className={secondaryButtonClassName}
-                title={currentScopeStatus !== 'UNLOCKED' ? 'Unlock results first to edit conduct' : 'Enter conduct grades per term'}
+                title={
+                  currentScopeStatus !== 'UNLOCKED'
+                    ? 'Unlock results first to edit conduct'
+                    : 'Enter conduct grades per term'
+                }
               >
                 Conduct
               </button>
@@ -706,18 +725,31 @@ export function ExamsPage() {
                   <tbody>
                     {exams.map((exam, index) => (
                       <tr key={exam.id}>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">{(pagination?.pageSize ?? 20) * ((pagination?.page ?? 1) - 1) + index + 1}</td>
+                        <td className="border-b border-brand-100 px-3 py-3 align-top">
+                          {(pagination?.pageSize ?? 20) * ((pagination?.page ?? 1) - 1) + index + 1}
+                        </td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">
                           <p className="font-semibold text-slate-900">{exam.name}</p>
                           <p className="text-xs text-slate-600">
-                            <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">{exam.examType ?? 'EXAM'}</span>
-                            {' · '}{exam.totalMarks} total · weight {exam.weight}
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">
+                              {exam.examType ?? 'EXAM'}
+                            </span>
+                            {' · '}
+                            {exam.totalMarks} total · weight {exam.weight}
                           </p>
                         </td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.term.name}</td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.classRoom.name}</td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.subject.name}</td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">{exam.marksEnteredCount}</td>
+                        <td className="border-b border-brand-100 px-3 py-3 align-top">
+                          {exam.term.name}
+                        </td>
+                        <td className="border-b border-brand-100 px-3 py-3 align-top">
+                          {exam.classRoom.name}
+                        </td>
+                        <td className="border-b border-brand-100 px-3 py-3 align-top">
+                          {exam.subject.name}
+                        </td>
+                        <td className="border-b border-brand-100 px-3 py-3 align-top">
+                          {exam.marksEnteredCount}
+                        </td>
                         <td className="border-b border-brand-100 px-3 py-3 align-top">
                           <span className="rounded-md bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                             {exam.resultStatus}
@@ -768,7 +800,10 @@ export function ExamsPage() {
                 </table>
               </div>
             ) : (
-              <EmptyState title="No exams yet" message="Create the first test or exam for the selected term, class, and subject." />
+              <EmptyState
+                title="No exams yet"
+                message="Create the first test or exam for the selected term, class, and subject."
+              />
             )
           ) : null}
         </div>
@@ -822,28 +857,46 @@ export function ExamsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Term</span>
-              <select {...examForm.register('termId')} disabled={isExamScopeLockedByMarks} className={inputClassName}>
+              <select
+                {...examForm.register('termId')}
+                disabled={isExamScopeLockedByMarks}
+                className={inputClassName}
+              >
                 <option value="">Select term</option>
                 {terms.map((term) => (
-                  <option key={term.id} value={term.id}>{term.name}</option>
+                  <option key={term.id} value={term.id}>
+                    {term.name}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Class</span>
-              <select {...examForm.register('classRoomId')} disabled={isExamScopeLockedByMarks} className={inputClassName}>
+              <select
+                {...examForm.register('classRoomId')}
+                disabled={isExamScopeLockedByMarks}
+                className={inputClassName}
+              >
                 <option value="">Select class</option>
                 {classRooms.map((classRoom) => (
-                  <option key={classRoom.id} value={classRoom.id}>{classRoom.name}</option>
+                  <option key={classRoom.id} value={classRoom.id}>
+                    {classRoom.name}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Subject</span>
-              <select {...examForm.register('subjectId')} disabled={isExamScopeLockedByMarks} className={inputClassName}>
+              <select
+                {...examForm.register('subjectId')}
+                disabled={isExamScopeLockedByMarks}
+                className={inputClassName}
+              >
                 <option value="">Select subject</option>
                 {subjects.map((subject) => (
-                  <option key={subject.id} value={subject.id}>{subject.name}</option>
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name}
+                  </option>
                 ))}
               </select>
             </label>
@@ -852,7 +905,9 @@ export function ExamsPage() {
               <select {...examForm.register('gradingSchemeId')} className={inputClassName}>
                 <option value="">Use default scheme</option>
                 {schemes.map((scheme) => (
-                  <option key={scheme.id} value={scheme.id}>{scheme.name} v{scheme.version}</option>
+                  <option key={scheme.id} value={scheme.id}>
+                    {scheme.name} v{scheme.version}
+                  </option>
                 ))}
               </select>
             </label>
@@ -868,27 +923,52 @@ export function ExamsPage() {
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Exam name</span>
-              <input {...examForm.register('name')} className={inputClassName} placeholder="Mid-term mathematics" />
+              <input
+                {...examForm.register('name')}
+                className={inputClassName}
+                placeholder="Mid-term mathematics"
+              />
             </label>
           </div>
 
           <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Description</span>
-            <textarea {...examForm.register('description')} rows={3} className={textareaClassName} placeholder="Optional notes about the exam scope." />
+            <textarea
+              {...examForm.register('description')}
+              rows={3}
+              className={textareaClassName}
+              placeholder="Optional notes about the exam scope."
+            />
           </label>
 
           <div className="grid gap-4 md:grid-cols-3">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Total marks</span>
-              <input type="number" min={1} max={500} {...examForm.register('totalMarks')} className={inputClassName} />
+              <input
+                type="number"
+                min={1}
+                max={500}
+                {...examForm.register('totalMarks')}
+                className={inputClassName}
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Weight</span>
-              <input type="number" min={1} max={500} {...examForm.register('weight')} className={inputClassName} />
+              <input
+                type="number"
+                min={1}
+                max={500}
+                {...examForm.register('weight')}
+                className={inputClassName}
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Exam date</span>
-              <input type="datetime-local" {...examForm.register('examDate')} className={inputClassName} />
+              <input
+                type="datetime-local"
+                {...examForm.register('examDate')}
+                className={inputClassName}
+              />
             </label>
           </div>
         </form>
@@ -901,32 +981,111 @@ export function ExamsPage() {
         onClose={() => setIsSchemeModalOpen(false)}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <button type="button" onClick={() => setIsSchemeModalOpen(false)} className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
-            <button type="button" onClick={() => createSchemeMutation.mutate()} disabled={createSchemeMutation.isPending} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save scheme</button>
+            <button
+              type="button"
+              onClick={() => setIsSchemeModalOpen(false)}
+              className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => createSchemeMutation.mutate()}
+              disabled={createSchemeMutation.isPending}
+              className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Save scheme
+            </button>
           </div>
         }
       >
         <div className="grid gap-4">
           <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Name</span>
-            <input value={schemeName} onChange={(event) => setSchemeName(event.target.value)} className={inputClassName} />
+            <input
+              value={schemeName}
+              onChange={(event) => setSchemeName(event.target.value)}
+              className={inputClassName}
+            />
           </label>
           <label className="grid gap-1 text-sm font-medium text-slate-700">
             <span>Description</span>
-            <textarea value={schemeDescription} onChange={(event) => setSchemeDescription(event.target.value)} rows={2} className={textareaClassName} />
+            <textarea
+              value={schemeDescription}
+              onChange={(event) => setSchemeDescription(event.target.value)}
+              rows={2}
+              className={textareaClassName}
+            />
           </label>
           <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox" checked={schemeIsDefault} onChange={(event) => setSchemeIsDefault(event.target.checked)} />
+            <input
+              type="checkbox"
+              checked={schemeIsDefault}
+              onChange={(event) => setSchemeIsDefault(event.target.checked)}
+            />
             Set as default scheme
           </label>
 
           <div className="grid gap-3">
             {schemeBands.map((band, index) => (
-              <div key={`${band.grade}-${index}`} className="grid gap-3 rounded-xl bg-brand-50/70 p-3 md:grid-cols-[1fr_110px_110px_1.2fr]">
-                <input value={band.grade} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, grade: event.target.value } : item))} className={inputClassName} placeholder="Grade" />
-                <input type="number" min={0} max={100} value={band.min} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, min: Number(event.target.value) } : item))} className={inputClassName} placeholder="Min" />
-                <input type="number" min={0} max={100} value={band.max} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, max: Number(event.target.value) } : item))} className={inputClassName} placeholder="Max" />
-                <input value={band.remark} onChange={(event) => setSchemeBands((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, remark: event.target.value } : item))} className={inputClassName} placeholder="Remark" />
+              <div
+                key={`${band.grade}-${index}`}
+                className="grid gap-3 rounded-xl bg-brand-50/70 p-3 md:grid-cols-[1fr_110px_110px_1.2fr]"
+              >
+                <input
+                  value={band.grade}
+                  onChange={(event) =>
+                    setSchemeBands((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, grade: event.target.value } : item
+                      )
+                    )
+                  }
+                  className={inputClassName}
+                  placeholder="Grade"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={band.min}
+                  onChange={(event) =>
+                    setSchemeBands((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, min: Number(event.target.value) } : item
+                      )
+                    )
+                  }
+                  className={inputClassName}
+                  placeholder="Min"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={band.max}
+                  onChange={(event) =>
+                    setSchemeBands((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, max: Number(event.target.value) } : item
+                      )
+                    )
+                  }
+                  className={inputClassName}
+                  placeholder="Max"
+                />
+                <input
+                  value={band.remark}
+                  onChange={(event) =>
+                    setSchemeBands((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, remark: event.target.value } : item
+                      )
+                    )
+                  }
+                  className={inputClassName}
+                  placeholder="Remark"
+                />
               </div>
             ))}
           </div>
@@ -949,8 +1108,21 @@ export function ExamsPage() {
               ) : null}
             </div>
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setMarksExamId('')} className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700">Close</button>
-              <button type="button" onClick={() => saveMarksMutation.mutate()} disabled={saveMarksMutation.isPending || !examDetailQuery.data || !isMarksEditable} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">Save marks</button>
+              <button
+                type="button"
+                onClick={() => setMarksExamId('')}
+                className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => saveMarksMutation.mutate()}
+                disabled={saveMarksMutation.isPending || !examDetailQuery.data || !isMarksEditable}
+                className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Save marks
+              </button>
             </div>
           </div>
         }
@@ -958,31 +1130,60 @@ export function ExamsPage() {
         {examDetailQuery.isPending ? (
           <div className="h-64 animate-pulse rounded-xl bg-brand-50" />
         ) : examDetailQuery.isError || !examDetailQuery.data ? (
-          <StateView title="Could not load exam" message="Retry to load the marks grid." action={<button type="button" onClick={() => void examDetailQuery.refetch()} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white">Retry</button>} />
+          <StateView
+            title="Could not load exam"
+            message="Retry to load the marks grid."
+            action={
+              <button
+                type="button"
+                onClick={() => void examDetailQuery.refetch()}
+                className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Retry
+              </button>
+            }
+          />
         ) : (
           <div className="grid gap-4">
             {!isMarksEditable ? (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                Results are currently {examDetailQuery.data.resultStatus.toLowerCase()}. Unlock this class term before editing marks.
+                Results are currently {examDetailQuery.data.resultStatus.toLowerCase()}. Unlock this
+                class term before editing marks.
               </div>
             ) : null}
 
             <div className="grid gap-3 rounded-xl bg-brand-50/70 p-4 md:grid-cols-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Class</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{examDetailQuery.data.classRoom.name}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Class
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  {examDetailQuery.data.classRoom.name}
+                </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Subject</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{examDetailQuery.data.subject.name}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Subject
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  {examDetailQuery.data.subject.name}
+                </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Total marks</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{examDetailQuery.data.totalMarks}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Total marks
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  {examDetailQuery.data.totalMarks}
+                </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Result status</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{examDetailQuery.data.resultStatus}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Result status
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  {examDetailQuery.data.resultStatus}
+                </p>
               </div>
             </div>
 
@@ -1000,8 +1201,12 @@ export function ExamsPage() {
                   {examDetailQuery.data.students.map((student, index) => (
                     <tr key={student.id}>
                       <td className="border-b border-brand-100 px-3 py-3 align-top">{index + 1}</td>
-                      <td className="border-b border-brand-100 px-3 py-3 align-top font-medium text-slate-900">{student.firstName} {student.lastName}</td>
-                      <td className="border-b border-brand-100 px-3 py-3 align-top">{student.studentCode}</td>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top font-medium text-slate-900">
+                        {student.firstName} {student.lastName}
+                      </td>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top">
+                        {student.studentCode}
+                      </td>
                       <td className="border-b border-brand-100 px-3 py-3 align-top">
                         <input
                           value={marksDraft[student.id] ?? ''}
@@ -1053,8 +1258,12 @@ export function ExamsPage() {
       >
         <div className="grid gap-3">
           <p className="text-sm text-slate-700">
-            Delete <span className="font-semibold text-slate-900">{pendingDeleteExam?.name}</span> from{' '}
-            <span className="font-semibold text-slate-900">{pendingDeleteExam?.classRoom.name}</span>?
+            Delete <span className="font-semibold text-slate-900">{pendingDeleteExam?.name}</span>{' '}
+            from{' '}
+            <span className="font-semibold text-slate-900">
+              {pendingDeleteExam?.classRoom.name}
+            </span>
+            ?
           </p>
           <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800">
             This action cannot be undone.
@@ -1069,11 +1278,23 @@ export function ExamsPage() {
         onClose={() => setIsConductModalOpen(false)}
         footer={
           <div className="flex items-center justify-end gap-3">
-            <button type="button" onClick={() => setIsConductModalOpen(false)} className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+            <button
+              type="button"
+              onClick={() => setIsConductModalOpen(false)}
+              className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              Cancel
+            </button>
             <button
               type="button"
               onClick={() => saveConductMutation.mutate()}
-              disabled={saveConductMutation.isPending || !conductQuery.data?.students?.length || !(conductQuery.data?.students ?? []).some((s) => (conductDraft[s.id]?.grade ?? '').trim().length > 0)}
+              disabled={
+                saveConductMutation.isPending ||
+                !conductQuery.data?.students?.length ||
+                !(conductQuery.data?.students ?? []).some(
+                  (s) => (conductDraft[s.id]?.grade ?? '').trim().length > 0
+                )
+              }
               className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               Save conduct
@@ -1082,15 +1303,30 @@ export function ExamsPage() {
         }
       >
         {!termFilter || !classFilter ? (
-          <p className="text-sm text-slate-600">Select a term and class above to enter conduct grades.</p>
+          <p className="text-sm text-slate-600">
+            Select a term and class above to enter conduct grades.
+          </p>
         ) : conductQuery.isPending ? (
           <div className="h-64 animate-pulse rounded-xl bg-brand-50" />
         ) : conductQuery.isError || !conductQuery.data ? (
-          <StateView title="Could not load students" message="Retry to load the conduct grid." action={<button type="button" onClick={() => void conductQuery.refetch()} className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white">Retry</button>} />
+          <StateView
+            title="Could not load students"
+            message="Retry to load the conduct grid."
+            action={
+              <button
+                type="button"
+                onClick={() => void conductQuery.refetch()}
+                className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Retry
+              </button>
+            }
+          />
         ) : (
           <div className="grid gap-4">
             <p className="text-sm text-slate-600">
-              Term: {terms.find((t) => t.id === termFilter)?.name ?? termFilter} · Class: {classRooms.find((c) => c.id === classFilter)?.name ?? classFilter}
+              Term: {terms.find((t) => t.id === termFilter)?.name ?? termFilter} · Class:{' '}
+              {classRooms.find((c) => c.id === classFilter)?.name ?? classFilter}
             </p>
             <div className="w-full overflow-x-auto rounded-xl bg-white/92">
               <table className="w-full min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
@@ -1107,12 +1343,24 @@ export function ExamsPage() {
                   {conductQuery.data.students.map((student, index) => (
                     <tr key={student.id}>
                       <td className="border-b border-brand-100 px-3 py-3 align-top">{index + 1}</td>
-                      <td className="border-b border-brand-100 px-3 py-3 align-top font-medium text-slate-900">{student.firstName} {student.lastName}</td>
-                      <td className="border-b border-brand-100 px-3 py-3 align-top">{student.studentCode}</td>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top font-medium text-slate-900">
+                        {student.firstName} {student.lastName}
+                      </td>
+                      <td className="border-b border-brand-100 px-3 py-3 align-top">
+                        {student.studentCode}
+                      </td>
                       <td className="border-b border-brand-100 px-3 py-3 align-top">
                         <input
                           value={conductDraft[student.id]?.grade ?? ''}
-                          onChange={(e) => setConductDraft((prev) => ({ ...prev, [student.id]: { ...(prev[student.id] ?? { grade: '', remark: '' }), grade: e.target.value } }))}
+                          onChange={(e) =>
+                            setConductDraft((prev) => ({
+                              ...prev,
+                              [student.id]: {
+                                ...(prev[student.id] ?? { grade: '', remark: '' }),
+                                grade: e.target.value,
+                              },
+                            }))
+                          }
                           className="h-10 w-24 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                           placeholder="A"
                         />
@@ -1120,7 +1368,15 @@ export function ExamsPage() {
                       <td className="border-b border-brand-100 px-3 py-3 align-top">
                         <input
                           value={conductDraft[student.id]?.remark ?? ''}
-                          onChange={(e) => setConductDraft((prev) => ({ ...prev, [student.id]: { ...(prev[student.id] ?? { grade: '', remark: '' }), remark: e.target.value } }))}
+                          onChange={(e) =>
+                            setConductDraft((prev) => ({
+                              ...prev,
+                              [student.id]: {
+                                ...(prev[student.id] ?? { grade: '', remark: '' }),
+                                remark: e.target.value,
+                              },
+                            }))
+                          }
                           className="h-10 min-w-[140px] rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                           placeholder="Optional"
                         />

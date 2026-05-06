@@ -6,7 +6,9 @@ interface StateViewProps {
 }
 
 export function StateView({ title, message, action, centered = true }: StateViewProps) {
-  const containerClass = centered ? 'flex min-h-[60vh] items-center justify-center px-4 py-8 sm:px-6' : '';
+  const containerClass = centered
+    ? 'flex min-h-[60vh] items-center justify-center px-4 py-8 sm:px-6'
+    : '';
 
   return (
     <div className={containerClass}>

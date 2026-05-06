@@ -107,7 +107,7 @@ export interface SchoolAdminDashboardFilters {
 
 export function getSuperAdminDashboardApi(
   accessToken: string,
-  filters?: SuperAdminDashboardFilters,
+  filters?: SuperAdminDashboardFilters
 ) {
   const params = new URLSearchParams();
   if (filters?.academicYear) params.set('academicYear', filters.academicYear);
@@ -134,12 +134,13 @@ export function getSuperAdminDashboardFiltersApi(accessToken: string) {
 
 export function getSchoolAdminDashboardApi(
   accessToken: string,
-  filters?: SchoolAdminDashboardFilters,
+  filters?: SchoolAdminDashboardFilters
 ) {
   const params = new URLSearchParams();
   if (filters?.academicYear) params.set('academicYear', filters.academicYear);
   if (filters?.term) params.set('term', filters.term);
-  if (filters?.classFilter && filters.classFilter !== 'all') params.set('class', filters.classFilter);
+  if (filters?.classFilter && filters.classFilter !== 'all')
+    params.set('class', filters.classFilter);
   if (filters?.findFilter && filters.findFilter !== 'all') params.set('find', filters.findFilter);
 
   const query = params.toString();

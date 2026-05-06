@@ -8,10 +8,34 @@ import { SectionCard } from '../components/section-card';
 
 const DUMMY_REPORTS = [
   { id: '1', name: 'User Overview Report', type: 'Users', date: '2025-03-12', status: 'Generated' },
-  { id: '2', name: 'School Performance Summary', type: 'Schools', date: '2025-03-11', status: 'Generated' },
-  { id: '3', name: 'Attendance Summary', type: 'Attendance', date: '2025-03-10', status: 'Pending' },
-  { id: '4', name: 'Exam Results Overview', type: 'Exams', date: '2025-03-09', status: 'Generated' },
-  { id: '5', name: 'Discipline Incidents', type: 'Conduct', date: '2025-03-08', status: 'Generated' },
+  {
+    id: '2',
+    name: 'School Performance Summary',
+    type: 'Schools',
+    date: '2025-03-11',
+    status: 'Generated',
+  },
+  {
+    id: '3',
+    name: 'Attendance Summary',
+    type: 'Attendance',
+    date: '2025-03-10',
+    status: 'Pending',
+  },
+  {
+    id: '4',
+    name: 'Exam Results Overview',
+    type: 'Exams',
+    date: '2025-03-09',
+    status: 'Generated',
+  },
+  {
+    id: '5',
+    name: 'Discipline Incidents',
+    type: 'Conduct',
+    date: '2025-03-08',
+    status: 'Generated',
+  },
 ];
 
 const DUMMY_ANALYTICS = [

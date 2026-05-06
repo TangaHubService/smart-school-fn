@@ -42,7 +42,10 @@ export function StudentConductProfilePage() {
     queryKey: ['terms', 'student-conduct-modal', academicYearId],
     queryFn: () => listTermsApi(auth.accessToken!, { academicYearId: academicYearId! }),
     enabled: Boolean(
-      conductModalOpen && academicYearId && auth.accessToken && hasPermission(auth.me, 'conduct.manage'),
+      conductModalOpen &&
+      academicYearId &&
+      auth.accessToken &&
+      hasPermission(auth.me, 'conduct.manage')
     ),
   });
 
@@ -51,19 +54,20 @@ export function StudentConductProfilePage() {
     queryFn: () => getStudentConductMarksSummaryApi(auth.accessToken!, studentId!, academicYearId!),
     enabled: Boolean(
       studentId &&
-        academicYearId &&
-        auth.accessToken &&
-        (hasPermission(auth.me, 'conduct.read') || hasPermission(auth.me, 'conduct.manage')),
+      academicYearId &&
+      auth.accessToken &&
+      (hasPermission(auth.me, 'conduct.read') || hasPermission(auth.me, 'conduct.manage'))
     ),
   });
 
   const conductDeductionsQuery = useQuery({
     queryKey: ['student-conduct-deductions', studentId],
-    queryFn: () => listStudentConductDeductionsApi(auth.accessToken!, studentId!, { page: 1, pageSize: 50 }),
+    queryFn: () =>
+      listStudentConductDeductionsApi(auth.accessToken!, studentId!, { page: 1, pageSize: 50 }),
     enabled: Boolean(
       studentId &&
-        auth.accessToken &&
-        (hasPermission(auth.me, 'conduct.read') || hasPermission(auth.me, 'conduct.manage')),
+      auth.accessToken &&
+      (hasPermission(auth.me, 'conduct.read') || hasPermission(auth.me, 'conduct.manage'))
     ),
   });
 
@@ -75,7 +79,7 @@ export function StudentConductProfilePage() {
       return;
     }
     setDeductTermId((prev) =>
-      prev && modalTermsRaw.some((t) => t.id === prev) ? prev : modalTermsRaw[0]!.id,
+      prev && modalTermsRaw.some((t) => t.id === prev) ? prev : modalTermsRaw[0]!.id
     );
   }, [conductModalOpen, modalTermsRaw]);
 
@@ -160,8 +164,11 @@ export function StudentConductProfilePage() {
         }
       >
         <p className="text-sm text-slate-600">
-          Conduct is tracked as <strong>term marks</strong>: a pool per term minus recorded deductions (with
-          reasons). Use <Link to="/admin/class-marks" className="font-semibold text-brand-600 underline">Marks</Link>{' '}
+          Conduct is tracked as <strong>term marks</strong>: a pool per term minus recorded
+          deductions (with reasons). Use{' '}
+          <Link to="/admin/class-marks" className="font-semibold text-brand-600 underline">
+            Marks
+          </Link>{' '}
           to record deductions for a class, or{' '}
           <Link to="/admin/conduct-marks" className="font-semibold text-brand-600 underline">
             Conduct marks
@@ -171,15 +178,15 @@ export function StudentConductProfilePage() {
       </SectionCard>
 
       {canSeeConduct ? (
-        <SectionCard
-          title="Conduct marks by term"
-        >
+        <SectionCard title="Conduct marks by term">
           {!academicYearId ? (
             <EmptyState message="No current enrollment for this student; conduct marks need an academic year and class context." />
           ) : conductMarksSummaryQuery.isPending ? (
             <div className="h-24 animate-pulse rounded-xl bg-brand-50" />
           ) : conductMarksSummaryQuery.isError ? (
-            <p className="text-sm text-red-700">{(conductMarksSummaryQuery.error as Error).message}</p>
+            <p className="text-sm text-red-700">
+              {(conductMarksSummaryQuery.error as Error).message}
+            </p>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-brand-100">
               <table className="w-full min-w-[16rem] border-collapse text-left text-sm">
@@ -193,7 +200,9 @@ export function StudentConductProfilePage() {
                   {(conductMarksSummaryQuery.data?.terms ?? []).map((t) => (
                     <tr key={t.termId} className="border-b border-brand-50">
                       <td className="px-3 py-2 text-slate-800">{t.termName}</td>
-                      <td className="px-3 py-2 font-semibold tabular-nums text-slate-900">{t.grade}</td>
+                      <td className="px-3 py-2 font-semibold tabular-nums text-slate-900">
+                        {t.grade}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -208,7 +217,9 @@ export function StudentConductProfilePage() {
           {conductDeductionsQuery.isPending ? (
             <div className="h-20 animate-pulse rounded-xl bg-brand-50" />
           ) : conductDeductionsQuery.isError ? (
-            <p className="text-sm text-red-700">{(conductDeductionsQuery.error as Error).message}</p>
+            <p className="text-sm text-red-700">
+              {(conductDeductionsQuery.error as Error).message}
+            </p>
           ) : (conductDeductionsQuery.data?.items.length ?? 0) === 0 ? (
             <p className="text-sm text-slate-600">No conduct deductions recorded.</p>
           ) : (
@@ -233,7 +244,9 @@ export function StudentConductProfilePage() {
         </SectionCard>
       ) : (
         <SectionCard title="Conduct marks">
-          <p className="text-sm text-slate-600">You do not have permission to view conduct deductions.</p>
+          <p className="text-sm text-slate-600">
+            You do not have permission to view conduct deductions.
+          </p>
         </SectionCard>
       )}
 
@@ -272,7 +285,9 @@ export function StudentConductProfilePage() {
             </label>
 
             {conductModalTermsQuery.isError ? (
-              <p className="mt-3 text-sm text-red-700">{(conductModalTermsQuery.error as Error).message}</p>
+              <p className="mt-3 text-sm text-red-700">
+                {(conductModalTermsQuery.error as Error).message}
+              </p>
             ) : null}
 
             {!conductModalTermsQuery.isPending && modalTerms.length > 0 && deductTermId ? (
@@ -293,7 +308,9 @@ export function StudentConductProfilePage() {
                 onSuccess={closeConductModal}
               />
             ) : !conductModalTermsQuery.isPending && modalTerms.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600">Add terms for this academic year before recording deductions.</p>
+              <p className="mt-4 text-sm text-slate-600">
+                Add terms for this academic year before recording deductions.
+              </p>
             ) : null}
           </div>
         </div>

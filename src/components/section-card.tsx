@@ -20,7 +20,9 @@ export function SectionCard({ title, subtitle, action, children }: SectionCardPr
         >
           {hasTitleBlock ? (
             <div>
-              {title ? <h2 className="text-lg font-bold tracking-tight text-slate-950">{title}</h2> : null}
+              {title ? (
+                <h2 className="text-lg font-bold tracking-tight text-slate-950">{title}</h2>
+              ) : null}
               {subtitle ? <p className="mt-1 text-sm text-slate-700">{subtitle}</p> : null}
             </div>
           ) : null}

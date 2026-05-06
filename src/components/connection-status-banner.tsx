@@ -9,8 +9,8 @@ import { getPendingLessonIds } from '../utils/offline-learning-cache';
  */
 export function ConnectionStatusBanner() {
   const { t } = useTranslation('common');
-  const [online, setOnline] = useState(
-    () => (typeof navigator !== 'undefined' ? navigator.onLine : true),
+  const [online, setOnline] = useState(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true
   );
   const [pendingLessons, setPendingLessons] = useState(0);
 

@@ -1,7 +1,15 @@
 import clsx from 'clsx';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BookOpen, ChevronRight, ClipboardCheck, Lock, Play, CheckCircle2, Circle } from 'lucide-react';
+import {
+  BookOpen,
+  ChevronRight,
+  ClipboardCheck,
+  Lock,
+  Play,
+  CheckCircle2,
+  Circle,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ProgressRing } from '../components/progress-ring';
 import { CourseOverviewPanel } from '../components/student-learning/course-overview-panel';
@@ -114,7 +122,7 @@ function getYouTubeEmbedUrl(url: string | null | undefined) {
 }
 
 function lessonHasInlineMedia(
-  lesson: Pick<LessonItem, 'contentType' | 'externalUrl' | 'fileAsset'>,
+  lesson: Pick<LessonItem, 'contentType' | 'externalUrl' | 'fileAsset'>
 ) {
   const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
   if (!mediaUrl) {
@@ -123,10 +131,10 @@ function lessonHasInlineMedia(
 
   return Boolean(
     getYouTubeEmbedUrl(mediaUrl) ||
-      lesson.contentType === 'VIDEO' ||
-      lesson.contentType === 'PDF' ||
-      lesson.fileAsset?.mimeType?.startsWith('video/') ||
-      isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType),
+    lesson.contentType === 'VIDEO' ||
+    lesson.contentType === 'PDF' ||
+    lesson.fileAsset?.mimeType?.startsWith('video/') ||
+    isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType)
   );
 }
 
@@ -398,7 +406,7 @@ export function StudentCoursesPage() {
       ]
         .join(' ')
         .toLowerCase()
-        .includes(q),
+        .includes(q)
     );
   }, [allCourses, search]);
 
@@ -464,7 +472,8 @@ export function StudentCoursesPage() {
   const selectedAssignment =
     selectedCourse?.assignments.find((assignment) => assignment.id === activeAssignmentId) ?? null;
 
-  const sortedLessons = selectedCourse?.lessons.slice().sort((a, b) => a.sequence - b.sequence) ?? [];
+  const sortedLessons =
+    selectedCourse?.lessons.slice().sort((a, b) => a.sequence - b.sequence) ?? [];
   const submittedAssessmentIds = selectedCourse?.submittedAssessmentIds ?? [];
   const currentLessonIndex = selectedLesson
     ? sortedLessons.findIndex((lesson) => lesson.id === selectedLesson.id)
@@ -473,8 +482,7 @@ export function StudentCoursesPage() {
     currentLessonIndex >= 0 && currentLessonIndex < sortedLessons.length - 1
       ? sortedLessons[currentLessonIndex + 1]
       : null;
-  const previousLesson =
-    currentLessonIndex > 0 ? sortedLessons[currentLessonIndex - 1] : null;
+  const previousLesson = currentLessonIndex > 0 ? sortedLessons[currentLessonIndex - 1] : null;
 
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
 
@@ -567,7 +575,8 @@ export function StudentCoursesPage() {
       showToast({
         type: 'info',
         title: 'Saved on this device',
-        message: 'Lesson marked complete locally. It will sync to the server when you are back online.',
+        message:
+          'Lesson marked complete locally. It will sync to the server when you are back online.',
       });
     } else {
       try {
@@ -579,7 +588,8 @@ export function StudentCoursesPage() {
         showToast({
           type: 'info',
           title: 'Queued for sync',
-          message: 'We could not reach the server. This lesson will sync automatically when your connection is stable.',
+          message:
+            'We could not reach the server. This lesson will sync automatically when your connection is stable.',
         });
       }
     }
@@ -615,7 +625,7 @@ export function StudentCoursesPage() {
         setCompletionCourse(c);
       }
     },
-    [allCourses],
+    [allCourses]
   );
 
   const handleMarkLessonCompleteOnly = async (courseId: string, lessonId: string) => {
@@ -644,7 +654,8 @@ export function StudentCoursesPage() {
       showToast({
         type: 'info',
         title: 'Queued for sync',
-        message: 'We could not reach the server. This lesson will sync when your connection is stable.',
+        message:
+          'We could not reach the server. This lesson will sync when your connection is stable.',
       });
     }
     markLessonCompleted(lessonId);
@@ -750,7 +761,11 @@ export function StudentCoursesPage() {
         >
           {sidebarCollapsed ? 'Show curriculum' : 'Hide curriculum'}
         </button>
-        <button type="button" onClick={() => navigate('/student/courses')} className={STUDENT_HEADER_ACTION_BTN}>
+        <button
+          type="button"
+          onClick={() => navigate('/student/courses')}
+          className={STUDENT_HEADER_ACTION_BTN}
+        >
           Back to courses
         </button>
         {selectedLesson || selectedAssignment ? (
@@ -762,7 +777,7 @@ export function StudentCoursesPage() {
             Back to overview
           </button>
         ) : null}
-      </>,
+      </>
     );
 
     return () => setHeaderActions(null);
@@ -779,10 +794,7 @@ export function StudentCoursesPage() {
   return (
     <div className="grid gap-5">
       {!activeCourseId ? (
-        <SectionCard
-          title="My learning"
-          subtitle=""
-        >
+        <SectionCard title="My learning" subtitle="">
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px] sm:items-center">
             <div className="relative">
               <input
@@ -860,204 +872,227 @@ export function StudentCoursesPage() {
           <section className="-mx-5 w-[calc(100%+2.5rem)] min-w-0 max-w-none bg-transparent md:-mx-6 md:w-[calc(100%+3rem)]">
             <div className="flex min-h-[480px] flex-col">
               <div className="flex-1 overflow-hidden px-0 sm:px-0">
-                <div className={clsx(
-                  "grid h-[calc(100vh-180px)] min-h-[520px] gap-0 transition-all duration-300",
-                  sidebarCollapsed ? "grid-cols-1" : "lg:grid-cols-[380px_1fr]"
-                )}>
+                <div
+                  className={clsx(
+                    'grid h-[calc(100vh-180px)] min-h-[520px] gap-0 transition-all duration-300',
+                    sidebarCollapsed ? 'grid-cols-1' : 'lg:grid-cols-[380px_1fr]'
+                  )}
+                >
                   {/* Collapsible/Minimal Sidebar */}
                   {!sidebarCollapsed && (
                     <aside className="relative flex min-h-0 flex-col border-r border-slate-200/50 bg-content-bg transition-all duration-300">
-                    <div
-                      className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-5 md:px-6 md:py-6"
-                      data-student-scroll-root
-                    >
-                      <div className="mb-4">
-                        <h2 className="text-lg font-semibold text-slate-900">{selectedCourse.title}</h2>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          {selectedCourse.teacher.firstName} {selectedCourse.teacher.lastName}
-                        </p>
-                        <div className="mt-2 flex items-center gap-2 rounded-lg bg-slate-50/90 p-2.5">
-                          <ProgressRing
-                            percentage={selectedCourseProgress?.overallProgress ?? 0}
-                            size={52}
-                            strokeWidth={5}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-slate-900">
-                              {selectedCourseProgress?.overallProgress ?? 0}% complete
-                            </p>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          {selectedCourseProgress?.completedLessons ?? 0}/{selectedCourseProgress?.totalLessons ?? 0}{' '}
-                          lessons · {selectedCourseProgress?.completedAssignments ?? 0}/
-                          {selectedCourseProgress?.totalAssignments ?? 0} tests & tasks
-                        </p>
-                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                              <div
-                                className="h-full rounded-full bg-brand-500 transition-all duration-500"
-                                style={{ width: `${selectedCourseProgress?.overallProgress ?? 0}%` }}
-                              />
+                      <div
+                        className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-5 md:px-6 md:py-6"
+                        data-student-scroll-root
+                      >
+                        <div className="mb-4">
+                          <h2 className="text-lg font-semibold text-slate-900">
+                            {selectedCourse.title}
+                          </h2>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {selectedCourse.teacher.firstName} {selectedCourse.teacher.lastName}
+                          </p>
+                          <div className="mt-2 flex items-center gap-2 rounded-lg bg-slate-50/90 p-2.5">
+                            <ProgressRing
+                              percentage={selectedCourseProgress?.overallProgress ?? 0}
+                              size={52}
+                              strokeWidth={5}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-slate-900">
+                                {selectedCourseProgress?.overallProgress ?? 0}% complete
+                              </p>
+                              <p className="mt-0.5 text-xs text-slate-500">
+                                {selectedCourseProgress?.completedLessons ?? 0}/
+                                {selectedCourseProgress?.totalLessons ?? 0} lessons ·{' '}
+                                {selectedCourseProgress?.completedAssignments ?? 0}/
+                                {selectedCourseProgress?.totalAssignments ?? 0} tests & tasks
+                              </p>
+                              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                                <div
+                                  className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                                  style={{
+                                    width: `${selectedCourseProgress?.overallProgress ?? 0}%`,
+                                  }}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    <div className="mt-4 space-y-1">
-                      <p className="text-xs font-medium text-slate-500">Curriculum</p>
-                      {sortedLessons.map((lesson, index) => {
-                        const isCompleted = isLessonCompleted(lesson.id);
-                        const previousLesson = index > 0 ? sortedLessons[index - 1] : null;
-                        const sequentialLocked =
-                          index > 0 && Boolean(previousLesson && !isLessonCompleted(previousLesson.id));
-                        const mustPassId = lesson.mustPassAssessmentId;
-                        const assessmentLocked =
-                          mustPassId != null && !submittedAssessmentIds.includes(mustPassId);
-                        const isLocked = sequentialLocked || assessmentLocked;
+                        <div className="mt-4 space-y-1">
+                          <p className="text-xs font-medium text-slate-500">Curriculum</p>
+                          {sortedLessons.map((lesson, index) => {
+                            const isCompleted = isLessonCompleted(lesson.id);
+                            const previousLesson = index > 0 ? sortedLessons[index - 1] : null;
+                            const sequentialLocked =
+                              index > 0 &&
+                              Boolean(previousLesson && !isLessonCompleted(previousLesson.id));
+                            const mustPassId = lesson.mustPassAssessmentId;
+                            const assessmentLocked =
+                              mustPassId != null && !submittedAssessmentIds.includes(mustPassId);
+                            const isLocked = sequentialLocked || assessmentLocked;
 
-                        return (
-                          <button
-                            key={lesson.id}
-                            type="button"
-                            disabled={isLocked}
-                            onClick={() => !isLocked && handleSelectLesson(selectedCourse.id, lesson.id)}
-                            className={`group relative flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
-                              activeLessonId === lesson.id && activeCoursePanel === 'lessons'
-                                ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
-                                : isLocked
-                                  ? 'bg-slate-50 text-slate-400 opacity-60 cursor-not-allowed'
-                                  : 'bg-transparent text-slate-700 hover:bg-slate-100'
-                            }`}
-                          >
-                            <span className="mt-0.5 flex-shrink-0">
-                              {isLocked ? (
-                                <Lock className="h-4 w-4" />
-                              ) : activeLessonId === lesson.id ? (
-                                <Play className="h-4 w-4" />
-                              ) : isCompleted ? (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                              ) : (
-                                <Circle className="h-4 w-4 text-slate-300" />
-                              )}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <p className={`truncate font-medium ${
-                                activeLessonId === lesson.id ? 'text-white' : 'text-slate-900'
-                              }`}>
-                                {lesson.title}
-                              </p>
-                              <div className="mt-0.5 flex items-center gap-2">
-                                <span
-                                  className={`text-xs ${
-                                    activeLessonId === lesson.id ? 'text-brand-100/90' : 'text-slate-400'
-                                  }`}
-                                >
-                                  Lesson {lesson.sequence}
-                                </span>
-                                {isLocked && (
-                                  <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
-                                    Locked
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="mt-4 border-t border-slate-100 pt-4">
-                      <p className="text-xs font-medium text-slate-500">Tests & tasks</p>
-                      <div className="mt-3 space-y-3">
-                        {selectedCourse.assessments.length ? (
-                          <div className="space-y-1.5">
-                            <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                              Tests
-                            </p>
-                            {selectedCourse.assessments.map((assessment) => {
-                              const status = getAssessmentStatus(assessment);
-
-                              return (
-                                <button
-                                  key={assessment.id}
-                                  type="button"
-                                  onClick={() => handleOpenAssessment(assessment.id)}
-                                  className="flex w-full items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 transition-all hover:border-brand-200 hover:bg-brand-50/40"
-                                >
-                                  <span className="mt-0.5 flex-shrink-0">
-                                    {assessment.latestAttempt?.status === 'SUBMITTED' ? (
-                                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                    ) : assessment.latestAttempt?.status === 'IN_PROGRESS' ? (
-                                      <Play className="h-4 w-4 text-brand-500" />
-                                    ) : (
-                                      <Circle className="h-4 w-4 text-slate-300" />
-                                    )}
-                                  </span>
-                                  <div className="min-w-0 flex-1">
-                                    <p className="break-words font-medium leading-5 text-slate-900">
-                                      {assessment.title}
-                                    </p>
-                                    <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-400">
-                                      <span>{formatAssessmentTypeLabel(assessment.type)}</span>
-                                      <span>{assessment.counts.questions} Qs</span>
-                                      <span>{formatDateTime(assessment.dueAt)}</span>
-                                    </div>
-                                  </div>
-                                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                                    {status.label}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-
-                        {selectedCourse.assignments.length ? (
-                          <div className="space-y-1.5">
-                            <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                              Tasks
-                            </p>
-                            {selectedCourse.assignments.map((assignment) => {
-                              const isCompleted = Boolean(assignment.mySubmission);
-                              const isSelected = activeAssignmentId === assignment.id;
-                              return (
-                                <button
-                                  key={assignment.id}
-                                  type="button"
-                                  onClick={() => handleSelectAssignment(selectedCourse.id, assignment.id)}
-                                  className={`flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
-                                    isSelected
-                                      ? 'bg-slate-900 text-white shadow-lg'
+                            return (
+                              <button
+                                key={lesson.id}
+                                type="button"
+                                disabled={isLocked}
+                                onClick={() =>
+                                  !isLocked && handleSelectLesson(selectedCourse.id, lesson.id)
+                                }
+                                className={`group relative flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
+                                  activeLessonId === lesson.id && activeCoursePanel === 'lessons'
+                                    ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
+                                    : isLocked
+                                      ? 'bg-slate-50 text-slate-400 opacity-60 cursor-not-allowed'
                                       : 'bg-transparent text-slate-700 hover:bg-slate-100'
-                                  }`}
-                                >
-                                  <span className="mt-0.5 flex-shrink-0">
-                                    {isCompleted ? (
-                                      <CheckCircle2 className={`h-4 w-4 ${isSelected ? 'text-white' : 'text-emerald-500'}`} />
-                                    ) : (
-                                      <Circle className="h-4 w-4 text-slate-300" />
-                                    )}{' '}
-                                  </span>
-                                  <div className="min-w-0 flex-1">
-                                    <p className={`break-words font-medium leading-5 ${isSelected ? 'text-white' : 'text-slate-900'}`}>
-                                      {assignment.title}
-                                    </p>
-                                    <p className={`mt-1 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
-                                      {isCompleted ? 'Completed' : 'Pending'}
-                                    </p>
+                                }`}
+                              >
+                                <span className="mt-0.5 flex-shrink-0">
+                                  {isLocked ? (
+                                    <Lock className="h-4 w-4" />
+                                  ) : activeLessonId === lesson.id ? (
+                                    <Play className="h-4 w-4" />
+                                  ) : isCompleted ? (
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                  ) : (
+                                    <Circle className="h-4 w-4 text-slate-300" />
+                                  )}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p
+                                    className={`truncate font-medium ${
+                                      activeLessonId === lesson.id ? 'text-white' : 'text-slate-900'
+                                    }`}
+                                  >
+                                    {lesson.title}
+                                  </p>
+                                  <div className="mt-0.5 flex items-center gap-2">
+                                    <span
+                                      className={`text-xs ${
+                                        activeLessonId === lesson.id
+                                          ? 'text-brand-100/90'
+                                          : 'text-slate-400'
+                                      }`}
+                                    >
+                                      Lesson {lesson.sequence}
+                                    </span>
+                                    {isLocked && (
+                                      <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                                        Locked
+                                      </span>
+                                    )}
                                   </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : null}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                        {!selectedCourse.assessments.length && !selectedCourse.assignments.length ? (
-                          <p className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-500">
-                            No tests or tasks are published for this course yet.
-                          </p>
-                        ) : null}
+                        <div className="mt-4 border-t border-slate-100 pt-4">
+                          <p className="text-xs font-medium text-slate-500">Tests & tasks</p>
+                          <div className="mt-3 space-y-3">
+                            {selectedCourse.assessments.length ? (
+                              <div className="space-y-1.5">
+                                <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                  Tests
+                                </p>
+                                {selectedCourse.assessments.map((assessment) => {
+                                  const status = getAssessmentStatus(assessment);
+
+                                  return (
+                                    <button
+                                      key={assessment.id}
+                                      type="button"
+                                      onClick={() => handleOpenAssessment(assessment.id)}
+                                      className="flex w-full items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 transition-all hover:border-brand-200 hover:bg-brand-50/40"
+                                    >
+                                      <span className="mt-0.5 flex-shrink-0">
+                                        {assessment.latestAttempt?.status === 'SUBMITTED' ? (
+                                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                        ) : assessment.latestAttempt?.status === 'IN_PROGRESS' ? (
+                                          <Play className="h-4 w-4 text-brand-500" />
+                                        ) : (
+                                          <Circle className="h-4 w-4 text-slate-300" />
+                                        )}
+                                      </span>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="break-words font-medium leading-5 text-slate-900">
+                                          {assessment.title}
+                                        </p>
+                                        <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-400">
+                                          <span>{formatAssessmentTypeLabel(assessment.type)}</span>
+                                          <span>{assessment.counts.questions} Qs</span>
+                                          <span>{formatDateTime(assessment.dueAt)}</span>
+                                        </div>
+                                      </div>
+                                      <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                        {status.label}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+
+                            {selectedCourse.assignments.length ? (
+                              <div className="space-y-1.5">
+                                <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                  Tasks
+                                </p>
+                                {selectedCourse.assignments.map((assignment) => {
+                                  const isCompleted = Boolean(assignment.mySubmission);
+                                  const isSelected = activeAssignmentId === assignment.id;
+                                  return (
+                                    <button
+                                      key={assignment.id}
+                                      type="button"
+                                      onClick={() =>
+                                        handleSelectAssignment(selectedCourse.id, assignment.id)
+                                      }
+                                      className={`flex w-full items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
+                                        isSelected
+                                          ? 'bg-slate-900 text-white shadow-lg'
+                                          : 'bg-transparent text-slate-700 hover:bg-slate-100'
+                                      }`}
+                                    >
+                                      <span className="mt-0.5 flex-shrink-0">
+                                        {isCompleted ? (
+                                          <CheckCircle2
+                                            className={`h-4 w-4 ${isSelected ? 'text-white' : 'text-emerald-500'}`}
+                                          />
+                                        ) : (
+                                          <Circle className="h-4 w-4 text-slate-300" />
+                                        )}{' '}
+                                      </span>
+                                      <div className="min-w-0 flex-1">
+                                        <p
+                                          className={`break-words font-medium leading-5 ${isSelected ? 'text-white' : 'text-slate-900'}`}
+                                        >
+                                          {assignment.title}
+                                        </p>
+                                        <p
+                                          className={`mt-1 text-xs ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}
+                                        >
+                                          {isCompleted ? 'Completed' : 'Pending'}
+                                        </p>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+
+                            {!selectedCourse.assessments.length &&
+                            !selectedCourse.assignments.length ? (
+                              <p className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-500">
+                                No tests or tasks are published for this course yet.
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    </div>
-                  </aside>
+                    </aside>
                   )}
 
                   <main
@@ -1079,7 +1114,9 @@ export function StudentCoursesPage() {
                           onMarkCompleteAndContinue={() =>
                             handleCompleteAndGoNext(selectedCourse.id, selectedLesson.id)
                           }
-                          onGoPrevious={() => handleGoPrevious(selectedCourse.id, selectedLesson.id)}
+                          onGoPrevious={() =>
+                            handleGoPrevious(selectedCourse.id, selectedLesson.id)
+                          }
                           onGoNext={() => handleGoNextLesson(selectedCourse.id, selectedLesson.id)}
                           nextLesson={nextLesson}
                           previousLesson={previousLesson}
@@ -1101,15 +1138,17 @@ export function StudentCoursesPage() {
                               handleSelectLesson(selectedCourse.id, first.id);
                             }
                           }}
-                          onOpenLesson={(lessonId) => handleSelectLesson(selectedCourse.id, lessonId)}
+                          onOpenLesson={(lessonId) =>
+                            handleSelectLesson(selectedCourse.id, lessonId)
+                          }
                           onOpenTests={() => {
                             setActiveCoursePanel('tests');
                             const nextAssessment =
                               selectedCourse.assessments.find(
-                                (assessment) => assessment.latestAttempt?.status === 'IN_PROGRESS',
+                                (assessment) => assessment.latestAttempt?.status === 'IN_PROGRESS'
                               ) ??
                               selectedCourse.assessments.find(
-                                (assessment) => assessment.latestAttempt?.status !== 'SUBMITTED',
+                                (assessment) => assessment.latestAttempt?.status !== 'SUBMITTED'
                               ) ??
                               selectedCourse.assessments[0];
                             if (nextAssessment) {
@@ -1118,8 +1157,9 @@ export function StudentCoursesPage() {
                             }
 
                             const nextAssignment =
-                              selectedCourse.assignments.find((assignment) => !assignment.mySubmission) ??
-                              selectedCourse.assignments[0];
+                              selectedCourse.assignments.find(
+                                (assignment) => !assignment.mySubmission
+                              ) ?? selectedCourse.assignments[0];
                             if (nextAssignment) {
                               handleSelectAssignment(selectedCourse.id, nextAssignment.id);
                             }
@@ -1149,10 +1189,12 @@ export function StudentCoursesPage() {
         )
       ) : null}
 
-      {myCoursesQuery.data?.pagination.totalPages && myCoursesQuery.data.pagination.totalPages > 1 ? (
+      {myCoursesQuery.data?.pagination.totalPages &&
+      myCoursesQuery.data.pagination.totalPages > 1 ? (
         <div className="flex items-center justify-between rounded-2xl border border-brand-100 bg-white/95 px-4 py-3 text-sm text-slate-700 shadow-soft">
           <span>
-            Page {myCoursesQuery.data.pagination.page} of {myCoursesQuery.data.pagination.totalPages}
+            Page {myCoursesQuery.data.pagination.page} of{' '}
+            {myCoursesQuery.data.pagination.totalPages}
           </span>
           <div className="flex gap-2">
             <button
@@ -1168,7 +1210,7 @@ export function StudentCoursesPage() {
               disabled={page >= myCoursesQuery.data.pagination.totalPages}
               onClick={() =>
                 setPage((current) =>
-                  Math.min(myCoursesQuery.data!.pagination.totalPages, current + 1),
+                  Math.min(myCoursesQuery.data!.pagination.totalPages, current + 1)
                 )
               }
               className="rounded-xl border border-brand-200 px-3 py-1.5 disabled:opacity-50"
@@ -1181,7 +1223,9 @@ export function StudentCoursesPage() {
 
       <Modal
         open={Boolean(submissionAssignment)}
-        title={submissionAssignment ? `Submit · ${submissionAssignment.title}` : 'Submit assignment'}
+        title={
+          submissionAssignment ? `Submit · ${submissionAssignment.title}` : 'Submit assignment'
+        }
         description=""
         onClose={() => {
           setSubmissionAssignment(null);
@@ -1191,7 +1235,9 @@ export function StudentCoursesPage() {
       >
         <form
           className="grid gap-4"
-          onSubmit={submissionForm.handleSubmit((values) => submitAssignmentMutation.mutate(values))}
+          onSubmit={submissionForm.handleSubmit((values) =>
+            submitAssignmentMutation.mutate(values)
+          )}
         >
           <FormField
             label="Text answer"
@@ -1303,9 +1349,7 @@ function ReaderBlock({
     <div className="space-y-4 transition-all duration-500">
       <header className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          {eyebrow && (
-            <span className="text-xs font-medium text-brand-600">{eyebrow}</span>
-          )}
+          {eyebrow && <span className="text-xs font-medium text-brand-600">{eyebrow}</span>}
           {action}
         </div>
         <div className="space-y-1.5">
@@ -1354,10 +1398,7 @@ function SubjectCourseGallery({
             onClick={() => onSelectCourse(course.id)}
             className="overflow-hidden rounded-2xl border border-brand-100 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
           >
-            <div
-              className="relative h-40 bg-[length:140px_140px]"
-              style={cover}
-            >
+            <div className="relative h-40 bg-[length:140px_140px]" style={cover}>
               <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
                 {courseLabel}
               </span>
@@ -1406,7 +1447,11 @@ function SubjectCourseGallery({
                   }}
                   className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-100"
                 >
-                  {progress.overallProgress >= 100 ? 'Review' : progress.overallProgress > 0 ? 'Resume' : 'Open'}
+                  {progress.overallProgress >= 100
+                    ? 'Review'
+                    : progress.overallProgress > 0
+                      ? 'Resume'
+                      : 'Open'}
                 </button>
               </div>
             </div>
@@ -1441,87 +1486,87 @@ function LessonDetailCard({
 
   return (
     <div className="min-w-0 space-y-4">
-        <div className="bg-transparent py-0">
-          <ReaderBlock
-            eyebrow={`Lesson ${lesson.sequence} · ${lesson.contentType}`}
-            title={lesson.title}
-            subtitle={lesson.summary ?? 'Study the material below, then mark this lesson complete.'}
-            action={
-              isCompleted ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Completed
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
-                  <Play className="h-3 w-3" aria-hidden /> In progress
-                </span>
-              )
-            }
-          >
-            <div className="mt-3">
-              <LessonMediaEmbed lesson={lesson} />
-            </div>
+      <div className="bg-transparent py-0">
+        <ReaderBlock
+          eyebrow={`Lesson ${lesson.sequence} · ${lesson.contentType}`}
+          title={lesson.title}
+          subtitle={lesson.summary ?? 'Study the material below, then mark this lesson complete.'}
+          action={
+            isCompleted ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Completed
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
+                <Play className="h-3 w-3" aria-hidden /> In progress
+              </span>
+            )
+          }
+        >
+          <div className="mt-3">
+            <LessonMediaEmbed lesson={lesson} />
+          </div>
 
-            {lesson.body ? (
-              <RichContent html={lesson.body} className="lms-reader-content mt-4" />
+          {lesson.body ? (
+            <RichContent html={lesson.body} className="lms-reader-content mt-4" />
+          ) : null}
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {lesson.externalUrl && !showInlineMedia ? (
+              <AttachmentLink label="Open Lesson Source" url={lesson.externalUrl} />
             ) : null}
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {lesson.externalUrl && !showInlineMedia ? (
-                <AttachmentLink label="Open Lesson Source" url={lesson.externalUrl} />
-              ) : null}
-              {lesson.fileAsset ? (
-                <AttachmentLink
-                  label={`Resource: ${lesson.fileAsset.originalName}`}
-                  url={lesson.fileAsset.secureUrl}
-                />
-              ) : null}
-            </div>
-          </ReaderBlock>
-        </div>
-
-        <footer className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/40 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {previousLesson ? (
-              <button
-                type="button"
-                onClick={onGoPrevious}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Previous
-              </button>
+            {lesson.fileAsset ? (
+              <AttachmentLink
+                label={`Resource: ${lesson.fileAsset.originalName}`}
+                url={lesson.fileAsset.secureUrl}
+              />
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            {!isCompleted ? (
-              <button
-                type="button"
-                onClick={onMarkCompleteOnly}
-                className="rounded-lg border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-800 transition hover:bg-brand-50"
-              >
-                Mark complete
-              </button>
-            ) : null}
+        </ReaderBlock>
+      </div>
+
+      <footer className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/40 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {previousLesson ? (
             <button
               type="button"
-              onClick={onGoNext}
-              disabled={!canGoNext}
-              title={!canGoNext ? 'Mark this lesson complete to continue' : undefined}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-45"
+              onClick={onGoPrevious}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              {nextLesson ? 'Next lesson' : 'Back to course'}
+              Previous
             </button>
-            {!isCompleted ? (
-              <button
-                type="button"
-                onClick={onMarkCompleteAndContinue}
-                className="rounded-lg border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                {nextLesson ? 'Mark complete & next' : 'Mark complete & finish'}
-              </button>
-            ) : null}
-          </div>
-        </footer>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          {!isCompleted ? (
+            <button
+              type="button"
+              onClick={onMarkCompleteOnly}
+              className="rounded-lg border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-800 transition hover:bg-brand-50"
+            >
+              Mark complete
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onGoNext}
+            disabled={!canGoNext}
+            title={!canGoNext ? 'Mark this lesson complete to continue' : undefined}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {nextLesson ? 'Next lesson' : 'Back to course'}
+          </button>
+          {!isCompleted ? (
+            <button
+              type="button"
+              onClick={onMarkCompleteAndContinue}
+              className="rounded-lg border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+            >
+              {nextLesson ? 'Mark complete & next' : 'Mark complete & finish'}
+            </button>
+          ) : null}
+        </div>
+      </footer>
     </div>
   );
 }
@@ -1544,7 +1589,9 @@ function AssignmentDetailCard({
         action={
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-              status.tone === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-50 text-orange-700'
+              status.tone === 'published'
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-orange-50 text-orange-700'
             }`}
           >
             {status.label}
@@ -1595,11 +1642,16 @@ function AssignmentDetailCard({
           <div className="space-y-5">
             <div className="rounded-xl bg-slate-50 p-4 text-slate-700">
               {assignment.mySubmission.textAnswer && (
-                <p className="whitespace-pre-wrap leading-relaxed">{assignment.mySubmission.textAnswer}</p>
+                <p className="whitespace-pre-wrap leading-relaxed">
+                  {assignment.mySubmission.textAnswer}
+                </p>
               )}
               {assignment.mySubmission.linkUrl && (
                 <div className="mt-6">
-                  <AttachmentLink label="View Submitted Link" url={assignment.mySubmission.linkUrl} />
+                  <AttachmentLink
+                    label="View Submitted Link"
+                    url={assignment.mySubmission.linkUrl}
+                  />
                 </div>
               )}
               {assignment.mySubmission.fileAsset && (
@@ -1616,17 +1668,23 @@ function AssignmentDetailCard({
               <div className="rounded-lg bg-brand-50/50 p-3">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500 text-white shadow-sm">
-                    <span className="text-lg font-semibold">{assignment.mySubmission.gradePoints}</span>
+                    <span className="text-lg font-semibold">
+                      {assignment.mySubmission.gradePoints}
+                    </span>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-brand-700">Grade</p>
-                    <p className="text-sm font-medium text-slate-900">Out of {assignment.maxPoints} points</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      Out of {assignment.maxPoints} points
+                    </p>
                   </div>
                 </div>
                 {assignment.mySubmission.feedback && (
                   <div className="mt-4 border-t border-brand-100 pt-4">
                     <p className="mb-1 text-xs font-medium text-slate-500">Teacher feedback</p>
-                    <p className="text-sm italic text-slate-700">"{assignment.mySubmission.feedback}"</p>
+                    <p className="text-sm italic text-slate-700">
+                      "{assignment.mySubmission.feedback}"
+                    </p>
                   </div>
                 )}
               </div>

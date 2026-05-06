@@ -151,7 +151,10 @@ export function GovSchoolsPage() {
       {!schoolsQuery.isPending && !schoolsQuery.isError && schools.length ? (
         <div className="grid gap-3">
           {schools.map((school) => (
-            <article key={school.tenantId} className="rounded-2xl border border-brand-100 bg-white p-4">
+            <article
+              key={school.tenantId}
+              className="rounded-2xl border border-brand-100 bg-white p-4"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-base font-bold text-slate-950">{school.displayName}</h3>
@@ -164,7 +167,9 @@ export function GovSchoolsPage() {
                     {school.isActive ? 'Active' : 'Inactive'}
                   </p>
                   {school.scopeLabel ? (
-                    <p className="mt-1 text-xs text-brand-700">Visible through {school.scopeLabel}</p>
+                    <p className="mt-1 text-xs text-brand-700">
+                      Visible through {school.scopeLabel}
+                    </p>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -204,9 +209,7 @@ export function GovSchoolsPage() {
             <button
               type="button"
               disabled={pagination.page >= pagination.totalPages}
-              onClick={() =>
-                setPage((current) => Math.min(pagination.totalPages, current + 1))
-              }
+              onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
               className="rounded-lg border border-brand-200 bg-white px-3 py-2 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next

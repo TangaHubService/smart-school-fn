@@ -28,11 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../features/auth/auth.context';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
 import { govAuditingFeatureEnabled } from '../features/gov/feature';
-import {
-  hasPermission,
-  hasRole,
-  isSchoolSetupComplete,
-} from '../features/auth/auth-helpers';
+import { hasPermission, hasRole, isSchoolSetupComplete } from '../features/auth/auth-helpers';
 
 type SetupState = 'ANY' | 'INCOMPLETE' | 'COMPLETE';
 
@@ -492,7 +488,10 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
   ]);
 
   const items = NAV_ITEMS.filter((item) => {
-    if (!assessmentsFeatureEnabled && ['assessments', 'continuous-assessment', 'student-assessments'].includes(item.key)) {
+    if (
+      !assessmentsFeatureEnabled &&
+      ['assessments', 'continuous-assessment', 'student-assessments'].includes(item.key)
+    ) {
       return false;
     }
 
@@ -557,7 +556,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
                   'group flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition duration-150',
                   isActive
                     ? 'bg-white text-[#173C7F] shadow-sm ring-1 ring-brand-200'
-                    : 'text-white/90 hover:bg-white/20 hover:text-white',
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 )
               }
             >

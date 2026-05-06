@@ -65,7 +65,7 @@ export function PublicCoursesPage() {
 
   const filteredPrograms = useMemo(
     () => (programsQuery.data ?? []).filter((program) => matchesCatalogFilter(program, 'all')),
-    [programsQuery.data],
+    [programsQuery.data]
   );
 
   return (
@@ -80,12 +80,13 @@ export function PublicCoursesPage() {
       >
         <div className={`absolute inset-0 ${lowBandwidth ? 'bg-black/40' : 'bg-black/65'}`} />
         <div className="relative mx-auto w-full max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Our Programs</p>
+          {/* <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Our Programs</p> */}
           <h1 className="text-3xl font-bold uppercase tracking-tight text-white sm:text-5xl">
             Welcome to Smart School Rwanda After Class Programs
           </h1>
           <p className="mx-auto mt-6 hidden max-w-3xl text-lg font-medium text-gray-100 md:block">
-            Explore the live academy catalog, compare program themes, then activate a plan on the academy page and choose the 3 subjects you want to access.
+            Explore the live academy catalog, compare program themes, then activate a plan on the
+            academy page and choose the 3 subjects you want to access.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
@@ -107,7 +108,9 @@ export function PublicCoursesPage() {
 
       <section className="border-b border-slate-100 bg-slate-50 py-8">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">Live catalog</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
+            Live catalog
+          </p>
           <h2 className="mt-2 text-2xl font-bold text-slate-900">Academy programs from the API</h2>
           <p className="mt-3 max-w-3xl text-sm text-slate-600">
             {programsQuery.isPending

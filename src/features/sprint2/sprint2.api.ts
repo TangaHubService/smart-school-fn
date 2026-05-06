@@ -209,7 +209,7 @@ export function createStudentApi(
       classRoomId: string;
       enrolledAt?: string;
     };
-  },
+  }
 ) {
   return apiRequest('/students', {
     method: 'POST',
@@ -226,7 +226,7 @@ export function listStudentsApi(
     q?: string;
     page?: number;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
 
@@ -275,7 +275,7 @@ export function updateStudentApi(
       classRoomId: string;
       enrolledAt?: string;
     };
-  },
+  }
 ) {
   return apiRequest(`/students/${id}`, {
     method: 'PATCH',
@@ -300,7 +300,7 @@ export function importStudentsApi(
     defaultAcademicYearId?: string;
     defaultClassRoomId?: string;
     targetTenantId?: string;
-  },
+  }
 ) {
   return apiRequest<{
     mode: 'preview' | 'commit';
@@ -338,7 +338,7 @@ export function exportStudentsApi(
     classId?: string;
     academicYearId?: string;
     q?: string;
-  },
+  }
 ) {
   const query = new URLSearchParams();
 
@@ -368,7 +368,7 @@ export function listParentsApi(
     q?: string;
     page?: number;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
 
@@ -382,10 +382,13 @@ export function listParentsApi(
     query.set('pageSize', String(params.pageSize));
   }
 
-  return apiRequest<ParentListResponse>(`/parents${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
+  return apiRequest<ParentListResponse>(
+    `/parents${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
 
 export function createParentApi(
@@ -398,7 +401,7 @@ export function createParentApi(
     phone?: string;
     createLogin?: boolean;
     password?: string;
-  },
+  }
 ) {
   return apiRequest('/parents', {
     method: 'POST',
@@ -419,7 +422,7 @@ export function updateParentApi(
     isActive?: boolean;
     createLogin?: boolean;
     password?: string;
-  },
+  }
 ) {
   return apiRequest(`/parents/${parentId}`, {
     method: 'PATCH',
@@ -434,7 +437,7 @@ export function listLinkableStudentsApi(
     classId?: string;
     q?: string;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
 
@@ -453,7 +456,7 @@ export function listLinkableStudentsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -464,7 +467,7 @@ export function linkParentStudentApi(
     studentId: string;
     relationship?: 'MOTHER' | 'FATHER' | 'GUARDIAN' | 'OTHER';
     isPrimary?: boolean;
-  },
+  }
 ) {
   return apiRequest(`/parents/${parentId}/link-student`, {
     method: 'POST',
@@ -486,7 +489,7 @@ export function listMyChildAttendanceApi(
   params?: {
     from?: string;
     to?: string;
-  },
+  }
 ) {
   const query = new URLSearchParams();
 
@@ -502,7 +505,7 @@ export function listMyChildAttendanceApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 

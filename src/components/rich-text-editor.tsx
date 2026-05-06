@@ -61,7 +61,7 @@ export function RichTextEditor({
       attributes: {
         class: clsx(
           'rich-editor-content rounded-b-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none',
-          minHeightClassName,
+          minHeightClassName
         ),
       },
     },
@@ -218,7 +218,7 @@ function ToolbarButton({
         active
           ? 'border-brand-300 bg-white text-slate-800 shadow-sm'
           : 'border-brand-200 bg-transparent text-slate-700 hover:bg-white',
-        disabled && 'cursor-not-allowed opacity-40',
+        disabled && 'cursor-not-allowed opacity-40'
       )}
     >
       <Icon className="h-4 w-4" aria-hidden="true" />

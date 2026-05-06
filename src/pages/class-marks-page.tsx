@@ -95,8 +95,7 @@ export function ClassMarksPage() {
 
   const termsQuery = useQuery({
     queryKey: ['terms', academicYearId],
-    queryFn: () =>
-      listTermsApi(auth.accessToken!, academicYearId ? { academicYearId } : undefined),
+    queryFn: () => listTermsApi(auth.accessToken!, academicYearId ? { academicYearId } : undefined),
   });
 
   const ledgerTermsQuery = useQuery({
@@ -104,7 +103,7 @@ export function ClassMarksPage() {
     queryFn: () =>
       listTermsApi(
         auth.accessToken!,
-        ledgerAcademicYearId ? { academicYearId: ledgerAcademicYearId } : undefined,
+        ledgerAcademicYearId ? { academicYearId: ledgerAcademicYearId } : undefined
       ),
     enabled: Boolean(auth.accessToken),
   });
@@ -162,7 +161,9 @@ export function ClassMarksPage() {
     mutationFn: (payload: Parameters<typeof saveMarksGridApi>[1]) =>
       saveMarksGridApi(auth.accessToken!, payload),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['marks-grid', variables.termId, variables.classRoomId] });
+      queryClient.invalidateQueries({
+        queryKey: ['marks-grid', variables.termId, variables.classRoomId],
+      });
       queryClient.invalidateQueries({ queryKey: ['all-marks-ledger'] });
       setDraft({});
       showToast({ type: 'success', title: 'Marks saved' });
@@ -205,7 +206,7 @@ export function ClassMarksPage() {
   const getDisplayValue = (
     row: MarksGridStudentRow,
     subjectIndex: number,
-    type: 'test' | 'exam',
+    type: 'test' | 'exam'
   ): string => {
     const key = getCellKey(row.studentId, row.subjectMarks[subjectIndex]?.subjectId ?? '', type);
     if (draft[key] !== undefined) {
@@ -217,7 +218,12 @@ export function ClassMarksPage() {
     return val === null ? '' : String(val);
   };
 
-  const setCell = (studentId: string, subjectId: string, type: 'test' | 'exam', value: number | null) => {
+  const setCell = (
+    studentId: string,
+    subjectId: string,
+    type: 'test' | 'exam',
+    value: number | null
+  ) => {
     const key = getCellKey(studentId, subjectId, type);
     setDraft((prev) => ({
       ...prev,
@@ -272,7 +278,14 @@ export function ClassMarksPage() {
 
   const canRecordConductDeduction =
     hasPermission(auth.me, 'conduct.manage') &&
-    Boolean(grid?.academicYear?.id && termId && classRoomId && termId !== FULL_YEAR_TERM_ID && !marksReadOnly && grid?.students?.length);
+    Boolean(
+      grid?.academicYear?.id &&
+      termId &&
+      classRoomId &&
+      termId !== FULL_YEAR_TERM_ID &&
+      !marksReadOnly &&
+      grid?.students?.length
+    );
 
   const conductModalStudents = useMemo(
     () =>
@@ -282,7 +295,7 @@ export function ClassMarksPage() {
         firstName: s.firstName,
         lastName: s.lastName,
       })) ?? [],
-    [grid?.students],
+    [grid?.students]
   );
 
   const openConductModal = () => {
@@ -300,7 +313,7 @@ export function ClassMarksPage() {
 
   return (
     <div className="grid gap-6">
-    <SectionCard
+      <SectionCard
         title="Marks"
         subtitle="All student marks loads every academic year by default (paginated). Narrow with Academic year, or use Class entry grid to enter CAT / EXAM marks."
         action={null}
@@ -439,9 +452,10 @@ export function ClassMarksPage() {
             </div>
 
             <p className="text-xs text-slate-600">
-              By default, marks from <strong>all academic years</strong> are included (with pagination). Each row is
-              one student in a class and term; the <strong>Year</strong> column shows which academic year. Subjects are
-              columns (CAT, EXAM, total). Rank uses the sum of subject scores (same rules as the class grid).
+              By default, marks from <strong>all academic years</strong> are included (with
+              pagination). Each row is one student in a class and term; the <strong>Year</strong>{' '}
+              column shows which academic year. Subjects are columns (CAT, EXAM, total). Rank uses
+              the sum of subject scores (same rules as the class grid).
             </p>
 
             {ledgerQuery.isPending ? (
@@ -454,7 +468,11 @@ export function ClassMarksPage() {
             {ledgerQuery.isError ? (
               <StateView
                 title="Could not load marks"
-                message={ledgerQuery.error instanceof Error ? ledgerQuery.error.message : 'Please try again.'}
+                message={
+                  ledgerQuery.error instanceof Error
+                    ? ledgerQuery.error.message
+                    : 'Please try again.'
+                }
                 action={
                   <button
                     type="button"
@@ -591,8 +609,7 @@ export function ClassMarksPage() {
                           {ledgerSubjects.map((sub, si) => {
                             const score = row.scores[sub.id];
                             const has =
-                              score &&
-                              (score.testPercent != null || score.examPercent != null);
+                              score && (score.testPercent != null || score.examPercent != null);
                             const sep = subjectGroupBorder(si);
                             return (
                               <React.Fragment key={sub.id}>
@@ -619,14 +636,18 @@ export function ClassMarksPage() {
                           <td className="border-l border-brand-100 px-2 py-1.5 text-center text-xs text-slate-800">
                             <span className="font-semibold">{row.termGrade}</span>
                             {row.termRemark ? (
-                              <span className="mt-0.5 block text-[0.65rem] text-slate-500">{row.termRemark}</span>
+                              <span className="mt-0.5 block text-[0.65rem] text-slate-500">
+                                {row.termRemark}
+                              </span>
                             ) : null}
                           </td>
                           <td className="sticky right-0 z-10 min-w-[5.5rem] border-l-2 border-brand-100 bg-white px-2 py-1.5 text-left text-xs text-slate-800">
                             <span>
                               <span className="font-semibold">{row.conduct.grade}</span>
                               {row.conduct.remark ? (
-                                <span className="mt-0.5 block font-normal text-slate-600">{row.conduct.remark}</span>
+                                <span className="mt-0.5 block font-normal text-slate-600">
+                                  {row.conduct.remark}
+                                </span>
                               ) : null}
                             </span>
                           </td>
@@ -639,8 +660,8 @@ export function ClassMarksPage() {
                 {ledgerPagination && ledgerPagination.totalPages > 1 ? (
                   <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-700">
                     <span>
-                      Page {ledgerPagination.page} of {ledgerPagination.totalPages} ({ledgerPagination.totalItems}{' '}
-                      students)
+                      Page {ledgerPagination.page} of {ledgerPagination.totalPages} (
+                      {ledgerPagination.totalItems} students)
                     </span>
                     <div className="flex gap-2">
                       <button
@@ -671,7 +692,9 @@ export function ClassMarksPage() {
           <div className="grid gap-4 rounded-xl border border-brand-100 bg-white/80 p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h3 className="text-base font-bold text-slate-950">Class marks (CAT / EXAM / Total)</h3>
+                <h3 className="text-base font-bold text-slate-950">
+                  Class marks (CAT / EXAM / Total)
+                </h3>
                 <p className="mt-1 text-sm text-slate-700">
                   {marksReadOnly
                     ? 'Results are locked for this term and class. This table is read-only. Unlock results in Exams to edit marks.'
@@ -697,11 +720,13 @@ export function ClassMarksPage() {
                   {saveMutation.isPending ? 'Saving...' : 'Save marks'}
                 </button>
               </div>
-        </div>
+            </div>
             <div className="mt-2 grid gap-4">
               <div className="mb-4 flex flex-nowrap items-end gap-2 overflow-x-auto pb-0.5 [scrollbar-width:thin]">
                 <div className="shrink-0">
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Academic year</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
+                    Academic year
+                  </label>
                   <select
                     value={academicYearId}
                     onChange={(e) => {
@@ -766,221 +791,249 @@ export function ClassMarksPage() {
                 </div>
               </div>
 
-      {isFullYearSelected ? (
-        <div className="mb-4 rounded-lg border border-brand-200 bg-brand-50/50 px-4 py-3 text-sm text-slate-700">
-                  <strong>Full academic year:</strong> To view or enter marks for a specific term, select a term
-                  above. For a student’s full-year report card, go to <strong>Report cards</strong>, choose the
-                  student, and open the report for each term or use the published annual summary where available.
-        </div>
-      ) : null}
+              {isFullYearSelected ? (
+                <div className="mb-4 rounded-lg border border-brand-200 bg-brand-50/50 px-4 py-3 text-sm text-slate-700">
+                  <strong>Full academic year:</strong> To view or enter marks for a specific term,
+                  select a term above. For a student’s full-year report card, go to{' '}
+                  <strong>Report cards</strong>, choose the student, and open the report for each
+                  term or use the published annual summary where available.
+                </div>
+              ) : null}
 
-      {gridQuery.isPending && termId && classRoomId ? (
-        <div className="flex items-center gap-2 text-slate-600">
-          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-brand-400 border-t-transparent" />
-          Loading marks grid…
-        </div>
-      ) : null}
+              {gridQuery.isPending && termId && classRoomId ? (
+                <div className="flex items-center gap-2 text-slate-600">
+                  <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-brand-400 border-t-transparent" />
+                  Loading marks grid…
+                </div>
+              ) : null}
 
-      {gridQuery.isError ? (
-        <StateView
-          title="Could not load marks"
-          message={gridQuery.error instanceof Error ? gridQuery.error.message : 'Please try again.'}
-          action={
-            <button
-              type="button"
-              onClick={() => gridQuery.refetch()}
-              className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Retry
-            </button>
-          }
-        />
-      ) : null}
+              {gridQuery.isError ? (
+                <StateView
+                  title="Could not load marks"
+                  message={
+                    gridQuery.error instanceof Error ? gridQuery.error.message : 'Please try again.'
+                  }
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => gridQuery.refetch()}
+                      className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Retry
+                    </button>
+                  }
+                />
+              ) : null}
 
-      {!gridQuery.isPending && !gridQuery.isError && !isFullYearSelected && (!termId || !classRoomId) ? (
-        <EmptyState message="Select an academic year, then a term and class to load the marks table. Use ‘Full academic year’ in the Term dropdown for info on yearly reports." />
-      ) : null}
+              {!gridQuery.isPending &&
+              !gridQuery.isError &&
+              !isFullYearSelected &&
+              (!termId || !classRoomId) ? (
+                <EmptyState message="Select an academic year, then a term and class to load the marks table. Use ‘Full academic year’ in the Term dropdown for info on yearly reports." />
+              ) : null}
 
-      {marksReadOnly ? (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
-                  <strong>Read-only:</strong> Report results are locked for this term and class. Marks cannot be
-                  edited until an administrator unlocks results.
-        </div>
-      ) : null}
+              {marksReadOnly ? (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+                  <strong>Read-only:</strong> Report results are locked for this term and class.
+                  Marks cannot be edited until an administrator unlocks results.
+                </div>
+              ) : null}
 
-      {!gridQuery.isPending && !gridQuery.isError && hasGrid && grid && !isFullYearSelected ? (
+              {!gridQuery.isPending &&
+              !gridQuery.isError &&
+              hasGrid &&
+              grid &&
+              !isFullYearSelected ? (
                 <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
                   <table className="w-full min-w-full table-auto border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-brand-200 bg-brand-50">
-                <th
-                  rowSpan={2}
-                  className="sticky left-0 z-20 w-10 min-w-10 border-r border-brand-200 bg-brand-50 px-1 py-2 align-middle font-semibold text-slate-800"
-                >
-                  N°
-                </th>
-                <th
-                  rowSpan={2}
-                  className="sticky left-10 z-20 min-w-[100px] border-r border-brand-200 bg-brand-50 px-2 py-2 align-middle font-semibold text-slate-800"
-                >
-                  First name
-                </th>
-                <th
-                  rowSpan={2}
-                  className="sticky left-[140px] z-20 min-w-[100px] border-r border-brand-200 bg-brand-50 px-2 py-2 align-middle font-semibold text-slate-800"
-                >
-                  Last name
-                </th>
-                {grid.subjects.map((sub, si) => (
-                  <th
-                    key={sub.id}
-                    colSpan={3}
-                    className={`border-b border-brand-200 px-1 py-2 text-center font-semibold text-slate-800 ${subjectGroupBorder(si)}`}
-                  >
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span>{sub.name}</span>
-                      <span className="text-[0.65rem] font-normal uppercase tracking-wide text-slate-500">
-                        {sub.code}
-                      </span>
-                    </div>
-                  </th>
-                ))}
-                <th
-                  rowSpan={2}
-                  className="min-w-[4rem] border-b border-l-2 border-brand-200 bg-brand-50/90 px-2 py-2 align-middle text-center font-semibold text-slate-800"
-                >
-                  Total
-                </th>
-                <th
-                  rowSpan={2}
-                  className="min-w-[3rem] border-b border-l border-brand-200 px-2 py-2 align-middle text-center font-semibold text-slate-800"
-                >
-                  Rank
-                </th>
-                <th
-                  rowSpan={2}
-                  className="sticky right-0 z-20 min-w-[6.5rem] border-b border-l-2 border-brand-200 bg-brand-50 px-2 py-2 align-middle text-center font-semibold text-slate-800"
-                >
-                  Conduct
-                </th>
-              </tr>
-              <tr className="border-b border-brand-200 bg-brand-50/80">
-                {grid.subjects.map((sub, si) => (
-                  <React.Fragment key={sub.id}>
-                    <th
-                      className={`px-1 py-1 text-center text-[0.65rem] font-semibold uppercase tracking-wide text-slate-600 ${subjectGroupBorder(si)}`}
-                    >
-                      CAT
-                    </th>
-                    <th className="px-1 py-1 text-center text-[0.65rem] font-semibold uppercase tracking-wide text-slate-600">
-                      EXAM
-                    </th>
-                    <th className="px-1 py-1 text-center text-[0.65rem] font-semibold uppercase tracking-wide text-slate-600">
-                      Total
-                    </th>
-                  </React.Fragment>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {grid.students.map((row) => (
-                <tr key={row.studentId} className="border-b border-brand-50">
-                  <td className="sticky left-0 z-10 w-10 min-w-10 border-r border-brand-100 bg-white px-1 py-1 text-slate-600">
-                    {row.index}
-                  </td>
-                  <td className="sticky left-10 z-10 min-w-[100px] border-r border-brand-100 bg-white px-2 py-1 font-medium text-slate-800">
-                    {row.firstName}
-                  </td>
-                  <td className="sticky left-[140px] z-10 min-w-[100px] border-r border-brand-100 bg-white px-2 py-1 font-medium text-slate-800">
-                    {row.lastName}
-                  </td>
-                  {row.subjectMarks.map((sm, i) => {
-                    const testStr = getDisplayValue(row, i, 'test');
-                    const examStr = getDisplayValue(row, i, 'exam');
-                    const total = (() => {
-                      const t = draft[getCellKey(row.studentId, sm.subjectId, 'test')];
-                      const e = draft[getCellKey(row.studentId, sm.subjectId, 'exam')];
-                      if (t !== undefined || e !== undefined) {
-                        return (t ?? sm.testMarks ?? 0) + (e ?? sm.examMarks ?? 0);
-                      }
-                      return sm.total;
-                    })();
-                    const hasSubjectMarks =
-                      sm.testMarks != null ||
-                      sm.examMarks != null ||
-                      draft[getCellKey(row.studentId, sm.subjectId, 'test')] !== undefined ||
-                      draft[getCellKey(row.studentId, sm.subjectId, 'exam')] !== undefined;
-                    const sep = subjectGroupBorder(i);
-                    return (
-                      <React.Fragment key={sm.subjectId}>
-                        <td className={`border-r border-brand-100 px-1 py-1 ${sep}`}>
-                          <input
-                            type="number"
-                            min={0}
-                            max={500}
-                            readOnly={marksReadOnly}
-                            tabIndex={marksReadOnly ? -1 : 0}
-                            className={marksReadOnly ? inputReadonlyClass : inputClass}
-                            value={testStr}
-                            onChange={(e) => {
-                              if (marksReadOnly) return;
-                              const v = e.target.value.trim();
-                              setCell(row.studentId, sm.subjectId, 'test', v === '' ? null : parseInt(v, 10));
-                            }}
-                            aria-label={`${row.firstName} ${row.lastName} ${grid.subjects[i]?.name} CAT`}
-                          />
-                        </td>
-                        <td className="border-r border-brand-100 px-1 py-1">
-                          <input
-                            type="number"
-                            min={0}
-                            max={500}
-                            readOnly={marksReadOnly}
-                            tabIndex={marksReadOnly ? -1 : 0}
-                            className={marksReadOnly ? inputReadonlyClass : inputClass}
-                            value={examStr}
-                            onChange={(e) => {
-                              if (marksReadOnly) return;
-                              const v = e.target.value.trim();
-                              setCell(row.studentId, sm.subjectId, 'exam', v === '' ? null : parseInt(v, 10));
-                            }}
-                            aria-label={`${row.firstName} ${row.lastName} ${grid.subjects[i]?.name} Exam`}
-                          />
-                        </td>
-                        <td className="border-r border-brand-100 bg-slate-50/80 px-1 py-1 text-center text-sm font-medium tabular-nums text-slate-700">
-                          {hasSubjectMarks ? total.toFixed(1) : '—'}
-                        </td>
-                      </React.Fragment>
-                    );
-                  })}
-                  <td className="border-l border-brand-100 px-2 py-1 text-center font-semibold tabular-nums text-slate-800">
-                    {row.total.toFixed(1)}
-                  </td>
-                  <td className="border-l border-brand-100 px-2 py-1 text-center font-medium text-slate-700">
-                    {row.rank}
-                  </td>
-                  <td className="sticky right-0 z-10 min-w-[6.5rem] border-l-2 border-brand-100 bg-white px-2 py-1 text-left text-xs text-slate-800">
-                    <span>
-                      <span className="font-semibold">{row.conduct.grade}</span>
-                      {row.conduct.remark ? (
-                        <span className="mt-0.5 block font-normal text-slate-600">{row.conduct.remark}</span>
-                      ) : null}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
+                    <thead>
+                      <tr className="border-b border-brand-200 bg-brand-50">
+                        <th
+                          rowSpan={2}
+                          className="sticky left-0 z-20 w-10 min-w-10 border-r border-brand-200 bg-brand-50 px-1 py-2 align-middle font-semibold text-slate-800"
+                        >
+                          N°
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="sticky left-10 z-20 min-w-[100px] border-r border-brand-200 bg-brand-50 px-2 py-2 align-middle font-semibold text-slate-800"
+                        >
+                          First name
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="sticky left-[140px] z-20 min-w-[100px] border-r border-brand-200 bg-brand-50 px-2 py-2 align-middle font-semibold text-slate-800"
+                        >
+                          Last name
+                        </th>
+                        {grid.subjects.map((sub, si) => (
+                          <th
+                            key={sub.id}
+                            colSpan={3}
+                            className={`border-b border-brand-200 px-1 py-2 text-center font-semibold text-slate-800 ${subjectGroupBorder(si)}`}
+                          >
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span>{sub.name}</span>
+                              <span className="text-[0.65rem] font-normal uppercase tracking-wide text-slate-500">
+                                {sub.code}
+                              </span>
+                            </div>
+                          </th>
+                        ))}
+                        <th
+                          rowSpan={2}
+                          className="min-w-[4rem] border-b border-l-2 border-brand-200 bg-brand-50/90 px-2 py-2 align-middle text-center font-semibold text-slate-800"
+                        >
+                          Total
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="min-w-[3rem] border-b border-l border-brand-200 px-2 py-2 align-middle text-center font-semibold text-slate-800"
+                        >
+                          Rank
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="sticky right-0 z-20 min-w-[6.5rem] border-b border-l-2 border-brand-200 bg-brand-50 px-2 py-2 align-middle text-center font-semibold text-slate-800"
+                        >
+                          Conduct
+                        </th>
+                      </tr>
+                      <tr className="border-b border-brand-200 bg-brand-50/80">
+                        {grid.subjects.map((sub, si) => (
+                          <React.Fragment key={sub.id}>
+                            <th
+                              className={`px-1 py-1 text-center text-[0.65rem] font-semibold uppercase tracking-wide text-slate-600 ${subjectGroupBorder(si)}`}
+                            >
+                              CAT
+                            </th>
+                            <th className="px-1 py-1 text-center text-[0.65rem] font-semibold uppercase tracking-wide text-slate-600">
+                              EXAM
+                            </th>
+                            <th className="px-1 py-1 text-center text-[0.65rem] font-semibold uppercase tracking-wide text-slate-600">
+                              Total
+                            </th>
+                          </React.Fragment>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grid.students.map((row) => (
+                        <tr key={row.studentId} className="border-b border-brand-50">
+                          <td className="sticky left-0 z-10 w-10 min-w-10 border-r border-brand-100 bg-white px-1 py-1 text-slate-600">
+                            {row.index}
+                          </td>
+                          <td className="sticky left-10 z-10 min-w-[100px] border-r border-brand-100 bg-white px-2 py-1 font-medium text-slate-800">
+                            {row.firstName}
+                          </td>
+                          <td className="sticky left-[140px] z-10 min-w-[100px] border-r border-brand-100 bg-white px-2 py-1 font-medium text-slate-800">
+                            {row.lastName}
+                          </td>
+                          {row.subjectMarks.map((sm, i) => {
+                            const testStr = getDisplayValue(row, i, 'test');
+                            const examStr = getDisplayValue(row, i, 'exam');
+                            const total = (() => {
+                              const t = draft[getCellKey(row.studentId, sm.subjectId, 'test')];
+                              const e = draft[getCellKey(row.studentId, sm.subjectId, 'exam')];
+                              if (t !== undefined || e !== undefined) {
+                                return (t ?? sm.testMarks ?? 0) + (e ?? sm.examMarks ?? 0);
+                              }
+                              return sm.total;
+                            })();
+                            const hasSubjectMarks =
+                              sm.testMarks != null ||
+                              sm.examMarks != null ||
+                              draft[getCellKey(row.studentId, sm.subjectId, 'test')] !==
+                                undefined ||
+                              draft[getCellKey(row.studentId, sm.subjectId, 'exam')] !== undefined;
+                            const sep = subjectGroupBorder(i);
+                            return (
+                              <React.Fragment key={sm.subjectId}>
+                                <td className={`border-r border-brand-100 px-1 py-1 ${sep}`}>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={500}
+                                    readOnly={marksReadOnly}
+                                    tabIndex={marksReadOnly ? -1 : 0}
+                                    className={marksReadOnly ? inputReadonlyClass : inputClass}
+                                    value={testStr}
+                                    onChange={(e) => {
+                                      if (marksReadOnly) return;
+                                      const v = e.target.value.trim();
+                                      setCell(
+                                        row.studentId,
+                                        sm.subjectId,
+                                        'test',
+                                        v === '' ? null : parseInt(v, 10)
+                                      );
+                                    }}
+                                    aria-label={`${row.firstName} ${row.lastName} ${grid.subjects[i]?.name} CAT`}
+                                  />
+                                </td>
+                                <td className="border-r border-brand-100 px-1 py-1">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={500}
+                                    readOnly={marksReadOnly}
+                                    tabIndex={marksReadOnly ? -1 : 0}
+                                    className={marksReadOnly ? inputReadonlyClass : inputClass}
+                                    value={examStr}
+                                    onChange={(e) => {
+                                      if (marksReadOnly) return;
+                                      const v = e.target.value.trim();
+                                      setCell(
+                                        row.studentId,
+                                        sm.subjectId,
+                                        'exam',
+                                        v === '' ? null : parseInt(v, 10)
+                                      );
+                                    }}
+                                    aria-label={`${row.firstName} ${row.lastName} ${grid.subjects[i]?.name} Exam`}
+                                  />
+                                </td>
+                                <td className="border-r border-brand-100 bg-slate-50/80 px-1 py-1 text-center text-sm font-medium tabular-nums text-slate-700">
+                                  {hasSubjectMarks ? total.toFixed(1) : '—'}
+                                </td>
+                              </React.Fragment>
+                            );
+                          })}
+                          <td className="border-l border-brand-100 px-2 py-1 text-center font-semibold tabular-nums text-slate-800">
+                            {row.total.toFixed(1)}
+                          </td>
+                          <td className="border-l border-brand-100 px-2 py-1 text-center font-medium text-slate-700">
+                            {row.rank}
+                          </td>
+                          <td className="sticky right-0 z-10 min-w-[6.5rem] border-l-2 border-brand-100 bg-white px-2 py-1 text-left text-xs text-slate-800">
+                            <span>
+                              <span className="font-semibold">{row.conduct.grade}</span>
+                              {row.conduct.remark ? (
+                                <span className="mt-0.5 block font-normal text-slate-600">
+                                  {row.conduct.remark}
+                                </span>
+                              ) : null}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
 
-      {!gridQuery.isPending && !gridQuery.isError && termId && classRoomId && grid && !hasGrid ? (
-        <EmptyState message="No subjects or students in this class for this term. Create exams (Test/CAT and Exam) for the class to see the grid." />
+              {!gridQuery.isPending &&
+              !gridQuery.isError &&
+              termId &&
+              classRoomId &&
+              grid &&
+              !hasGrid ? (
+                <EmptyState message="No subjects or students in this class for this term. Create exams (Test/CAT and Exam) for the class to see the grid." />
               ) : null}
             </div>
           </div>
-      ) : null}
-    </SectionCard>
+        ) : null}
+      </SectionCard>
 
       {conductModalOpen && grid?.academicYear?.id && auth.accessToken ? (
         <div

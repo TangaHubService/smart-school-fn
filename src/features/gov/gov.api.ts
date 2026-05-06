@@ -254,7 +254,7 @@ export function createGovAuditorApi(
     province?: string;
     district?: string;
     sector?: string;
-  },
+  }
 ) {
   return apiRequest<GovAuditor>('/gov/admin/auditors', {
     method: 'POST',
@@ -263,29 +263,26 @@ export function createGovAuditorApi(
   });
 }
 
-export function listGovAuditorsApi(
-  accessToken: string,
-  params?: { q?: string },
-) {
+export function listGovAuditorsApi(accessToken: string, params?: { q?: string }) {
   const query = new URLSearchParams();
   if (params?.q?.trim()) {
     query.set('q', params.q.trim());
   }
 
-  return apiRequest<{ items: GovAuditor[] }>(`/gov/admin/auditors${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
-}
-
-export function listGovAuditorScopesApi(accessToken: string, auditorUserId: string) {
-  return apiRequest<{ items: GovAuditorScope[] }>(
-    `/gov/admin/auditors/${auditorUserId}/scopes`,
+  return apiRequest<{ items: GovAuditor[] }>(
+    `/gov/admin/auditors${query.toString() ? `?${query.toString()}` : ''}`,
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
+}
+
+export function listGovAuditorScopesApi(accessToken: string, auditorUserId: string) {
+  return apiRequest<{ items: GovAuditorScope[] }>(`/gov/admin/auditors/${auditorUserId}/scopes`, {
+    method: 'GET',
+    accessToken,
+  });
 }
 
 export function listGovMyScopesApi(accessToken: string) {
@@ -307,7 +304,7 @@ export function assignGovAuditorScopeApi(
     notes?: string;
     startsAt?: string;
     endsAt?: string;
-  },
+  }
 ) {
   return apiRequest<GovAuditorScope>(`/gov/admin/auditors/${auditorUserId}/scopes`, {
     method: 'POST',
@@ -324,7 +321,7 @@ export function updateGovScopeApi(
     startsAt?: string | null;
     endsAt?: string | null;
     isActive?: boolean;
-  },
+  }
 ) {
   return apiRequest<GovAuditorScope>(`/gov/admin/scopes/${scopeId}`, {
     method: 'PATCH',
@@ -349,7 +346,7 @@ export function listGovSchoolsApi(
     sector?: string;
     page?: number;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
   if (params?.q?.trim()) {
@@ -376,7 +373,7 @@ export function listGovSchoolsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -395,7 +392,7 @@ export function createGovAuditApi(
     auditType: GovAuditType;
     plannedDate: string;
     planNotes?: string;
-  },
+  }
 ) {
   return apiRequest<GovAuditItem>('/gov/audits', {
     method: 'POST',
@@ -412,7 +409,7 @@ export function listGovAuditsApi(
     schoolId?: string;
     page?: number;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
   if (params?.status) {
@@ -431,10 +428,13 @@ export function listGovAuditsApi(
     query.set('pageSize', String(params.pageSize));
   }
 
-  return apiRequest<GovAuditListResponse>(`/gov/audits${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
+  return apiRequest<GovAuditListResponse>(
+    `/gov/audits${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
 
 export function getGovAuditApi(accessToken: string, auditId: string) {
@@ -454,7 +454,7 @@ export function submitGovAuditReportApi(
     comment: string;
     findings: string;
     recommendations: string;
-  },
+  }
 ) {
   return apiRequest<GovAuditItem>('/gov/reports', {
     method: 'POST',
@@ -470,7 +470,7 @@ export function listGovReportsApi(
     schoolId?: string;
     page?: number;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
   if (params?.auditType) {
@@ -486,10 +486,13 @@ export function listGovReportsApi(
     query.set('pageSize', String(params.pageSize));
   }
 
-  return apiRequest<GovAuditListResponse>(`/gov/reports${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
+  return apiRequest<GovAuditListResponse>(
+    `/gov/reports${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
 
 export function listGovActivityLogsApi(
@@ -500,7 +503,7 @@ export function listGovActivityLogsApi(
     search?: string;
     actionType?: GovAuditActionType;
     module?: string;
-  },
+  }
 ) {
   const query = new URLSearchParams();
   if (params?.page) {
@@ -519,10 +522,13 @@ export function listGovActivityLogsApi(
     query.set('module', params.module.trim());
   }
 
-  return apiRequest<GovActivityLogResponse>(`/gov/activity-logs${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
+  return apiRequest<GovActivityLogResponse>(
+    `/gov/activity-logs${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
 
 export function listGovIncidentsApi(
@@ -534,7 +540,7 @@ export function listGovIncidentsApi(
     q?: string;
     page?: number;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
   if (params?.tenantId) {
@@ -561,7 +567,7 @@ export function listGovIncidentsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -575,7 +581,7 @@ export function getGovIncidentDetailApi(accessToken: string, incidentId: string)
 export function addGovIncidentFeedbackApi(
   accessToken: string,
   incidentId: string,
-  payload: { body: string },
+  payload: { body: string }
 ) {
   return apiRequest<ConductIncident>(`/gov/incidents/${incidentId}/feedback`, {
     method: 'POST',

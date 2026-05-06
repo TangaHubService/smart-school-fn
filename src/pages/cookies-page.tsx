@@ -8,9 +8,9 @@ export function CookiesPage() {
       <SectionCard title={t('legal.cookiesTitle')} subtitle={t('legal.cookiesSubtitle')}>
         <div className="prose prose-slate max-w-none text-sm text-slate-700">
           <p>
-            We use cookies or local storage for session tokens (when you stay signed in), language choice,
-            and optional low-data preferences. Assessment drafts may be cached locally when you are
-            offline.
+            We use cookies or local storage for session tokens (when you stay signed in), language
+            choice, and optional low-data preferences. Assessment drafts may be cached locally when
+            you are offline.
           </p>
         </div>
       </SectionCard>

@@ -133,14 +133,16 @@ export interface MyAssessmentDetailResponse extends MyAssessmentItem {
 
 export interface AssessmentResultsResponse {
   assessment: AssessmentSummary;
-  items: Array<AssessmentAttemptSummary & {
-    student: {
-      id: string;
-      studentCode: string;
-      firstName: string;
-      lastName: string;
-    };
-  }>;
+  items: Array<
+    AssessmentAttemptSummary & {
+      student: {
+        id: string;
+        studentCode: string;
+        firstName: string;
+        lastName: string;
+      };
+    }
+  >;
   pagination: {
     page: number;
     pageSize: number;
@@ -215,7 +217,7 @@ export function createAssessmentApi(
     timeLimitMinutes?: number;
     maxAttempts?: number;
     isPublished?: boolean;
-  },
+  }
 ) {
   return apiRequest<AssessmentSummary>('/assessments', {
     method: 'POST',
@@ -233,7 +235,7 @@ export function listAssessmentsApi(
     q?: string;
     page?: number;
     pageSize?: number;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.courseId) query.set('courseId', params.courseId);
@@ -243,10 +245,13 @@ export function listAssessmentsApi(
   if (params.page) query.set('page', String(params.page));
   if (params.pageSize) query.set('pageSize', String(params.pageSize));
 
-  return apiRequest<AssessmentListResponse>(`/assessments${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
+  return apiRequest<AssessmentListResponse>(
+    `/assessments${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
 
 export function getAssessmentDetailApi(accessToken: string, assessmentId: string) {
@@ -266,7 +271,7 @@ export function updateAssessmentApi(
     dueAt?: string | null;
     timeLimitMinutes?: number | null;
     maxAttempts?: number;
-  },
+  }
 ) {
   return apiRequest<AssessmentSummary>(`/assessments/${assessmentId}`, {
     method: 'PATCH',
@@ -297,7 +302,7 @@ export function addAssessmentQuestionApi(
       isCorrect: boolean;
       sequence?: number;
     }>;
-  },
+  }
 ) {
   return apiRequest<AssessmentQuestion>(`/assessments/${assessmentId}/questions`, {
     method: 'POST',
@@ -322,7 +327,7 @@ export function bulkAddAssessmentQuestionsApi(
         sequence?: number;
       }>;
     }>;
-  },
+  }
 ) {
   return apiRequest<{ createdCount: number; questions: AssessmentQuestion[] }>(
     `/assessments/${assessmentId}/questions/bulk`,
@@ -330,14 +335,14 @@ export function bulkAddAssessmentQuestionsApi(
       method: 'POST',
       accessToken,
       body: payload,
-    },
+    }
   );
 }
 
 export function publishAssessmentApi(
   accessToken: string,
   assessmentId: string,
-  isPublished: boolean,
+  isPublished: boolean
 ) {
   return apiRequest<AssessmentSummary>(`/assessments/${assessmentId}/publish`, {
     method: 'PATCH',
@@ -361,7 +366,7 @@ export function updateAssessmentQuestionApi(
       isCorrect: boolean;
       sequence?: number;
     }>;
-  },
+  }
 ) {
   return apiRequest<AssessmentQuestion>(`/assessment-questions/${questionId}`, {
     method: 'PATCH',
@@ -383,7 +388,7 @@ export function listAssessmentResultsApi(
   params: {
     page?: number;
     pageSize?: number;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.page) query.set('page', String(params.page));
@@ -394,7 +399,7 @@ export function listAssessmentResultsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -404,7 +409,7 @@ export function listMyAssessmentsApi(
     q?: string;
     page?: number;
     pageSize?: number;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.q) query.set('q', params.q);
@@ -416,7 +421,7 @@ export function listMyAssessmentsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -441,7 +446,7 @@ export function saveAssessmentAttemptAnswersApi(
     questionId: string;
     selectedOptionId: string | null;
     textResponse?: string | null;
-  }>,
+  }>
 ) {
   return apiRequest<AssessmentAttemptDetail>(`/assessment-attempts/${attemptId}/answers`, {
     method: 'PUT',
@@ -473,7 +478,7 @@ export function regradeAssessmentAttemptApi(
       questionId: string;
       pointsAwarded: number;
     }>;
-  },
+  }
 ) {
   return apiRequest<AssessmentAttemptDetail>(`/assessment-attempts/${attemptId}/regrade`, {
     method: 'PATCH',

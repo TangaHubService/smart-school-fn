@@ -27,11 +27,7 @@ import { SchoolAdminDashboardPage } from './school-admin-dashboard-page';
 import { SuperAdminDashboardPage } from './super-admin-dashboard-page';
 import { TeacherDashboardPage } from './teacher-dashboard-page';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  hasPermission,
-  hasRole,
-  isSchoolSetupComplete,
-} from '../features/auth/auth-helpers';
+import { hasPermission, hasRole, isSchoolSetupComplete } from '../features/auth/auth-helpers';
 import {
   listAssessmentsApi,
   type AssessmentSummary,
@@ -422,14 +418,19 @@ export function DashboardPage() {
       ];
     }
 
-    const pendingTasks = (attendanceSummaryQuery.data?.pendingClasses ?? 0) + (setupComplete ? 0 : 1);
-    const alertCount = (attendanceSummaryQuery.data?.summary.absent ?? 0) + (attendanceSummaryQuery.data?.summary.late ?? 0);
+    const pendingTasks =
+      (attendanceSummaryQuery.data?.pendingClasses ?? 0) + (setupComplete ? 0 : 1);
+    const alertCount =
+      (attendanceSummaryQuery.data?.summary.absent ?? 0) +
+      (attendanceSummaryQuery.data?.summary.late ?? 0);
 
     return [
       {
         label: 'Marked Students',
         value: String(attendanceSummaryQuery.data?.markedStudents ?? 0),
-        helper: attendanceSummaryQuery.data ? 'Attendance captured today' : 'Waiting for attendance data',
+        helper: attendanceSummaryQuery.data
+          ? 'Attendance captured today'
+          : 'Waiting for attendance data',
         icon: Users,
         tone: 'primary',
       },
@@ -660,7 +661,10 @@ export function DashboardPage() {
           ) : hasLiveAttendance ? (
             <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
               <div className="grid gap-4 justify-items-center text-center">
-                <div className="grid h-64 w-64 place-items-center rounded-full p-5" style={attendanceDonutStyle}>
+                <div
+                  className="grid h-64 w-64 place-items-center rounded-full p-5"
+                  style={attendanceDonutStyle}
+                >
                   <div className="grid h-36 w-36 place-items-center rounded-full border border-slate-200 bg-white text-center shadow-sm">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -677,7 +681,10 @@ export function DashboardPage() {
                 <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm font-medium text-slate-700">
                   {attendanceBreakdown.map((item) => (
                     <div key={item.label} className="inline-flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
                       <span>{item.label}</span>
                     </div>
                   ))}
@@ -717,10 +724,26 @@ export function DashboardPage() {
           {hasLiveAttendance ? (
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <MiniStat label="Classes active" value={attendanceSummaryQuery.data!.activeClasses} tone="primary" />
-                <MiniStat label="Sessions opened" value={attendanceSummaryQuery.data!.sessionsOpened} tone="success" />
-                <MiniStat label="Pending classes" value={attendanceSummaryQuery.data!.pendingClasses} tone="accent" />
-                <MiniStat label="Coverage" value={`${attendanceSummaryQuery.data!.coveragePercent}%`} tone="danger" />
+                <MiniStat
+                  label="Classes active"
+                  value={attendanceSummaryQuery.data!.activeClasses}
+                  tone="primary"
+                />
+                <MiniStat
+                  label="Sessions opened"
+                  value={attendanceSummaryQuery.data!.sessionsOpened}
+                  tone="success"
+                />
+                <MiniStat
+                  label="Pending classes"
+                  value={attendanceSummaryQuery.data!.pendingClasses}
+                  tone="accent"
+                />
+                <MiniStat
+                  label="Coverage"
+                  value={`${attendanceSummaryQuery.data!.coveragePercent}%`}
+                  tone="danger"
+                />
               </div>
 
               <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
@@ -802,7 +825,9 @@ function MetricCard({ label, value, helper, icon: Icon, tone }: MetricCardItem) 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-soft">
       <div className="flex items-center gap-4">
-        <span className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${toneClassName}`}>
+        <span
+          className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${toneClassName}`}
+        >
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
@@ -930,7 +955,9 @@ function CompactBreakdownCard({ item }: { item: BreakdownItem }) {
     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full ${item.toneClassName}`}>
+          <span
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-full ${item.toneClassName}`}
+          >
             <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
           </span>
           <div>
@@ -958,7 +985,9 @@ function RecentActivityRow({ item }: { item: ActivityItem }) {
   const content = (
     <>
       <div className="flex min-w-0 items-start gap-3">
-        <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${toneClassName}`}>
+        <span
+          className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${toneClassName}`}
+        >
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
@@ -970,7 +999,9 @@ function RecentActivityRow({ item }: { item: ActivityItem }) {
           </div>
         </div>
       </div>
-      {item.to ? <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" /> : null}
+      {item.to ? (
+        <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+      ) : null}
     </>
   );
 
@@ -985,5 +1016,9 @@ function RecentActivityRow({ item }: { item: ActivityItem }) {
     );
   }
 
-  return <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4">{content}</div>;
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4">
+      {content}
+    </div>
+  );
 }

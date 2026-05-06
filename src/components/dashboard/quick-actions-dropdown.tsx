@@ -40,9 +40,7 @@ export function DashboardQuickActionsDropdown({
                   <Icon className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-900">
-                    {action.label}
-                  </span>
+                  <span className="block text-sm font-semibold text-slate-900">{action.label}</span>
                   {action.description ? (
                     <span className="mt-0.5 block text-xs text-slate-500">
                       {action.description}

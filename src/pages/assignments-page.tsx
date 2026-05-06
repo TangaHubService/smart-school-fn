@@ -1,13 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  ExternalLink,
-  FilePlus2,
-  Plus,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, ExternalLink, FilePlus2, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -20,10 +13,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  listAcademicYearsApi,
-  listClassRoomsApi,
-} from '../features/sprint1/sprint1.api';
+import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import {
   AssignmentItem,
@@ -131,7 +121,9 @@ function StatusPill({
   };
 
   return (
-    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClass[tone]}`}>
+    <span
+      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClass[tone]}`}
+    >
       {label}
     </span>
   );
@@ -287,7 +279,10 @@ export function AssignmentsPage() {
   const classRooms = ((classesQuery.data as ClassRoomOption[] | undefined) ?? []).slice();
   const courseOptions = courseOptionsQuery.data?.items ?? [];
 
-  const visibleAssignments = useMemo(() => assignmentsQuery.data?.items ?? [], [assignmentsQuery.data?.items]);
+  const visibleAssignments = useMemo(
+    () => assignmentsQuery.data?.items ?? [],
+    [assignmentsQuery.data?.items]
+  );
 
   function openCreate() {
     assignmentForm.reset({
@@ -393,7 +388,10 @@ export function AssignmentsPage() {
           {assignmentsQuery.isPending ? (
             <div className="grid gap-3">
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="h-32 animate-pulse rounded-2xl border border-brand-100 bg-brand-50" />
+                <div
+                  key={index}
+                  className="h-32 animate-pulse rounded-2xl border border-brand-100 bg-brand-50"
+                />
               ))}
             </div>
           ) : null}
@@ -419,7 +417,8 @@ export function AssignmentsPage() {
               <div className="grid gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-slate-700">
                   <span className="font-medium text-slate-800">
-                    {assignmentsQuery.data?.pagination.totalItems ?? visibleAssignments.length} assignments
+                    {assignmentsQuery.data?.pagination.totalItems ?? visibleAssignments.length}{' '}
+                    assignments
                   </span>
                   {assignmentsQuery.data?.pagination.totalPages &&
                   assignmentsQuery.data.pagination.totalPages > 1 ? (
@@ -435,12 +434,10 @@ export function AssignmentsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={
-                          page >= (assignmentsQuery.data?.pagination.totalPages ?? 1)
-                        }
+                        disabled={page >= (assignmentsQuery.data?.pagination.totalPages ?? 1)}
                         onClick={() =>
                           setPage((current) =>
-                            Math.min(assignmentsQuery.data!.pagination.totalPages, current + 1),
+                            Math.min(assignmentsQuery.data!.pagination.totalPages, current + 1)
                           )
                         }
                         className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-3 py-1.5 disabled:opacity-50"
@@ -453,12 +450,16 @@ export function AssignmentsPage() {
                 </div>
 
                 {visibleAssignments.map((assignment) => (
-                  <article key={assignment.id} className="rounded-2xl border border-brand-100 bg-white p-4">
+                  <article
+                    key={assignment.id}
+                    className="rounded-2xl border border-brand-100 bg-white p-4"
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-bold text-slate-900">{assignment.title}</p>
                         <p className="mt-1 text-sm text-slate-600">
-                          {assignment.course?.title ?? 'Course'} · {assignment.course?.classRoom.name ?? 'Class'} ·{' '}
+                          {assignment.course?.title ?? 'Course'} ·{' '}
+                          {assignment.course?.classRoom.name ?? 'Class'} ·{' '}
                           {formatDateTime(assignment.dueAt)}
                         </p>
                       </div>
@@ -530,7 +531,9 @@ export function AssignmentsPage() {
       >
         <form
           className="grid gap-4"
-          onSubmit={assignmentForm.handleSubmit((values) => createAssignmentMutation.mutate(values))}
+          onSubmit={assignmentForm.handleSubmit((values) =>
+            createAssignmentMutation.mutate(values)
+          )}
         >
           <FormField label="Course" error={assignmentForm.formState.errors.courseId?.message}>
             <select
@@ -594,7 +597,10 @@ export function AssignmentsPage() {
               />
             </FormField>
 
-            <FormField label="Max points" error={assignmentForm.formState.errors.maxPoints?.message}>
+            <FormField
+              label="Max points"
+              error={assignmentForm.formState.errors.maxPoints?.message}
+            >
               <input
                 type="number"
                 min={1}
@@ -646,7 +652,10 @@ export function AssignmentsPage() {
         {submissionsQuery.isPending ? (
           <div className="grid gap-3">
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="h-16 animate-pulse rounded-2xl border border-brand-100 bg-brand-50" />
+              <div
+                key={index}
+                className="h-16 animate-pulse rounded-2xl border border-brand-100 bg-brand-50"
+              />
             ))}
           </div>
         ) : null}
@@ -671,7 +680,10 @@ export function AssignmentsPage() {
           submissionsQuery.data?.items.length ? (
             <div className="grid gap-3">
               {submissionsQuery.data.items.map((submission) => (
-                <article key={submission.id} className="rounded-2xl border border-brand-100 bg-white p-4">
+                <article
+                  key={submission.id}
+                  className="rounded-2xl border border-brand-100 bg-white p-4"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-bold text-slate-900">
@@ -704,7 +716,9 @@ export function AssignmentsPage() {
                   </div>
 
                   <div className="mt-3 grid gap-2 text-sm text-slate-700">
-                    {submission.textAnswer ? <p className="whitespace-pre-wrap">{submission.textAnswer}</p> : null}
+                    {submission.textAnswer ? (
+                      <p className="whitespace-pre-wrap">{submission.textAnswer}</p>
+                    ) : null}
                     {submission.linkUrl ? (
                       <AttachmentLink label="Open submitted link" url={submission.linkUrl} />
                     ) : null}
@@ -715,9 +729,7 @@ export function AssignmentsPage() {
                       />
                     ) : null}
                     {submission.feedback ? (
-                      <p className="rounded-xl bg-brand-50 p-3">
-                        Feedback: {submission.feedback}
-                      </p>
+                      <p className="rounded-xl bg-brand-50 p-3">Feedback: {submission.feedback}</p>
                     ) : null}
                   </div>
                 </article>
@@ -735,7 +747,10 @@ export function AssignmentsPage() {
         description="Save points and feedback for the selected submission."
         onClose={() => setGradingSubmissionId(null)}
       >
-        <form className="grid gap-4" onSubmit={gradeForm.handleSubmit((values) => gradeSubmissionMutation.mutate(values))}>
+        <form
+          className="grid gap-4"
+          onSubmit={gradeForm.handleSubmit((values) => gradeSubmissionMutation.mutate(values))}
+        >
           <FormField label="Points" error={gradeForm.formState.errors.gradePoints?.message}>
             <input
               type="number"

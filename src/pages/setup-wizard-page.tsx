@@ -130,7 +130,10 @@ export function SetupWizardPage() {
   const schoolCell = form.watch('schoolCell');
 
   useEffect(() => {
-    if (previousProvinceRef.current !== undefined && previousProvinceRef.current !== schoolProvince) {
+    if (
+      previousProvinceRef.current !== undefined &&
+      previousProvinceRef.current !== schoolProvince
+    ) {
       form.setValue('schoolDistrict', '');
       form.setValue('schoolSector', '');
       form.setValue('schoolCell', '');
@@ -140,7 +143,10 @@ export function SetupWizardPage() {
   }, [schoolProvince, form]);
 
   useEffect(() => {
-    if (previousDistrictRef.current !== undefined && previousDistrictRef.current !== schoolDistrict) {
+    if (
+      previousDistrictRef.current !== undefined &&
+      previousDistrictRef.current !== schoolDistrict
+    ) {
       form.setValue('schoolSector', '');
       form.setValue('schoolCell', '');
       form.setValue('schoolVillage', '');
@@ -166,19 +172,20 @@ export function SetupWizardPage() {
   const provinceOptions = useMemo(() => getRwandaOptions(getRwandaProvinces()), []);
   const districtOptions = useMemo(
     () => getRwandaOptions(getRwandaDistricts(schoolProvince)),
-    [schoolProvince],
+    [schoolProvince]
   );
   const sectorOptions = useMemo(
     () => getRwandaOptions(getRwandaSectors(schoolProvince, schoolDistrict)),
-    [schoolProvince, schoolDistrict],
+    [schoolProvince, schoolDistrict]
   );
   const cellOptions = useMemo(
     () => getRwandaOptions(getRwandaCells(schoolProvince, schoolDistrict, schoolSector)),
-    [schoolProvince, schoolDistrict, schoolSector],
+    [schoolProvince, schoolDistrict, schoolSector]
   );
   const villageOptions = useMemo(
-    () => getRwandaOptions(getRwandaVillages(schoolProvince, schoolDistrict, schoolSector, schoolCell)),
-    [schoolProvince, schoolDistrict, schoolSector, schoolCell],
+    () =>
+      getRwandaOptions(getRwandaVillages(schoolProvince, schoolDistrict, schoolSector, schoolCell)),
+    [schoolProvince, schoolDistrict, schoolSector, schoolCell]
   );
 
   const apiError = saveProfileMutation.error as ApiClientError | null;
@@ -215,7 +222,10 @@ export function SetupWizardPage() {
       ) : null}
 
       {!schoolSetupStatusQuery.isError ? (
-        <form className="grid gap-3" onSubmit={form.handleSubmit((values) => saveProfileMutation.mutate(values))}>
+        <form
+          className="grid gap-3"
+          onSubmit={form.handleSubmit((values) => saveProfileMutation.mutate(values))}
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-brand-200 bg-slate-50">
               {form.watch('logoUrl') ? (
@@ -253,18 +263,27 @@ export function SetupWizardPage() {
 
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             School display name
-            <input className="rounded-lg border border-brand-200 px-3 py-2" {...form.register('schoolDisplayName')} />
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...form.register('schoolDisplayName')}
+            />
           </label>
           <FieldError message={form.formState.errors.schoolDisplayName?.message} />
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               School email (optional)
-              <input className="rounded-lg border border-brand-200 px-3 py-2" {...form.register('schoolEmail')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...form.register('schoolEmail')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               School phone
-              <input className="rounded-lg border border-brand-200 px-3 py-2" {...form.register('schoolPhone')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...form.register('schoolPhone')}
+              />
             </label>
           </div>
           <FieldError message={form.formState.errors.schoolEmail?.message} />
@@ -292,7 +311,10 @@ export function SetupWizardPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Province
-              <select className="rounded-lg border border-brand-200 px-3 py-2" {...form.register('schoolProvince')}>
+              <select
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...form.register('schoolProvince')}
+              >
                 <option value="">Select province</option>
                 {provinceOptions.map((option) => (
                   <option key={option} value={option}>
@@ -372,7 +394,9 @@ export function SetupWizardPage() {
           </label>
           <FieldError message={form.formState.errors.schoolVillage?.message} />
 
-          {apiError ? <StateView title="Could not save school profile" message={apiError.message} /> : null}
+          {apiError ? (
+            <StateView title="Could not save school profile" message={apiError.message} />
+          ) : null}
 
           <div className="flex justify-end">
             <button
@@ -388,7 +412,8 @@ export function SetupWizardPage() {
 
       {saveProfileMutation.data ? (
         <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-          School profile saved successfully. Continue using the sidebar to configure academics, classes, subjects, staff, and students.
+          School profile saved successfully. Continue using the sidebar to configure academics,
+          classes, subjects, staff, and students.
         </div>
       ) : null}
     </SectionCard>

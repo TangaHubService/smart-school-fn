@@ -10,7 +10,15 @@ import { resetPasswordSchema, ResetPasswordInput } from '../features/auth/auth.s
 import { ApiClientError } from '../types/api';
 import { useTranslation } from 'react-i18next';
 
-function OtpBoxes({ length = 6, value, onChange }: { length?: number, value: string, onChange: (val: string) => void }) {
+function OtpBoxes({
+  length = 6,
+  value,
+  onChange,
+}: {
+  length?: number;
+  value: string;
+  onChange: (val: string) => void;
+}) {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   const getBufferedValue = () => value.padEnd(length, ' ');
@@ -23,7 +31,7 @@ function OtpBoxes({ length = 6, value, onChange }: { length?: number, value: str
     chars[index] = text || ' ';
     const newVal = chars.join('');
     onChange(newVal.trimEnd());
-    
+
     if (text && index < length - 1) {
       inputsRef.current[index + 1]?.focus();
     }
@@ -49,7 +57,10 @@ function OtpBoxes({ length = 6, value, onChange }: { length?: number, value: str
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, length);
+    const pastedData = e.clipboardData
+      .getData('text')
+      .replace(/[^0-9]/g, '')
+      .slice(0, length);
     if (pastedData) {
       onChange(pastedData);
       const focusIndex = Math.min(pastedData.length, length - 1);
@@ -64,7 +75,7 @@ function OtpBoxes({ length = 6, value, onChange }: { length?: number, value: str
       {Array.from({ length }).map((_, i) => (
         <input
           key={i}
-          ref={(el) => inputsRef.current[i] = el}
+          ref={(el) => (inputsRef.current[i] = el)}
           type="text"
           inputMode="numeric"
           maxLength={1}
@@ -90,12 +101,16 @@ export function ResetPasswordPage() {
   const [localOtp, setLocalOtp] = useState('');
   const [otpError, setOtpError] = useState('');
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordInput>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       email: email,
       otp: otpVal,
-    }
+    },
   });
 
   const verifyMutation = useMutation({
@@ -105,7 +120,7 @@ export function ResetPasswordPage() {
     },
     onError: (error: ApiClientError) => {
       setOtpError(error.message || t('reset.invalidOtp'));
-    }
+    },
   });
 
   const mutation = useMutation({
@@ -137,8 +152,14 @@ export function ResetPasswordPage() {
         className="absolute inset-0 bg-gradient-to-br from-[#173C7F]/70 via-black/50 to-black/70"
         aria-hidden="true"
       />
-      <div className="absolute -top-48 left-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl" aria-hidden="true" />
-      <div className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
+      <div
+        className="absolute -top-48 left-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl"
+        aria-hidden="true"
+      />
 
       <div className="relative z-10 w-full max-w-lg bg-white/75 backdrop-blur-xl rounded-3xl border border-white/30 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.65)] ring-1 ring-white/20 p-8 sm:p-12">
         <header className="mb-8 text-center">
@@ -147,7 +168,7 @@ export function ResetPasswordPage() {
           </div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{t('reset.title')}</h1>
           <p className="mt-3 text-slate-600 leading-relaxed">
-            {step === 'otp' 
+            {step === 'otp'
               ? t('reset.otpSent', { email: email || t('reset.otpSentFallback') })
               : t('reset.newPasswordPrompt')}
           </p>
@@ -160,7 +181,11 @@ export function ResetPasswordPage() {
                 {t('reset.otpLabel')}
               </label>
               <OtpBoxes value={localOtp} onChange={setLocalOtp} length={6} />
-              {otpError && <p className="mt-2 text-sm text-center text-red-600 font-medium italic">{otpError}</p>}
+              {otpError && (
+                <p className="mt-2 text-sm text-center text-red-600 font-medium italic">
+                  {otpError}
+                </p>
+              )}
             </div>
 
             <button
@@ -179,13 +204,19 @@ export function ResetPasswordPage() {
             </Link>
           </form>
         ) : (
-          <form className="space-y-6" onSubmit={handleSubmit((data) => mutation.mutate({ ...data, email, otp: otpVal }))}>
+          <form
+            className="space-y-6"
+            onSubmit={handleSubmit((data) => mutation.mutate({ ...data, email, otp: otpVal }))}
+          >
             <input type="hidden" {...register('email')} />
             <input type="hidden" {...register('otp')} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="newPassword" className="mb-2 block text-sm font-bold text-slate-800 uppercase tracking-wide">
+                <label
+                  htmlFor="newPassword"
+                  className="mb-2 block text-sm font-bold text-slate-800 uppercase tracking-wide"
+                >
                   {t('reset.newPassword')}
                 </label>
                 <div className="mt-1 relative">
@@ -200,11 +231,18 @@ export function ResetPasswordPage() {
                     {...register('newPassword')}
                   />
                 </div>
-                {errors.newPassword && <p className="mt-2 text-sm text-red-600 font-medium italic">{errors.newPassword.message}</p>}
+                {errors.newPassword && (
+                  <p className="mt-2 text-sm text-red-600 font-medium italic">
+                    {errors.newPassword.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="mb-2 block text-sm font-bold text-slate-800 uppercase tracking-wide">
+                <label
+                  htmlFor="confirmPassword"
+                  className="mb-2 block text-sm font-bold text-slate-800 uppercase tracking-wide"
+                >
                   {t('reset.confirm')}
                 </label>
                 <div className="mt-1 relative">
@@ -219,7 +257,11 @@ export function ResetPasswordPage() {
                     {...register('confirmPassword')}
                   />
                 </div>
-                {errors.confirmPassword && <p className="mt-2 text-sm text-red-600 font-medium italic">{errors.confirmPassword.message}</p>}
+                {errors.confirmPassword && (
+                  <p className="mt-2 text-sm text-red-600 font-medium italic">
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
               </div>
             </div>
 

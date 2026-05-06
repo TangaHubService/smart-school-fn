@@ -11,7 +11,12 @@ import { createTenantApi } from '../features/sprint1/sprint1.api';
 import { ApiClientError } from '../types/api';
 
 const createTenantFormSchema = z.object({
-  code: z.string().trim().min(2).max(50).regex(/^[a-z0-9-]+$/),
+  code: z
+    .string()
+    .trim()
+    .min(2)
+    .max(50)
+    .regex(/^[a-z0-9-]+$/),
   name: z.string().trim().min(2).max(120),
   domain: z.string().trim().max(200).optional(),
   schoolDisplayName: z.string().trim().min(2).max(120),
@@ -149,9 +154,7 @@ export function TenantCreatePage() {
         </label>
         <FieldError message={form.formState.errors.adminPassword?.message} />
 
-        {apiError ? (
-          <StateView title="Could not create tenant" message={apiError.message} />
-        ) : null}
+        {apiError ? <StateView title="Could not create tenant" message={apiError.message} /> : null}
 
         <button
           type="submit"

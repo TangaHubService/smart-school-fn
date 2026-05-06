@@ -83,7 +83,7 @@ export async function updateSchoolSubscriptionApi(
     currentPeriodStart?: string | null;
     currentPeriodEnd?: string | null;
     cancelAtPeriodEnd?: boolean;
-  },
+  }
 ) {
   return apiRequest<unknown>(`/subscriptions/schools/${tenantId}`, {
     method: 'PATCH',
@@ -105,7 +105,7 @@ export async function listAcademyCatalogProgramsAdminApi(accessToken: string) {
 
 export async function listAcademyEnrollmentsAdminApi(
   accessToken: string,
-  params?: { page?: number; pageSize?: number },
+  params?: { page?: number; pageSize?: number }
 ) {
   const q = new URLSearchParams();
   if (params?.page) q.set('page', String(params.page));
@@ -127,7 +127,7 @@ export async function grantAcademyAccessApi(
     email?: string;
     programId: string;
     durationDays?: number;
-  },
+  }
 ) {
   return apiRequest<{
     enrollmentId: string;

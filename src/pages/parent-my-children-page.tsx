@@ -52,7 +52,14 @@ export function ParentMyChildrenPage() {
   });
 
   const childAttendanceQuery = useQuery({
-    queryKey: ['parent', 'my-children', 'attendance', selectedStudent?.id ?? null, historyFrom, historyTo],
+    queryKey: [
+      'parent',
+      'my-children',
+      'attendance',
+      selectedStudent?.id ?? null,
+      historyFrom,
+      historyTo,
+    ],
     enabled: Boolean(selectedStudent?.id),
     queryFn: () =>
       listMyChildAttendanceApi(auth.accessToken!, selectedStudent!.id, {
@@ -71,10 +78,7 @@ export function ParentMyChildrenPage() {
   const students = childrenQuery.data?.students ?? [];
 
   return (
-    <SectionCard
-      title={t('children.title')}
-      subtitle={t('children.subtitle')}
-    >
+    <SectionCard title={t('children.title')} subtitle={t('children.subtitle')}>
       {childrenQuery.isPending ? (
         <div className="grid gap-2" role="status" aria-live="polite">
           <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
@@ -100,7 +104,8 @@ export function ParentMyChildrenPage() {
 
       {!childrenQuery.isPending && !childrenQuery.isError ? (
         <div className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-sm text-slate-700">
-          {t('children.parentProfile')}: {parent ? `${parent.firstName} ${parent.lastName}` : t('children.notLinkedYet')}
+          {t('children.parentProfile')}:{' '}
+          {parent ? `${parent.firstName} ${parent.lastName}` : t('children.notLinkedYet')}
         </div>
       ) : null}
 
@@ -151,7 +156,8 @@ export function ParentMyChildrenPage() {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      {t('children.lastMarked')}: {student.attendanceLast30Days.lastMarkedDate ?? t('children.noRecords')}
+                      {t('children.lastMarked')}:{' '}
+                      {student.attendanceLast30Days.lastMarkedDate ?? t('children.noRecords')}
                     </p>
                   </td>
                   <td className="px-2 py-2 align-middle">
@@ -239,14 +245,32 @@ export function ParentMyChildrenPage() {
           />
         ) : null}
 
-        {!childAttendanceQuery.isPending && !childAttendanceQuery.isError && childAttendanceQuery.data ? (
+        {!childAttendanceQuery.isPending &&
+        !childAttendanceQuery.isError &&
+        childAttendanceQuery.data ? (
           <div className="grid gap-3">
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
               <SummaryTile label="Total" value={childAttendanceQuery.data.summary.total} />
-              <SummaryTile label="Present" value={childAttendanceQuery.data.summary.present} tone="present" />
-              <SummaryTile label="Absent" value={childAttendanceQuery.data.summary.absent} tone="absent" />
-              <SummaryTile label="Late" value={childAttendanceQuery.data.summary.late} tone="late" />
-              <SummaryTile label="Excused" value={childAttendanceQuery.data.summary.excused} tone="excused" />
+              <SummaryTile
+                label="Present"
+                value={childAttendanceQuery.data.summary.present}
+                tone="present"
+              />
+              <SummaryTile
+                label="Absent"
+                value={childAttendanceQuery.data.summary.absent}
+                tone="absent"
+              />
+              <SummaryTile
+                label="Late"
+                value={childAttendanceQuery.data.summary.late}
+                tone="late"
+              />
+              <SummaryTile
+                label="Excused"
+                value={childAttendanceQuery.data.summary.excused}
+                tone="excused"
+              />
             </div>
 
             {childAttendanceQuery.data.records.length === 0 ? (
@@ -360,7 +384,9 @@ export function ParentMyChildrenPage() {
                     <tbody>
                       {childLearningQuery.data.recentAttempts.map((a) => (
                         <tr key={a.id} className="border-b border-brand-50">
-                          <td className="px-2 py-2 font-medium text-slate-800">{a.assessmentTitle}</td>
+                          <td className="px-2 py-2 font-medium text-slate-800">
+                            {a.assessmentTitle}
+                          </td>
                           <td className="px-2 py-2 text-slate-700">{a.courseTitle}</td>
                           <td className="px-2 py-2 text-slate-700">
                             {a.maxScore > 0 ? `${a.score} / ${a.maxScore}` : `${a.score}`}
@@ -409,4 +435,3 @@ function SummaryTile({
     </article>
   );
 }
-

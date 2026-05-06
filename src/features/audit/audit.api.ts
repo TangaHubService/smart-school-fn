@@ -28,13 +28,13 @@ interface ActivityLog {
 }
 
 interface ListActivityLogsResponse {
-    items: ActivityLog[];
-    pagination: {
-      page: number;
-      pageSize: number;
-      totalItems: number;
-      totalPages: number;
-    };
+  items: ActivityLog[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
 }
 
 interface ListActivityLogsParams {
@@ -50,7 +50,7 @@ interface ListActivityLogsParams {
 }
 
 export async function listActivityLogsApi(
-  params: ListActivityLogsParams = {},
+  params: ListActivityLogsParams = {}
 ): Promise<ListActivityLogsResponse> {
   const query: Record<string, string> = {};
   if (params.page) query.page = String(params.page);

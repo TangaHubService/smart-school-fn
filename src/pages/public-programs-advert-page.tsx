@@ -14,10 +14,15 @@ export function PublicProgramsAdvertPage() {
       >
         <div className="absolute inset-0 bg-slate-950/75" />
         <div className="relative mx-auto w-full max-w-4xl px-4 py-16 text-center sm:px-6 lg:px-8">
-          <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Smart School</p>
-          <h1 className="text-3xl font-bold uppercase tracking-tight text-white sm:text-5xl">Program catalog</h1>
+          <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">
+            Smart School
+          </p>
+          <h1 className="text-3xl font-bold uppercase tracking-tight text-white sm:text-5xl">
+            Program catalog
+          </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base font-medium text-white/90 sm:text-lg">
-            Browse every public program from our academy catalog. Enroll and pay securely on the academy page.
+            Browse every public program from our academy catalog. Enroll and pay securely on the
+            academy page.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <a

@@ -23,7 +23,10 @@ import {
 import { StateView } from '../components/state-view';
 import { getStoredAcademicYearId } from './student-academic-year-select-page';
 import { useAuth } from '../features/auth/auth.context';
-import { getStudentDashboardApi, type StudentDashboardData } from '../features/dashboard/dashboard.api';
+import {
+  getStudentDashboardApi,
+  type StudentDashboardData,
+} from '../features/dashboard/dashboard.api';
 import { listMyCoursesApi, type MyCoursesResponse } from '../features/sprint4/lms.api';
 import { useQuery } from '@tanstack/react-query';
 import { courseEnrollmentState, getCourseProgressMetrics } from '../utils/course-progress';
@@ -269,7 +272,9 @@ function StudentCourseProgressStrip({
     return (
       <section className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center shadow-sm">
         <p className="text-sm font-medium text-slate-800">No enrolled courses yet</p>
-        <p className="mt-1 text-xs text-slate-600">When your school assigns classes, your progress will show here.</p>
+        <p className="mt-1 text-xs text-slate-600">
+          When your school assigns classes, your progress will show here.
+        </p>
         <Link
           to="/student/courses"
           className="mt-3 inline-flex text-sm font-semibold text-brand-600 hover:text-brand-700"
@@ -336,7 +341,9 @@ function StudentCourseProgressStrip({
                   to={`/student/courses/${c.id}`}
                   className="flex h-full items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-3 text-left transition hover:border-brand-200 hover:bg-brand-50/40"
                 >
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">{c.title}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
+                    {c.title}
+                  </span>
                   <span className="shrink-0 text-xs font-semibold text-brand-700">{c.pct}%</span>
                 </Link>
               </li>
@@ -368,7 +375,7 @@ function StudentStatCard({
         'flex items-center justify-between gap-3 rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md',
         emphasize
           ? 'border-2 border-brand-300 ring-1 ring-brand-100 hover:border-brand-400'
-          : 'border border-slate-200 hover:border-brand-200',
+          : 'border border-slate-200 hover:border-brand-200'
       )}
     >
       <div className="flex min-w-0 items-center gap-3">

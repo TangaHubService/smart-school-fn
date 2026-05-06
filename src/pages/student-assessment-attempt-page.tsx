@@ -26,7 +26,10 @@ import {
   submitAssessmentAttemptApi,
 } from '../features/assessments/assessments.api';
 import { AssessmentQuestionImage } from '../features/assessments/assessment-question-image';
-import { formatAssessmentDateTime, formatAssessmentTypeLabel } from '../features/assessments/assessment-ui';
+import {
+  formatAssessmentDateTime,
+  formatAssessmentTypeLabel,
+} from '../features/assessments/assessment-ui';
 import {
   clearAssessmentDraft,
   readAssessmentDraft,
@@ -47,7 +50,7 @@ function extractAnswerMap(attempt: AssessmentAttemptDetail) {
         selectedOptionId: question.selectedOptionId ?? null,
         textResponse: question.textResponse ?? '',
       },
-    ]),
+    ])
   ) as Record<string, DraftAnswer>;
 }
 
@@ -59,13 +62,13 @@ function serializeAnswerMap(answers: Record<string, DraftAnswer>) {
         questionId,
         selectedOptionId: value.selectedOptionId,
         textResponse: value.textResponse.trim() || null,
-      })),
+      }))
   );
 }
 
 function isQuestionAnswered(
   question: AssessmentAttemptDetail['questions'][number],
-  answer: DraftAnswer | undefined,
+  answer: DraftAnswer | undefined
 ) {
   if (!answer) {
     return false;
@@ -78,19 +81,23 @@ function isQuestionAnswered(
 
 function buildAnswerPayload(
   attempt: AssessmentAttemptDetail,
-  draftAnswers: Record<string, DraftAnswer>,
+  draftAnswers: Record<string, DraftAnswer>
 ) {
   return attempt.questions.map((question) => ({
     questionId: question.id,
-    selectedOptionId: question.type === 'MCQ_SINGLE' ? (draftAnswers[question.id]?.selectedOptionId ?? null) : null,
-    textResponse: question.type === 'OPEN_TEXT' ? (draftAnswers[question.id]?.textResponse?.trim() || null) : null,
+    selectedOptionId:
+      question.type === 'MCQ_SINGLE' ? (draftAnswers[question.id]?.selectedOptionId ?? null) : null,
+    textResponse:
+      question.type === 'OPEN_TEXT'
+        ? draftAnswers[question.id]?.textResponse?.trim() || null
+        : null,
   }));
 }
 
 function mergeCachedDraftAnswers(
   attempt: AssessmentAttemptDetail,
   serverMap: Record<string, DraftAnswer>,
-  cached: CachedAssessmentDraft | null,
+  cached: CachedAssessmentDraft | null
 ): Record<string, DraftAnswer> {
   if (!cached?.pendingSync) {
     return serverMap;
@@ -125,14 +132,18 @@ export function StudentAssessmentAttemptPage() {
 
   const [attempt, setAttempt] = useState<AssessmentAttemptDetail | null>(null);
   const [draftAnswers, setDraftAnswers] = useState<Record<string, DraftAnswer>>({});
-  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error' | 'local'>('idle');
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error' | 'local'>(
+    'idle'
+  );
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [hintRevealed, setHintRevealed] = useState(false);
   const [now, setNow] = useState(Date.now());
   const lastSavedAnswersRef = useRef('');
   const attemptRef = useRef<AssessmentAttemptDetail | null>(null);
   const draftAnswersRef = useRef<Record<string, DraftAnswer>>({});
-  const saveAnswersMutateRef = useRef<(payload: ReturnType<typeof buildAnswerPayload>) => void>(() => {});
+  const saveAnswersMutateRef = useRef<(payload: ReturnType<typeof buildAnswerPayload>) => void>(
+    () => {}
+  );
   const accessTokenRef = useRef<string | null>(null);
   const attemptIdRef = useRef('');
 
@@ -148,8 +159,13 @@ export function StudentAssessmentAttemptPage() {
   });
 
   const saveAnswersMutation = useMutation({
-    mutationFn: (answers: Array<{ questionId: string; selectedOptionId: string | null; textResponse?: string | null }>) =>
-      saveAssessmentAttemptAnswersApi(auth.accessToken!, attemptId, answers),
+    mutationFn: (
+      answers: Array<{
+        questionId: string;
+        selectedOptionId: string | null;
+        textResponse?: string | null;
+      }>
+    ) => saveAssessmentAttemptAnswersApi(auth.accessToken!, attemptId, answers),
     onSuccess: (updatedAttempt) => {
       setAttempt(updatedAttempt);
       const synced = extractAnswerMap(updatedAttempt);
@@ -210,11 +226,13 @@ export function StudentAssessmentAttemptPage() {
       showToast({
         type: 'success',
         title:
-          submittedAttempt.assessment.type === 'OPENENDED' || submittedAttempt.assessment.type === 'INTERVIEW'
+          submittedAttempt.assessment.type === 'OPENENDED' ||
+          submittedAttempt.assessment.type === 'INTERVIEW'
             ? 'Responses submitted'
             : 'Test finished',
         message:
-          submittedAttempt.assessment.type === 'OPENENDED' || submittedAttempt.assessment.type === 'INTERVIEW'
+          submittedAttempt.assessment.type === 'OPENENDED' ||
+          submittedAttempt.assessment.type === 'INTERVIEW'
             ? 'Your written responses were submitted successfully.'
             : 'Your answers were submitted successfully.',
       });
@@ -254,7 +272,7 @@ export function StudentAssessmentAttemptPage() {
     }
 
     const firstUnansweredIndex = data.questions.findIndex(
-      (question) => !isQuestionAnswered(question, nextAnswers[question.id]),
+      (question) => !isQuestionAnswered(question, nextAnswers[question.id])
     );
     setCurrentQuestionIndex(firstUnansweredIndex >= 0 ? firstUnansweredIndex : 0);
   }, [attemptQuery.data?.id, attemptQuery.data?.status, attemptId]);
@@ -339,7 +357,9 @@ export function StudentAssessmentAttemptPage() {
       return 0;
     }
 
-    return attempt.questions.filter((question) => isQuestionAnswered(question, draftAnswers[question.id])).length;
+    return attempt.questions.filter((question) =>
+      isQuestionAnswered(question, draftAnswers[question.id])
+    ).length;
   }, [attempt, draftAnswers]);
 
   const remainingTime = useMemo(() => {
@@ -348,14 +368,15 @@ export function StudentAssessmentAttemptPage() {
     }
 
     const deadline =
-      new Date(attempt.startedAt).getTime() +
-      attempt.assessment.timeLimitMinutes * 60_000;
+      new Date(attempt.startedAt).getTime() + attempt.assessment.timeLimitMinutes * 60_000;
 
     return Math.max(0, deadline - now);
   }, [attempt, now]);
 
   const isLastQuestion = Boolean(attempt && currentQuestionIndex === attempt.questions.length - 1);
-  const currentQuestionAnswered = Boolean(currentQuestion && isQuestionAnswered(currentQuestion, draftAnswers[currentQuestion.id]));
+  const currentQuestionAnswered = Boolean(
+    currentQuestion && isQuestionAnswered(currentQuestion, draftAnswers[currentQuestion.id])
+  );
 
   async function flushDraftAnswers() {
     if (!attempt || attempt.status !== 'IN_PROGRESS') {
@@ -443,21 +464,28 @@ export function StudentAssessmentAttemptPage() {
               <div className="grid gap-2">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-900">
                   <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                  {attempt.assessment.type === 'OPENENDED' || attempt.assessment.type === 'INTERVIEW'
+                  {attempt.assessment.type === 'OPENENDED' ||
+                  attempt.assessment.type === 'INTERVIEW'
                     ? 'Responses submitted successfully'
                     : 'Test finished successfully'}
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900">
-                  {attempt.assessment.type === 'GENERAL' || attempt.assessment.type === 'PSYCHOMETRIC'
+                  {attempt.assessment.type === 'GENERAL' ||
+                  attempt.assessment.type === 'PSYCHOMETRIC'
                     ? `Score ${attempt.score}/${attempt.maxScore ?? 0}`
                     : attempt.manualScore !== null
                       ? `Reviewed score ${attempt.score}/${attempt.maxScore ?? 0}`
                       : 'Responses submitted'}
                 </h2>
-                <p className="text-sm text-slate-700">Submitted on {formatAssessmentDateTime(attempt.submittedAt)}</p>
-                {attempt.assessment.type === 'OPENENDED' || attempt.assessment.type === 'INTERVIEW' ? (
+                <p className="text-sm text-slate-700">
+                  Submitted on {formatAssessmentDateTime(attempt.submittedAt)}
+                </p>
+                {attempt.assessment.type === 'OPENENDED' ||
+                attempt.assessment.type === 'INTERVIEW' ? (
                   <p className="text-sm text-slate-700">
-                    {attempt.manualScore !== null ? 'Your teacher review is available below.' : 'Your teacher will review the written responses next.'}
+                    {attempt.manualScore !== null
+                      ? 'Your teacher review is available below.'
+                      : 'Your teacher will review the written responses next.'}
                   </p>
                 ) : null}
                 {attempt.manualFeedback ? (
@@ -474,16 +502,17 @@ export function StudentAssessmentAttemptPage() {
 
             <div className="grid gap-6">
               {attempt.questions.map((question) => (
-                <article key={question.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-soft transition-all hover:shadow-md">
+                <article
+                  key={question.id}
+                  className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-soft transition-all hover:shadow-md"
+                >
                   <div className="border-b border-slate-100 bg-slate-50/50 p-6">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-100 text-sm font-bold text-brand-700">
                           {question.sequence}
                         </span>
-                        <h4 className="font-bold text-slate-900">
-                          Question {question.sequence}
-                        </h4>
+                        <h4 className="font-bold text-slate-900">Question {question.sequence}</h4>
                       </div>
                       <div className="flex items-center gap-2">
                         {question.type === 'OPEN_TEXT' && question.manualPointsAwarded === null ? (
@@ -491,11 +520,13 @@ export function StudentAssessmentAttemptPage() {
                             Awaiting Review
                           </span>
                         ) : (
-                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-                            question.isCorrect 
-                              ? 'bg-emerald-100 text-emerald-700' 
-                              : 'bg-rose-100 text-rose-700'
-                          }`}>
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-bold ${
+                              question.isCorrect
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-rose-100 text-rose-700'
+                            }`}
+                          >
                             {question.isCorrect ? 'Correct' : 'Incorrect'}
                           </span>
                         )}
@@ -526,19 +557,29 @@ export function StudentAssessmentAttemptPage() {
                         question.options.map((option) => {
                           const isSelected = question.selectedOptionId === option.id;
                           const isCorrect = option.isCorrect;
-                          
+
                           let statusClasses = 'border-slate-100 bg-white text-slate-600';
-                          if (isCorrect) statusClasses = 'border-emerald-200 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500/20';
-                          if (isSelected && !isCorrect) statusClasses = 'border-rose-200 bg-rose-50 text-rose-900 ring-1 ring-rose-500/20';
+                          if (isCorrect)
+                            statusClasses =
+                              'border-emerald-200 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500/20';
+                          if (isSelected && !isCorrect)
+                            statusClasses =
+                              'border-rose-200 bg-rose-50 text-rose-900 ring-1 ring-rose-500/20';
 
                           return (
                             <div
                               key={option.id}
                               className={`flex items-start gap-3 rounded-2xl border p-4 text-sm transition-all ${statusClasses}`}
                             >
-                              <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
-                                isCorrect ? 'bg-emerald-500 text-white' : isSelected ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-500'
-                              }`}>
+                              <span
+                                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
+                                  isCorrect
+                                    ? 'bg-emerald-500 text-white'
+                                    : isSelected
+                                      ? 'bg-rose-500 text-white'
+                                      : 'bg-slate-100 text-slate-500'
+                                }`}
+                              >
                                 {String.fromCharCode(65 + option.sequence - 1)}
                               </span>
                               <span className="flex-1 font-medium">{option.label}</span>
@@ -562,7 +603,9 @@ export function StudentAssessmentAttemptPage() {
                       <div className="mt-6 space-y-3">
                         {question.hint ? (
                           <div className="rounded-2xl border border-amber-100 bg-amber-50/80 p-4 text-sm text-amber-950">
-                            <p className="text-xs font-bold uppercase tracking-wide text-amber-800">Hint</p>
+                            <p className="text-xs font-bold uppercase tracking-wide text-amber-800">
+                              Hint
+                            </p>
                             <p className="mt-1 leading-relaxed">{question.hint}</p>
                           </div>
                         ) : null}
@@ -572,7 +615,9 @@ export function StudentAssessmentAttemptPage() {
                               <Sparkles className="h-3.5 w-3.5" />
                               Explanation
                             </div>
-                            <p className="text-sm leading-relaxed text-slate-700">{question.explanation}</p>
+                            <p className="text-sm leading-relaxed text-slate-700">
+                              {question.explanation}
+                            </p>
                           </div>
                         ) : null}
                         {question.remedialLessonId ? (
@@ -589,7 +634,6 @@ export function StudentAssessmentAttemptPage() {
                 </article>
               ))}
             </div>
-
           </div>
         </SectionCard>
       </div>
@@ -625,12 +669,16 @@ export function StudentAssessmentAttemptPage() {
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">
                   {answeredCount}/{attempt.questions.length} answered
                 </span>
-                <span className="rounded-full bg-brand-100 px-2.5 py-1">Attempt #{attempt.attemptNumber}</span>
+                <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                  Attempt #{attempt.attemptNumber}
+                </span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-brand-100">
                 <div
                   className="h-full rounded-full bg-brand-500 transition-all"
-                  style={{ width: `${((currentQuestionIndex + 1) / Math.max(attempt.questions.length, 1)) * 100}%` }}
+                  style={{
+                    width: `${((currentQuestionIndex + 1) / Math.max(attempt.questions.length, 1)) * 100}%`,
+                  }}
                 />
               </div>
               {attempt.assessment.instructions ? (
@@ -642,7 +690,9 @@ export function StudentAssessmentAttemptPage() {
 
             <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-slate-700">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Save status</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Save status
+                </p>
                 <p className="mt-2 font-semibold text-slate-900">
                   {saveState === 'saving'
                     ? 'Saving...'
@@ -656,12 +706,18 @@ export function StudentAssessmentAttemptPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Due</p>
-                <p className="mt-2 font-semibold text-slate-900">{formatAssessmentDateTime(attempt.assessment.dueAt)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Due
+                </p>
+                <p className="mt-2 font-semibold text-slate-900">
+                  {formatAssessmentDateTime(attempt.assessment.dueAt)}
+                </p>
               </div>
               {remainingTime !== null ? (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Time left</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Time left
+                  </p>
                   <p className="mt-2 inline-flex items-center gap-2 font-semibold text-slate-900">
                     <Clock3 className="h-4 w-4" aria-hidden="true" />
                     {formatTimer(remainingTime)}
@@ -738,7 +794,8 @@ export function StudentAssessmentAttemptPage() {
                   />
                 ) : (
                   currentQuestion.options.map((option) => {
-                    const selected = draftAnswers[currentQuestion.id]?.selectedOptionId === option.id;
+                    const selected =
+                      draftAnswers[currentQuestion.id]?.selectedOptionId === option.id;
                     return (
                       <button
                         key={option.id}
@@ -789,7 +846,11 @@ export function StudentAssessmentAttemptPage() {
                   <button
                     type="button"
                     onClick={handleFinish}
-                    disabled={!currentQuestionAnswered || submitAttemptMutation.isPending || saveAnswersMutation.isPending}
+                    disabled={
+                      !currentQuestionAnswered ||
+                      submitAttemptMutation.isPending ||
+                      saveAnswersMutation.isPending
+                    }
                     className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                   >
                     {submitAttemptMutation.isPending ? (
@@ -802,7 +863,11 @@ export function StudentAssessmentAttemptPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setCurrentQuestionIndex((current) => Math.min(attempt.questions.length - 1, current + 1))}
+                    onClick={() =>
+                      setCurrentQuestionIndex((current) =>
+                        Math.min(attempt.questions.length - 1, current + 1)
+                      )
+                    }
                     disabled={!currentQuestionAnswered}
                     className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                   >
@@ -813,7 +878,10 @@ export function StudentAssessmentAttemptPage() {
               </div>
             </div>
           ) : (
-            <EmptyState title="Question not found" message="This attempt has no questions to answer." />
+            <EmptyState
+              title="Question not found"
+              message="This attempt has no questions to answer."
+            />
           )}
         </div>
       </SectionCard>

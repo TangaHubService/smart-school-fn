@@ -24,10 +24,7 @@ import {
   StaffMember,
   updateStaffMemberApi,
 } from '../features/sprint1/sprint1.api';
-import {
-  assignTeacherBySubjectApi,
-  listCoursesApi,
-} from '../features/sprint4/lms.api';
+import { assignTeacherBySubjectApi, listCoursesApi } from '../features/sprint4/lms.api';
 
 interface AcademicYearOption {
   id: string;
@@ -148,7 +145,7 @@ function updateSearchableSelection(
   value: string,
   options: SearchableOption[],
   onText: (value: string) => void,
-  onId: (value: string) => void,
+  onId: (value: string) => void
 ) {
   onText(value);
   const normalized = value.trim().toLowerCase();
@@ -246,7 +243,9 @@ export function StaffPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<StaffMember | null>(null);
   const [selectedMemberForView, setSelectedMemberForView] = useState<StaffMember | null>(null);
-  const [selectedTeacherForAssign, setSelectedTeacherForAssign] = useState<StaffMember | null>(null);
+  const [selectedTeacherForAssign, setSelectedTeacherForAssign] = useState<StaffMember | null>(
+    null
+  );
   const [assignYearText, setAssignYearText] = useState('');
   const [assignYearId, setAssignYearId] = useState('');
   const [assignClassText, setAssignClassText] = useState('');
@@ -513,7 +512,9 @@ export function StaffPage() {
   const members = ((membersQuery.data as StaffMember[] | undefined) ?? []).slice();
   const invites = ((invitesQuery.data as StaffInviteItem[] | undefined) ?? []).slice();
   const pendingInvites = invites.filter((item) => item.status === 'PENDING');
-  const academicYears = ((academicYearsQuery.data as AcademicYearOption[] | undefined) ?? []).slice();
+  const academicYears = (
+    (academicYearsQuery.data as AcademicYearOption[] | undefined) ?? []
+  ).slice();
   const classRooms = ((classRoomsQuery.data as ClassRoomOption[] | undefined) ?? []).slice();
   const subjects = ((subjectsQuery.data as SubjectOption[] | undefined) ?? []).slice();
 
@@ -533,15 +534,15 @@ export function StaffPage() {
 
   const academicYearOptions = useMemo<SearchableOption[]>(
     () => academicYears.map((item) => ({ id: item.id, label: item.name })),
-    [academicYears],
+    [academicYears]
   );
   const classOptions = useMemo<SearchableOption[]>(
     () => classRooms.map((item) => ({ id: item.id, label: `${item.name} (${item.code})` })),
-    [classRooms],
+    [classRooms]
   );
   const subjectOptions = useMemo<SearchableOption[]>(
     () => subjects.map((item) => ({ id: item.id, label: `${item.name} (${item.code})` })),
-    [subjects],
+    [subjects]
   );
 
   const selectedSubjectCourse = useMemo(() => {
@@ -597,7 +598,9 @@ export function StaffPage() {
 
   const roleOptions = useMemo(() => {
     const fromMembers = members.flatMap((member) => member.roles);
-    const fromInvites = pendingInvites.map((invite) => invite.role?.name).filter(Boolean) as string[];
+    const fromInvites = pendingInvites
+      .map((invite) => invite.role?.name)
+      .filter(Boolean) as string[];
     return [...new Set([...fromMembers, ...fromInvites])].sort();
   }, [members, pendingInvites]);
 
@@ -680,7 +683,7 @@ export function StaffPage() {
           </button>
         </div>
 
-        {(membersQuery.isPending || invitesQuery.isPending) ? (
+        {membersQuery.isPending || invitesQuery.isPending ? (
           <div className="grid gap-2" role="status" aria-live="polite">
             <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
             <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
@@ -688,7 +691,7 @@ export function StaffPage() {
           </div>
         ) : null}
 
-        {(membersQuery.isError || invitesQuery.isError) ? (
+        {membersQuery.isError || invitesQuery.isError ? (
           <StateView
             title="Could not load staff data"
             message="Retry loading staff members and invites."
@@ -740,7 +743,9 @@ export function StaffPage() {
                 {rows.map((row, index) => (
                   <tr key={row.id} className="border-b border-brand-50">
                     <td className="px-2 py-2 align-middle text-slate-600">{index + 1}</td>
-                    <td className="px-2 py-2 align-middle font-medium text-slate-900">{row.name}</td>
+                    <td className="px-2 py-2 align-middle font-medium text-slate-900">
+                      {row.name}
+                    </td>
                     <td className="px-2 py-2 align-middle">{row.email}</td>
                     <td className="px-2 py-2 align-middle">{row.roleLabel}</td>
                     <td className="px-2 py-2 align-middle">{row.statusLabel}</td>
@@ -895,7 +900,9 @@ export function StaffPage() {
             />
           </label>
           {inviteForm.formState.errors.expiresInDays ? (
-            <p className="text-xs text-red-700">{inviteForm.formState.errors.expiresInDays.message}</p>
+            <p className="text-xs text-red-700">
+              {inviteForm.formState.errors.expiresInDays.message}
+            </p>
           ) : null}
 
           <div className="mt-2 flex justify-end gap-2">
@@ -1059,16 +1066,19 @@ export function StaffPage() {
           <div className="grid gap-4">
             <div className="grid gap-2 rounded-xl border border-brand-100 bg-brand-50 p-3 text-sm">
               <p>
-                <span className="font-semibold text-slate-800">Name:</span> {formatMemberName(viewedMember)}
+                <span className="font-semibold text-slate-800">Name:</span>{' '}
+                {formatMemberName(viewedMember)}
               </p>
               <p>
                 <span className="font-semibold text-slate-800">Email:</span> {viewedMember.email}
               </p>
               <p>
-                <span className="font-semibold text-slate-800">Phone:</span> {viewedMember.phone ?? '-'}
+                <span className="font-semibold text-slate-800">Phone:</span>{' '}
+                {viewedMember.phone ?? '-'}
               </p>
               <p>
-                <span className="font-semibold text-slate-800">Roles:</span> {viewedMember.roles.join(', ')}
+                <span className="font-semibold text-slate-800">Roles:</span>{' '}
+                {viewedMember.roles.join(', ')}
               </p>
               <p>
                 <span className="font-semibold text-slate-800">Status:</span> {viewedMember.status}
@@ -1158,10 +1168,15 @@ export function StaffPage() {
                     </button>
                     <button
                       type="button"
-                      disabled={detailCoursePage >= teacherAssignedCoursesQuery.data.pagination.totalPages}
+                      disabled={
+                        detailCoursePage >= teacherAssignedCoursesQuery.data.pagination.totalPages
+                      }
                       onClick={() =>
                         setDetailCoursePage((current) =>
-                          Math.min(teacherAssignedCoursesQuery.data!.pagination.totalPages, current + 1),
+                          Math.min(
+                            teacherAssignedCoursesQuery.data!.pagination.totalPages,
+                            current + 1
+                          )
                         )
                       }
                       className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
@@ -1201,7 +1216,7 @@ export function StaffPage() {
                   value,
                   academicYearOptions,
                   setAssignYearText,
-                  setAssignYearId,
+                  setAssignYearId
                 )
               }
               onOptionSelect={(option) => {
@@ -1238,7 +1253,7 @@ export function StaffPage() {
                   value,
                   subjectOptions,
                   setAssignSubjectText,
-                  setAssignSubjectId,
+                  setAssignSubjectId
                 )
               }
               onOptionSelect={(option) => {
@@ -1304,25 +1319,28 @@ export function StaffPage() {
             <div className="rounded-xl border border-brand-100 bg-white p-3">
               {selectedSubjectCourse ? (
                 <div className="grid gap-1 text-sm text-slate-700">
-                  <p className="font-semibold text-slate-900">{selectedSubjectCourse.subject?.name ?? 'Subject selected'}</p>
-                  <p>
-                    {selectedSubjectCourse.classRoom.name} | {selectedSubjectCourse.academicYear.name}
+                  <p className="font-semibold text-slate-900">
+                    {selectedSubjectCourse.subject?.name ?? 'Subject selected'}
                   </p>
                   <p>
-                    Current teacher: {selectedSubjectCourse.teacher.firstName} {selectedSubjectCourse.teacher.lastName}
+                    {selectedSubjectCourse.classRoom.name} |{' '}
+                    {selectedSubjectCourse.academicYear.name}
+                  </p>
+                  <p>
+                    Current teacher: {selectedSubjectCourse.teacher.firstName}{' '}
+                    {selectedSubjectCourse.teacher.lastName}
                   </p>
                 </div>
               ) : (
                 <p className="text-sm text-slate-700">
-                  No course exists yet for this subject/class/year. Assigning will create it automatically.
+                  No course exists yet for this subject/class/year. Assigning will create it
+                  automatically.
                 </p>
               )}
             </div>
           ) : null}
 
-          {assignFormError ? (
-            <p className="text-xs text-red-700">{assignFormError}</p>
-          ) : null}
+          {assignFormError ? <p className="text-xs text-red-700">{assignFormError}</p> : null}
 
           <div className="flex justify-end gap-2">
             <button
@@ -1341,7 +1359,9 @@ export function StaffPage() {
                 }
 
                 if (!assignYearId || !assignClassId || !assignSubjectId) {
-                  setAssignFormError('Select academic year, class, and subject from the suggestions.');
+                  setAssignFormError(
+                    'Select academic year, class, and subject from the suggestions.'
+                  );
                   return;
                 }
 

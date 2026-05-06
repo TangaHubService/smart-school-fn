@@ -25,7 +25,7 @@ export type CourseProgressMetrics = {
 
 export function getCourseProgressMetrics(
   course: CourseProgressSource,
-  completedLessonIds?: string[],
+  completedLessonIds?: string[]
 ): CourseProgressMetrics {
   const ids = completedLessonIds ?? course.completedLessonIds ?? [];
   const assignments = course.assignments ?? [];
@@ -61,7 +61,7 @@ export function getCourseProgressMetrics(
 
 export function getResumeLessonId(
   course: { lessons: { id: string; sequence: number }[] },
-  completedLessonIds: string[],
+  completedLessonIds: string[]
 ): string | null {
   const sorted = [...course.lessons].sort((a, b) => a.sequence - b.sequence);
   const next = sorted.find((l) => !completedLessonIds.includes(l.id));
@@ -69,7 +69,7 @@ export function getResumeLessonId(
 }
 
 export function courseEnrollmentState(
-  metrics: CourseProgressMetrics,
+  metrics: CourseProgressMetrics
 ): 'not_started' | 'in_progress' | 'completed' {
   if (metrics.totalLessons + metrics.totalAssignments === 0) {
     return 'not_started';

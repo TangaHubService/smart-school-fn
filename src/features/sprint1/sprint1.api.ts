@@ -150,7 +150,7 @@ export function createTenantApi(accessToken: string, payload: CreateTenantPayloa
 export function inviteTenantAdminApi(
   accessToken: string,
   tenantId: string,
-  payload: { email: string; expiresInDays?: number },
+  payload: { email: string; expiresInDays?: number }
 ) {
   return apiRequest(`/tenants/${tenantId}/admin-invite`, {
     method: 'POST',
@@ -179,7 +179,7 @@ export function updateTenantApi(
       email?: string | null;
       phone?: string | null;
     };
-  },
+  }
 ) {
   return apiRequest(`/tenants/${tenantId}`, {
     method: 'PATCH',
@@ -198,7 +198,7 @@ export function deleteTenantApi(accessToken: string, tenantId: string) {
 export function updateTenantStatusApi(
   accessToken: string,
   tenantId: string,
-  payload: { isActive: boolean },
+  payload: { isActive: boolean }
 ) {
   return apiRequest(`/tenants/${tenantId}/status`, {
     method: 'PATCH',
@@ -209,7 +209,7 @@ export function updateTenantStatusApi(
 
 export function listTenantsApi(
   accessToken: string,
-  params?: { page?: number; pageSize?: number; search?: string },
+  params?: { page?: number; pageSize?: number; search?: string }
 ) {
   const query = new URLSearchParams();
 
@@ -248,7 +248,7 @@ export function schoolSetupStatusApi(accessToken: string) {
 
 export function inviteStaffApi(
   accessToken: string,
-  payload: { email: string; roleName: string; expiresInDays?: number },
+  payload: { email: string; roleName: string; expiresInDays?: number }
 ) {
   return apiRequest('/staff/invite', {
     method: 'POST',
@@ -278,7 +278,7 @@ export interface StaffMember {
 
 export function listStaffMembersApi(
   accessToken: string,
-  params: { q?: string; roleName?: string; status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' } = {},
+  params: { q?: string; roleName?: string; status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' } = {}
 ) {
   const query = new URLSearchParams();
 
@@ -294,10 +294,13 @@ export function listStaffMembersApi(
     query.set('status', params.status);
   }
 
-  return apiRequest<StaffMember[]>(`/staff/members${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
+  return apiRequest<StaffMember[]>(
+    `/staff/members${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
 
 export function getStaffMemberApi(accessToken: string, memberId: string) {
@@ -315,7 +318,7 @@ export function updateStaffMemberApi(
     lastName?: string;
     phone?: string | null;
     status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-  },
+  }
 ) {
   return apiRequest<StaffMember>(`/staff/members/${memberId}`, {
     method: 'PATCH',
@@ -353,7 +356,7 @@ export function listAcademicYearsApi(accessToken: string) {
 
 export function createAcademicYearApi(
   accessToken: string,
-  payload: { name: string; startDate: string; endDate: string; isCurrent?: boolean },
+  payload: { name: string; startDate: string; endDate: string; isCurrent?: boolean }
 ) {
   return apiRequest('/academic-years', {
     method: 'POST',
@@ -372,7 +375,13 @@ export function deleteAcademicYearApi(accessToken: string, id: string) {
 export function updateAcademicYearApi(
   accessToken: string,
   id: string,
-  payload: { name?: string; startDate?: string; endDate?: string; isCurrent?: boolean; isActive?: boolean },
+  payload: {
+    name?: string;
+    startDate?: string;
+    endDate?: string;
+    isCurrent?: boolean;
+    isActive?: boolean;
+  }
 ) {
   return apiRequest(`/academic-years/${id}`, {
     method: 'PATCH',
@@ -381,18 +390,15 @@ export function updateAcademicYearApi(
   });
 }
 
-export function listTermsApi(
-  accessToken: string,
-  params?: { academicYearId?: string },
-) {
+export function listTermsApi(accessToken: string, params?: { academicYearId?: string }) {
   const query = new URLSearchParams();
   if (params?.academicYearId) {
     query.set('academicYearId', params.academicYearId);
   }
-  return apiRequest(
-    `/terms${query.toString() ? `?${query.toString()}` : ''}`,
-    { method: 'GET', accessToken },
-  );
+  return apiRequest(`/terms${query.toString() ? `?${query.toString()}` : ''}`, {
+    method: 'GET',
+    accessToken,
+  });
 }
 
 export function createTermApi(
@@ -403,7 +409,7 @@ export function createTermApi(
     sequence: number;
     startDate: string;
     endDate: string;
-  },
+  }
 ) {
   return apiRequest('/terms', {
     method: 'POST',
@@ -428,7 +434,7 @@ export function updateTermApi(
     startDate?: string;
     endDate?: string;
     isActive?: boolean;
-  },
+  }
 ) {
   return apiRequest(`/terms/${id}`, {
     method: 'PATCH',
@@ -446,7 +452,7 @@ export function listGradeLevelsApi(accessToken: string) {
 
 export function createGradeLevelApi(
   accessToken: string,
-  payload: { code: string; name: string; rank: number },
+  payload: { code: string; name: string; rank: number }
 ) {
   return apiRequest('/grade-levels', {
     method: 'POST',
@@ -465,7 +471,7 @@ export function deleteGradeLevelApi(accessToken: string, id: string) {
 export function updateGradeLevelApi(
   accessToken: string,
   id: string,
-  payload: { code?: string; name?: string; rank?: number; isActive?: boolean },
+  payload: { code?: string; name?: string; rank?: number; isActive?: boolean }
 ) {
   return apiRequest(`/grade-levels/${id}`, {
     method: 'PATCH',
@@ -483,7 +489,7 @@ export function listClassRoomsApi(accessToken: string) {
 
 export function createClassRoomApi(
   accessToken: string,
-  payload: { gradeLevelId: string; code: string; name: string; capacity?: number },
+  payload: { gradeLevelId: string; code: string; name: string; capacity?: number }
 ) {
   return apiRequest('/classes', {
     method: 'POST',
@@ -502,7 +508,13 @@ export function deleteClassRoomApi(accessToken: string, id: string) {
 export function updateClassRoomApi(
   accessToken: string,
   id: string,
-  payload: { gradeLevelId?: string; code?: string; name?: string; capacity?: number; isActive?: boolean },
+  payload: {
+    gradeLevelId?: string;
+    code?: string;
+    name?: string;
+    capacity?: number;
+    isActive?: boolean;
+  }
 ) {
   return apiRequest(`/classes/${id}`, {
     method: 'PATCH',
@@ -520,7 +532,7 @@ export function listSubjectsApi(accessToken: string) {
 
 export function createSubjectApi(
   accessToken: string,
-  payload: { code: string; name: string; description?: string; isCore?: boolean },
+  payload: { code: string; name: string; description?: string; isCore?: boolean }
 ) {
   return apiRequest('/subjects', {
     method: 'POST',
@@ -539,7 +551,13 @@ export function deleteSubjectApi(accessToken: string, id: string) {
 export function updateSubjectApi(
   accessToken: string,
   id: string,
-  payload: { code?: string; name?: string; description?: string; isCore?: boolean; isActive?: boolean },
+  payload: {
+    code?: string;
+    name?: string;
+    description?: string;
+    isCore?: boolean;
+    isActive?: boolean;
+  }
 ) {
   return apiRequest(`/subjects/${id}`, {
     method: 'PATCH',

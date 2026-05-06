@@ -1,12 +1,6 @@
 import DOMPurify from 'dompurify';
 
-export function RichContent({
-  html,
-  className,
-}: {
-  html: string;
-  className?: string;
-}) {
+export function RichContent({ html, className }: { html: string; className?: string }) {
   const sanitized = DOMPurify.sanitize(html, {
     USE_PROFILES: {
       html: true,

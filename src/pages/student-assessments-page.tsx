@@ -9,7 +9,10 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import { listMyAssessmentsApi } from '../features/assessments/assessments.api';
-import { formatAssessmentDateTime, formatAssessmentTypeLabel } from '../features/assessments/assessment-ui';
+import {
+  formatAssessmentDateTime,
+  formatAssessmentTypeLabel,
+} from '../features/assessments/assessment-ui';
 
 export function StudentAssessmentsPage() {
   const { t } = useTranslation('student');
@@ -32,10 +35,7 @@ export function StudentAssessmentsPage() {
 
   return (
     <div className="grid gap-5">
-      <SectionCard
-        title={t('assessments.title')}
-        subtitle={t('assessments.subtitle')}
-      >
+      <SectionCard title={t('assessments.title')} subtitle={t('assessments.subtitle')}>
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -53,14 +53,18 @@ export function StudentAssessmentsPage() {
             </label>
 
             <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-              {myAssessmentsQuery.data?.student.firstName ?? t('assessments.studentFallback')} · {myAssessmentsQuery.data?.student.studentCode ?? t('assessments.noCode')}
+              {myAssessmentsQuery.data?.student.firstName ?? t('assessments.studentFallback')} ·{' '}
+              {myAssessmentsQuery.data?.student.studentCode ?? t('assessments.noCode')}
             </div>
           </div>
 
           {myAssessmentsQuery.isPending ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="h-44 animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
+                <div
+                  key={index}
+                  className="h-44 animate-pulse rounded-2xl border border-brand-100 bg-white/70"
+                />
               ))}
             </div>
           ) : null}
@@ -117,7 +121,9 @@ export function StudentAssessmentsPage() {
 
                     <div className="flex flex-wrap gap-2 self-start text-xs font-semibold text-slate-700">
                       <span className="rounded-full bg-brand-100 px-2.5 py-1">
-                        {assessment.timeLimitMinutes ? `${assessment.timeLimitMinutes} min` : 'No timer'}
+                        {assessment.timeLimitMinutes
+                          ? `${assessment.timeLimitMinutes} min`
+                          : 'No timer'}
                       </span>
                       <span className="rounded-full bg-brand-100 px-2.5 py-1">
                         {assessment.maxAttempts} attempts
@@ -126,18 +132,24 @@ export function StudentAssessmentsPage() {
                         assessment.type === 'GENERAL' || assessment.type === 'PSYCHOMETRIC' ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-900">
                             <Trophy className="h-3.5 w-3.5" aria-hidden="true" />
-                            {assessment.latestAttempt.score}/{assessment.latestAttempt.maxScore ?? 0}
+                            {assessment.latestAttempt.score}/
+                            {assessment.latestAttempt.maxScore ?? 0}
                           </span>
                         ) : assessment.latestAttempt.manualScore !== null ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-900">
                             <Trophy className="h-3.5 w-3.5" aria-hidden="true" />
-                            {assessment.latestAttempt.score}/{assessment.latestAttempt.maxScore ?? 0}
+                            {assessment.latestAttempt.score}/
+                            {assessment.latestAttempt.maxScore ?? 0}
                           </span>
                         ) : (
-                          <span className="rounded-full bg-brand-100 px-2.5 py-1">{t('assessments.awaitingReview')}</span>
+                          <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                            {t('assessments.awaitingReview')}
+                          </span>
                         )
                       ) : assessment.latestAttempt?.status === 'IN_PROGRESS' ? (
-                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-900">{t('assessments.inProgress')}</span>
+                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-900">
+                          {t('assessments.inProgress')}
+                        </span>
                       ) : null}
                     </div>
 
@@ -149,7 +161,10 @@ export function StudentAssessmentsPage() {
                 ))}
               </div>
             ) : (
-              <EmptyState title={t('assessments.emptyTitle')} message={t('assessments.emptyMessage')} />
+              <EmptyState
+                title={t('assessments.emptyTitle')}
+                message={t('assessments.emptyMessage')}
+              />
             )
           ) : null}
         </div>

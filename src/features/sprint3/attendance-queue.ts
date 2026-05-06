@@ -1,8 +1,5 @@
 import { ApiClientError } from '../../types/api';
-import {
-  SaveAttendanceBulkPayload,
-  saveAttendanceBulkApi,
-} from './attendance.api';
+import { SaveAttendanceBulkPayload, saveAttendanceBulkApi } from './attendance.api';
 
 const DB_NAME = 'smart-school-attendance';
 const DB_VERSION = 1;
@@ -61,7 +58,7 @@ function openDb(): Promise<IDBDatabase> {
 
 async function withStore<T>(
   mode: IDBTransactionMode,
-  handler: (store: IDBObjectStore) => Promise<T> | T,
+  handler: (store: IDBObjectStore) => Promise<T> | T
 ): Promise<T> {
   const database = await openDb();
 
@@ -96,7 +93,7 @@ function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
 }
 
 export async function enqueueAttendance(
-  payload: SaveAttendanceBulkPayload,
+  payload: SaveAttendanceBulkPayload
 ): Promise<AttendanceQueueItem> {
   const now = new Date().toISOString();
   const item: AttendanceQueueItem = {
@@ -118,7 +115,7 @@ export async function enqueueAttendance(
 
 export async function listAttendanceQueueItems(): Promise<AttendanceQueueItem[]> {
   const items = await withStore('readonly', async (store) =>
-    requestToPromise<AttendanceQueueItem[]>(store.getAll()),
+    requestToPromise<AttendanceQueueItem[]>(store.getAll())
   );
 
   return items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -150,9 +147,7 @@ async function removeAttendanceQueueItem(id: string): Promise<void> {
 
 export async function clearFailedAttendanceQueueItems(): Promise<void> {
   const items = await listAttendanceQueueItems();
-  const failedIds = items
-    .filter((item) => item.status === 'FAILED')
-    .map((item) => item.id);
+  const failedIds = items.filter((item) => item.status === 'FAILED').map((item) => item.id);
 
   await withStore('readwrite', async (store) => {
     for (const id of failedIds) {
@@ -167,9 +162,7 @@ export interface SyncAttendanceQueueResult {
   remaining: number;
 }
 
-export async function syncAttendanceQueue(
-  accessToken: string,
-): Promise<SyncAttendanceQueueResult> {
+export async function syncAttendanceQueue(accessToken: string): Promise<SyncAttendanceQueueResult> {
   const items = await listAttendanceQueueItems();
   let synced = 0;
   let failed = 0;
@@ -206,4 +199,3 @@ export async function syncAttendanceQueue(
     remaining,
   };
 }
-

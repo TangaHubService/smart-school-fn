@@ -12,7 +12,10 @@ export type PublicHealthInfo = {
   nodeEnv: string;
 };
 
-type HealthEnvelope = { data: PublicHealthInfo | null; error?: { code: string; message: string } | null };
+type HealthEnvelope = {
+  data: PublicHealthInfo | null;
+  error?: { code: string; message: string } | null;
+};
 
 export async function fetchPublicHealthInfo(): Promise<PublicHealthInfo> {
   const response = await fetch(`${API_BASE_URL}/health/info`);

@@ -6,10 +6,7 @@ import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  listCoursesApi,
-  type CourseListResponse,
-} from '../features/sprint4/lms.api';
+import { listCoursesApi, type CourseListResponse } from '../features/sprint4/lms.api';
 
 type CourseItem = CourseListResponse['items'][number];
 
@@ -67,10 +64,7 @@ export function TeacherMyClassesPage() {
 
   return (
     <div className="grid gap-5">
-      <SectionCard
-        title="My Classes"
-        subtitle="Classes and courses you teach."
-      >
+      <SectionCard title="My Classes" subtitle="Classes and courses you teach.">
         {classGroups.length ? (
           <div className="space-y-4">
             {classGroups.map((group) => (

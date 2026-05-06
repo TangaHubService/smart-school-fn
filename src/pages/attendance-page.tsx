@@ -40,7 +40,7 @@ const saveAttendanceSchema = z.object({
         studentId: z.string().uuid(),
         status: z.enum(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED']),
         remarks: z.string().max(300).optional(),
-      }),
+      })
     )
     .min(1)
     .max(200),
@@ -82,7 +82,7 @@ export function AttendancePage() {
   const [search, setSearch] = useState('');
   const [gridRows, setGridRows] = useState<Record<string, GridRowState>>({});
   const [isOnline, setIsOnline] = useState(
-    typeof navigator === 'undefined' ? true : navigator.onLine,
+    typeof navigator === 'undefined' ? true : navigator.onLine
   );
   const [isSyncing, setIsSyncing] = useState(false);
   const [queueStats, setQueueStats] = useState({ total: 0, pending: 0, failed: 0 });
@@ -187,7 +187,15 @@ export function AttendancePage() {
         setIsSyncing(false);
       }
     },
-    [auth.accessToken, classAttendanceQuery, isOnline, isSyncing, queryClient, refreshQueueStats, showToast],
+    [
+      auth.accessToken,
+      classAttendanceQuery,
+      isOnline,
+      isSyncing,
+      queryClient,
+      refreshQueueStats,
+      showToast,
+    ]
   );
 
   useEffect(() => {
@@ -352,9 +360,7 @@ export function AttendancePage() {
       });
     } catch (error) {
       const isNetworkError =
-        !(error instanceof ApiClientError) &&
-        error instanceof Error &&
-        error.name === 'TypeError';
+        !(error instanceof ApiClientError) && error instanceof Error && error.name === 'TypeError';
 
       if (isNetworkError) {
         await enqueueAttendance(payload);
@@ -408,13 +414,16 @@ export function AttendancePage() {
     >
       <div
         className={`mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm ${
-          isOnline ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'
+          isOnline
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+            : 'border-amber-200 bg-amber-50 text-amber-900'
         }`}
         role="status"
         aria-live="polite"
       >
         <p className="font-semibold">
-          {isOnline ? 'Online' : 'Offline'} • Queue: {queueStats.pending} pending, {queueStats.failed} failed
+          {isOnline ? 'Online' : 'Offline'} • Queue: {queueStats.pending} pending,{' '}
+          {queueStats.failed} failed
           {isSyncing ? ' • Syncing...' : ''}
         </p>
         <div className="flex gap-2">
@@ -599,7 +608,9 @@ export function AttendancePage() {
                 {filteredRows.map((row, index) => (
                   <tr key={row.studentId} className="border-b border-brand-50">
                     <td className="px-2 py-2 align-middle text-slate-600">{index + 1}</td>
-                    <td className="px-2 py-2 align-middle font-semibold text-slate-800">{row.studentCode}</td>
+                    <td className="px-2 py-2 align-middle font-semibold text-slate-800">
+                      {row.studentCode}
+                    </td>
                     <td className="px-2 py-2 align-middle">
                       {row.firstName} {row.lastName}
                     </td>

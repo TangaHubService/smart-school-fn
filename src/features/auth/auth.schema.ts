@@ -99,19 +99,22 @@ export const verifyOtpSchema = z.object({
 
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 
-export const resetPasswordSchema = z.object({
-  email: z.string().email('Enter a valid email'),
-  otp: z.string().min(1, 'OTP is required'),
-  newPassword: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Must include a capital letter')
-    .regex(/[a-z]/, 'Must include a small letter')
-    .regex(/[0-9]/, 'Must include a number')
-    .regex(/[^A-Za-z0-9]/, 'Must include a special character'),
-  confirmPassword: z.string().min(1, 'Confirm password is required'),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+export const resetPasswordSchema = z
+  .object({
+    email: z.string().email('Enter a valid email'),
+    otp: z.string().min(1, 'OTP is required'),
+    newPassword: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Must include a capital letter')
+      .regex(/[a-z]/, 'Must include a small letter')
+      .regex(/[0-9]/, 'Must include a number')
+      .regex(/[^A-Za-z0-9]/, 'Must include a special character'),
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

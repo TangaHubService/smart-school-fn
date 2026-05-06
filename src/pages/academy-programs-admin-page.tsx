@@ -95,7 +95,11 @@ export function AcademyProgramsAdminPage() {
         queryClient.invalidateQueries({ queryKey: ['admin-academy-programs'] }),
         queryClient.invalidateQueries({ queryKey: ['academy-programs'] }),
       ]);
-      showToast({ type: 'success', title: 'Program created', message: 'It can appear on /academy if your school is the catalog tenant.' });
+      showToast({
+        type: 'success',
+        title: 'Program created',
+        message: 'It can appear on /academy if your school is the catalog tenant.',
+      });
       setCreateOpen(false);
       createForm.reset(defaultProgramForm);
     },
@@ -118,7 +122,11 @@ export function AcademyProgramsAdminPage() {
         queryClient.invalidateQueries({ queryKey: ['admin-academy-programs'] }),
         queryClient.invalidateQueries({ queryKey: ['academy-programs'] }),
       ]);
-      showToast({ type: 'success', title: 'Program updated', message: 'Public pages will refresh on next load.' });
+      showToast({
+        type: 'success',
+        title: 'Program updated',
+        message: 'Public pages will refresh on next load.',
+      });
       setEditing(null);
     },
   });
@@ -160,9 +168,13 @@ export function AcademyProgramsAdminPage() {
       }
     >
       <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        <p className="font-semibold">Shown on the website only when this school is the academy catalog</p>
+        <p className="font-semibold">
+          Shown on the website only when this school is the academy catalog
+        </p>
         <p className="mt-1 text-amber-900/90">
-          Super Admin → Schools → enable <strong>Public academy catalog school</strong> for this tenant. Then create programs here (or keep using class courses only for in-school teaching).
+          Super Admin → Schools → enable <strong>Public academy catalog school</strong> for this
+          tenant. Then create programs here (or keep using class courses only for in-school
+          teaching).
         </p>
         <Link
           to="/admin/courses"
@@ -218,7 +230,9 @@ export function AcademyProgramsAdminPage() {
                     <p className="font-medium text-slate-900">{row.title}</p>
                     <p className="text-xs text-slate-500">{row.isActive ? 'Active' : 'Inactive'}</p>
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs">{Number(row.price).toLocaleString()}</td>
+                  <td className="px-3 py-2 font-mono text-xs">
+                    {Number(row.price).toLocaleString()}
+                  </td>
                   <td className="px-3 py-2">{row.durationDays}</td>
                   <td className="px-3 py-2">{row.listedInPublicCatalog ? 'Yes' : 'No'}</td>
                   <td className="px-3 py-2 text-xs text-slate-600">
@@ -258,7 +272,10 @@ export function AcademyProgramsAdminPage() {
         >
           <ProgramFormFields form={createForm} courseOptions={courseOptions} />
           {createMutation.error ? (
-            <StateView title="Could not create" message={(createMutation.error as ApiClientError).message} />
+            <StateView
+              title="Could not create"
+              message={(createMutation.error as ApiClientError).message}
+            />
           ) : null}
           <div className="flex justify-end gap-2 pt-2">
             <button
@@ -299,7 +316,10 @@ export function AcademyProgramsAdminPage() {
         >
           <ProgramFormFields form={editForm} courseOptions={courseOptions} />
           {updateMutation.error ? (
-            <StateView title="Could not update" message={(updateMutation.error as ApiClientError).message} />
+            <StateView
+              title="Could not update"
+              message={(updateMutation.error as ApiClientError).message}
+            />
           ) : null}
           <div className="flex justify-end gap-2 pt-2">
             <button
@@ -328,13 +348,21 @@ function ProgramFormFields({
   courseOptions,
 }: {
   form: UseFormReturn<ProgramFormValues>;
-  courseOptions: Array<{ id: string; title: string; classRoom: { name: string }; academicYear: { name: string } }>;
+  courseOptions: Array<{
+    id: string;
+    title: string;
+    classRoom: { name: string };
+    academicYear: { name: string };
+  }>;
 }) {
   return (
     <>
       <label className="grid gap-1 text-sm font-semibold text-slate-800">
         Title
-        <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('title')} />
+        <input
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('title')}
+        />
       </label>
       {form.formState.errors.title?.message ? (
         <p className="text-xs text-red-600">{form.formState.errors.title.message}</p>
@@ -342,25 +370,44 @@ function ProgramFormFields({
 
       <label className="grid gap-1 text-sm font-semibold text-slate-800">
         Description (optional)
-        <textarea className="min-h-[80px] rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('description')} />
+        <textarea
+          className="min-h-[80px] rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('description')}
+        />
       </label>
 
       <label className="grid gap-1 text-sm font-semibold text-slate-800">
         Thumbnail URL (optional)
-        <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="https://…" {...form.register('thumbnail')} />
+        <input
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          placeholder="https://…"
+          {...form.register('thumbnail')}
+        />
       </label>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Legacy price (RWF)
-          <input type="number" step="1" min="1" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('price')} />
+          <input
+            type="number"
+            step="1"
+            min="1"
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...form.register('price')}
+          />
           <span className="text-xs font-normal text-slate-500">
-            Kept for older per-program purchases. The public academy now charges by time plan instead.
+            Kept for older per-program purchases. The public academy now charges by time plan
+            instead.
           </span>
         </label>
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Access length (days)
-          <input type="number" min="1" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('durationDays')} />
+          <input
+            type="number"
+            min="1"
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...form.register('durationDays')}
+          />
         </label>
       </div>
       {form.formState.errors.price?.message ? (
@@ -369,7 +416,10 @@ function ProgramFormFields({
 
       <label className="grid gap-1 text-sm font-semibold text-slate-800">
         Link to LMS course (optional)
-        <select className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('courseId')}>
+        <select
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('courseId')}
+        >
           <option value="">None</option>
           {courseOptions.map((c) => (
             <option key={c.id} value={c.id}>
@@ -384,7 +434,10 @@ function ProgramFormFields({
           type="checkbox"
           checked={form.watch('listedInPublicCatalog')}
           onChange={(e) =>
-            form.setValue('listedInPublicCatalog', e.target.checked, { shouldDirty: true, shouldValidate: true })
+            form.setValue('listedInPublicCatalog', e.target.checked, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
           }
         />
         Listed on public /academy
@@ -393,7 +446,9 @@ function ProgramFormFields({
         <input
           type="checkbox"
           checked={form.watch('isActive')}
-          onChange={(e) => form.setValue('isActive', e.target.checked, { shouldDirty: true, shouldValidate: true })}
+          onChange={(e) =>
+            form.setValue('isActive', e.target.checked, { shouldDirty: true, shouldValidate: true })
+          }
         />
         Active
       </label>

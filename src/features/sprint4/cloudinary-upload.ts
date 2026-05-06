@@ -1,8 +1,5 @@
 import { ApiClientError } from '../../types/api';
-import {
-  signUploadApi,
-  UploadedAssetPayload,
-} from './lms.api';
+import { signUploadApi, UploadedAssetPayload } from './lms.api';
 
 interface CloudinaryUploadResponse {
   public_id: string;
@@ -27,7 +24,7 @@ function mapResourceType(resourceType: string): UploadedAssetPayload['resourceTy
 export async function uploadFileToCloudinary(
   accessToken: string,
   purpose: 'lesson' | 'assignment' | 'submission' | 'logo' | 'assessment-question',
-  file: File,
+  file: File
 ): Promise<UploadedAssetPayload> {
   const signed = await signUploadApi(accessToken, {
     purpose,
@@ -55,7 +52,7 @@ export async function uploadFileToCloudinary(
       response.status,
       'CLOUDINARY_UPLOAD_FAILED',
       'Could not upload file',
-      'error' in body ? body.error ?? null : null,
+      'error' in body ? (body.error ?? null) : null
     );
   }
 

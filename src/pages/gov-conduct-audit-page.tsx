@@ -6,10 +6,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  getGovAuditApi,
-  submitGovAuditReportApi,
-} from '../features/gov/gov.api';
+import { getGovAuditApi, submitGovAuditReportApi } from '../features/gov/gov.api';
 import {
   GovAuditReportFormValue,
   defaultGovAuditReportForm,
@@ -127,17 +124,26 @@ export function GovConductAuditPage() {
       >
         <div className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 md:grid-cols-2">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">School</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              School
+            </p>
             <p className="mt-2 text-lg font-bold text-slate-950">{audit.school.name}</p>
             <p className="text-sm text-slate-600">
-              {audit.school.sector ?? 'N/A'} / {audit.school.district ?? 'N/A'} / {audit.school.province ?? 'N/A'}
+              {audit.school.sector ?? 'N/A'} / {audit.school.district ?? 'N/A'} /{' '}
+              {audit.school.province ?? 'N/A'}
             </p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Audit Plan</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Audit Plan
+            </p>
             <p className="mt-2 text-sm font-semibold text-slate-900">{audit.auditType} audit</p>
-            <p className="text-sm text-slate-600">{new Date(audit.plannedDate).toLocaleDateString()}</p>
-            <p className="mt-2 text-sm text-slate-600">{audit.planNotes || 'No planning notes added.'}</p>
+            <p className="text-sm text-slate-600">
+              {new Date(audit.plannedDate).toLocaleDateString()}
+            </p>
+            <p className="mt-2 text-sm text-slate-600">
+              {audit.planNotes || 'No planning notes added.'}
+            </p>
           </div>
         </div>
       </SectionCard>
@@ -147,19 +153,27 @@ export function GovConductAuditPage() {
           <div className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5">
             <div className="grid gap-3 md:grid-cols-4">
               <div className="rounded-xl border border-brand-100 bg-brand-50/50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Score</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Score
+                </p>
                 <p className="mt-2 text-3xl font-bold text-slate-950">{report.score}</p>
               </div>
               <div className="rounded-xl border border-brand-100 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Teaching</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Teaching
+                </p>
                 <p className="mt-2 text-2xl font-bold text-slate-950">{report.teachingQuality}</p>
               </div>
               <div className="rounded-xl border border-brand-100 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Infrastructure</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Infrastructure
+                </p>
                 <p className="mt-2 text-2xl font-bold text-slate-950">{report.infrastructure}</p>
               </div>
               <div className="rounded-xl border border-brand-100 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Discipline</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Discipline
+                </p>
                 <p className="mt-2 text-2xl font-bold text-slate-950">{report.discipline}</p>
               </div>
             </div>
@@ -180,8 +194,14 @@ export function GovConductAuditPage() {
           </div>
         </SectionCard>
       ) : (
-        <SectionCard title="Audit Form" subtitle="Score each area from 1 to 5, then submit the final report.">
-          <form onSubmit={handleSubmit} className="grid gap-5 rounded-2xl border border-brand-100 bg-white p-5">
+        <SectionCard
+          title="Audit Form"
+          subtitle="Score each area from 1 to 5, then submit the final report."
+        >
+          <form
+            onSubmit={handleSubmit}
+            className="grid gap-5 rounded-2xl border border-brand-100 bg-white p-5"
+          >
             <div className="grid gap-3 md:grid-cols-3">
               <label className="grid gap-1 text-sm text-slate-700">
                 <span className="font-medium">Teaching Quality</span>
@@ -249,7 +269,10 @@ export function GovConductAuditPage() {
               <textarea
                 value={form.comment}
                 onChange={(event) =>
-                  setForm((current: GovAuditReportFormValue) => ({ ...current, comment: event.target.value }))
+                  setForm((current: GovAuditReportFormValue) => ({
+                    ...current,
+                    comment: event.target.value,
+                  }))
                 }
                 rows={4}
                 className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"
@@ -262,7 +285,10 @@ export function GovConductAuditPage() {
               <textarea
                 value={form.findings}
                 onChange={(event) =>
-                  setForm((current: GovAuditReportFormValue) => ({ ...current, findings: event.target.value }))
+                  setForm((current: GovAuditReportFormValue) => ({
+                    ...current,
+                    findings: event.target.value,
+                  }))
                 }
                 rows={4}
                 className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"

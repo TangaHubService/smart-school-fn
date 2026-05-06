@@ -45,7 +45,7 @@ export async function listUsersApi(
     status?: 'active' | 'inactive' | 'all';
     page?: number;
     pageSize?: number;
-  },
+  }
 ): Promise<ListUsersResponse> {
   const query = new URLSearchParams();
   if (params?.search) query.set('search', params.search);
@@ -71,7 +71,7 @@ export async function fetchAllUsers(
     role?: string;
     tenantId?: string;
     status?: 'active' | 'inactive' | 'all';
-  },
+  }
 ): Promise<UserListItem[]> {
   const allUsers: UserListItem[] = [];
   let page = 1;
@@ -99,7 +99,7 @@ export async function exportUsersApi(
     role?: string;
     tenantId?: string;
     status?: 'active' | 'inactive' | 'all';
-  },
+  }
 ): Promise<{ fileName: string; rowCount: number; csv: string }> {
   const query = new URLSearchParams();
   if (params?.search) query.set('search', params.search);
@@ -115,4 +115,3 @@ export async function exportUsersApi(
     accessToken,
   });
 }
-

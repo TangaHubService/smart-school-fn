@@ -8,10 +8,14 @@ export function TermsPage() {
       <SectionCard title={t('legal.termsTitle')} subtitle={t('legal.termsSubtitle')}>
         <div className="prose prose-slate max-w-none text-sm text-slate-700">
           <p>
-            By using this application you agree to use it only for lawful educational purposes, not to
-            attempt unauthorized access, and to respect intellectual property of uploaded materials.
+            By using this application you agree to use it only for lawful educational purposes, not
+            to attempt unauthorized access, and to respect intellectual property of uploaded
+            materials.
           </p>
-          <p>The service is provided as-is for demonstration; uptime and support terms belong in a final legal agreement.</p>
+          <p>
+            The service is provided as-is for demonstration; uptime and support terms belong in a
+            final legal agreement.
+          </p>
         </div>
       </SectionCard>
     </main>

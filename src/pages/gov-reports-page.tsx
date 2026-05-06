@@ -33,7 +33,10 @@ export function GovReportsPage() {
   const pagination = reportsQuery.data?.pagination;
 
   return (
-    <SectionCard title="Reports" subtitle="Completed audits with findings, recommendations, and final score.">
+    <SectionCard
+      title="Reports"
+      subtitle="Completed audits with findings, recommendations, and final score."
+    >
       <div className="mb-4 md:max-w-sm">
         <select
           value={auditType}
@@ -96,12 +99,17 @@ export function GovReportsPage() {
                   </p>
                   <h3 className="mt-2 text-lg font-bold text-slate-950">{audit.school.name}</h3>
                   <p className="text-sm text-slate-600">
-                    Completed {audit.report ? new Date(audit.report.submittedAt).toLocaleDateString() : 'N/A'}
+                    Completed{' '}
+                    {audit.report ? new Date(audit.report.submittedAt).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Score</p>
-                  <p className="mt-2 text-3xl font-bold text-slate-950">{audit.report?.score ?? 0}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Score
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-slate-950">
+                    {audit.report?.score ?? 0}
+                  </p>
                 </div>
               </div>
 
@@ -116,7 +124,9 @@ export function GovReportsPage() {
                 </div>
                 <div className="rounded-xl border border-brand-100 bg-white p-4">
                   <h4 className="font-semibold text-slate-900">Recommendations</h4>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">{audit.report?.recommendations}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {audit.report?.recommendations}
+                  </p>
                 </div>
               </div>
 

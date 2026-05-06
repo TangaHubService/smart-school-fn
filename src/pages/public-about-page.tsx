@@ -9,17 +9,48 @@ import enock from '../asset/Enock.png';
 import olive from '../asset/olive.png';
 
 const team = [
-  { name: 'Damascene Sibomana', role: 'Founder/CEO, BSC, MBA, CFA', phone: '+250781212252', image: ceo },
-  { name: 'Olive Niyomurinzi', role: 'Customer Relations, BSC', phone: '+250780697816', image: olive },
-  { name: 'Enock Iradukunda', role: 'Head of Content, BSC, CPA(R), MBA', phone: '+250788701837', image: enock },
+  {
+    name: 'Damascene Sibomana',
+    role: 'Founder/CEO, BSC, MBA, CFA',
+    phone: '+250781212252',
+    image: ceo,
+  },
+  {
+    name: 'Olive Niyomurinzi',
+    role: 'Customer Relations, BSC',
+    phone: '+250780697816',
+    image: olive,
+  },
+  {
+    name: 'Enock Iradukunda',
+    role: 'Head of Content, BSC, CPA(R), MBA',
+    phone: '+250788701837',
+    image: enock,
+  },
   { name: 'Bertin Niyonkuru', role: 'Software Engineer', phone: '+250783021801', image: cto },
 ];
 
 const values = [
-  { icon: Heart, title: 'Lifelong Learning', description: 'Continuous growth beyond classroom and workplace boundaries.' },
-  { icon: Lightbulb, title: 'Innovation', description: 'Practical, modern learning methods driven by technology.' },
-  { icon: Users, title: 'Impact', description: 'Measurable transformation for learners, institutions, and communities.' },
-  { icon: Award, title: 'Excellence', description: 'Consistent quality in educational delivery and outcomes.' },
+  {
+    icon: Heart,
+    title: 'Lifelong Learning',
+    description: 'Continuous growth beyond classroom and workplace boundaries.',
+  },
+  {
+    icon: Lightbulb,
+    title: 'Innovation',
+    description: 'Practical, modern learning methods driven by technology.',
+  },
+  {
+    icon: Users,
+    title: 'Impact',
+    description: 'Measurable transformation for learners, institutions, and communities.',
+  },
+  {
+    icon: Award,
+    title: 'Excellence',
+    description: 'Consistent quality in educational delivery and outcomes.',
+  },
 ];
 
 export function PublicAboutPage() {
@@ -31,10 +62,15 @@ export function PublicAboutPage() {
       >
         <div className="absolute inset-0 bg-black/65" />
         <div className="relative mx-auto w-full max-w-6xl px-4 text-center sm:px-6 lg:px-8">
-          <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Elite Education</p>
-          <h1 className="text-3xl font-bold uppercase tracking-tight text-white sm:text-5xl">About Smart School</h1>
+          {/* <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Elite Education</p> */}
+          <h1 className="text-3xl font-bold uppercase tracking-tight text-white sm:text-5xl">
+            About Smart School
+          </h1>
           <p className="mx-auto mt-6 hidden max-w-4xl text-lg font-medium leading-relaxed text-gray-100 md:block">
-            Smart School Rwanda is a digital education management platform designed to transform how schools operate, teach, and assess students. By integrating modern technology into daily school activities, the system enhances efficiency, transparency, and academic performance across Rwandan schools.
+            Smart School is a digital education management platform designed to transform how
+            schools operate, teach, and assess students. By integrating modern technology into daily
+            school activities, the system enhances efficiency, transparency, and academic
+            performance across schools.
           </p>
         </div>
       </section>
@@ -43,8 +79,9 @@ export function PublicAboutPage() {
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <div className="mx-auto mb-10 h-1 w-16 rounded-full bg-brand-500" />
           <p className="text-xl leading-relaxed text-slate-700 sm:text-2xl">
-            Welcome to <span className="font-bold text-brand-600">Smart School</span>. Continuous learning is made accessible
-            through flexible and personalized experiences designed for real life and career growth.
+            Welcome to <span className="font-bold text-brand-600">Smart School</span>. Continuous
+            learning is made accessible through flexible and personalized experiences designed for
+            real life and career growth.
           </p>
         </div>
       </section>
@@ -55,10 +92,13 @@ export function PublicAboutPage() {
             <div className="mb-8 inline-flex h-14 w-14 items-center justify-center rounded-3xl bg-brand-50 text-brand-600">
               <Target className="h-7 w-7" />
             </div>
-            <h2 className="text-3xl font-bold uppercase tracking-tight text-slate-900">Our Mission</h2>
+            <h2 className="text-3xl font-bold uppercase tracking-tight text-slate-900">
+              Our Mission
+            </h2>
             <p className="mt-4 text-lg leading-relaxed text-slate-600">
-              To close Rwanda’s skills gap by equipping graduates and employees with practical, market-relevant knowledge and
-              continuous training that improves readiness, productivity, and national competitiveness.
+              To close the skills gap by equipping graduates and employees with practical,
+              market-relevant knowledge and continuous training that improves readiness,
+              productivity, and national competitiveness.
             </p>
           </article>
 
@@ -68,8 +108,8 @@ export function PublicAboutPage() {
             </div>
             <h2 className="text-3xl font-bold uppercase tracking-tight">Our Vision</h2>
             <p className="mt-4 text-lg leading-relaxed text-white/90">
-              Build a future where every Rwandan learner accesses practical lifelong education that drives innovation and supports
-              a thriving economy.
+              Build a future where every learner accesses practical lifelong education that drives
+              innovation and supports a thriving economy.
             </p>
           </article>
         </div>
@@ -78,7 +118,9 @@ export function PublicAboutPage() {
       <section className="bg-white py-20">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-14 text-center">
-            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">Our Core Values</h2>
+            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">
+              Our Core Values
+            </h2>
             <div className="mx-auto mt-6 h-1 w-16 rounded-full bg-brand-500" />
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -90,8 +132,12 @@ export function PublicAboutPage() {
                 <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand-600">
                   <item.icon className="h-5 w-5" />
                 </div>
-                <h3 className="text-lg font-bold uppercase tracking-tight text-slate-900 transition-colors group-hover:text-white">{item.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-slate-600 transition-colors group-hover:text-white/85">{item.description}</p>
+                <h3 className="text-lg font-bold uppercase tracking-tight text-slate-900 transition-colors group-hover:text-white">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600 transition-colors group-hover:text-white/85">
+                  {item.description}
+                </p>
               </article>
             ))}
           </div>
@@ -101,7 +147,9 @@ export function PublicAboutPage() {
       <section className="bg-slate-50 py-20">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-14 text-center">
-            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">Meet Our Team</h2>
+            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">
+              Meet Our Team
+            </h2>
             <p className="mt-4 text-lg text-slate-500">The people behind Smart School.</p>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -111,10 +159,18 @@ export function PublicAboutPage() {
                 className="rounded-3xl border border-slate-100 bg-white p-6 text-center shadow-[0_20px_50px_rgba(0,0,0,0.03)]"
               >
                 <div className="mx-auto mb-6 h-36 w-36 overflow-hidden rounded-full border-4 border-white shadow-md">
-                  <img src={member.image} alt={member.name} className="h-full w-full object-cover" />
+                  <img
+                    src={member.image}
+                    alt={member.name}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
-                <h3 className="text-lg font-bold uppercase tracking-tight text-slate-900">{member.name}</h3>
-                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">{member.role}</p>
+                <h3 className="text-lg font-bold uppercase tracking-tight text-slate-900">
+                  {member.name}
+                </h3>
+                <p className="mt-2 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">
+                  {member.role}
+                </p>
                 <p className="mt-3 text-sm font-medium text-slate-500">{member.phone}</p>
               </article>
             ))}
@@ -129,7 +185,9 @@ export function PublicAboutPage() {
           <div className="relative overflow-hidden rounded-3xl bg-brand-500 p-12 text-center text-white shadow-[0_30px_60px_rgba(30,90,168,0.30)]">
             <div className="absolute inset-0 bg-gradient-to-br from-brand-500 via-brand-400 to-brand-500 opacity-70" />
             <div className="relative">
-              <h2 className="text-2xl font-bold uppercase tracking-tight sm:text-4xl">Ready to Start Learning?</h2>
+              <h2 className="text-2xl font-bold uppercase tracking-tight sm:text-4xl">
+                Ready to Start Learning?
+              </h2>
               <p className="mx-auto mt-4 max-w-2xl text-lg text-white/90">
                 Join thousands of learners already transforming their lives through our platform.
               </p>

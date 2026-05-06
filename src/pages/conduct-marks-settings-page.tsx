@@ -123,8 +123,7 @@ export function ConductMarksSettingsPage() {
                 Record student conduct
               </button>
             }
-          >
-          </SectionCard>
+          ></SectionCard>
 
           {recordConductModalOpen ? (
             <div
@@ -154,9 +153,7 @@ export function ConductMarksSettingsPage() {
       ) : null}
 
       {canConfigurePools ? (
-        <SectionCard
-          title="Conduct marks (per term)"
-        >
+        <SectionCard title="Conduct marks (per term)">
           <div className="mb-6 flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1 text-sm font-medium text-slate-800">
               Academic year
@@ -177,7 +174,10 @@ export function ConductMarksSettingsPage() {
           {settingsQuery.isPending ? (
             <div className="h-32 animate-pulse rounded-xl bg-brand-50" />
           ) : settingsQuery.isError ? (
-            <StateView title="Could not load term settings" message={(settingsQuery.error as Error).message} />
+            <StateView
+              title="Could not load term settings"
+              message={(settingsQuery.error as Error).message}
+            />
           ) : !settingsQuery.data?.terms.length ? (
             <EmptyState message="No terms found for this academic year." />
           ) : (

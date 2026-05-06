@@ -52,9 +52,7 @@ export function NotificationsPage() {
   // });
 
   const notifications =
-    filter === 'unread'
-      ? DUMMY_NOTIFICATIONS.filter((n) => !n.read)
-      : DUMMY_NOTIFICATIONS;
+    filter === 'unread' ? DUMMY_NOTIFICATIONS.filter((n) => !n.read) : DUMMY_NOTIFICATIONS;
 
   return (
     <section className="space-y-6">
@@ -95,9 +93,7 @@ export function NotificationsPage() {
                 className={`flex items-start gap-3 py-4 ${!n.read ? 'bg-brand-50/50' : ''}`}
               >
                 <div
-                  className={`mt-1 rounded-full p-1.5 ${
-                    n.read ? 'bg-slate-100' : 'bg-brand-100'
-                  }`}
+                  className={`mt-1 rounded-full p-1.5 ${n.read ? 'bg-slate-100' : 'bg-brand-100'}`}
                 >
                   <Bell className="h-4 w-4 text-brand-600" />
                 </div>

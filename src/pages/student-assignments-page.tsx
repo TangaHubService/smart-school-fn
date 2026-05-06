@@ -6,10 +6,7 @@ import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  type AssignmentItem,
-  listMyCoursesApi,
-} from '../features/sprint4/lms.api';
+import { type AssignmentItem, listMyCoursesApi } from '../features/sprint4/lms.api';
 
 const PAGE_SIZE = 50;
 
@@ -132,10 +129,7 @@ export function StudentAssignmentsPage() {
 
   return (
     <div className="grid gap-5">
-      <SectionCard
-        title="My Assignments"
-        subtitle="View and submit assignments from your courses."
-      >
+      <SectionCard title="My Assignments" subtitle="View and submit assignments from your courses.">
         {sortedAssignments.length ? (
           <div className="space-y-3">
             {sortedAssignments.map((assignment) => (

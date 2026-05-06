@@ -31,12 +31,14 @@ export function CourseOverviewPanel({
   const resumeLessonId = getResumeLessonId(course, completedLessonIds);
   const pendingTests =
     course.assignments.filter((assignment) => !assignment.mySubmission).length +
-    course.assessments.filter((assessment) => assessment.latestAttempt?.status !== 'SUBMITTED').length;
+    course.assessments.filter((assessment) => assessment.latestAttempt?.status !== 'SUBMITTED')
+      .length;
 
   const instructor = `${course.teacher.firstName} ${course.teacher.lastName}`;
-  const estHours = metrics.estimatedMinutes >= 60
-    ? `${(metrics.estimatedMinutes / 60).toFixed(1)} h est.`
-    : `${metrics.estimatedMinutes} min est.`;
+  const estHours =
+    metrics.estimatedMinutes >= 60
+      ? `${(metrics.estimatedMinutes / 60).toFixed(1)} h est.`
+      : `${metrics.estimatedMinutes} min est.`;
 
   const isLessonDone = (id: string) => completedLessonIds.includes(id);
 
@@ -187,7 +189,9 @@ export function CourseOverviewPanel({
                     </p>
                   </div>
                   {!locked && !done ? (
-                    <span className="hidden shrink-0 text-xs font-medium text-brand-600 sm:inline">Open</span>
+                    <span className="hidden shrink-0 text-xs font-medium text-brand-600 sm:inline">
+                      Open
+                    </span>
                   ) : null}
                 </button>
               </li>

@@ -55,7 +55,7 @@ export function AnnouncementCreatePage() {
 
   function toggleClass(id: string) {
     setTargetClassRoomIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   }
 
@@ -118,14 +118,19 @@ export function AnnouncementCreatePage() {
             <p className="text-sm font-semibold text-slate-800">Select classes</p>
             <div className="flex flex-wrap gap-2">
               {classes.map((c: { id: string; code: string; name: string }) => (
-                <label key={c.id} className="flex items-center gap-2 rounded-lg border border-brand-100 px-3 py-2">
+                <label
+                  key={c.id}
+                  className="flex items-center gap-2 rounded-lg border border-brand-100 px-3 py-2"
+                >
                   <input
                     type="checkbox"
                     checked={targetClassRoomIds.includes(c.id)}
                     onChange={() => toggleClass(c.id)}
                     className="rounded border-brand-200"
                   />
-                  <span className="text-sm">{c.code} - {c.name}</span>
+                  <span className="text-sm">
+                    {c.code} - {c.name}
+                  </span>
                 </label>
               ))}
             </div>

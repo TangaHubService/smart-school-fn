@@ -3,7 +3,12 @@ import { z } from 'zod';
 import { AuditorLevel, GovAuditType } from './gov.api';
 
 export const auditorLevelOptions = ['NATIONAL', 'PROVINCE', 'DISTRICT', 'SECTOR'] as const;
-export const govAuditTypeOptions = ['ACADEMIC', 'FINANCIAL', 'INFRASTRUCTURE', 'COMPLIANCE'] as const;
+export const govAuditTypeOptions = [
+  'ACADEMIC',
+  'FINANCIAL',
+  'INFRASTRUCTURE',
+  'COMPLIANCE',
+] as const;
 
 const isoDateInputSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose a valid date');
 
@@ -14,7 +19,7 @@ function validateAuditorLocation(
     district: string;
     sector: string;
   },
-  context: z.RefinementCtx,
+  context: z.RefinementCtx
 ) {
   if (value.level === 'PROVINCE' && !value.province.trim()) {
     context.addIssue({
@@ -203,10 +208,9 @@ export const defaultGovIncidentFeedbackForm: GovIncidentFeedbackFormValue = {
   body: '',
 };
 
-export function resetLocationForLevel<T extends { level: AuditorLevel; province: string; district: string; sector: string }>(
-  level: AuditorLevel,
-  value: T,
-): T {
+export function resetLocationForLevel<
+  T extends { level: AuditorLevel; province: string; district: string; sector: string },
+>(level: AuditorLevel, value: T): T {
   return {
     ...value,
     province: level === 'NATIONAL' ? '' : value.province,

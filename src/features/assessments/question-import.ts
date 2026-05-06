@@ -59,7 +59,7 @@ function resolveColumnIndexes(headerRow: unknown[]) {
     Object.entries(HEADER_ALIASES).map(([field, aliases]) => [
       field,
       normalizedHeaders.findIndex((header) => aliases.includes(header)),
-    ]),
+    ])
   ) as Record<keyof typeof HEADER_ALIASES, number>;
 }
 
@@ -77,7 +77,9 @@ function parseQuestionType(value: string): AssessmentQuestionType | null {
     return 'MCQ_SINGLE';
   }
 
-  if (['mcq', 'mcqsingle', 'mcq_single', 'multiplechoice', 'multiple-choice'].includes(normalized)) {
+  if (
+    ['mcq', 'mcqsingle', 'mcq_single', 'multiplechoice', 'multiple-choice'].includes(normalized)
+  ) {
     return 'MCQ_SINGLE';
   }
 
@@ -227,7 +229,18 @@ export async function parseAssessmentQuestionExcel(file: File) {
 export async function downloadAssessmentQuestionTemplate() {
   const XLSX = await import('xlsx');
   const rows = [
-    ['prompt', 'imageUrl', 'type', 'points', 'explanation', 'optionA', 'optionB', 'optionC', 'optionD', 'correctOption'],
+    [
+      'prompt',
+      'imageUrl',
+      'type',
+      'points',
+      'explanation',
+      'optionA',
+      'optionB',
+      'optionC',
+      'optionD',
+      'correctOption',
+    ],
     [
       'Which organ pumps blood through the body?',
       'https://example.com/question-heart.png',
@@ -261,7 +274,7 @@ export async function downloadAssessmentQuestionTemplate() {
   const url = URL.createObjectURL(
     new Blob([blob], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    }),
+    })
   );
 
   const link = document.createElement('a');

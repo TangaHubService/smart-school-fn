@@ -73,8 +73,10 @@ export function PublicContactPage() {
       >
         <div className="absolute inset-0 bg-black/65" />
         <div className="relative mx-auto w-full max-w-6xl px-4 text-center sm:px-6 lg:px-8">
-          <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Get In Touch</p>
-          <h1 className="text-3xl font-bold uppercase tracking-tight text-white sm:text-5xl">Contact Us</h1>
+          {/* <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">Get In Touch</p> */}
+          <h1 className="text-3xl font-bold uppercase tracking-tight text-white sm:text-5xl">
+            Contact Us
+          </h1>
           <p className="mx-auto mt-6 hidden max-w-2xl text-lg font-medium text-gray-200 md:block">
             Have questions or need assistance? Our team is ready to support your learning journey.
           </p>
@@ -84,11 +86,15 @@ export function PublicContactPage() {
       <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:px-8">
         <article className="lg:col-span-7">
           <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-[0_30px_80px_rgba(0,0,0,0.06)] md:p-10">
-            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900">Send us a message</h2>
+            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900">
+              Send us a message
+            </h2>
             <form onSubmit={handleSubmit} className="mt-8 grid gap-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <label className="grid gap-2">
-                  <span className="ml-4 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">Full Name</span>
+                  <span className="ml-4 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">
+                    Full Name
+                  </span>
                   <input
                     name="name"
                     required
@@ -97,7 +103,9 @@ export function PublicContactPage() {
                   />
                 </label>
                 <label className="grid gap-2">
-                  <span className="ml-4 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">Email Address</span>
+                  <span className="ml-4 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">
+                    Email Address
+                  </span>
                   <input
                     name="email"
                     type="email"
@@ -109,7 +117,9 @@ export function PublicContactPage() {
               </div>
 
               <label className="grid gap-2">
-                <span className="ml-4 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">Subject</span>
+                <span className="ml-4 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">
+                  Subject
+                </span>
                 <input
                   name="subject"
                   required
@@ -119,7 +129,9 @@ export function PublicContactPage() {
               </label>
 
               <label className="grid gap-2">
-                <span className="ml-4 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">Your Message</span>
+                <span className="ml-4 text-[11px] font-black uppercase tracking-[0.14em] text-brand-600">
+                  Your Message
+                </span>
                 <textarea
                   name="message"
                   required
@@ -151,18 +163,24 @@ export function PublicContactPage() {
         </article>
 
         <aside className="space-y-8 lg:col-span-5">
-          <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900">Contact Link</h3>
+          <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900">
+            Contact Link
+          </h3>
           <div className="grid gap-5">
             {contactInfo.map((item) => (
               <article
                 key={item.title}
                 className="group flex items-center gap-5 rounded-3xl border border-transparent bg-slate-50 p-5 transition hover:border-brand-100 hover:bg-white hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)]"
               >
-                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${item.bg}`}>
+                <div
+                  className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${item.bg}`}
+                >
                   <item.icon className={`h-5 w-5 ${item.accent}`} />
                 </div>
                 <div>
-                  <h4 className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">{item.title}</h4>
+                  <h4 className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">
+                    {item.title}
+                  </h4>
                   <p className="mt-1 text-sm font-semibold text-slate-800">{item.value}</p>
                   {item.link ? (
                     <a

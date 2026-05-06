@@ -39,7 +39,7 @@ export function listAnnouncementsApi(
     publishedOnly?: boolean;
     page?: number;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
   if (params?.audience) query.set('audience', params.audience);
@@ -51,13 +51,13 @@ export function listAnnouncementsApi(
 
   return apiRequest<AnnouncementListResponse>(
     `/announcements${query.toString() ? `?${query.toString()}` : ''}`,
-    { method: 'GET', accessToken },
+    { method: 'GET', accessToken }
   );
 }
 
 export function listMyAnnouncementsApi(
   accessToken: string,
-  params?: { page?: number; pageSize?: number },
+  params?: { page?: number; pageSize?: number }
 ) {
   const query = new URLSearchParams();
   if (params?.page) query.set('page', String(params.page));
@@ -65,7 +65,7 @@ export function listMyAnnouncementsApi(
 
   return apiRequest<AnnouncementListResponse>(
     `/announcements/me${query.toString() ? `?${query.toString()}` : ''}`,
-    { method: 'GET', accessToken },
+    { method: 'GET', accessToken }
   );
 }
 
@@ -86,7 +86,7 @@ export function createAnnouncementApi(
     targetGradeLevelIds?: string[];
     publishedAt?: string;
     expiresAt?: string;
-  },
+  }
 ) {
   return apiRequest<AnnouncementItem>('/announcements', {
     method: 'POST',
@@ -106,7 +106,7 @@ export function updateAnnouncementApi(
     targetGradeLevelIds: string[];
     publishedAt: string | null;
     expiresAt: string | null;
-  }>,
+  }>
 ) {
   return apiRequest<AnnouncementItem>(`/announcements/${id}`, {
     method: 'PATCH',

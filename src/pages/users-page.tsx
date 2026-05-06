@@ -25,8 +25,7 @@ import type { UserListItem } from '../features/users/users.api';
 export function UsersPage() {
   const auth = useAuth();
   const isSuperAdmin = auth.me?.roles.includes('SUPER_ADMIN');
-  const isSchoolAdminOnly =
-    auth.me?.roles.includes('SCHOOL_ADMIN') && !isSuperAdmin;
+  const isSchoolAdminOnly = auth.me?.roles.includes('SCHOOL_ADMIN') && !isSuperAdmin;
 
   const [search, setSearch] = useState('');
   const [schoolFilter, setSchoolFilter] = useState<'ALL' | string>('ALL');
@@ -87,7 +86,7 @@ export function UsersPage() {
         role: roleFilter === 'ALL' ? undefined : roleFilter,
         status: statusFilter,
       });
-      const exportData: UserRow[] = allUsers.map(user => ({
+      const exportData: UserRow[] = allUsers.map((user) => ({
         name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
         email: user.email,
         phone: user.phone || '',
@@ -112,7 +111,7 @@ export function UsersPage() {
         role: roleFilter === 'ALL' ? undefined : roleFilter,
         status: statusFilter,
       });
-      const exportData: UserRow[] = allUsers.map(user => ({
+      const exportData: UserRow[] = allUsers.map((user) => ({
         name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
         email: user.email,
         phone: user.phone || '',
@@ -152,7 +151,8 @@ export function UsersPage() {
     {
       key: 'admins',
       label: 'Admins',
-      value: (usersQuery.data?.metrics.superAdmins ?? 0) + (usersQuery.data?.metrics.schoolAdmins ?? 0),
+      value:
+        (usersQuery.data?.metrics.superAdmins ?? 0) + (usersQuery.data?.metrics.schoolAdmins ?? 0),
       icon: Shield,
       color: 'bg-purple-50 text-purple-600',
     },
@@ -221,7 +221,6 @@ export function UsersPage() {
               )}
               {exporting === 'pdf' ? 'Exporting...' : 'PDF'}
             </button>
-
           </div>
         }
       />
@@ -312,9 +311,9 @@ export function UsersPage() {
                   <th className="px-5 py-3 border-b border-brand-100">Name</th>
                   <th className="px-5 py-3 border-b border-brand-100">Contacts</th>
                   <th className="px-5 py-3 border-b border-brand-100">School</th>
-<th className="px-5 py-3 border-b border-brand-100"> Role</th>
-                   <th className="px-5 py-3 border-b border-brand-100">Status</th>
-                   <th className="px-5 py-3 border-b border-brand-100">Joined</th>
+                  <th className="px-5 py-3 border-b border-brand-100"> Role</th>
+                  <th className="px-5 py-3 border-b border-brand-100">Status</th>
+                  <th className="px-5 py-3 border-b border-brand-100">Joined</th>
                   {isSchoolAdminOnly && (
                     <th className="px-5 py-3 border-b border-brand-100 text-right">Actions</th>
                   )}
@@ -322,12 +321,9 @@ export function UsersPage() {
               </thead>
               <tbody>
                 {rows.map((row, index) => (
-                  <tr
-                    key={row.raw.id}
-                    className="group transition-colors hover:bg-brand-50/30"
-                  >
+                  <tr key={row.raw.id} className="group transition-colors hover:bg-brand-50/30">
                     <td className="px-5 py-4 border-b border-brand-50 text-xs text-slate-400">
-                      # {((currentPage - 1) * pageSize) + index + 1}
+                      # {(currentPage - 1) * pageSize + index + 1}
                     </td>
                     <td className="px-5 py-4 border-b border-brand-50">
                       <div className="font-bold text-slate-900">{row.name}</div>
@@ -341,23 +337,24 @@ export function UsersPage() {
                     <td className="px-5 py-4 border-b border-brand-50">
                       <div className="text-xs text-brand-600 font-medium">{row.role}</div>
                     </td>
-              <td className="px-5 py-4 border-b border-brand-50">
-                <span
-                  className={[
-                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider',
-                    row.status === 'ACTIVE'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                      : 'bg-slate-50 text-slate-600 border border-slate-100',
-                  ].join(' ')}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${row.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                  {row.status}
-                </span>
-
-              </td>
-              <td className="px-5 py-4 border-b border-brand-50">
-                <div className="text-xs text-slate-500">{row.joined}</div>
-              </td>
+                    <td className="px-5 py-4 border-b border-brand-50">
+                      <span
+                        className={[
+                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider',
+                          row.status === 'ACTIVE'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            : 'bg-slate-50 text-slate-600 border border-slate-100',
+                        ].join(' ')}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${row.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'}`}
+                        />
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 border-b border-brand-50">
+                      <div className="text-xs text-slate-500">{row.joined}</div>
+                    </td>
                     {isSchoolAdminOnly && (
                       <td className="px-5 py-4 border-b border-brand-50 text-right">
                         <button

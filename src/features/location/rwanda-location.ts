@@ -71,7 +71,7 @@ export function getRwandaVillages(
   province?: string,
   district?: string,
   sector?: string,
-  cell?: string,
+  cell?: string
 ) {
   const cellNode = getCellNode(province, district, sector, cell);
   return cellNode ? [...cellNode] : [];

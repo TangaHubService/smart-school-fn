@@ -1,11 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
-import {
-  hasPermission,
-  isSchoolSetupComplete,
-  isSuperAdmin,
-} from '../features/auth/auth-helpers';
+import { hasPermission, isSchoolSetupComplete, isSuperAdmin } from '../features/auth/auth-helpers';
 
 export function RequireSetupComplete() {
   const auth = useAuth();

@@ -105,11 +105,10 @@ export function SubscriptionManagementPage() {
 
   const programOptions = useMemo(
     () => catalogProgramsQuery.data?.items ?? [],
-    [catalogProgramsQuery.data?.items],
+    [catalogProgramsQuery.data?.items]
   );
 
-  const isError =
-    schoolSubsQuery.isError || plansQuery.isError || enrollmentsQuery.isError;
+  const isError = schoolSubsQuery.isError || plansQuery.isError || enrollmentsQuery.isError;
 
   if (isError) {
     return (
@@ -133,8 +132,7 @@ export function SubscriptionManagementPage() {
     );
   }
 
-  const loading =
-    schoolSubsQuery.isPending || plansQuery.isPending || enrollmentsQuery.isPending;
+  const loading = schoolSubsQuery.isPending || plansQuery.isPending || enrollmentsQuery.isPending;
 
   return (
     <div className="space-y-6">
@@ -160,7 +158,9 @@ export function SubscriptionManagementPage() {
             <div className="mb-8 overflow-x-auto rounded-xl border border-slate-200">
               <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
                 <School className="h-4 w-4 text-brand-600" aria-hidden />
-                <h3 className="text-sm font-semibold text-slate-900">School subscriptions (SaaS)</h3>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  School subscriptions (SaaS)
+                </h3>
               </div>
               <table className="min-w-full text-left text-sm">
                 <thead>
@@ -205,8 +205,8 @@ export function SubscriptionManagementPage() {
                   ) : (
                     <tr>
                       <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">
-                        No school subscription rows yet. Run migrations / seed or assign plans from here
-                        after creating tenants.
+                        No school subscription rows yet. Run migrations / seed or assign plans from
+                        here after creating tenants.
                       </td>
                     </tr>
                   )}
@@ -244,7 +244,9 @@ export function SubscriptionManagementPage() {
                     enrollmentsQuery.data.items.map((row) => (
                       <tr key={row.id} className="border-b border-slate-50">
                         <td className="px-4 py-3">
-                          <p className="font-medium text-slate-900">{row.userName || row.userEmail}</p>
+                          <p className="font-medium text-slate-900">
+                            {row.userName || row.userEmail}
+                          </p>
                           <p className="text-xs text-slate-500">{row.userEmail}</p>
                         </td>
                         <td className="px-4 py-3 text-slate-700">{row.programTitle}</td>
@@ -264,7 +266,9 @@ export function SubscriptionManagementPage() {
                           {row.lastPayment ? (
                             <>
                               {row.lastPayment.status}
-                              {row.lastPayment.status === 'COMPLETED' ? '' : ` · ${row.lastPayment.amount} ${row.lastPayment.currency}`}
+                              {row.lastPayment.status === 'COMPLETED'
+                                ? ''
+                                : ` · ${row.lastPayment.amount} ${row.lastPayment.currency}`}
                             </>
                           ) : (
                             '—'
@@ -398,9 +402,9 @@ function EditSchoolSubscriptionModal({
   saving: boolean;
 }) {
   const [planId, setPlanId] = useState(row.plan.id);
-  const [status, setStatus] = useState<
-    'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED'
-  >(row.status as 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED');
+  const [status, setStatus] = useState<'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED'>(
+    row.status as 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED'
+  );
 
   return (
     <Modal

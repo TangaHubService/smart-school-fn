@@ -36,10 +36,7 @@ import {
 import { fetchPublicHealthInfo } from '../features/platform/health-info.api';
 import { useQuery } from '@tanstack/react-query';
 
-const USER_OVERVIEW_ITEMS: Record<
-  string,
-  { icon: typeof User; color: string }
-> = {
+const USER_OVERVIEW_ITEMS: Record<string, { icon: typeof User; color: string }> = {
   administrators: { icon: Lock, color: 'bg-purple-100 text-purple-600' },
   schools: { icon: Building2, color: 'bg-blue-100 text-blue-600' },
   teachers: { icon: User, color: 'bg-orange-100 text-orange-600' },
@@ -170,12 +167,17 @@ export function SuperAdminDashboardPage() {
             region={filters.region}
             school={filters.school}
             status={filters.status}
-            onAcademicYearChange={(value) => setFilters((prev) => ({ ...prev, academicYear: value }))}
+            onAcademicYearChange={(value) =>
+              setFilters((prev) => ({ ...prev, academicYear: value }))
+            }
             onTermChange={(value) => setFilters((prev) => ({ ...prev, term: value }))}
             onRegionChange={(value) => setFilters((prev) => ({ ...prev, region: value }))}
             onSchoolChange={(value) => setFilters((prev) => ({ ...prev, school: value }))}
             onStatusChange={(value) =>
-              setFilters((prev) => ({ ...prev, status: value as SuperAdminDashboardFilters['status'] }))
+              setFilters((prev) => ({
+                ...prev,
+                status: value as SuperAdminDashboardFilters['status'],
+              }))
             }
             onApply={() => setAppliedFilters(filters)}
             onReset={() => {
@@ -231,8 +233,8 @@ export function SuperAdminDashboardPage() {
           </Link>
         </div>
         <p className="mb-3 text-xs text-slate-600">
-          Same numbers as the subscriptions page: school SaaS plans, active catalog learners, and pending MoMo
-          checkouts.
+          Same numbers as the subscriptions page: school SaaS plans, active catalog learners, and
+          pending MoMo checkouts.
         </p>
         <div className="grid gap-2 sm:grid-cols-3">
           <article className="rounded-lg border border-slate-100 bg-slate-50/90 p-3">
@@ -271,15 +273,17 @@ export function SuperAdminDashboardPage() {
           <h2 className="text-sm font-bold text-slate-900">Platform / ops</h2>
         </div>
         <p className="mb-3 text-xs text-slate-600">
-          Read-only snapshot from the public <span className="font-mono text-[11px]">GET /health/info</span> endpoint
-          (build metadata, DB reachability, non-revoked refresh sessions).
+          Read-only snapshot from the public{' '}
+          <span className="font-mono text-[11px]">GET /health/info</span> endpoint (build metadata,
+          DB reachability, non-revoked refresh sessions).
         </p>
         {healthInfoQuery.isPending ? (
           <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
         ) : null}
         {healthInfoQuery.isError ? (
           <p className="text-xs text-amber-700">
-            Health info could not be loaded (check API URL and CORS). Dashboard data above is unaffected.
+            Health info could not be loaded (check API URL and CORS). Dashboard data above is
+            unaffected.
           </p>
         ) : null}
         {healthInfoQuery.data ? (
@@ -392,17 +396,14 @@ function UserOverviewCard({ data }: { data: SuperAdminDashboardData }) {
             color: 'bg-slate-100 text-slate-600',
           };
           return (
-            <div
-              key={item.key}
-              className="rounded-lg border border-slate-100 bg-slate-50/50 p-2"
-            >
-              <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
+            <div key={item.key} className="rounded-lg border border-slate-100 bg-slate-50/50 p-2">
+              <span
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${color}`}
+              >
                 <Icon className="h-4 w-4" />
               </span>
               <p className="mt-1 text-[11px] font-medium text-slate-600">{item.label}</p>
-              <p className="text-base font-bold text-slate-900">
-                {item.value.toLocaleString()}
-              </p>
+              <p className="text-base font-bold text-slate-900">{item.value.toLocaleString()}</p>
             </div>
           );
         })}
@@ -527,9 +528,7 @@ function LatestReportsCard({ data }: { data: SuperAdminDashboardData }) {
               </span>
               <div>
                 <p className="text-[11px] font-medium text-slate-900">{report.name}</p>
-                <p className="text-sm font-bold text-slate-900">
-                  {report.count.toLocaleString()}
-                </p>
+                <p className="text-sm font-bold text-slate-900">{report.count.toLocaleString()}</p>
               </div>
             </div>
             <span className="text-slate-400">→</span>

@@ -31,18 +31,24 @@ export function PublicPlatformPage() {
       <section className="rounded-3xl border border-brand-100 bg-white/95 p-6 shadow-soft sm:p-8">
         <h1 className="text-3xl font-bold tracking-tight text-slate-950">Platform Capabilities</h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
-          SmartSchool is organized as one connected platform. Each role gets a focused experience while sharing the same secure
-          system of record.
+          SmartSchool is organized as one connected platform. Each role gets a focused experience
+          while sharing the same secure system of record.
         </p>
       </section>
 
       <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {platformAreas.map((area) => (
-          <article key={area.title} className="rounded-2xl border border-brand-100 bg-white/95 p-5 shadow-soft">
+          <article
+            key={area.title}
+            className="rounded-2xl border border-brand-100 bg-white/95 p-5 shadow-soft"
+          >
             <h2 className="text-base font-bold text-slate-900">{area.title}</h2>
             <ul className="mt-3 grid gap-2 text-sm text-slate-600">
               {area.points.map((point) => (
-                <li key={point} className="rounded-lg border border-brand-100 bg-brand-50/70 px-3 py-2">
+                <li
+                  key={point}
+                  className="rounded-lg border border-brand-100 bg-brand-50/70 px-3 py-2"
+                >
                   {point}
                 </li>
               ))}

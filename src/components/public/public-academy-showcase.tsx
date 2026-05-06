@@ -79,7 +79,8 @@ export function PublicAcademyProgramsShowcase({
   });
 
   const programs = programsProp ?? internalQuery.data;
-  const isLoading = programsProp !== undefined ? Boolean(programsLoadingProp) : internalQuery.isPending;
+  const isLoading =
+    programsProp !== undefined ? Boolean(programsLoadingProp) : internalQuery.isPending;
   const isError = programsProp !== undefined ? Boolean(programsErrorProp) : internalQuery.isError;
 
   const raw = programs ?? [];
@@ -87,10 +88,14 @@ export function PublicAcademyProgramsShowcase({
 
   if (!isLoading && !isError && slice.length === 0) {
     return (
-      <section className={`bg-gradient-to-b from-slate-900 via-slate-900 to-brand-950 py-16 text-white ${className}`}>
+      <section
+        className={`bg-gradient-to-b from-slate-900 via-slate-900 to-brand-950 py-16 text-white ${className}`}
+      >
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-10 text-center backdrop-blur-sm">
-            <p className="text-sm text-white/80">Programs from your academy catalog will appear here for visitors.</p>
+            <p className="text-sm text-white/80">
+              Programs from your academy catalog will appear here for visitors.
+            </p>
             <Link
               to={ctaHref}
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-brand-400"
@@ -105,7 +110,9 @@ export function PublicAcademyProgramsShowcase({
   }
 
   return (
-    <section className={`relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-brand-50/40 py-20 ${className}`}>
+    <section
+      className={`relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-brand-50/40 py-20 ${className}`}
+    >
       <div className="pointer-events-none absolute -right-24 top-0 h-64 w-64 rounded-full bg-brand-400/15 blur-3xl" />
       <div className="pointer-events-none absolute -left-24 bottom-0 h-48 w-48 rounded-full bg-brand-600/10 blur-3xl" />
 
@@ -116,8 +123,12 @@ export function PublicAcademyProgramsShowcase({
               <Sparkles className="h-3.5 w-3.5" />
               {eyebrow}
             </div>
-            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">{title}</h2>
-            {subtitle ? <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600 md:mx-0">{subtitle}</p> : null}
+            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">
+              {title}
+            </h2>
+            {subtitle ? (
+              <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600 md:mx-0">{subtitle}</p>
+            ) : null}
           </div>
           <Link
             to={ctaHref}
@@ -133,7 +144,9 @@ export function PublicAcademyProgramsShowcase({
             <Loader2 className="h-10 w-10 animate-spin text-brand-500" />
           </div>
         ) : isError ? (
-          <p className="py-10 text-center text-sm text-slate-600">Could not load programs. Try again later.</p>
+          <p className="py-10 text-center text-sm text-slate-600">
+            Could not load programs. Try again later.
+          </p>
         ) : (
           <>
             <div className="-mx-4 flex snap-x snap-mandatory gap-6 overflow-x-auto px-4 pb-2 pt-1 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">

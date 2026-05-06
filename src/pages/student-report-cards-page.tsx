@@ -9,10 +9,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  downloadMyReportCardPdfApi,
-  getMyReportCardsApi,
-} from '../features/sprint5/exams.api';
+import { downloadMyReportCardPdfApi, getMyReportCardsApi } from '../features/sprint5/exams.api';
 import { listTermsApi } from '../features/sprint1/sprint1.api';
 
 export function StudentReportCardsPage() {
@@ -87,23 +84,28 @@ export function StudentReportCardsPage() {
 
   return (
     <div className="grid gap-5">
-      <SectionCard
-        title={t('reportCards.title')}
-        subtitle={t('reportCards.subtitle')}
-      >
+      <SectionCard title={t('reportCards.title')} subtitle={t('reportCards.subtitle')}>
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[220px_auto] lg:items-end">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>{t('reportCards.term')}</span>
-              <select value={termId} onChange={(event) => setTermId(event.target.value)} className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400">
+              <select
+                value={termId}
+                onChange={(event) => setTermId(event.target.value)}
+                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+              >
                 <option value="">{t('reportCards.allTerms')}</option>
                 {terms.map((term) => (
-                  <option key={term.id} value={term.id}>{term.name}</option>
+                  <option key={term.id} value={term.id}>
+                    {term.name}
+                  </option>
                 ))}
               </select>
             </label>
             <div className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-              {student ? `${student.firstName} ${student.lastName} · ${student.studentCode}` : t('reportCards.studentFallback')}
+              {student
+                ? `${student.firstName} ${student.lastName} · ${student.studentCode}`
+                : t('reportCards.studentFallback')}
             </div>
           </div>
 
@@ -113,27 +115,63 @@ export function StudentReportCardsPage() {
             <StateView
               title={t('reportCards.loadErrorTitle')}
               message={t('reportCards.loadErrorMessage')}
-              action={<button type="button" onClick={() => void reportCardsQuery.refetch()} className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white">{t('reportCards.retry')}</button>}
+              action={
+                <button
+                  type="button"
+                  onClick={() => void reportCardsQuery.refetch()}
+                  className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  {t('reportCards.retry')}
+                </button>
+              }
             />
           ) : reportCards.length ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {reportCards.map((item) => (
-                <article key={item.id} className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
+                <article
+                  key={item.id}
+                  className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft"
+                >
                   <div className="grid gap-1">
                     <p className="text-lg font-bold text-slate-900">{item.term.name}</p>
-                    <p className="text-sm text-slate-600">{item.classRoom.name} · {item.academicYear.name}</p>
+                    <p className="text-sm text-slate-600">
+                      {item.classRoom.name} · {item.academicYear.name}
+                    </p>
                   </div>
                   <div className="grid gap-2 text-sm text-slate-700">
-                    <p>{t('reportCards.average')}: <span className="font-semibold text-slate-900">{item.totals.averagePercentage.toFixed(2)}%</span></p>
-                    <p>{t('reportCards.grade')}: <span className="font-semibold text-slate-900">{item.totals.grade}</span></p>
-                    <p>{t('reportCards.position')}: <span className="font-semibold text-slate-900">{item.totals.position}/{item.totals.classSize}</span></p>
+                    <p>
+                      {t('reportCards.average')}:{' '}
+                      <span className="font-semibold text-slate-900">
+                        {item.totals.averagePercentage.toFixed(2)}%
+                      </span>
+                    </p>
+                    <p>
+                      {t('reportCards.grade')}:{' '}
+                      <span className="font-semibold text-slate-900">{item.totals.grade}</span>
+                    </p>
+                    <p>
+                      {t('reportCards.position')}:{' '}
+                      <span className="font-semibold text-slate-900">
+                        {item.totals.position}/{item.totals.classSize}
+                      </span>
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => previewMutation.mutate(item.id)} className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => previewMutation.mutate(item.id)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                    >
                       <Eye className="h-4 w-4" aria-hidden="true" />
                       {t('reportCards.viewPdf')}
                     </button>
-                    <button type="button" onClick={() => downloadMutation.mutate({ id: item.id, termName: item.term.name })} className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        downloadMutation.mutate({ id: item.id, termName: item.term.name })
+                      }
+                      className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+                    >
                       <FileDown className="h-4 w-4" aria-hidden="true" />
                       {t('reportCards.download')}
                     </button>
@@ -142,7 +180,10 @@ export function StudentReportCardsPage() {
               ))}
             </div>
           ) : (
-            <EmptyState title={t('reportCards.emptyTitle')} message={t('reportCards.emptyMessage')} />
+            <EmptyState
+              title={t('reportCards.emptyTitle')}
+              message={t('reportCards.emptyMessage')}
+            />
           )}
         </div>
       </SectionCard>
@@ -158,16 +199,28 @@ export function StudentReportCardsPage() {
         }}
         footer={
           <div className="flex justify-end">
-            <button type="button" onClick={() => {
-              if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-              }
-              setPreviewUrl('');
-            }} className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">{t('reportCards.close')}</button>
+            <button
+              type="button"
+              onClick={() => {
+                if (previewUrl) {
+                  URL.revokeObjectURL(previewUrl);
+                }
+                setPreviewUrl('');
+              }}
+              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              {t('reportCards.close')}
+            </button>
           </div>
         }
       >
-        {previewUrl ? <iframe title={t('reportCards.previewTitle')} src={previewUrl} className="h-[70vh] w-full rounded-xl border border-brand-100" /> : null}
+        {previewUrl ? (
+          <iframe
+            title={t('reportCards.previewTitle')}
+            src={previewUrl}
+            className="h-[70vh] w-full rounded-xl border border-brand-100"
+          />
+        ) : null}
       </Modal>
     </div>
   );

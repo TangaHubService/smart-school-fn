@@ -61,7 +61,7 @@ function buildCsvFromRows(rows: unknown[][]): string {
 
           return value;
         })
-        .join(','),
+        .join(',')
     )
     .join('\r\n');
 }
@@ -317,11 +317,11 @@ export function StudentsPage() {
   const classRooms = ((classesQuery.data as any[]) ?? []) as any[];
   const selectedImportAcademicYear = useMemo(
     () => years.find((year) => year.id === importAcademicYearId) ?? null,
-    [years, importAcademicYearId],
+    [years, importAcademicYearId]
   );
   const selectedImportClassRoom = useMemo(
     () => classRooms.find((room) => room.id === importClassRoomId) ?? null,
-    [classRooms, importClassRoomId],
+    [classRooms, importClassRoomId]
   );
 
   const students = studentsQuery.data?.items ?? [];
@@ -372,7 +372,11 @@ export function StudentsPage() {
     setImportClassRoomId('');
   }
 
-  function runImportPreview(csv: string, defaultAcademicYearId: string, defaultClassRoomId: string) {
+  function runImportPreview(
+    csv: string,
+    defaultAcademicYearId: string,
+    defaultClassRoomId: string
+  ) {
     if (!defaultAcademicYearId || !defaultClassRoomId) {
       setImportPreview(null);
       return;
@@ -448,27 +452,17 @@ export function StudentsPage() {
 
   async function downloadTemplate() {
     const XLSX = await import('xlsx');
-    const headers = [
-      'studentCode',
-      'firstName',
-      'lastName',
-      'gender',
-      'dateOfBirth',
-      'enrolledAt',
-    ];
-    const exampleRow = [
-      'STU-001',
-      'Alice',
-      'Uwase',
-      'FEMALE',
-      '2014-05-20',
-      '2026-09-01',
-    ];
+    const headers = ['studentCode', 'firstName', 'lastName', 'gender', 'dateOfBirth', 'enrolledAt'];
+    const exampleRow = ['STU-001', 'Alice', 'Uwase', 'FEMALE', '2014-05-20', '2026-09-01'];
     const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
     const blob = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const url = URL.createObjectURL(new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    const url = URL.createObjectURL(
+      new Blob([blob], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+    );
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', 'students-import-template.xlsx');
@@ -479,7 +473,8 @@ export function StudentsPage() {
     showToast({
       type: 'info',
       title: 'Template downloaded',
-      message: 'Fill in the student details, then choose the academic year and class in the preview step.',
+      message:
+        'Fill in the student details, then choose the academic year and class in the preview step.',
     });
   }
 
@@ -512,10 +507,16 @@ export function StudentsPage() {
           <button
             type="button"
             onClick={openExcelPicker}
-            disabled={isImporting || previewImportMutation.isPending || commitImportMutation.isPending}
+            disabled={
+              isImporting || previewImportMutation.isPending || commitImportMutation.isPending
+            }
             className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
           >
-            {isImporting ? 'Reading Excel...' : previewImportMutation.isPending ? 'Preparing preview...' : 'Upload Excel'}
+            {isImporting
+              ? 'Reading Excel...'
+              : previewImportMutation.isPending
+                ? 'Preparing preview...'
+                : 'Upload Excel'}
           </button>
           <button
             type="button"
@@ -637,7 +638,9 @@ export function StudentsPage() {
                   <td className="px-2 py-2 align-middle text-slate-600">
                     {(page - 1) * pageSize + index + 1}
                   </td>
-                  <td className="px-2 py-2 align-middle font-semibold text-slate-800">{student.studentCode}</td>
+                  <td className="px-2 py-2 align-middle font-semibold text-slate-800">
+                    {student.studentCode}
+                  </td>
                   <td className="px-2 py-2 align-middle">
                     {student.firstName} {student.lastName}
                   </td>
@@ -650,7 +653,8 @@ export function StudentsPage() {
                   <td className="px-2 py-2 align-middle">{(student.parents ?? []).length}</td>
                   <td className="px-2 py-2 align-middle">
                     <div className="flex flex-wrap gap-2">
-                      {hasPermission(auth.me, 'conduct.read') || hasPermission(auth.me, 'conduct.manage') ? (
+                      {hasPermission(auth.me, 'conduct.read') ||
+                      hasPermission(auth.me, 'conduct.manage') ? (
                         <Link
                           to={`/admin/students/${student.id}/conduct`}
                           className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
@@ -689,7 +693,8 @@ export function StudentsPage() {
       {!studentsQuery.isPending && !studentsQuery.isError ? (
         <div className="mt-3 flex items-center justify-between text-sm text-slate-700">
           <p>
-            Showing page {pagination.page} of {Math.max(1, pagination.totalPages)} ({pagination.totalItems} students)
+            Showing page {pagination.page} of {Math.max(1, pagination.totalPages)} (
+            {pagination.totalItems} students)
           </p>
           <div className="flex gap-2">
             <button
@@ -735,20 +740,31 @@ export function StudentsPage() {
         >
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Student Code
-            <input className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('studentCode')} />
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...studentForm.register('studentCode')}
+            />
           </label>
           {studentForm.formState.errors.studentCode ? (
-            <p className="text-xs text-red-700">{studentForm.formState.errors.studentCode.message}</p>
+            <p className="text-xs text-red-700">
+              {studentForm.formState.errors.studentCode.message}
+            </p>
           ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               First Name
-              <input className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('firstName')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...studentForm.register('firstName')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Last Name
-              <input className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('lastName')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...studentForm.register('lastName')}
+              />
             </label>
           </div>
 
@@ -768,7 +784,10 @@ export function StudentsPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Gender
-              <select className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('gender')}>
+              <select
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...studentForm.register('gender')}
+              >
                 <option value="">Not set</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
@@ -779,14 +798,21 @@ export function StudentsPage() {
 
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Date of Birth
-              <input type="date" className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('dateOfBirth')} />
+              <input
+                type="date"
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...studentForm.register('dateOfBirth')}
+              />
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Academic Year
-              <select className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('academicYearId')}>
+              <select
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...studentForm.register('academicYearId')}
+              >
                 <option value="">Select year</option>
                 {years.map((year) => (
                   <option key={year.id} value={year.id}>
@@ -798,7 +824,10 @@ export function StudentsPage() {
 
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Class
-              <select className="rounded-lg border border-brand-200 px-3 py-2" {...studentForm.register('classRoomId')}>
+              <select
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...studentForm.register('classRoomId')}
+              >
                 <option value="">Select class</option>
                 {classRooms.map((room) => (
                   <option key={room.id} value={room.id}>
@@ -810,10 +839,14 @@ export function StudentsPage() {
           </div>
 
           {(createStudentMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700">{(createStudentMutation.error as ApiClientError).message}</p>
+            <p className="text-xs text-red-700">
+              {(createStudentMutation.error as ApiClientError).message}
+            </p>
           ) : null}
           {(updateStudentMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700">{(updateStudentMutation.error as ApiClientError).message}</p>
+            <p className="text-xs text-red-700">
+              {(updateStudentMutation.error as ApiClientError).message}
+            </p>
           ) : null}
 
           <div className="mt-2 flex justify-end gap-2">
@@ -886,15 +919,19 @@ export function StudentsPage() {
           </div>
         }
       >
-          <div className="grid gap-5">
+        <div className="grid gap-5">
           <div className="grid gap-3 rounded-xl border border-brand-100 bg-brand-50/70 p-4 md:grid-cols-3 md:items-end">
             <div className="grid gap-1 text-sm text-slate-700">
-              <p className="font-semibold text-slate-900">{importFileName || 'Selected Excel file'}</p>
+              <p className="font-semibold text-slate-900">
+                {importFileName || 'Selected Excel file'}
+              </p>
               <p>The current school will be applied to every imported student in this upload.</p>
             </div>
 
             <div className="rounded-lg border border-brand-100 bg-white px-3 py-3 text-sm text-slate-700">
-              <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">School</span>
+              <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                School
+              </span>
               <span className="mt-1 block font-semibold text-slate-900">
                 {auth.me?.school?.displayName || auth.me?.tenant.name || 'Current school'}
               </span>
@@ -960,7 +997,11 @@ export function StudentsPage() {
 
           {!previewImportMutation.isPending && !importPreview ? (
             <StateView
-              title={importAcademicYearId && importClassRoomId ? 'Could not preview this file' : 'Choose academic year and class'}
+              title={
+                importAcademicYearId && importClassRoomId
+                  ? 'Could not preview this file'
+                  : 'Choose academic year and class'
+              }
               message={
                 importAcademicYearId && importClassRoomId
                   ? 'Retry the preview after checking the selected academic year, class, and spreadsheet content.'
@@ -971,11 +1012,7 @@ export function StudentsPage() {
                   type="button"
                   onClick={() =>
                     importCsv &&
-                    runImportPreview(
-                      importCsv,
-                      importAcademicYearId,
-                      importClassRoomId,
-                    )
+                    runImportPreview(importCsv, importAcademicYearId, importClassRoomId)
                   }
                   disabled={!importAcademicYearId || !importClassRoomId}
                   className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
@@ -990,16 +1027,28 @@ export function StudentsPage() {
             <div className="grid gap-4">
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="rounded-xl border border-brand-100 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Total rows</p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">{importPreview.summary.totalRows}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Total rows
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">
+                    {importPreview.summary.totalRows}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Valid rows</p>
-                  <p className="mt-2 text-2xl font-bold text-emerald-900">{importPreview.summary.validRows}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                    Valid rows
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-emerald-900">
+                    {importPreview.summary.validRows}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Rows with issues</p>
-                  <p className="mt-2 text-2xl font-bold text-amber-900">{importPreview.summary.invalidRows}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
+                    Rows with issues
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-amber-900">
+                    {importPreview.summary.invalidRows}
+                  </p>
                 </div>
               </div>
 
@@ -1020,7 +1069,9 @@ export function StudentsPage() {
                       : 'No class selected'}
                   </span>
                   {importPreview.summary.invalidRows > 0 ? (
-                    <span className="ml-2 text-slate-600">Only valid rows will be created. Invalid rows will be skipped.</span>
+                    <span className="ml-2 text-slate-600">
+                      Only valid rows will be created. Invalid rows will be skipped.
+                    </span>
                   ) : null}
                 </div>
 
@@ -1049,13 +1100,17 @@ export function StudentsPage() {
                               <p className="font-semibold text-slate-900">
                                 {row.firstName || '-'} {row.lastName || ''}
                               </p>
-                              <p className="text-xs text-slate-500">{row.studentCode || 'Missing student code'}</p>
+                              <p className="text-xs text-slate-500">
+                                {row.studentCode || 'Missing student code'}
+                              </p>
                             </td>
                             <td className="px-3 py-3 text-slate-700">{academicYearLabel}</td>
                             <td className="px-3 py-3 text-slate-700">{classLabel}</td>
                             <td className="px-3 py-3">
                               {row.errors.length ? (
-                                <span className="text-xs font-semibold text-rose-700">{row.errors.join('; ')}</span>
+                                <span className="text-xs font-semibold text-rose-700">
+                                  {row.errors.join('; ')}
+                                </span>
                               ) : (
                                 <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
                                   Ready to import

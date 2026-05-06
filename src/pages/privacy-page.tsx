@@ -8,12 +8,13 @@ export function PrivacyPage() {
       <SectionCard title={t('legal.privacyTitle')} subtitle={t('legal.privacySubtitle')}>
         <div className="prose prose-slate max-w-none text-sm text-slate-700">
           <p>
-            This platform processes account details (name, email, school affiliation), learning activity
-            (lessons, assessments, attendance), and operational logs needed to run the service.
+            This platform processes account details (name, email, school affiliation), learning
+            activity (lessons, assessments, attendance), and operational logs needed to run the
+            service.
           </p>
           <p>
-            Passwords are stored using strong hashing. Access is controlled by role-based permissions. Audit
-            logs record sensitive administrative actions where enabled.
+            Passwords are stored using strong hashing. Access is controlled by role-based
+            permissions. Audit logs record sensitive administrative actions where enabled.
           </p>
           <p>
             For production, replace this page with counsel-reviewed text including data controller /

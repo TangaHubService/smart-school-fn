@@ -19,11 +19,11 @@ export function listConductTermSettingsApi(accessToken: string, academicYearId: 
 export function upsertConductTermSettingApi(
   accessToken: string,
   termId: string,
-  body: { totalMarks: number },
+  body: { totalMarks: number }
 ) {
   return apiRequest<{ termId: string; totalMarks: number; updatedAt: string }>(
     `/conduct-marks/term-settings/${termId}`,
-    { method: 'PUT', accessToken, body },
+    { method: 'PUT', accessToken, body }
   );
 }
 
@@ -37,7 +37,7 @@ export function createConductDeductionApi(
     pointsDeducted: number;
     reason: string;
     occurredAt?: string;
-  },
+  }
 ) {
   return apiRequest<unknown>('/conduct-marks/deductions', { method: 'POST', accessToken, body });
 }
@@ -45,7 +45,7 @@ export function createConductDeductionApi(
 export function listStudentConductDeductionsApi(
   accessToken: string,
   studentId: string,
-  params: { page?: number; pageSize?: number; termId?: string },
+  params: { page?: number; pageSize?: number; termId?: string }
 ) {
   const q = new URLSearchParams();
   if (params.page) q.set('page', String(params.page));
@@ -64,18 +64,30 @@ export function listStudentConductDeductionsApi(
       recordedBy: { id: string; firstName: string; lastName: string; email: string };
     }>;
     pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
-  }>(`/conduct-marks/students/${studentId}/deductions?${q.toString()}`, { method: 'GET', accessToken });
+  }>(`/conduct-marks/students/${studentId}/deductions?${q.toString()}`, {
+    method: 'GET',
+    accessToken,
+  });
 }
 
 export function getStudentConductMarksSummaryApi(
   accessToken: string,
   studentId: string,
-  academicYearId: string,
+  academicYearId: string
 ) {
   const q = new URLSearchParams({ academicYearId });
   return apiRequest<{
     academicYearId: string;
     classRoomId: string | null;
-    terms: Array<{ termId: string; termName: string; finalScore: number; totalMarks: number; grade: string }>;
-  }>(`/conduct-marks/students/${studentId}/summary?${q.toString()}`, { method: 'GET', accessToken });
+    terms: Array<{
+      termId: string;
+      termName: string;
+      finalScore: number;
+      totalMarks: number;
+      grade: string;
+    }>;
+  }>(`/conduct-marks/students/${studentId}/summary?${q.toString()}`, {
+    method: 'GET',
+    accessToken,
+  });
 }

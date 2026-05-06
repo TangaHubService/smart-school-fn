@@ -62,7 +62,7 @@ function createApiError<T>(status: number, envelope: ApiEnvelope<T>): ApiClientE
     status,
     envelope.error?.code ?? 'UNKNOWN_ERROR',
     envelope.error?.message ?? 'Request failed',
-    envelope.error?.details,
+    envelope.error?.details
   );
 }
 

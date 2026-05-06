@@ -24,7 +24,12 @@ import {
 import { ApiClientError } from '../types/api';
 
 const createSchoolSchema = z.object({
-  code: z.string().trim().min(2).max(50).regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers, and hyphens only'),
+  code: z
+    .string()
+    .trim()
+    .min(2)
+    .max(50)
+    .regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers, and hyphens only'),
   name: z.string().trim().min(2).max(120),
   domain: z.string().trim().max(200).optional(),
   isAcademyCatalog: z.boolean().optional(),
@@ -35,7 +40,12 @@ const inviteAdminSchema = z.object({
 });
 
 const editSchoolSchema = z.object({
-  code: z.string().trim().min(2).max(50).regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers, and hyphens only'),
+  code: z
+    .string()
+    .trim()
+    .min(2)
+    .max(50)
+    .regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers, and hyphens only'),
   name: z.string().trim().min(2).max(120),
   domain: z.string().trim().max(200).optional(),
   schoolDisplayName: z.string().trim().min(2).max(120),
@@ -63,7 +73,11 @@ export function TenantsPage() {
   const [createdSchool, setCreatedSchool] = useState<CreatedSchoolState | null>(null);
   const [viewSchoolId, setViewSchoolId] = useState<string | null>(null);
   const [editSchoolId, setEditSchoolId] = useState<string | null>(null);
-  const [statusTargetSchool, setStatusTargetSchool] = useState<{ id: string; name: string; isActive: boolean } | null>(null);
+  const [statusTargetSchool, setStatusTargetSchool] = useState<{
+    id: string;
+    name: string;
+    isActive: boolean;
+  } | null>(null);
 
   const isCreateModalOpen = searchParams.get('create') === '1';
 
@@ -215,9 +229,10 @@ export function TenantsPage() {
     },
   });
 
-  const tenants = useMemo(() => ((tenantsQuery.data as TenantListItem[]) ?? []) as TenantListItem[], [
-    tenantsQuery.data,
-  ]);
+  const tenants = useMemo(
+    () => ((tenantsQuery.data as TenantListItem[]) ?? []) as TenantListItem[],
+    [tenantsQuery.data]
+  );
 
   useEffect(() => {
     if (!isCreateModalOpen) {
@@ -376,9 +391,13 @@ export function TenantsPage() {
               {tenants.map((tenant, index) => (
                 <tr key={tenant.id} className="border-t border-brand-100">
                   <td className="px-3 py-2 align-middle text-slate-600">{index + 1}</td>
-                  <td className="px-3 py-2 align-middle font-mono text-xs text-slate-700">{tenant.code}</td>
+                  <td className="px-3 py-2 align-middle font-mono text-xs text-slate-700">
+                    {tenant.code}
+                  </td>
                   <td className="px-3 py-2 align-middle">
-                    <p className="font-semibold text-slate-900">{tenant.school?.displayName ?? tenant.name}</p>
+                    <p className="font-semibold text-slate-900">
+                      {tenant.school?.displayName ?? tenant.name}
+                    </p>
                     <p className="text-xs text-slate-500">{tenant.name}</p>
                   </td>
                   <td className="px-3 py-2 align-middle text-slate-700">{tenant.domain ?? '-'}</td>
@@ -404,7 +423,9 @@ export function TenantsPage() {
                     </span>
                   </td>
                   <td className="px-3 py-2 align-middle text-slate-700">{tenant.activeUsers}</td>
-                  <td className="px-3 py-2 align-middle text-slate-700">{tenant.createdAt.slice(0, 10)}</td>
+                  <td className="px-3 py-2 align-middle text-slate-700">
+                    {tenant.createdAt.slice(0, 10)}
+                  </td>
                   <td className="px-3 py-2 align-middle">
                     <div className="flex justify-end gap-2">
                       <button
@@ -465,7 +486,10 @@ export function TenantsPage() {
         }
       >
         {!createdSchool ? (
-          <form className="grid gap-3" onSubmit={createForm.handleSubmit((values) => createSchoolMutation.mutate(values))}>
+          <form
+            className="grid gap-3"
+            onSubmit={createForm.handleSubmit((values) => createSchoolMutation.mutate(values))}
+          >
             <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">
               Step 1 of 2: School workspace
             </div>
@@ -500,16 +524,23 @@ export function TenantsPage() {
             </label>
 
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-brand-100 bg-white px-3 py-3 text-sm text-slate-700">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-brand-300" {...createForm.register('isAcademyCatalog')} />
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-brand-300"
+                {...createForm.register('isAcademyCatalog')}
+              />
               <span>
                 <span className="font-semibold text-slate-900">Public academy catalog school</span>
                 <span className="mt-1 block text-xs text-slate-500">
-                  Only one school should hold this role. Programs here appear on /academy for the whole platform.
+                  Only one school should hold this role. Programs here appear on /academy for the
+                  whole platform.
                 </span>
               </span>
             </label>
 
-            {createError ? <StateView title="Could not create school" message={createError.message} /> : null}
+            {createError ? (
+              <StateView title="Could not create school" message={createError.message} />
+            ) : null}
 
             <div className="flex justify-end gap-2">
               <button
@@ -529,7 +560,10 @@ export function TenantsPage() {
             </div>
           </form>
         ) : (
-          <form className="grid gap-3" onSubmit={inviteForm.handleSubmit((values) => inviteAdminMutation.mutate(values))}>
+          <form
+            className="grid gap-3"
+            onSubmit={inviteForm.handleSubmit((values) => inviteAdminMutation.mutate(values))}
+          >
             <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">
               Step 2 of 2: School admin invitation
             </div>
@@ -607,44 +641,69 @@ export function TenantsPage() {
         ) : detailError ? (
           <StateView title="Could not load school for editing" message={detailError.message} />
         ) : (
-          <form className="grid gap-3" onSubmit={editForm.handleSubmit((values) => updateSchoolMutation.mutate(values))}>
+          <form
+            className="grid gap-3"
+            onSubmit={editForm.handleSubmit((values) => updateSchoolMutation.mutate(values))}
+          >
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               School code
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...editForm.register('code')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...editForm.register('code')}
+              />
             </label>
             <FieldError message={editForm.formState.errors.code?.message} />
 
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Workspace name
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...editForm.register('name')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...editForm.register('name')}
+              />
             </label>
             <FieldError message={editForm.formState.errors.name?.message} />
 
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Domain (optional)
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...editForm.register('domain')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...editForm.register('domain')}
+              />
             </label>
 
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               School display name
-              <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...editForm.register('schoolDisplayName')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                {...editForm.register('schoolDisplayName')}
+              />
             </label>
             <FieldError message={editForm.formState.errors.schoolDisplayName?.message} />
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 text-sm font-semibold text-slate-800">
                 School email (optional)
-                <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...editForm.register('schoolEmail')} />
+                <input
+                  className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                  {...editForm.register('schoolEmail')}
+                />
               </label>
               <label className="grid gap-1 text-sm font-semibold text-slate-800">
                 School phone (optional)
-                <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...editForm.register('schoolPhone')} />
+                <input
+                  className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+                  {...editForm.register('schoolPhone')}
+                />
               </label>
             </div>
             <FieldError message={editForm.formState.errors.schoolEmail?.message} />
 
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-brand-100 bg-white px-3 py-3 text-sm text-slate-700">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-brand-300" {...editForm.register('isAcademyCatalog')} />
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-brand-300"
+                {...editForm.register('isAcademyCatalog')}
+              />
               <span>
                 <span className="font-semibold text-slate-900">Public academy catalog school</span>
                 <span className="mt-1 block text-xs text-slate-500">
@@ -653,7 +712,9 @@ export function TenantsPage() {
               </span>
             </label>
 
-            {updateError ? <StateView title="Could not update school" message={updateError.message} /> : null}
+            {updateError ? (
+              <StateView title="Could not update school" message={updateError.message} />
+            ) : null}
 
             <div className="flex justify-end gap-2">
               <button
@@ -693,12 +754,18 @@ export function TenantsPage() {
                 : 'rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-3 text-sm text-emerald-700'
             }
           >
-            {statusTargetSchool?.isActive ? 'You are about to deactivate ' : 'You are about to reactivate '}
+            {statusTargetSchool?.isActive
+              ? 'You are about to deactivate '
+              : 'You are about to reactivate '}
             <strong>{statusTargetSchool?.name}</strong>.
           </div>
           {updateStatusError ? (
             <StateView
-              title={statusTargetSchool?.isActive ? 'Could not deactivate school' : 'Could not reactivate school'}
+              title={
+                statusTargetSchool?.isActive
+                  ? 'Could not deactivate school'
+                  : 'Could not reactivate school'
+              }
               message={updateStatusError.message}
             />
           ) : null}
@@ -760,17 +827,19 @@ function SchoolDetailView({ detail }: { detail: SchoolDetail }) {
         <DetailBlock label="Phone" value={detail.school?.phone ?? '-'} />
         <DetailBlock
           label="Address"
-          value={[
-            detail.school?.addressLine1,
-            detail.school?.addressLine2,
-            detail.school?.village,
-            detail.school?.cell,
-            detail.school?.sector,
-            detail.school?.district,
-            detail.school?.province,
-          ]
-            .filter(Boolean)
-            .join(', ') || '-'}
+          value={
+            [
+              detail.school?.addressLine1,
+              detail.school?.addressLine2,
+              detail.school?.village,
+              detail.school?.cell,
+              detail.school?.sector,
+              detail.school?.district,
+              detail.school?.province,
+            ]
+              .filter(Boolean)
+              .join(', ') || '-'
+          }
         />
         <DetailBlock
           label="Setup status"
@@ -786,12 +855,17 @@ function SchoolDetailView({ detail }: { detail: SchoolDetail }) {
           {detail.pendingInvites.length ? (
             <div className="grid gap-2">
               {detail.pendingInvites.map((invite) => (
-                <div key={invite.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand-100 px-3 py-2 text-sm">
+                <div
+                  key={invite.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand-100 px-3 py-2 text-sm"
+                >
                   <div>
                     <p className="font-semibold text-slate-900">{invite.email}</p>
                     <p className="text-xs text-slate-500">{invite.roleName}</p>
                   </div>
-                  <span className="text-xs text-slate-500">Expires {invite.expiresAt.slice(0, 10)}</span>
+                  <span className="text-xs text-slate-500">
+                    Expires {invite.expiresAt.slice(0, 10)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -809,7 +883,10 @@ function SchoolDetailView({ detail }: { detail: SchoolDetail }) {
           {detail.users.length ? (
             <div className="grid gap-2">
               {detail.users.map((user) => (
-                <div key={user.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand-100 px-3 py-2 text-sm">
+                <div
+                  key={user.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand-100 px-3 py-2 text-sm"
+                >
                   <div>
                     <p className="font-semibold text-slate-900">
                       {user.firstName} {user.lastName}
@@ -843,7 +920,13 @@ function DetailBlock({
   return (
     <div className="rounded-lg border border-brand-100 bg-white px-3 py-3">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
-      <p className={mono ? 'mt-1 font-mono text-sm text-slate-900' : 'mt-1 text-sm font-semibold text-slate-900'}>
+      <p
+        className={
+          mono
+            ? 'mt-1 font-mono text-sm text-slate-900'
+            : 'mt-1 text-sm font-semibold text-slate-900'
+        }
+      >
         {value}
       </p>
     </div>

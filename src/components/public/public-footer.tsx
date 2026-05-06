@@ -32,7 +32,9 @@ export function PublicFooter() {
           </div>
 
           <div>
-            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">{t('footer.platform')}</h4>
+            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">
+              {t('footer.platform')}
+            </h4>
             <ul className="space-y-3 text-[13px]">
               <li>
                 <Link to="/courses" className="transition-colors hover:text-brand-300">
@@ -49,11 +51,7 @@ export function PublicFooter() {
                   {t('footer.pricing')}
                 </Link>
               </li>
-              <li>
-                <Link to="/job-listing" className="transition-colors hover:text-brand-300">
-                  {t('footer.careerPortal')}
-                </Link>
-              </li>
+
               <li>
                 <Link to="/about" className="transition-colors hover:text-brand-300">
                   {t('footer.mission')}
@@ -63,7 +61,9 @@ export function PublicFooter() {
           </div>
 
           <div>
-            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">{t('footer.support')}</h4>
+            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">
+              {t('footer.support')}
+            </h4>
             <ul className="space-y-3 text-[13px]">
               <li>
                 <Link to="/contact" className="transition-colors hover:text-brand-300">
@@ -89,7 +89,9 @@ export function PublicFooter() {
           </div>
 
           <div>
-            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">{t('footer.connect')}</h4>
+            <h4 className="mb-6 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">
+              {t('footer.connect')}
+            </h4>
             <ul className="space-y-4 text-[13px]">
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 text-brand-300" />

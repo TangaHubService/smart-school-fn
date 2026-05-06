@@ -54,7 +54,9 @@ export function SystemSettingsPage() {
       <SectionCard title="Security" subtitle="Authentication and security settings">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700">Session Timeout (minutes)</label>
+            <label className="block text-sm font-medium text-slate-700">
+              Session Timeout (minutes)
+            </label>
             <input
               type="number"
               defaultValue={30}

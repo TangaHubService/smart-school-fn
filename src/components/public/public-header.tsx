@@ -33,7 +33,6 @@ export function PublicHeader() {
     { to: '/', label: t('header.home'), end: true },
     { to: '/about', label: t('header.about') },
     { to: '/courses', label: t('header.programs') },
-    { to: '/job-listing', label: t('header.jobs') },
     { to: '/contact', label: t('header.contact') },
   ];
 
@@ -41,13 +40,22 @@ export function PublicHeader() {
     <header className="sticky top-0 z-50 border-b border-brand-100 bg-white/90 shadow-sm backdrop-blur-lg">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="SmartSchool logo" className="h-8 w-8 rounded-md border border-brand-100 object-cover" />
+          <img
+            src={logo}
+            alt="SmartSchool logo"
+            className="h-8 w-8 rounded-md border border-brand-100 object-cover"
+          />
           <span className="text-lg font-bold tracking-tight text-brand-600">Smart school</span>
         </Link>
 
         <nav className="hidden items-center gap-6 lg:flex">
           {publicNav.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => navClass(isActive)}>
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) => navClass(isActive)}
+            >
               {({ isActive }) => (
                 <>
                   {item.label}

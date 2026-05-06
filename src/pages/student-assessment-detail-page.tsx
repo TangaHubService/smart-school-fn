@@ -14,7 +14,10 @@ import {
   getMyAssessmentDetailApi,
   startAssessmentAttemptApi,
 } from '../features/assessments/assessments.api';
-import { formatAssessmentDateTime, formatAssessmentTypeLabel } from '../features/assessments/assessment-ui';
+import {
+  formatAssessmentDateTime,
+  formatAssessmentTypeLabel,
+} from '../features/assessments/assessment-ui';
 
 export function StudentAssessmentDetailPage() {
   const auth = useAuth();
@@ -119,15 +122,24 @@ export function StudentAssessmentDetailPage() {
           <div className="grid gap-4 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="grid gap-3">
               <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
-                <span className="rounded-full bg-brand-100 px-2.5 py-1">{formatAssessmentTypeLabel(assessment.type)}</span>
-                <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.counts.questions} questions</span>
-                <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.maxAttempts} attempts</span>
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">
-                  {assessment.timeLimitMinutes ? `${assessment.timeLimitMinutes} min timer` : 'No timer'}
+                  {formatAssessmentTypeLabel(assessment.type)}
+                </span>
+                <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                  {assessment.counts.questions} questions
+                </span>
+                <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                  {assessment.maxAttempts} attempts
+                </span>
+                <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                  {assessment.timeLimitMinutes
+                    ? `${assessment.timeLimitMinutes} min timer`
+                    : 'No timer'}
                 </span>
               </div>
               <p className="text-sm text-slate-700">
-                {assessment.course.title} · {assessment.course.classRoom.name} · {assessment.course.academicYear.name}
+                {assessment.course.title} · {assessment.course.classRoom.name} ·{' '}
+                {assessment.course.academicYear.name}
               </p>
               {assessment.instructions ? (
                 <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4">
@@ -143,11 +155,17 @@ export function StudentAssessmentDetailPage() {
 
             <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-slate-700">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Due</p>
-                <p className="mt-2 font-semibold text-slate-900">{formatAssessmentDateTime(assessment.dueAt)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Due
+                </p>
+                <p className="mt-2 font-semibold text-slate-900">
+                  {formatAssessmentDateTime(assessment.dueAt)}
+                </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Latest result</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Latest result
+                </p>
                 <p className="mt-2 font-semibold text-slate-900">
                   {assessment.latestAttempt?.status === 'SUBMITTED'
                     ? assessment.type === 'GENERAL' || assessment.type === 'PSYCHOMETRIC'
@@ -161,7 +179,9 @@ export function StudentAssessmentDetailPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Student</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Student
+                </p>
                 <p className="mt-2 font-semibold text-slate-900">
                   {assessment.student.firstName} {assessment.student.lastName}
                 </p>
@@ -173,7 +193,11 @@ export function StudentAssessmentDetailPage() {
             {assessment.latestAttempt?.status === 'IN_PROGRESS' ? (
               <button
                 type="button"
-                onClick={() => navigate(`/student/assessments/${assessment.id}/attempts/${assessment.latestAttempt!.id}`)}
+                onClick={() =>
+                  navigate(
+                    `/student/assessments/${assessment.id}/attempts/${assessment.latestAttempt!.id}`
+                  )
+                }
                 className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
               >
                 <PlayCircle className="h-4 w-4" aria-hidden="true" />
@@ -186,14 +210,20 @@ export function StudentAssessmentDetailPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 <PlayCircle className="h-4 w-4" aria-hidden="true" />
-                {assessment.latestAttempt?.status === 'SUBMITTED' ? 'Start another attempt' : 'Start test'}
+                {assessment.latestAttempt?.status === 'SUBMITTED'
+                  ? 'Start another attempt'
+                  : 'Start test'}
               </button>
             )}
 
             {assessment.latestAttempt?.status === 'SUBMITTED' ? (
               <button
                 type="button"
-                onClick={() => navigate(`/student/assessments/${assessment.id}/attempts/${assessment.latestAttempt!.id}`)}
+                onClick={() =>
+                  navigate(
+                    `/student/assessments/${assessment.id}/attempts/${assessment.latestAttempt!.id}`
+                  )
+                }
                 className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
               >
                 <Trophy className="h-4 w-4" aria-hidden="true" />
@@ -251,12 +281,20 @@ export function StudentAssessmentDetailPage() {
         {startStep === 0 ? (
           <div className="grid gap-4 text-sm text-slate-700">
             <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
-              <span className="rounded-full bg-brand-100 px-2.5 py-1">{formatAssessmentTypeLabel(assessment.type)}</span>
-              <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.counts.questions} questions</span>
               <span className="rounded-full bg-brand-100 px-2.5 py-1">
-                {assessment.timeLimitMinutes ? `${assessment.timeLimitMinutes} minute timer` : 'No timer'}
+                {formatAssessmentTypeLabel(assessment.type)}
               </span>
-              <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.maxAttempts} attempts</span>
+              <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                {assessment.counts.questions} questions
+              </span>
+              <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                {assessment.timeLimitMinutes
+                  ? `${assessment.timeLimitMinutes} minute timer`
+                  : 'No timer'}
+              </span>
+              <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                {assessment.maxAttempts} attempts
+              </span>
             </div>
             {assessment.instructions ? (
               <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4">

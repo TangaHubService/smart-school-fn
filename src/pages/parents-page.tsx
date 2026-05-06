@@ -27,7 +27,11 @@ const createParentSchema = z.object({
   email: z.string().trim().email('Enter a valid email').optional().or(z.literal('')),
   phone: z.string().trim().min(6, 'Phone must be at least 6 digits').optional().or(z.literal('')),
   createLogin: z.boolean().default(false),
-  password: z.string().min(8, 'Password must be at least 8 characters').optional().or(z.literal('')),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .optional()
+    .or(z.literal('')),
 });
 
 type CreateParentForm = z.infer<typeof createParentSchema>;
@@ -215,7 +219,8 @@ export function ParentsPage() {
     } as const);
 
   const studentOptions = studentsForLinkQuery.data ?? [];
-  const classOptions = ((classesQuery.data as ClassRoomOption[] | undefined) ?? []) as ClassRoomOption[];
+  const classOptions = ((classesQuery.data as ClassRoomOption[] | undefined) ??
+    []) as ClassRoomOption[];
 
   useEffect(() => {
     if (!linkTarget) {
@@ -349,7 +354,9 @@ export function ParentsPage() {
                     <p className="font-semibold text-slate-800">
                       {parent.firstName} {parent.lastName}
                     </p>
-                    {parent.parentCode ? <p className="text-xs text-slate-500">{parent.parentCode}</p> : null}
+                    {parent.parentCode ? (
+                      <p className="text-xs text-slate-500">{parent.parentCode}</p>
+                    ) : null}
                   </td>
                   <td className="px-2 py-2 align-middle">
                     <p>{parent.email ?? '-'}</p>
@@ -406,7 +413,8 @@ export function ParentsPage() {
       {!parentsQuery.isPending && !parentsQuery.isError ? (
         <div className="mt-3 flex items-center justify-between text-sm text-slate-700">
           <p>
-            Showing page {pagination.page} of {Math.max(1, pagination.totalPages)} ({pagination.totalItems} parents)
+            Showing page {pagination.page} of {Math.max(1, pagination.totalPages)} (
+            {pagination.totalItems} parents)
           </p>
           <div className="flex gap-2">
             <button
@@ -460,28 +468,43 @@ export function ParentsPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               First Name
-              <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('firstName')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...createForm.register('firstName')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Last Name
-              <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('lastName')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...createForm.register('lastName')}
+              />
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Parent Code (optional)
-              <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('parentCode')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...createForm.register('parentCode')}
+              />
             </label>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Phone (optional)
-              <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('phone')} />
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...createForm.register('phone')}
+              />
             </label>
           </div>
 
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Email (optional)
-            <input className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('email')} />
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...createForm.register('email')}
+            />
           </label>
 
           <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -492,15 +515,23 @@ export function ParentsPage() {
           {createForm.watch('createLogin') ? (
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               Initial Password
-              <input type="password" className="rounded-lg border border-brand-200 px-3 py-2" {...createForm.register('password')} />
+              <input
+                type="password"
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                {...createForm.register('password')}
+              />
             </label>
           ) : null}
 
           {(createParentMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700">{(createParentMutation.error as ApiClientError).message}</p>
+            <p className="text-xs text-red-700">
+              {(createParentMutation.error as ApiClientError).message}
+            </p>
           ) : null}
           {(updateParentMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700">{(updateParentMutation.error as ApiClientError).message}</p>
+            <p className="text-xs text-red-700">
+              {(updateParentMutation.error as ApiClientError).message}
+            </p>
           ) : null}
 
           <div className="mt-2 flex justify-end gap-2">
@@ -576,7 +607,9 @@ export function ParentsPage() {
             <p className="text-xs text-slate-600">Loading classes...</p>
           ) : null}
           {classesQuery.isError ? (
-            <p className="text-xs text-red-700">Could not load classes. You can retry by reopening this dialog.</p>
+            <p className="text-xs text-red-700">
+              Could not load classes. You can retry by reopening this dialog.
+            </p>
           ) : null}
           <div className="grid gap-1 text-sm font-semibold text-slate-800">
             <label htmlFor="student-lookup-input">Student Lookup</label>
@@ -604,10 +637,14 @@ export function ParentsPage() {
                       <button
                         key={student.id}
                         type="button"
-                        onClick={() => linkForm.setValue('studentId', student.id, { shouldValidate: true })}
+                        onClick={() =>
+                          linkForm.setValue('studentId', student.id, { shouldValidate: true })
+                        }
                         className={[
                           'flex items-center justify-between border-b border-brand-50 px-3 py-2 text-left text-sm',
-                          isSelected ? 'bg-brand-100 text-slate-900' : 'bg-white text-slate-800 hover:bg-brand-50',
+                          isSelected
+                            ? 'bg-brand-100 text-slate-900'
+                            : 'bg-white text-slate-800 hover:bg-brand-50',
                         ].join(' ')}
                       >
                         <span>
@@ -639,7 +676,10 @@ export function ParentsPage() {
 
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Relationship
-            <select className="rounded-lg border border-brand-200 px-3 py-2" {...linkForm.register('relationship')}>
+            <select
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...linkForm.register('relationship')}
+            >
               <option value="MOTHER">Mother</option>
               <option value="FATHER">Father</option>
               <option value="GUARDIAN">Guardian</option>

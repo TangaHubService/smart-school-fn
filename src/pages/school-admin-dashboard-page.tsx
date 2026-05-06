@@ -1,12 +1,4 @@
-import {
-  BookOpen,
-  Building2,
-  FileBarChart2,
-  Home,
-  Plus,
-  User,
-  Users,
-} from 'lucide-react';
+import { BookOpen, Building2, FileBarChart2, Home, Plus, User, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -18,7 +10,11 @@ import {
 } from '../components/dashboard/quick-actions-dropdown';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
-import { listAcademicYearsApi, listClassRoomsApi, listTermsApi } from '../features/sprint1/sprint1.api';
+import {
+  listAcademicYearsApi,
+  listClassRoomsApi,
+  listTermsApi,
+} from '../features/sprint1/sprint1.api';
 import { listCoursesApi } from '../features/sprint4/lms.api';
 import {
   getSchoolAdminDashboardApi,
@@ -119,12 +115,7 @@ export function SchoolAdminDashboardPage() {
   }, [classRoomsQuery.data]);
 
   const coursesQuery = useQuery({
-    queryKey: [
-      'courses',
-      'school-admin-dashboard',
-      selectedAcademicYearId,
-      filters.classFilter,
-    ],
+    queryKey: ['courses', 'school-admin-dashboard', selectedAcademicYearId, filters.classFilter],
     enabled: Boolean(auth.accessToken && selectedAcademicYearId),
     queryFn: () =>
       listCoursesApi(auth.accessToken!, {
@@ -136,7 +127,9 @@ export function SchoolAdminDashboardPage() {
   });
 
   const courseOptions = useMemo<Array<{ id: string; title: string }>>(() => {
-    const items = Array.isArray((coursesQuery.data as any)?.items) ? (coursesQuery.data as any).items : [];
+    const items = Array.isArray((coursesQuery.data as any)?.items)
+      ? (coursesQuery.data as any).items
+      : [];
     return (items as Array<{ id: string | number; title: string }>).map((c) => ({
       id: String(c.id),
       title: String(c.title),
@@ -145,7 +138,8 @@ export function SchoolAdminDashboardPage() {
 
   useEffect(() => {
     if (!academicYearOptions.length) return;
-    if (filters.academicYear && academicYearOptions.some((y) => y.id === filters.academicYear)) return;
+    if (filters.academicYear && academicYearOptions.some((y) => y.id === filters.academicYear))
+      return;
     const next = academicYearOptions[0]?.id;
     if (!next) return;
     setFilters((prev) => ({ ...prev, academicYear: next }));
@@ -156,7 +150,9 @@ export function SchoolAdminDashboardPage() {
     if (!termOptionsData.length) return;
     const termCodes = new Set(termOptionsData.map((t) => termCodeFromSequence(Number(t.sequence))));
     if (!filters.term || termCodes.has(filters.term)) return;
-    const next = termOptionsData[0] ? termCodeFromSequence(Number(termOptionsData[0].sequence)) : 'first';
+    const next = termOptionsData[0]
+      ? termCodeFromSequence(Number(termOptionsData[0].sequence))
+      : 'first';
     setFilters((prev) => ({ ...prev, term: next }));
     setAppliedFilters((prev) => ({ ...prev, term: next }));
   }, [termOptionsData, filters.term]);
@@ -220,9 +216,7 @@ export function SchoolAdminDashboardPage() {
       <div className="flex flex-col gap-3">
         <div className="space-y-2">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="min-w-0 text-2xl font-bold text-slate-900">
-              Dashboard
-            </h1>
+            <h1 className="min-w-0 text-2xl font-bold text-slate-900">Dashboard</h1>
             <DashboardQuickActionsDropdown actions={SCHOOL_ADMIN_QUICK_ACTIONS} />
           </div>
           <div className="flex items-center gap-2 text-slate-700">
@@ -244,15 +238,18 @@ export function SchoolAdminDashboardPage() {
             termOptions={termOptionsData}
             classOptions={classOptions}
             courseOptions={courseOptions}
-            onAcademicYearChange={(value) => setFilters((prev) => ({ ...prev, academicYear: value }))}
+            onAcademicYearChange={(value) =>
+              setFilters((prev) => ({ ...prev, academicYear: value }))
+            }
             onTermChange={(value) => setFilters((prev) => ({ ...prev, term: value }))}
             onClassChange={(value) => setFilters((prev) => ({ ...prev, classFilter: value }))}
             onFindChange={(value) => setFilters((prev) => ({ ...prev, findFilter: value }))}
             onApply={() => setAppliedFilters({ ...filters })}
             onReset={() => {
               const defaultAcademicYear = academicYearOptions[0]?.id ?? '';
-              const defaultTerm =
-                termOptionsData[0] ? termCodeFromSequence(Number(termOptionsData[0].sequence)) : 'first';
+              const defaultTerm = termOptionsData[0]
+                ? termCodeFromSequence(Number(termOptionsData[0].sequence))
+                : 'first';
               const reset: SchoolAdminDashboardFilters = {
                 academicYear: defaultAcademicYear,
                 term: defaultTerm,
@@ -298,11 +295,7 @@ export function SchoolAdminDashboardPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <SchoolUserOverviewCard data={data} />
-        <SchoolSystemAnalyticsCard
-          data={data}
-          tab={analyticsTab}
-          onTabChange={setAnalyticsTab}
-        />
+        <SchoolSystemAnalyticsCard data={data} tab={analyticsTab} onTabChange={setAnalyticsTab} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -331,8 +324,7 @@ function SchoolMetricCard({
     orange: 'bg-orange-100 text-orange-600',
     blue: 'bg-blue-100 text-blue-600',
   };
-  const changeColor =
-    change !== undefined && change >= 0 ? 'text-green-600' : 'text-slate-600';
+  const changeColor = change !== undefined && change >= 0 ? 'text-green-600' : 'text-slate-600';
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -346,9 +338,7 @@ function SchoolMetricCard({
           <p className="text-sm font-medium text-slate-600">{label}</p>
           <p className="text-2xl font-bold text-slate-900">{value}</p>
           {change !== undefined && (
-            <p className={`text-xs font-medium ${changeColor}`}>
-              {formatChange(change)}
-            </p>
+            <p className={`text-xs font-medium ${changeColor}`}>{formatChange(change)}</p>
           )}
         </div>
       </div>
@@ -393,15 +383,10 @@ function SchoolUserOverviewCard({ data }: { data: SchoolAdminDashboardData }) {
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3">
         {items.map((item) => (
-          <div
-            key={item.label}
-            className="rounded-xl border border-slate-100 bg-slate-50/50 p-4"
-          >
+          <div key={item.label} className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
             <Users className="h-5 w-5 text-slate-500" />
             <p className="mt-2 text-xs font-medium text-slate-600">{item.label}</p>
-            <p className="mt-1 text-xl font-bold text-slate-900">
-              {item.value.toLocaleString()}
-            </p>
+            <p className="mt-1 text-xl font-bold text-slate-900">{item.value.toLocaleString()}</p>
             {item.change !== undefined && (
               <p
                 className={`text-xs font-medium ${
@@ -522,9 +507,7 @@ function SchoolLatestReportsCard({ data }: { data: SchoolAdminDashboardData }) {
               <div>
                 <p className="text-sm font-medium text-slate-900">{report.name}</p>
                 <p className="text-lg font-bold text-slate-900">
-                  {typeof report.value === 'number'
-                    ? report.value.toLocaleString()
-                    : report.value}
+                  {typeof report.value === 'number' ? report.value.toLocaleString() : report.value}
                 </p>
               </div>
             </div>

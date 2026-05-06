@@ -11,7 +11,11 @@ import {
   listReportCardsCatalogApi,
   type ReportCardCatalogRow,
 } from '../features/sprint5/exams.api';
-import { listAcademicYearsApi, listClassRoomsApi, listTermsApi } from '../features/sprint1/sprint1.api';
+import {
+  listAcademicYearsApi,
+  listClassRoomsApi,
+  listTermsApi,
+} from '../features/sprint1/sprint1.api';
 import { listStudentsApi } from '../features/sprint2/sprint2.api';
 
 const PAGE_SIZE = 25;
@@ -60,7 +64,7 @@ export function ReportCardsPage() {
     queryFn: () =>
       listTermsApi(
         auth.accessToken!,
-        catalogAcademicYearId ? { academicYearId: catalogAcademicYearId } : undefined,
+        catalogAcademicYearId ? { academicYearId: catalogAcademicYearId } : undefined
       ),
     enabled: Boolean(auth.accessToken),
   });
@@ -132,7 +136,11 @@ export function ReportCardsPage() {
     const key = `${row.id}-${mode}`;
     setLoadingPdf(key);
     try {
-      const blob = await downloadStudentReportCardPdfApi(auth.accessToken!, row.student.id, row.term.id);
+      const blob = await downloadStudentReportCardPdfApi(
+        auth.accessToken!,
+        row.student.id,
+        row.term.id
+      );
       openPdfBlob(blob, mode, reportCardFileName(row));
     } catch (e) {
       showToast({
@@ -146,9 +154,7 @@ export function ReportCardsPage() {
   };
 
   const noResults =
-    !catalogQuery.isPending &&
-    !catalogQuery.isError &&
-    (pagination?.totalItems ?? 0) === 0;
+    !catalogQuery.isPending && !catalogQuery.isError && (pagination?.totalItems ?? 0) === 0;
 
   return (
     <SectionCard
@@ -241,7 +247,9 @@ export function ReportCardsPage() {
       ) : catalogQuery.isError ? (
         <StateView
           title="Could not load report cards"
-          message={catalogQuery.error instanceof Error ? catalogQuery.error.message : 'Please try again.'}
+          message={
+            catalogQuery.error instanceof Error ? catalogQuery.error.message : 'Please try again.'
+          }
           action={
             <button
               type="button"
@@ -260,13 +268,25 @@ export function ReportCardsPage() {
             <table className="w-full min-w-full table-auto text-left text-sm">
               <thead>
                 <tr className="border-b border-brand-200 bg-brand-50">
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">Student ID</th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">Student name</th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">Class</th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">Academic year</th>
+                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
+                    Student ID
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
+                    Student name
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
+                    Class
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
+                    Academic year
+                  </th>
                   <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">Term</th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">Report status</th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">Actions</th>
+                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
+                    Report status
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -275,7 +295,9 @@ export function ReportCardsPage() {
                   const busyDl = loadingPdf === `${row.id}-download`;
                   return (
                     <tr key={row.id} className="border-b border-brand-50">
-                      <td className="px-3 py-2.5 font-mono text-xs text-slate-800">{row.student.studentCode}</td>
+                      <td className="px-3 py-2.5 font-mono text-xs text-slate-800">
+                        {row.student.studentCode}
+                      </td>
                       <td className="px-3 py-2.5 font-medium text-slate-900">
                         {row.student.firstName} {row.student.lastName}
                       </td>
@@ -326,7 +348,8 @@ export function ReportCardsPage() {
           {pagination && pagination.totalPages > 1 ? (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-700">
               <span>
-                Page {pagination.page} of {pagination.totalPages} ({pagination.totalItems} report cards)
+                Page {pagination.page} of {pagination.totalPages} ({pagination.totalItems} report
+                cards)
               </span>
               <div className="flex gap-2">
                 <button

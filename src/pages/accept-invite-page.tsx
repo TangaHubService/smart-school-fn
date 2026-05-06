@@ -87,30 +87,68 @@ export function AcceptInvitePage() {
         className="absolute inset-0 bg-gradient-to-br from-[#173C7F]/60 via-black/40 to-black/70"
         aria-hidden="true"
       />
-      <div className="absolute -top-48 left-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl" aria-hidden="true" />
-      <div className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
+      <div
+        className="absolute -top-48 left-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl"
+        aria-hidden="true"
+      />
       <section className="relative z-10 w-full max-w-md rounded-3xl border border-white/30 bg-white/75 p-5 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.6)] ring-1 ring-white/20 backdrop-blur-xl sm:p-8">
         <h1 className="text-xl font-bold text-slate-900">{t('invite.title')}</h1>
         <p className="mt-1 text-sm text-slate-700">{t('invite.subtitle')}</p>
 
-        <form className="mt-4 grid gap-3" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
+        <form
+          className="mt-4 grid gap-3"
+          onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+        >
           <div className="grid gap-1">
-            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder={t('invite.firstName')} {...form.register('firstName')} />
-            {form.formState.errors.firstName ? <p className="text-xs text-red-700">{form.formState.errors.firstName.message}</p> : null}
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              placeholder={t('invite.firstName')}
+              {...form.register('firstName')}
+            />
+            {form.formState.errors.firstName ? (
+              <p className="text-xs text-red-700">{form.formState.errors.firstName.message}</p>
+            ) : null}
           </div>
           <div className="grid gap-1">
-            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder={t('invite.lastName')} {...form.register('lastName')} />
-            {form.formState.errors.lastName ? <p className="text-xs text-red-700">{form.formState.errors.lastName.message}</p> : null}
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              placeholder={t('invite.lastName')}
+              {...form.register('lastName')}
+            />
+            {form.formState.errors.lastName ? (
+              <p className="text-xs text-red-700">{form.formState.errors.lastName.message}</p>
+            ) : null}
           </div>
           <div className="grid gap-1">
-            <input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder={t('invite.phone')} {...form.register('phone')} />
-            {form.formState.errors.phone ? <p className="text-xs text-red-700">{form.formState.errors.phone.message}</p> : null}
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              placeholder={t('invite.phone')}
+              {...form.register('phone')}
+            />
+            {form.formState.errors.phone ? (
+              <p className="text-xs text-red-700">{form.formState.errors.phone.message}</p>
+            ) : null}
           </div>
           <div className="grid gap-1">
-            <input type="password" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder={t('invite.password')} {...form.register('password')} />
-            {form.formState.errors.password ? <p className="text-xs text-red-700">{form.formState.errors.password.message}</p> : null}
+            <input
+              type="password"
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              placeholder={t('invite.password')}
+              {...form.register('password')}
+            />
+            {form.formState.errors.password ? (
+              <p className="text-xs text-red-700">{form.formState.errors.password.message}</p>
+            ) : null}
           </div>
-          <button className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white" type="submit" disabled={mutation.isPending}>
+          <button
+            className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+            type="submit"
+            disabled={mutation.isPending}
+          >
             {mutation.isPending ? t('invite.accepting') : t('invite.accept')}
           </button>
         </form>

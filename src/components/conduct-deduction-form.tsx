@@ -3,7 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useToast } from './toast';
 import { createConductDeductionApi } from '../features/conduct-marks/conduct-marks.api';
-import { listAcademicYearsApi, listClassRoomsApi, listTermsApi } from '../features/sprint1/sprint1.api';
+import {
+  listAcademicYearsApi,
+  listClassRoomsApi,
+  listTermsApi,
+} from '../features/sprint1/sprint1.api';
 import { listStudentsApi } from '../features/sprint2/sprint2.api';
 
 export type ConductDeductionStudentOption = {
@@ -189,7 +193,9 @@ export function ConductDeductionForm({
       occurredAt: string;
     }) => createConductDeductionApi(accessToken, body),
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ['marks-grid', variables.termId, variables.classRoomId] });
+      void queryClient.invalidateQueries({
+        queryKey: ['marks-grid', variables.termId, variables.classRoomId],
+      });
       void queryClient.invalidateQueries({ queryKey: ['marks-grid'] });
       void queryClient.invalidateQueries({ queryKey: ['all-marks-ledger'] });
       void queryClient.invalidateQueries({ queryKey: ['student-conduct-deductions'] });
@@ -214,7 +220,9 @@ export function ConductDeductionForm({
     if (!academicYearId || !termIdVal || !classRoomId || !studentId || !occurredAt) {
       showToast({
         type: 'error',
-        title: isLocked ? 'Select student and date' : 'Fill in year, term, class, student, and date',
+        title: isLocked
+          ? 'Select student and date'
+          : 'Fill in year, term, class, student, and date',
       });
       return;
     }
@@ -257,9 +265,7 @@ export function ConductDeductionForm({
                 disabled={yearsQuery.isPending}
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400 disabled:opacity-60"
               >
-                <option value="">
-                  {yearsQuery.isPending ? 'Loading...' : 'Select year'}
-                </option>
+                <option value="">{yearsQuery.isPending ? 'Loading...' : 'Select year'}</option>
                 {years.map((y: { id: string; name: string }) => (
                   <option key={y.id} value={y.id}>
                     {y.name}
@@ -291,9 +297,7 @@ export function ConductDeductionForm({
                 disabled={classesQuery.isPending}
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400 disabled:opacity-60"
               >
-                <option value="">
-                  {classesQuery.isPending ? 'Loading...' : 'Select class'}
-                </option>
+                <option value="">{classesQuery.isPending ? 'Loading...' : 'Select class'}</option>
                 {classes.map((c: { id: string; code: string; name: string }) => (
                   <option key={c.id} value={c.id}>
                     {c.code} – {c.name}
@@ -304,7 +308,9 @@ export function ConductDeductionForm({
           </>
         ) : null}
 
-        <label className={`grid gap-1 text-sm font-medium text-slate-800 ${isLocked ? 'md:col-span-2' : ''}`}>
+        <label
+          className={`grid gap-1 text-sm font-medium text-slate-800 ${isLocked ? 'md:col-span-2' : ''}`}
+        >
           Student
           <select
             value={studentId}
@@ -330,7 +336,8 @@ export function ConductDeductionForm({
         </label>
         {scopeStudentsQuery.isError && !isLocked ? (
           <div className="col-span-full text-xs text-red-600">
-            Error loading students: {(scopeStudentsQuery.error as Error)?.message || 'Unknown error'}
+            Error loading students:{' '}
+            {(scopeStudentsQuery.error as Error)?.message || 'Unknown error'}
           </div>
         ) : null}
 

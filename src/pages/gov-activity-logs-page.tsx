@@ -4,16 +4,16 @@ import { useState } from 'react';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  GovAuditActionType,
-  listGovActivityLogsApi,
-} from '../features/gov/gov.api';
+import { GovAuditActionType, listGovActivityLogsApi } from '../features/gov/gov.api';
 
 const actionTypes: GovAuditActionType[] = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT'];
 const moduleOptions = ['Audit', 'School', 'User'];
 
 function formatAction(value: string) {
-  return value.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+  return value
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export function GovActivityLogsPage() {
@@ -57,7 +57,10 @@ export function GovActivityLogsPage() {
   }
 
   return (
-    <SectionCard title="Activity Logs" subtitle="Simple trace of who changed what and when in the auditor workflow.">
+    <SectionCard
+      title="Activity Logs"
+      subtitle="Simple trace of who changed what and when in the auditor workflow."
+    >
       <div className="mb-4 grid gap-2 md:grid-cols-3">
         <input
           type="search"
@@ -129,10 +132,14 @@ export function GovActivityLogsPage() {
               logs.map((log, index) => (
                 <tr key={log.id} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900">{log.actor?.name || log.actor?.email || 'System'}</p>
+                    <p className="font-medium text-slate-900">
+                      {log.actor?.name || log.actor?.email || 'System'}
+                    </p>
                     <p className="text-xs text-slate-500">{log.actor?.role || 'N/A'}</p>
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{formatAction(log.actionType || log.event)}</td>
+                  <td className="px-4 py-3 text-slate-700">
+                    {formatAction(log.actionType || log.event)}
+                  </td>
                   <td className="px-4 py-3 text-slate-700">{log.module || '-'}</td>
                   <td className="px-4 py-3 text-slate-700">{log.schoolName || '-'}</td>
                   <td className="px-4 py-3 text-slate-700">

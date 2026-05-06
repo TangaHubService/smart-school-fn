@@ -73,32 +73,42 @@ export function ReportCardVerificationPage() {
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">
                     Verified
                   </p>
-                  <h2 className="text-2xl font-black text-slate-950">This report card is authentic</h2>
+                  <h2 className="text-2xl font-black text-slate-950">
+                    This report card is authentic
+                  </h2>
                 </div>
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Student</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                    Student
+                  </p>
                   <p className="mt-2 text-lg font-bold text-slate-950">{data.student.name}</p>
                   <p className="text-sm text-slate-700">{data.student.studentCode}</p>
                 </div>
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">School</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                    School
+                  </p>
                   <p className="mt-2 text-lg font-bold text-slate-950">{data.school.name}</p>
                   <p className="text-sm text-slate-700">
                     {data.school.code ? `Code ${data.school.code}` : 'School code unavailable'}
                   </p>
                 </div>
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Scope</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                    Scope
+                  </p>
                   <p className="mt-2 text-lg font-bold text-slate-950">{data.term.name}</p>
                   <p className="text-sm text-slate-700">
                     {data.classRoom.name} · {data.academicYear.name}
                   </p>
                 </div>
                 <div className="rounded-3xl border border-brand-100 bg-brand-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Result</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                    Result
+                  </p>
                   <p className="mt-2 text-lg font-bold text-slate-950">
                     {data.totals.averagePercentage.toFixed(1)}% · {data.totals.grade}
                   </p>

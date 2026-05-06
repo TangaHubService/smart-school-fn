@@ -44,9 +44,7 @@ export function TimetablePage() {
 
   const isTeacher = auth.me?.roles.includes('TEACHER') ?? false;
   const isAdmin =
-    (auth.me?.roles.includes('SCHOOL_ADMIN') ||
-      auth.me?.roles.includes('SUPER_ADMIN')) ??
-    false;
+    (auth.me?.roles.includes('SCHOOL_ADMIN') || auth.me?.roles.includes('SUPER_ADMIN')) ?? false;
 
   useEffect(() => {
     if (isTeacher && !isAdmin) {
@@ -56,7 +54,8 @@ export function TimetablePage() {
 
   const canManage =
     (auth.me?.permissions.includes('timetable.manage') ||
-      auth.me?.permissions.includes('timetable.read')) ?? false;
+      auth.me?.permissions.includes('timetable.read')) ??
+    false;
 
   const yearsQuery = useQuery({
     queryKey: ['academic-years'],
@@ -100,7 +99,11 @@ export function TimetablePage() {
   });
 
   const years = (yearsQuery.data ?? []) as Array<{ id: string; name: string }>;
-  const terms = (termsQuery.data ?? []) as Array<{ id: string; name: string; academicYearId?: string }>;
+  const terms = (termsQuery.data ?? []) as Array<{
+    id: string;
+    name: string;
+    academicYearId?: string;
+  }>;
   const classes = (classesQuery.data ?? []) as Array<{ id: string; code: string; name: string }>;
   const slots = slotsQuery.data?.slots ?? [];
   const courses = (coursesQuery.data?.items ?? []) as Array<{
@@ -193,10 +196,12 @@ export function TimetablePage() {
   const setEditCell = (day: number, period: number, courseId: string) => {
     const key = `${day}-${period}`;
     setEditGrid((prev) =>
-      courseId ? { ...prev, [key]: courseId } : (() => {
-        const { [key]: _, ...rest } = prev;
-        return rest;
-      })(),
+      courseId
+        ? { ...prev, [key]: courseId }
+        : (() => {
+            const { [key]: _, ...rest } = prev;
+            return rest;
+          })()
     );
   };
 
@@ -319,9 +324,7 @@ export function TimetablePage() {
         )}
       </div>
 
-      {slotsQuery.isPending &&
-      academicYearId &&
-      (viewMode === 'teacher' || classRoomId) ? (
+      {slotsQuery.isPending && academicYearId && (viewMode === 'teacher' || classRoomId) ? (
         <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
           <Calendar className="h-6 w-6 animate-pulse" />
           <span>Loading timetable...</span>
@@ -376,13 +379,13 @@ export function TimetablePage() {
       {isEditMode && academicYearId && classRoomId ? (
         <div className="mb-4 space-y-2">
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Select a course for each slot. Leave empty to clear. Courses must
-            exist for this class and academic year.
+            Select a course for each slot. Leave empty to clear. Courses must exist for this class
+            and academic year.
           </div>
           {!coursesQuery.isPending && courses.length === 0 ? (
             <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
-              No courses found for this class and academic year. Create courses
-              first in <strong>Courses & Subjects</strong>.
+              No courses found for this class and academic year. Create courses first in{' '}
+              <strong>Courses & Subjects</strong>.
             </div>
           ) : null}
           {terms.length > 1 && !termId ? (
@@ -393,15 +396,13 @@ export function TimetablePage() {
         </div>
       ) : null}
 
-      {((!slotsQuery.isPending && !slotsQuery.isError && grid.length > 0) ||
-        (isEditMode && academicYearId && classRoomId)) ? (
+      {(!slotsQuery.isPending && !slotsQuery.isError && grid.length > 0) ||
+      (isEditMode && academicYearId && classRoomId) ? (
         <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
           <table className="w-full min-w-full table-auto text-left text-sm">
             <thead>
               <tr className="border-b border-brand-100 bg-brand-50/50">
-                <th className="px-2 py-2 font-semibold text-slate-700">
-                  Period
-                </th>
+                <th className="px-2 py-2 font-semibold text-slate-700">Period</th>
                 {DAYS.map((d) => (
                   <th key={d} className="px-2 py-2 font-semibold text-slate-700">
                     {d}
@@ -413,9 +414,7 @@ export function TimetablePage() {
               {isEditMode
                 ? DEFAULT_PERIODS.map((p) => (
                     <tr key={p.num} className="border-b border-brand-50">
-                      <td className="px-2 py-2 font-medium text-slate-600">
-                        P{p.num}
-                      </td>
+                      <td className="px-2 py-2 font-medium text-slate-600">P{p.num}</td>
                       {[1, 2, 3, 4, 5].map((day) => (
                         <td
                           key={day}
@@ -423,9 +422,7 @@ export function TimetablePage() {
                         >
                           <select
                             value={editGrid[`${day}-${p.num}`] ?? ''}
-                            onChange={(e) =>
-                              setEditCell(day, p.num, e.target.value)
-                            }
+                            onChange={(e) => setEditCell(day, p.num, e.target.value)}
                             className="h-9 w-full rounded-lg border border-brand-200 px-2 text-sm outline-none focus:border-brand-400"
                           >
                             <option value="">—</option>
@@ -437,11 +434,9 @@ export function TimetablePage() {
                               }) => (
                                 <option key={c.id} value={c.id}>
                                   {c.title}
-                                  {c.subject?.name
-                                    ? ` (${c.subject.name})`
-                                    : ''}
+                                  {c.subject?.name ? ` (${c.subject.name})` : ''}
                                 </option>
-                              ),
+                              )
                             )}
                           </select>
                         </td>
@@ -450,9 +445,7 @@ export function TimetablePage() {
                   ))
                 : grid.map((row) => (
                     <tr key={row.period} className="border-b border-brand-50">
-                      <td className="px-2 py-2 font-medium text-slate-600">
-                        P{row.period}
-                      </td>
+                      <td className="px-2 py-2 font-medium text-slate-600">P{row.period}</td>
                       {DAYS.map((_, dayIdx) => {
                         const slot = row.days[dayIdx];
                         return (
@@ -462,9 +455,7 @@ export function TimetablePage() {
                           >
                             {slot ? (
                               <div className="rounded-lg border border-brand-100 bg-brand-50/30 p-2">
-                                <p className="font-semibold text-slate-800">
-                                  {slot.course.title}
-                                </p>
+                                <p className="font-semibold text-slate-800">{slot.course.title}</p>
                                 <p className="text-xs text-slate-600">
                                   {slot.course.subject?.name ?? '—'}
                                 </p>

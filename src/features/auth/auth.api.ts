@@ -1,5 +1,13 @@
 import { apiRequest } from '../../api/client';
-import { ForgotPasswordInput, LoginFormValues, LoginResponse, MeResponse, RegisterInput, ResetPasswordInput, VerifyOtpInput } from './auth.schema';
+import {
+  ForgotPasswordInput,
+  LoginFormValues,
+  LoginResponse,
+  MeResponse,
+  RegisterInput,
+  ResetPasswordInput,
+  VerifyOtpInput,
+} from './auth.schema';
 
 export async function loginApi(payload: LoginFormValues): Promise<LoginResponse> {
   return apiRequest<LoginResponse>('/auth/login', {
@@ -29,7 +37,7 @@ export async function refreshApi(refreshToken: string): Promise<{
 
 export async function logoutApi(
   accessToken: string,
-  refreshToken: string,
+  refreshToken: string
 ): Promise<{ loggedOut: boolean }> {
   return apiRequest('/auth/logout', {
     method: 'POST',
@@ -48,7 +56,9 @@ export async function meApi(accessToken: string): Promise<MeResponse> {
   });
 }
 
-export async function forgotPasswordApi(payload: ForgotPasswordInput): Promise<{ message: string }> {
+export async function forgotPasswordApi(
+  payload: ForgotPasswordInput
+): Promise<{ message: string }> {
   return apiRequest('/auth/forgot-password', {
     method: 'POST',
     body: payload,

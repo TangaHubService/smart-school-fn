@@ -31,8 +31,8 @@ export function Pagination({
           <option value={100}>100</option>
         </select>
         <span className="ml-4">
-          {(currentPage - 1) * pageSize + 1}-
-          {Math.min(currentPage * pageSize, totalItems)} of {totalItems}
+          {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalItems)} of{' '}
+          {totalItems}
         </span>
       </div>
       <div className="flex items-center gap-1">

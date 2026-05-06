@@ -19,7 +19,9 @@ function ScopeCard({ scope }: { scope: GovAuditorScope }) {
     <article className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{scope.scopeLevel}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            {scope.scopeLevel}
+          </p>
           <h3 className="mt-1 text-lg font-bold text-slate-950">{scope.label}</h3>
         </div>
         <span
@@ -33,7 +35,8 @@ function ScopeCard({ scope }: { scope: GovAuditorScope }) {
 
       {scope.assignedBy ? (
         <p className="text-sm text-slate-700">
-          Assigned by {scope.assignedBy.firstName} {scope.assignedBy.lastName} ({scope.assignedBy.email})
+          Assigned by {scope.assignedBy.firstName} {scope.assignedBy.lastName} (
+          {scope.assignedBy.email})
         </p>
       ) : null}
 
@@ -59,7 +62,10 @@ export function GovMyScopePage() {
 
   if (scopesQuery.isPending) {
     return (
-      <SectionCard title="My Scope" subtitle="Loading your current government oversight assignments.">
+      <SectionCard
+        title="My Scope"
+        subtitle="Loading your current government oversight assignments."
+      >
         <div className="grid gap-3">
           <div className="h-24 animate-pulse rounded-2xl bg-brand-100" />
           <div className="h-24 animate-pulse rounded-2xl bg-brand-100" />
@@ -104,12 +110,15 @@ export function GovMyScopePage() {
   }
 
   return (
-    <SectionCard title="My Scope" subtitle="These assignments control the schools and incidents visible in your workspace.">
+    <SectionCard
+      title="My Scope"
+      subtitle="These assignments control the schools and incidents visible in your workspace."
+    >
       <div className="grid gap-4">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-          You can only act inside schools that match these active assignments. In the auditor workflow, allowed actions
-          are planning audits, submitting audit reports, and posting oversight feedback. School-owned disciplinary
-          follow-up actions remain read-only.
+          You can only act inside schools that match these active assignments. In the auditor
+          workflow, allowed actions are planning audits, submitting audit reports, and posting
+          oversight feedback. School-owned disciplinary follow-up actions remain read-only.
         </div>
         {scopes.map((scope) => (
           <ScopeCard key={scope.id} scope={scope} />

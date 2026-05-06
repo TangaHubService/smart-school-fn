@@ -5,12 +5,12 @@ declare module 'rwanda' {
   export function Cells(
     province?: string,
     district?: string,
-    sector?: string,
+    sector?: string
   ): string[] | undefined;
   export function Villages(
     province?: string,
     district?: string,
     sector?: string,
-    cell?: string,
+    cell?: string
   ): string[] | undefined;
 }

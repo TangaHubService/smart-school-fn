@@ -8,10 +8,26 @@ import { SectionCard } from '../components/section-card';
 // import { createSupportTicketApi, listFaqApi } from '../features/support/support.api';
 
 const DUMMY_FAQ = [
-  { id: '1', q: 'How do I add a new school?', a: 'Go to Schools Management and click Create School.' },
-  { id: '2', q: 'How do I reset a user password?', a: 'Use User Management to send a password reset email.' },
-  { id: '3', q: 'How do I export reports?', a: 'Go to Reports & Analytics and use the Export button.' },
-  { id: '4', q: 'Who do I contact for billing?', a: 'Email billing@smartschool.rw for billing inquiries.' },
+  {
+    id: '1',
+    q: 'How do I add a new school?',
+    a: 'Go to Schools Management and click Create School.',
+  },
+  {
+    id: '2',
+    q: 'How do I reset a user password?',
+    a: 'Use User Management to send a password reset email.',
+  },
+  {
+    id: '3',
+    q: 'How do I export reports?',
+    a: 'Go to Reports & Analytics and use the Export button.',
+  },
+  {
+    id: '4',
+    q: 'Who do I contact for billing?',
+    a: 'Email billing@smartschool.rw for billing inquiries.',
+  },
 ];
 
 export function SupportCenterPage() {
@@ -42,17 +58,12 @@ export function SupportCenterPage() {
       <SectionCard title="Frequently Asked Questions" subtitle="Quick answers">
         <div className="space-y-4">
           {DUMMY_FAQ.map((item) => (
-            <details
-              key={item.id}
-              className="group rounded-lg border border-brand-100 bg-white"
-            >
+            <details key={item.id} className="group rounded-lg border border-brand-100 bg-white">
               <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium text-slate-900">
                 <Book className="h-4 w-4 shrink-0 text-brand-500" />
                 {item.q}
               </summary>
-              <p className="border-t border-brand-50 px-4 py-3 text-sm text-slate-600">
-                {item.a}
-              </p>
+              <p className="border-t border-brand-50 px-4 py-3 text-sm text-slate-600">{item.a}</p>
             </details>
           ))}
         </div>

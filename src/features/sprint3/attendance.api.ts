@@ -119,10 +119,7 @@ export interface SaveAttendanceBulkPayload {
   }>;
 }
 
-export function listAttendanceClassesApi(
-  accessToken: string,
-  params?: { teacherOnly?: boolean },
-) {
+export function listAttendanceClassesApi(accessToken: string, params?: { teacherOnly?: boolean }) {
   const query = new URLSearchParams();
   if (params?.teacherOnly) {
     query.set('teacherOnly', 'true');
@@ -140,7 +137,7 @@ export function createAttendanceSessionApi(
     classRoomId: string;
     date: string;
     academicYearId?: string;
-  },
+  }
 ) {
   return apiRequest<{
     session: AttendanceClassReport['session'];
@@ -152,10 +149,7 @@ export function createAttendanceSessionApi(
   });
 }
 
-export function saveAttendanceBulkApi(
-  accessToken: string,
-  payload: SaveAttendanceBulkPayload,
-) {
+export function saveAttendanceBulkApi(accessToken: string, payload: SaveAttendanceBulkPayload) {
   return apiRequest<{
     session: AttendanceClassReport['session'];
     savedCount: number;
@@ -167,11 +161,7 @@ export function saveAttendanceBulkApi(
   });
 }
 
-export function getAttendanceClassReportApi(
-  accessToken: string,
-  classId: string,
-  date?: string,
-) {
+export function getAttendanceClassReportApi(accessToken: string, classId: string, date?: string) {
   const query = new URLSearchParams();
   if (date) {
     query.set('date', date);
@@ -182,7 +172,7 @@ export function getAttendanceClassReportApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -192,7 +182,7 @@ export function getStudentAttendanceHistoryApi(
   params?: {
     from?: string;
     to?: string;
-  },
+  }
 ) {
   const query = new URLSearchParams();
   if (params?.from) {
@@ -207,7 +197,7 @@ export function getStudentAttendanceHistoryApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -222,6 +212,6 @@ export function getAttendanceDashboardSummaryApi(accessToken: string, date?: str
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }

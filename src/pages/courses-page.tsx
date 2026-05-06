@@ -28,10 +28,7 @@ import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import { hasRole } from '../features/auth/auth-helpers';
-import {
-  listAcademicYearsApi,
-  listClassRoomsApi,
-} from '../features/sprint1/sprint1.api';
+import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import {
   createCourseApi,
@@ -230,17 +227,15 @@ function getYouTubeEmbedUrl(url: string | null | undefined) {
   return null;
 }
 
-function lessonHasInlineMedia(
-  lesson: {
-    contentType: LessonContentType;
-    externalUrl: string | null;
-    fileAsset: {
-      secureUrl: string;
-      mimeType: string | null;
-      originalName: string;
-    } | null;
-  },
-) {
+function lessonHasInlineMedia(lesson: {
+  contentType: LessonContentType;
+  externalUrl: string | null;
+  fileAsset: {
+    secureUrl: string;
+    mimeType: string | null;
+    originalName: string;
+  } | null;
+}) {
   const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
   if (!mediaUrl) {
     return false;
@@ -248,10 +243,10 @@ function lessonHasInlineMedia(
 
   return Boolean(
     getYouTubeEmbedUrl(mediaUrl) ||
-      lesson.contentType === 'VIDEO' ||
-      lesson.contentType === 'PDF' ||
-      lesson.fileAsset?.mimeType?.startsWith('video/') ||
-      isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType),
+    lesson.contentType === 'VIDEO' ||
+    lesson.contentType === 'PDF' ||
+    lesson.fileAsset?.mimeType?.startsWith('video/') ||
+    isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType)
   );
 }
 
@@ -325,13 +320,7 @@ function LessonMediaEmbed({
   return null;
 }
 
-function AttachmentLink({
-  label,
-  url,
-}: {
-  label: string;
-  url: string;
-}) {
+function AttachmentLink({ label, url }: { label: string; url: string }) {
   return (
     <a
       href={url}
@@ -345,13 +334,7 @@ function AttachmentLink({
   );
 }
 
-function StatusPill({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: 'draft' | 'published';
-}) {
+function StatusPill({ label, tone }: { label: string; tone: 'draft' | 'published' }) {
   const toneClass: Record<typeof tone, string> = {
     draft: 'border-amber-200 bg-amber-50 text-amber-800',
     published: 'border-emerald-200 bg-emerald-50 text-emerald-800',
@@ -473,7 +456,9 @@ export function CoursesPage() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['lms', 'courses'] });
-      void queryClient.invalidateQueries({ queryKey: ['lms', 'course-detail', courseModalCourseId] });
+      void queryClient.invalidateQueries({
+        queryKey: ['lms', 'course-detail', courseModalCourseId],
+      });
       setIsCourseModalOpen(false);
       setCourseModalCourseId('');
       showToast({
@@ -667,8 +652,7 @@ export function CoursesPage() {
             .toLowerCase()
             .includes(q)
         : true;
-      const matchesSubject =
-        subjectFilter === 'ALL' ? true : course.subject?.id === subjectFilter;
+      const matchesSubject = subjectFilter === 'ALL' ? true : course.subject?.id === subjectFilter;
 
       return matchesSearch && matchesSubject;
     });
@@ -850,9 +834,7 @@ export function CoursesPage() {
       <SectionCard
         title={selectedCourseId ? undefined : 'Courses'}
         subtitle={
-          selectedCourseId
-            ? undefined
-            : 'Create class courses and publish lessons for students.'
+          selectedCourseId ? undefined : 'Create class courses and publish lessons for students.'
         }
         action={
           selectedCourseId ? undefined : (
@@ -963,7 +945,7 @@ export function CoursesPage() {
                               disabled={page >= coursesQuery.data.pagination.totalPages}
                               onClick={() =>
                                 setPage((current) =>
-                                  Math.min(coursesQuery.data!.pagination.totalPages, current + 1),
+                                  Math.min(coursesQuery.data!.pagination.totalPages, current + 1)
                                 )
                               }
                               className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
@@ -977,9 +959,8 @@ export function CoursesPage() {
 
                       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                         {visibleCourses.map((course, courseIndex) => {
-                          const cover = COURSE_CARD_BACKGROUNDS[
-                            courseIndex % COURSE_CARD_BACKGROUNDS.length
-                          ];
+                          const cover =
+                            COURSE_CARD_BACKGROUNDS[courseIndex % COURSE_CARD_BACKGROUNDS.length];
                           const courseLabel = `${course.subject?.name ?? 'General Studies'} / ${course.classRoom.name}`;
                           const lastUpdated = new Intl.DateTimeFormat('en-RW', {
                             dateStyle: 'medium',
@@ -1015,7 +996,8 @@ export function CoursesPage() {
                                       {course.title}
                                     </p>
                                     <p className="text-sm text-slate-600">
-                                      {course.description?.trim() || 'Open this course to review lessons and publish content.'}
+                                      {course.description?.trim() ||
+                                        'Open this course to review lessons and publish content.'}
                                     </p>
                                   </div>
 
@@ -1184,8 +1166,7 @@ export function CoursesPage() {
                           <LessonMediaEmbed lesson={selectedLesson} />
 
                           <div className="flex flex-wrap gap-2">
-                            {selectedLesson.externalUrl &&
-                            !lessonHasInlineMedia(selectedLesson) ? (
+                            {selectedLesson.externalUrl && !lessonHasInlineMedia(selectedLesson) ? (
                               <AttachmentLink
                                 label="Open external content"
                                 url={selectedLesson.externalUrl}
@@ -1207,9 +1188,7 @@ export function CoursesPage() {
                         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                           {courseDetailQuery.data.lessons.items.map((lesson, lessonIndex) => {
                             const cover =
-                              COURSE_CARD_BACKGROUNDS[
-                                lessonIndex % COURSE_CARD_BACKGROUNDS.length
-                              ];
+                              COURSE_CARD_BACKGROUNDS[lessonIndex % COURSE_CARD_BACKGROUNDS.length];
 
                             return (
                               <article
@@ -1329,8 +1308,7 @@ export function CoursesPage() {
         <form className="grid gap-4" onSubmit={courseForm.handleSubmit(submitCourse)}>
           {isCourseSetupLookupError ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              Could not load academic years, classes, or subjects. Refresh the page and try
-              again.
+              Could not load academic years, classes, or subjects. Refresh the page and try again.
             </div>
           ) : null}
 
@@ -1395,7 +1373,11 @@ export function CoursesPage() {
               {...courseForm.register('subjectId')}
               className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
             >
-              {isTeacherOnly ? <option value="">Select subject</option> : <option value="">No subject</option>}
+              {isTeacherOnly ? (
+                <option value="">Select subject</option>
+              ) : (
+                <option value="">No subject</option>
+              )}
               {subjects.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
@@ -1560,7 +1542,8 @@ export function CoursesPage() {
             />
             {lessonModalMode === 'edit' && selectedLesson?.fileAsset ? (
               <span className="text-xs text-slate-500">
-                Current file: {selectedLesson.fileAsset.originalName}. Upload a new file to replace it.
+                Current file: {selectedLesson.fileAsset.originalName}. Upload a new file to replace
+                it.
               </span>
             ) : null}
           </FormField>
@@ -1587,7 +1570,6 @@ export function CoursesPage() {
           </div>
         </form>
       </Modal>
-
     </div>
   );
 }

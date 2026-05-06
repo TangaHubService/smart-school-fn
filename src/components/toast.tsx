@@ -45,7 +45,11 @@ export function ToastProvider({ children }: PropsWithChildren) {
       {children}
       <div className="pointer-events-none fixed right-4 top-4 z-[100] grid w-[min(420px,calc(100vw-2rem))] gap-2">
         {toasts.map((toast) => (
-          <ToastCard key={toast.id} toast={toast} onClose={() => setToasts((prev) => prev.filter((item) => item.id !== toast.id))} />
+          <ToastCard
+            key={toast.id}
+            toast={toast}
+            onClose={() => setToasts((prev) => prev.filter((item) => item.id !== toast.id))}
+          />
         ))}
       </div>
     </ToastContext.Provider>

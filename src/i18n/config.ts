@@ -74,7 +74,18 @@ void i18n.use(initReactI18next).init({
   lng: localStorage.getItem('ss_lang') ?? 'en',
   fallbackLng: 'en',
   defaultNS: 'common',
-  ns: ['common', 'public', 'auth', 'student', 'teacher', 'parent', 'admin', 'superAdmin', 'forms', 'errors'],
+  ns: [
+    'common',
+    'public',
+    'auth',
+    'student',
+    'teacher',
+    'parent',
+    'admin',
+    'superAdmin',
+    'forms',
+    'errors',
+  ],
   interpolation: { escapeValue: false },
 });
 

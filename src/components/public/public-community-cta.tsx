@@ -8,11 +8,11 @@ export function PublicCommunityCTA() {
     <section className="bg-slate-50 py-20">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="mb-14 text-center">
-          <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">{t('community.title')}</h2>
+          <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">
+            {t('community.title')}
+          </h2>
           <div className="mx-auto mt-6 h-1 w-16 rounded-full bg-brand-500" />
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-500">
-            {t('community.subtitle')}
-          </p>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-500">{t('community.subtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">

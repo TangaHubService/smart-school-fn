@@ -199,7 +199,7 @@ export function listReportCardsCatalogApi(
     q?: string;
     page?: number;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
   if (params.academicYearId) {
@@ -285,7 +285,7 @@ export function createGradingSchemeApi(
     description?: string;
     isDefault?: boolean;
     rules: GradingBand[];
-  },
+  }
 ) {
   return apiRequest<GradingSchemeItem>('/grading-schemes', {
     method: 'POST',
@@ -307,7 +307,7 @@ export function createExamApi(
     totalMarks: number;
     weight: number;
     examDate?: string;
-  },
+  }
 ) {
   return apiRequest<ExamSummary>('/exams', {
     method: 'POST',
@@ -330,7 +330,7 @@ export function updateExamApi(
     totalMarks?: number;
     weight?: number;
     examDate?: string | null;
-  },
+  }
 ) {
   return apiRequest<ExamSummary>(`/exams/${examId}`, {
     method: 'PATCH',
@@ -355,7 +355,7 @@ export function listExamsApi(
     q?: string;
     page?: number;
     pageSize?: number;
-  } = {},
+  } = {}
 ) {
   const query = new URLSearchParams();
   if (params.termId) query.set('termId', params.termId);
@@ -386,7 +386,7 @@ export function bulkSaveExamMarksApi(
       studentId: string;
       marksObtained: number | null;
     }>;
-  },
+  }
 ) {
   return apiRequest<{
     exam: ExamSummary;
@@ -491,7 +491,7 @@ export function listAllMarksLedgerApi(
     pageSize?: number;
     sortBy?: 'rank' | 'studentName' | 'classCode' | 'term' | 'subject' | 'total' | 'average';
     sortDir?: 'asc' | 'desc';
-  },
+  }
 ) {
   const query = new URLSearchParams();
   if (params.academicYearId) {
@@ -529,7 +529,7 @@ export function listAllMarksLedgerApi(
 
 export function getMarksGridApi(
   accessToken: string,
-  params: { termId: string; classRoomId: string },
+  params: { termId: string; classRoomId: string }
 ) {
   const query = new URLSearchParams();
   query.set('termId', params.termId);
@@ -551,7 +551,7 @@ export function saveMarksGridApi(
       testMarks?: number | null;
       examMarks?: number | null;
     }>;
-  },
+  }
 ) {
   return apiRequest<{ savedCount: number; createdExamsCount: number }>('/classes/marks-grid', {
     method: 'POST',
@@ -562,7 +562,7 @@ export function saveMarksGridApi(
 
 export function listConductGradesForEntryApi(
   accessToken: string,
-  params: { termId: string; classRoomId: string },
+  params: { termId: string; classRoomId: string }
 ) {
   const query = new URLSearchParams();
   query.set('termId', params.termId);
@@ -591,7 +591,7 @@ export function bulkSaveConductGradesApi(
     termId: string;
     classRoomId: string;
     entries: Array<{ studentId: string; grade: string; remark?: string }>;
-  },
+  }
 ) {
   return apiRequest<{ savedCount: number }>('/results/conduct/bulk', {
     method: 'POST',
@@ -602,18 +602,21 @@ export function bulkSaveConductGradesApi(
 
 export function lockResultsApi(
   accessToken: string,
-  payload: { termId: string; classRoomId: string; gradingSchemeId?: string },
+  payload: { termId: string; classRoomId: string; gradingSchemeId?: string }
 ) {
-  return apiRequest<{ status: 'LOCKED'; snapshotsCreated: number; classSize: number }>('/results/lock', {
-    method: 'POST',
-    accessToken,
-    body: payload,
-  });
+  return apiRequest<{ status: 'LOCKED'; snapshotsCreated: number; classSize: number }>(
+    '/results/lock',
+    {
+      method: 'POST',
+      accessToken,
+      body: payload,
+    }
+  );
 }
 
 export function unlockResultsApi(
   accessToken: string,
-  payload: { termId: string; classRoomId: string; gradingSchemeId?: string },
+  payload: { termId: string; classRoomId: string; gradingSchemeId?: string }
 ) {
   return apiRequest<{ deleted: boolean; snapshotsRemoved: number }>('/results/unlock', {
     method: 'POST',
@@ -624,33 +627,36 @@ export function unlockResultsApi(
 
 export function publishResultsApi(
   accessToken: string,
-  payload: { termId: string; classRoomId: string; gradingSchemeId?: string },
+  payload: { termId: string; classRoomId: string; gradingSchemeId?: string }
 ) {
-  return apiRequest<{ status: 'PUBLISHED'; snapshotsUpdated: number; publishedAt: string }>('/results/publish', {
-    method: 'POST',
-    accessToken,
-    body: payload,
-  });
+  return apiRequest<{ status: 'PUBLISHED'; snapshotsUpdated: number; publishedAt: string }>(
+    '/results/publish',
+    {
+      method: 'POST',
+      accessToken,
+      body: payload,
+    }
+  );
 }
 
 export function getStudentReportCardsApi(
   accessToken: string,
   studentId: string,
-  params: { termId?: string; academicYearId?: string } = {},
+  params: { termId?: string; academicYearId?: string } = {}
 ) {
   const query = new URLSearchParams();
   if (params.termId) query.set('termId', params.termId);
   if (params.academicYearId) query.set('academicYearId', params.academicYearId);
   return apiRequest<MyReportCardsResponse>(
     `/report-cards/students/${studentId}${query.toString() ? `?${query.toString()}` : ''}`,
-    { method: 'GET', accessToken },
+    { method: 'GET', accessToken }
   );
 }
 
 export function downloadStudentReportCardPdfApi(
   accessToken: string,
   studentId: string,
-  termId: string,
+  termId: string
 ) {
   const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
   const url = `${base}/report-cards/students/${studentId}/pdf?termId=${encodeURIComponent(termId)}`;
@@ -666,23 +672,29 @@ export function downloadStudentReportCardPdfApi(
 export function getMyReportCardsApi(accessToken: string, termId?: string) {
   const query = new URLSearchParams();
   if (termId) query.set('termId', termId);
-  return apiRequest<MyReportCardsResponse>(`/students/me/report-cards${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
+  return apiRequest<MyReportCardsResponse>(
+    `/students/me/report-cards${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
 
 export function getParentReportCardsApi(
   accessToken: string,
-  params: { studentId?: string; termId?: string } = {},
+  params: { studentId?: string; termId?: string } = {}
 ) {
   const query = new URLSearchParams();
   if (params.studentId) query.set('studentId', params.studentId);
   if (params.termId) query.set('termId', params.termId);
-  return apiRequest<MyReportCardsResponse>(`/parents/me/report-cards${query.toString() ? `?${query.toString()}` : ''}`, {
-    method: 'GET',
-    accessToken,
-  });
+  return apiRequest<MyReportCardsResponse>(
+    `/parents/me/report-cards${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
 
 async function fetchPdfBlob(accessToken: string, path: string) {

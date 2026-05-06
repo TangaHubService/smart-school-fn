@@ -6,10 +6,7 @@ import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  ConductIncidentStatus,
-  ConductSeverity,
-} from '../features/conduct/conduct.api';
+import { ConductIncidentStatus, ConductSeverity } from '../features/conduct/conduct.api';
 import { listGovIncidentsApi } from '../features/gov/gov.api';
 
 const severityOptions: Array<{ label: string; value: ConductSeverity | '' }> = [
@@ -165,8 +162,8 @@ export function GovIncidentsPage() {
                 <div>
                   <h3 className="text-base font-bold text-slate-950">{incident.title}</h3>
                   <p className="text-sm text-slate-700">
-                    {incident.school?.displayName ?? 'Unknown school'} • {incident.student.firstName}{' '}
-                    {incident.student.lastName} • {incident.severity}
+                    {incident.school?.displayName ?? 'Unknown school'} •{' '}
+                    {incident.student.firstName} {incident.student.lastName} • {incident.severity}
                   </p>
                   <p className="mt-1 text-sm text-slate-700">{incident.description}</p>
                   <p className="mt-2 text-xs text-slate-500">
@@ -202,9 +199,7 @@ export function GovIncidentsPage() {
             <button
               type="button"
               disabled={pagination.page >= pagination.totalPages}
-              onClick={() =>
-                setPage((current) => Math.min(pagination.totalPages, current + 1))
-              }
+              onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
               className="rounded-lg border border-brand-200 bg-white px-3 py-2 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next

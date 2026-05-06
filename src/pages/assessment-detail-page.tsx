@@ -121,7 +121,8 @@ export function AssessmentDetailPage() {
   const resultsQuery = useQuery({
     queryKey: ['assessment-results', assessmentId || null],
     enabled: Boolean(assessmentId),
-    queryFn: () => listAssessmentResultsApi(auth.accessToken!, assessmentId, { page: 1, pageSize: 20 }),
+    queryFn: () =>
+      listAssessmentResultsApi(auth.accessToken!, assessmentId, { page: 1, pageSize: 20 }),
   });
 
   const assessment = assessmentDetailQuery.data ?? null;
@@ -148,11 +149,13 @@ export function AssessmentDetailPage() {
         points: values.points,
         options:
           values.type === 'MCQ_SINGLE'
-            ? [values.optionA, values.optionB, values.optionC, values.optionD].map((label, index) => ({
-                label: label ?? '',
-                isCorrect: values.correctOptionIndex === index,
-                sequence: index + 1,
-              }))
+            ? [values.optionA, values.optionB, values.optionC, values.optionD].map(
+                (label, index) => ({
+                  label: label ?? '',
+                  isCorrect: values.correctOptionIndex === index,
+                  sequence: index + 1,
+                })
+              )
             : undefined,
       }),
     onSuccess: () => {
@@ -180,11 +183,13 @@ export function AssessmentDetailPage() {
         points: values.points,
         options:
           values.type === 'MCQ_SINGLE'
-            ? [values.optionA, values.optionB, values.optionC, values.optionD].map((label, index) => ({
-                label: label ?? '',
-                isCorrect: values.correctOptionIndex === index,
-                sequence: index + 1,
-              }))
+            ? [values.optionA, values.optionB, values.optionC, values.optionD].map(
+                (label, index) => ({
+                  label: label ?? '',
+                  isCorrect: values.correctOptionIndex === index,
+                  sequence: index + 1,
+                })
+              )
             : undefined,
       }),
     onSuccess: () => {
@@ -242,7 +247,8 @@ export function AssessmentDetailPage() {
   });
 
   const publishAssessmentMutation = useMutation({
-    mutationFn: (isPublished: boolean) => publishAssessmentApi(auth.accessToken!, assessmentId, isPublished),
+    mutationFn: (isPublished: boolean) =>
+      publishAssessmentApi(auth.accessToken!, assessmentId, isPublished),
     onSuccess: (_result, isPublished) => {
       void queryClient.invalidateQueries({ queryKey: ['assessment-detail', assessmentId] });
       void queryClient.invalidateQueries({ queryKey: ['assessments'] });
@@ -304,19 +310,23 @@ export function AssessmentDetailPage() {
   });
 
   const regradeAttemptMutation = useMutation({
-    mutationFn: (payload: { manualFeedback?: string; answers: Array<{ questionId: string; pointsAwarded: number }> }) =>
-      regradeAssessmentAttemptApi(auth.accessToken!, reviewAttemptId, payload),
+    mutationFn: (payload: {
+      manualFeedback?: string;
+      answers: Array<{ questionId: string; pointsAwarded: number }>;
+    }) => regradeAssessmentAttemptApi(auth.accessToken!, reviewAttemptId, payload),
     onSuccess: (attempt) => {
       void queryClient.invalidateQueries({ queryKey: ['assessment-results', assessmentId] });
-      void queryClient.invalidateQueries({ queryKey: ['assessment-attempt-review', reviewAttemptId] });
+      void queryClient.invalidateQueries({
+        queryKey: ['assessment-attempt-review', reviewAttemptId],
+      });
       setRegradeFeedback(attempt.manualFeedback ?? '');
       setRegradePoints(
         Object.fromEntries(
           attempt.questions.map((question) => [
             question.id,
             String(question.manualPointsAwarded ?? question.pointsAwarded ?? 0),
-          ]),
-        ),
+          ])
+        )
       );
       showToast({ type: 'success', title: 'Manual score saved' });
     },
@@ -333,16 +343,16 @@ export function AssessmentDetailPage() {
   const selectedAttempt = reviewAttemptQuery.data ?? null;
   const validImportRows = useMemo(
     () => bulkImportRows.filter((row) => row.payload && row.errors.length === 0),
-    [bulkImportRows],
+    [bulkImportRows]
   );
   const invalidImportRows = useMemo(
     () => bulkImportRows.filter((row) => row.errors.length > 0),
-    [bulkImportRows],
+    [bulkImportRows]
   );
   const assessmentEditingLocked = Boolean(assessment && assessment.counts.attempts > 0);
   const assessmentDeletionLocked = Boolean(assessment && assessment.counts.attempts > 0);
   const questionEditingLocked = Boolean(
-    assessment && (assessment.isPublished || assessment.counts.attempts > 0),
+    assessment && (assessment.isPublished || assessment.counts.attempts > 0)
   );
   const lessonOptions = useMemo(() => {
     const items = courseDetailQuery.data?.lessons.items ?? [];
@@ -384,7 +394,10 @@ export function AssessmentDetailPage() {
       questionForm.reset({
         ...defaultQuestionForm,
         imageUrl: '',
-        type: assessment?.type === 'OPENENDED' || assessment?.type === 'INTERVIEW' ? 'OPEN_TEXT' : 'MCQ_SINGLE',
+        type:
+          assessment?.type === 'OPENENDED' || assessment?.type === 'INTERVIEW'
+            ? 'OPEN_TEXT'
+            : 'MCQ_SINGLE',
       });
       setIsQuestionOpen(true);
       return;
@@ -398,7 +411,10 @@ export function AssessmentDetailPage() {
       explanation: question.explanation ?? '',
       type: question.type,
       points: question.points,
-      correctOptionIndex: Math.max(0, options.findIndex((option) => option.isCorrect)),
+      correctOptionIndex: Math.max(
+        0,
+        options.findIndex((option) => option.isCorrect)
+      ),
       optionA: options[0]?.label ?? '',
       optionB: options[1]?.label ?? '',
       optionC: options[2]?.label ?? '',
@@ -553,10 +569,16 @@ export function AssessmentDetailPage() {
 
     try {
       const answers = selectedAttempt.questions.map((question) => {
-        const rawValue = regradePoints[question.id] ?? String(question.manualPointsAwarded ?? question.pointsAwarded ?? 0);
+        const rawValue =
+          regradePoints[question.id] ??
+          String(question.manualPointsAwarded ?? question.pointsAwarded ?? 0);
         const pointsAwarded = Number(rawValue);
 
-        if (!Number.isFinite(pointsAwarded) || pointsAwarded < 0 || pointsAwarded > question.points) {
+        if (
+          !Number.isFinite(pointsAwarded) ||
+          pointsAwarded < 0 ||
+          pointsAwarded > question.points
+        ) {
           throw new Error(`Question ${question.sequence} must be between 0 and ${question.points}`);
         }
 
@@ -574,7 +596,8 @@ export function AssessmentDetailPage() {
       showToast({
         type: 'error',
         title: 'Invalid manual score',
-        message: error instanceof Error ? error.message : 'Check the question scores and try again.',
+        message:
+          error instanceof Error ? error.message : 'Check the question scores and try again.',
       });
     }
   }
@@ -590,8 +613,8 @@ export function AssessmentDetailPage() {
         selectedAttempt.questions.map((question) => [
           question.id,
           String(question.manualPointsAwarded ?? question.pointsAwarded ?? 0),
-        ]),
-      ),
+        ])
+      )
     );
   }, [selectedAttempt?.id, selectedAttempt?.manualFeedback]);
 
@@ -663,7 +686,11 @@ export function AssessmentDetailPage() {
               type="button"
               onClick={openAssessmentEditModal}
               disabled={assessmentEditingLocked}
-              title={assessmentEditingLocked ? 'Assessment settings are locked after students start attempting it' : undefined}
+              title={
+                assessmentEditingLocked
+                  ? 'Assessment settings are locked after students start attempting it'
+                  : undefined
+              }
               className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Pencil className="h-4 w-4" aria-hidden="true" />
@@ -687,7 +714,11 @@ export function AssessmentDetailPage() {
               type="button"
               onClick={() => openQuestionModal()}
               disabled={questionEditingLocked}
-              title={questionEditingLocked ? 'Questions are locked after publish or after students start attempting' : undefined}
+              title={
+                questionEditingLocked
+                  ? 'Questions are locked after publish or after students start attempting'
+                  : undefined
+              }
               className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
@@ -696,8 +727,14 @@ export function AssessmentDetailPage() {
             <button
               type="button"
               onClick={openBulkImportPicker}
-              disabled={questionEditingLocked || isReadingBulkFile || bulkAddQuestionsMutation.isPending}
-              title={questionEditingLocked ? 'Questions are locked after publish or after students start attempting' : undefined}
+              disabled={
+                questionEditingLocked || isReadingBulkFile || bulkAddQuestionsMutation.isPending
+              }
+              title={
+                questionEditingLocked
+                  ? 'Questions are locked after publish or after students start attempting'
+                  : undefined
+              }
               className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Upload className="h-4 w-4" aria-hidden="true" />
@@ -739,14 +776,17 @@ export function AssessmentDetailPage() {
                 </span>
               </div>
               <p className="text-sm text-slate-700">
-                {assessment.course.title} · {assessment.course.classRoom.name} · {assessment.course.academicYear.name}
+                {assessment.course.title} · {assessment.course.classRoom.name} ·{' '}
+                {assessment.course.academicYear.name}
               </p>
               <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">
                   {assessment.maxAttempts} max attempts
                 </span>
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">
-                  {assessment.timeLimitMinutes ? `${assessment.timeLimitMinutes} min timer` : 'No timer'}
+                  {assessment.timeLimitMinutes
+                    ? `${assessment.timeLimitMinutes} min timer`
+                    : 'No timer'}
                 </span>
                 <span className="rounded-full bg-brand-100 px-2.5 py-1">
                   {formatAssessmentDateTime(assessment.dueAt)}
@@ -760,7 +800,10 @@ export function AssessmentDetailPage() {
                   <p>Assessment settings are locked after students start attempting it.</p>
                 ) : null}
                 {questionEditingLocked ? (
-                  <p>Questions are locked once the assessment is published or after students start attempting it.</p>
+                  <p>
+                    Questions are locked once the assessment is published or after students start
+                    attempting it.
+                  </p>
                 ) : null}
               </div>
             ) : null}
@@ -775,7 +818,10 @@ export function AssessmentDetailPage() {
             </div>
           ) : null}
 
-          <div id="questions" className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
+          <div
+            id="questions"
+            className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft"
+          >
             <div className="flex items-center gap-2">
               <BookCheck className="h-5 w-5 text-slate-600" aria-hidden="true" />
               <h3 className="text-base font-bold text-slate-900">Questions</h3>
@@ -783,11 +829,16 @@ export function AssessmentDetailPage() {
 
             {assessment.questions.length ? (
               assessment.questions.map((question) => (
-                <article key={question.id} className="rounded-2xl border border-brand-100 bg-brand-50/50 p-4">
+                <article
+                  key={question.id}
+                  className="rounded-2xl border border-brand-100 bg-brand-50/50 p-4"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="grid gap-2">
                       <p className="text-sm font-bold text-slate-900">
-                        Question {question.sequence} · {question.type === 'OPEN_TEXT' ? 'Open text' : 'MCQ'} · {question.points} pt{question.points === 1 ? '' : 's'}
+                        Question {question.sequence} ·{' '}
+                        {question.type === 'OPEN_TEXT' ? 'Open text' : 'MCQ'} · {question.points} pt
+                        {question.points === 1 ? '' : 's'}
                       </p>
                       <p className="text-sm text-slate-900">{question.prompt}</p>
                       {question.imageUrl ? (
@@ -848,7 +899,9 @@ export function AssessmentDetailPage() {
                   </div>
 
                   {question.explanation ? (
-                    <p className="mt-3 text-sm text-slate-600">Explanation: {question.explanation}</p>
+                    <p className="mt-3 text-sm text-slate-600">
+                      Explanation: {question.explanation}
+                    </p>
                   ) : null}
                 </article>
               ))
@@ -860,7 +913,10 @@ export function AssessmentDetailPage() {
             )}
           </div>
 
-          <div id="results" className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft">
+          <div
+            id="results"
+            className="grid gap-3 rounded-2xl border border-brand-100 bg-white p-5 shadow-soft"
+          >
             <div className="flex items-center gap-2">
               <Clock3 className="h-5 w-5 text-slate-600" aria-hidden="true" />
               <h3 className="text-base font-bold text-slate-900">Results</h3>
@@ -900,7 +956,9 @@ export function AssessmentDetailPage() {
                         <td className="border-b border-brand-100 px-3 py-3 font-medium text-slate-900">
                           {attempt.student.firstName} {attempt.student.lastName}
                         </td>
-                        <td className="border-b border-brand-100 px-3 py-3">#{attempt.attemptNumber}</td>
+                        <td className="border-b border-brand-100 px-3 py-3">
+                          #{attempt.attemptNumber}
+                        </td>
                         <td className="border-b border-brand-100 px-3 py-3">
                           <div className="flex items-center gap-2">
                             <span>
@@ -958,7 +1016,9 @@ export function AssessmentDetailPage() {
             </button>
             <button
               type="button"
-              onClick={assessmentForm.handleSubmit((values) => updateAssessmentMutation.mutate(values))}
+              onClick={assessmentForm.handleSubmit((values) =>
+                updateAssessmentMutation.mutate(values)
+              )}
               disabled={updateAssessmentMutation.isPending}
               className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
@@ -969,7 +1029,8 @@ export function AssessmentDetailPage() {
       >
         <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
           <div className="rounded-2xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm text-slate-700">
-            {assessment.course.title} · {assessment.course.classRoom.name} · {assessment.course.academicYear.name}
+            {assessment.course.title} · {assessment.course.classRoom.name} ·{' '}
+            {assessment.course.academicYear.name}
           </div>
 
           <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -986,7 +1047,9 @@ export function AssessmentDetailPage() {
               ))}
             </select>
             {courseDetailQuery.isError ? (
-              <span className="text-xs text-amber-700">Could not refresh course lessons. You can still save the current lesson selection.</span>
+              <span className="text-xs text-amber-700">
+                Could not refresh course lessons. You can still save the current lesson selection.
+              </span>
             ) : null}
           </label>
 
@@ -998,7 +1061,9 @@ export function AssessmentDetailPage() {
               placeholder="End of unit quick check"
             />
             {assessmentForm.formState.errors.title ? (
-              <span className="text-xs text-rose-600">{assessmentForm.formState.errors.title.message}</span>
+              <span className="text-xs text-rose-600">
+                {assessmentForm.formState.errors.title.message}
+              </span>
             ) : null}
           </label>
 
@@ -1037,7 +1102,9 @@ export function AssessmentDetailPage() {
                 className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               />
               {assessmentForm.formState.errors.timeLimitMinutes ? (
-                <span className="text-xs text-rose-600">{assessmentForm.formState.errors.timeLimitMinutes.message}</span>
+                <span className="text-xs text-rose-600">
+                  {assessmentForm.formState.errors.timeLimitMinutes.message}
+                </span>
               ) : null}
             </label>
             <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -1050,7 +1117,9 @@ export function AssessmentDetailPage() {
                 className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               />
               {assessmentForm.formState.errors.maxAttempts ? (
-                <span className="text-xs text-rose-600">{assessmentForm.formState.errors.maxAttempts.message}</span>
+                <span className="text-xs text-rose-600">
+                  {assessmentForm.formState.errors.maxAttempts.message}
+                </span>
               ) : null}
             </label>
           </div>
@@ -1074,9 +1143,15 @@ export function AssessmentDetailPage() {
             <button
               type="button"
               onClick={questionForm.handleSubmit((values) =>
-                editingQuestionId ? updateQuestionMutation.mutate(values) : addQuestionMutation.mutate(values),
+                editingQuestionId
+                  ? updateQuestionMutation.mutate(values)
+                  : addQuestionMutation.mutate(values)
               )}
-              disabled={addQuestionMutation.isPending || updateQuestionMutation.isPending || isUploadingQuestionImage}
+              disabled={
+                addQuestionMutation.isPending ||
+                updateQuestionMutation.isPending ||
+                isUploadingQuestionImage
+              }
               className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {editingQuestionId ? 'Save changes' : 'Save question'}
@@ -1117,7 +1192,9 @@ export function AssessmentDetailPage() {
                 placeholder="https://..."
               />
               {questionForm.formState.errors.imageUrl ? (
-                <span className="text-xs text-rose-600">{questionForm.formState.errors.imageUrl.message}</span>
+                <span className="text-xs text-rose-600">
+                  {questionForm.formState.errors.imageUrl.message}
+                </span>
               ) : null}
             </label>
 
@@ -1134,7 +1211,12 @@ export function AssessmentDetailPage() {
               {questionImageUrl ? (
                 <button
                   type="button"
-                  onClick={() => questionForm.setValue('imageUrl', '', { shouldDirty: true, shouldValidate: true })}
+                  onClick={() =>
+                    questionForm.setValue('imageUrl', '', {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
                   className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
@@ -1230,7 +1312,11 @@ export function AssessmentDetailPage() {
             <button
               type="button"
               onClick={handleImportQuestions}
-              disabled={bulkAddQuestionsMutation.isPending || validImportRows.length === 0 || invalidImportRows.length > 0}
+              disabled={
+                bulkAddQuestionsMutation.isPending ||
+                validImportRows.length === 0 ||
+                invalidImportRows.length > 0
+              }
               className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
@@ -1242,19 +1328,29 @@ export function AssessmentDetailPage() {
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 text-sm text-slate-700 md:grid-cols-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">File</p>
-              <p className="mt-2 font-semibold text-slate-900">{bulkImportFileName || 'No file selected'}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                File
+              </p>
+              <p className="mt-2 font-semibold text-slate-900">
+                {bulkImportFileName || 'No file selected'}
+              </p>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Rows</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Rows
+              </p>
               <p className="mt-2 font-semibold text-slate-900">{bulkImportRows.length}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Valid</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Valid
+              </p>
               <p className="mt-2 font-semibold text-emerald-700">{validImportRows.length}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Errors</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Errors
+              </p>
               <p className="mt-2 font-semibold text-rose-700">{invalidImportRows.length}</p>
             </div>
           </div>
@@ -1278,7 +1374,9 @@ export function AssessmentDetailPage() {
                       </td>
                       <td className="border-b border-brand-100 px-3 py-3">
                         <div className="grid gap-2">
-                          <p className="font-medium text-slate-900">{row.prompt || 'Missing prompt'}</p>
+                          <p className="font-medium text-slate-900">
+                            {row.prompt || 'Missing prompt'}
+                          </p>
                           <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
                             {row.imageUrl ? (
                               <span className="rounded-full bg-brand-100 px-2.5 py-1">Image</span>
@@ -1298,7 +1396,9 @@ export function AssessmentDetailPage() {
                           ) : null}
                         </div>
                       </td>
-                      <td className="border-b border-brand-100 px-3 py-3">{row.payload?.type ?? row.type}</td>
+                      <td className="border-b border-brand-100 px-3 py-3">
+                        {row.payload?.type ?? row.type}
+                      </td>
                       <td className="border-b border-brand-100 px-3 py-3">
                         {row.errors.length ? (
                           <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700">
@@ -1402,7 +1502,9 @@ export function AssessmentDetailPage() {
             <button
               type="button"
               onClick={handleSaveRegrade}
-              disabled={!selectedAttempt || regradeAttemptMutation.isPending || reviewAttemptQuery.isPending}
+              disabled={
+                !selectedAttempt || regradeAttemptMutation.isPending || reviewAttemptQuery.isPending
+              }
               className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               Save manual score
@@ -1433,15 +1535,20 @@ export function AssessmentDetailPage() {
           <div className="grid gap-4">
             <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/70 p-4 md:grid-cols-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Student</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Student
+                </p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">
                   {selectedAttempt.student?.firstName} {selectedAttempt.student?.lastName}
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Score</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Score
+                </p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">
-                  {selectedAttempt.assessment.type === 'GENERAL' || selectedAttempt.assessment.type === 'PSYCHOMETRIC'
+                  {selectedAttempt.assessment.type === 'GENERAL' ||
+                  selectedAttempt.assessment.type === 'PSYCHOMETRIC'
                     ? `${selectedAttempt.score}/${selectedAttempt.maxScore ?? 0}`
                     : selectedAttempt.manualScore !== null
                       ? `${selectedAttempt.score}/${selectedAttempt.maxScore ?? 0}`
@@ -1449,8 +1556,12 @@ export function AssessmentDetailPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Submitted</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{formatAssessmentDateTime(selectedAttempt.submittedAt)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Submitted
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  {formatAssessmentDateTime(selectedAttempt.submittedAt)}
+                </p>
               </div>
             </div>
 
@@ -1467,7 +1578,10 @@ export function AssessmentDetailPage() {
 
             <div className="grid gap-3">
               {selectedAttempt.questions.map((question) => (
-                <article key={question.id} className="rounded-2xl border border-brand-100 bg-white p-4">
+                <article
+                  key={question.id}
+                  className="rounded-2xl border border-brand-100 bg-white p-4"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-bold text-slate-900">
@@ -1488,7 +1602,10 @@ export function AssessmentDetailPage() {
                         type="number"
                         min={0}
                         max={question.points}
-                        value={regradePoints[question.id] ?? String(question.manualPointsAwarded ?? question.pointsAwarded ?? 0)}
+                        value={
+                          regradePoints[question.id] ??
+                          String(question.manualPointsAwarded ?? question.pointsAwarded ?? 0)
+                        }
                         onChange={(event) =>
                           setRegradePoints((current) => ({
                             ...current,

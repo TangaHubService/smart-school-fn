@@ -65,7 +65,8 @@ export function GovDashboardPage() {
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-slate-950">Auditor Dashboard</h1>
             <p className="max-w-3xl text-sm leading-6 text-slate-600">
-              Plan audits, conduct school visits, and track report quality across your assigned Rwanda scope.
+              Plan audits, conduct school visits, and track report quality across your assigned
+              Rwanda scope.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -88,14 +89,19 @@ export function GovDashboardPage() {
       <div className="grid gap-3 md:grid-cols-4">
         {stats.map((item) => (
           <article key={item.label} className="rounded-2xl border border-brand-100 bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              {item.label}
+            </p>
             <p className="mt-3 text-3xl font-bold text-slate-950">{item.value}</p>
           </article>
         ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <SectionCard title="Recent Audits" subtitle="Most recently completed audits and their scores.">
+        <SectionCard
+          title="Recent Audits"
+          subtitle="Most recently completed audits and their scores."
+        >
           <div className="rounded-2xl border border-brand-100 bg-white">
             {!dashboard.audits.recentAudits.length ? (
               <div className="p-5 text-sm text-slate-600">No completed audits yet.</div>
@@ -111,7 +117,10 @@ export function GovDashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-semibold text-slate-900">{audit.score ?? 0}/100</p>
-                      <Link to={`/gov/audits/${audit.id}/conduct`} className="text-xs font-medium text-brand-700">
+                      <Link
+                        to={`/gov/audits/${audit.id}/conduct`}
+                        className="text-xs font-medium text-brand-700"
+                      >
                         View report
                       </Link>
                     </div>
@@ -122,7 +131,10 @@ export function GovDashboardPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Upcoming Audits" subtitle="Planned visits that still need to be conducted.">
+        <SectionCard
+          title="Upcoming Audits"
+          subtitle="Planned visits that still need to be conducted."
+        >
           <div className="rounded-2xl border border-brand-100 bg-white">
             {!dashboard.audits.upcomingAudits.length ? (
               <div className="p-5 text-sm text-slate-600">No upcoming audits planned yet.</div>
@@ -140,7 +152,10 @@ export function GovDashboardPage() {
                       <p className="text-sm text-slate-700">
                         {new Date(audit.plannedDate).toLocaleDateString()}
                       </p>
-                      <Link to={`/gov/audits/${audit.id}/conduct`} className="text-xs font-medium text-brand-700">
+                      <Link
+                        to={`/gov/audits/${audit.id}/conduct`}
+                        className="text-xs font-medium text-brand-700"
+                      >
                         Conduct audit
                       </Link>
                     </div>
@@ -153,33 +168,54 @@ export function GovDashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <SectionCard title="Audit Planning Process" subtitle="A simple path for auditors from scope to report.">
+        <SectionCard
+          title="Audit Planning Process"
+          subtitle="A simple path for auditors from scope to report."
+        >
           <div className="grid gap-3 text-sm leading-6 text-slate-700">
             <article className="rounded-2xl border border-brand-100 bg-brand-50/60 p-4">
               <p className="font-semibold text-slate-900">1. Confirm the school is in scope</p>
-              <p className="mt-1">Use the schools page or your active scope page to confirm the location matches your current assignment.</p>
+              <p className="mt-1">
+                Use the schools page or your active scope page to confirm the location matches your
+                current assignment.
+              </p>
             </article>
             <article className="rounded-2xl border border-brand-100 bg-white p-4">
               <p className="font-semibold text-slate-900">2. Plan the audit before visiting</p>
-              <p className="mt-1">Choose the audit type, date, and notes first so the visit has a tracked purpose and an official audit record.</p>
+              <p className="mt-1">
+                Choose the audit type, date, and notes first so the visit has a tracked purpose and
+                an official audit record.
+              </p>
             </article>
             <article className="rounded-2xl border border-brand-100 bg-white p-4">
-              <p className="font-semibold text-slate-900">3. Conduct the visit and submit the report</p>
-              <p className="mt-1">After planning, open the audit, complete the scoring form, and submit findings and recommendations.</p>
+              <p className="font-semibold text-slate-900">
+                3. Conduct the visit and submit the report
+              </p>
+              <p className="mt-1">
+                After planning, open the audit, complete the scoring form, and submit findings and
+                recommendations.
+              </p>
             </article>
           </div>
         </SectionCard>
 
-        <SectionCard title="Why Planning Matters" subtitle="Planning is required before an audit can be conducted properly.">
+        <SectionCard
+          title="Why Planning Matters"
+          subtitle="Planning is required before an audit can be conducted properly."
+        >
           <div className="grid gap-3 text-sm leading-6 text-slate-700">
             <p className="rounded-2xl border border-brand-100 bg-white p-4">
-              Planning creates the audit record that later holds scores, findings, and the final report.
+              Planning creates the audit record that later holds scores, findings, and the final
+              report.
             </p>
             <p className="rounded-2xl border border-brand-100 bg-white p-4">
-              It keeps the oversight schedule visible for supervisors and prevents reports from being submitted against the wrong school or date.
+              It keeps the oversight schedule visible for supervisors and prevents reports from
+              being submitted against the wrong school or date.
             </p>
             <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-              If actions feel blocked, it is usually because the school is outside the active assignment, the assignment date window is inactive, or the action belongs to the school team rather than the auditor workflow.
+              If actions feel blocked, it is usually because the school is outside the active
+              assignment, the assignment date window is inactive, or the action belongs to the
+              school team rather than the auditor workflow.
             </p>
           </div>
         </SectionCard>

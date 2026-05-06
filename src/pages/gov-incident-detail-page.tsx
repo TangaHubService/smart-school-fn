@@ -7,10 +7,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  addGovIncidentFeedbackApi,
-  getGovIncidentDetailApi,
-} from '../features/gov/gov.api';
+import { addGovIncidentFeedbackApi, getGovIncidentDetailApi } from '../features/gov/gov.api';
 import {
   defaultGovIncidentFeedbackForm,
   getFirstFormErrorMessage,
@@ -157,12 +154,10 @@ export function GovIncidentDetailPage() {
                 {incident.status.replace('_', ' ')}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Severity:</span>{' '}
-                {incident.severity}
+                <span className="font-semibold text-slate-900">Severity:</span> {incident.severity}
               </p>
               <p>
-                <span className="font-semibold text-slate-900">Category:</span>{' '}
-                {incident.category}
+                <span className="font-semibold text-slate-900">Category:</span> {incident.category}
               </p>
               <p>
                 <span className="font-semibold text-slate-900">Occurred:</span>{' '}
@@ -198,11 +193,17 @@ export function GovIncidentDetailPage() {
       </SectionCard>
 
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <SectionCard title="Follow-up Actions" subtitle="Auditors can review these actions, but the school team owns creating and editing them.">
+        <SectionCard
+          title="Follow-up Actions"
+          subtitle="Auditors can review these actions, but the school team owns creating and editing them."
+        >
           {incident.actions.length ? (
             <div className="grid gap-3">
               {incident.actions.map((action) => (
-                <article key={action.id} className="rounded-xl border border-brand-100 bg-brand-50/60 p-4 text-sm text-slate-700">
+                <article
+                  key={action.id}
+                  className="rounded-xl border border-brand-100 bg-brand-50/60 p-4 text-sm text-slate-700"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-semibold text-slate-900">{action.title}</p>
                     <p className="text-xs text-slate-500">{action.type.replace('_', ' ')}</p>
@@ -219,7 +220,10 @@ export function GovIncidentDetailPage() {
           )}
         </SectionCard>
 
-        <SectionCard title="Feedback Panel" subtitle="Auditors can leave contextual feedback for the school team.">
+        <SectionCard
+          title="Feedback Panel"
+          subtitle="Auditors can leave contextual feedback for the school team."
+        >
           <form className="grid gap-3 border-b border-brand-100 pb-4" onSubmit={handleSubmit}>
             <label className="grid gap-2 text-sm font-semibold text-slate-700">
               Feedback for the school
@@ -245,7 +249,10 @@ export function GovIncidentDetailPage() {
           <div className="mt-4 grid gap-3">
             {incident.feedback.length ? (
               incident.feedback.map((entry) => (
-                <article key={entry.id} className="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+                <article
+                  key={entry.id}
+                  className="rounded-xl border border-brand-100 bg-brand-50/60 p-4"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-semibold text-slate-900">
                       {entry.author.firstName} {entry.author.lastName}

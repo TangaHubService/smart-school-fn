@@ -162,13 +162,15 @@ export function PublicAcademyPage() {
   const requestedPlanId = searchParams.get('plan');
   const defaultPlan = ACADEMY_PLANS.find((plan) => plan.id === 'monthly') ?? ACADEMY_PLANS[0];
   const [selectedPlan, setSelectedPlan] = useState<PurchasableAcademyPlan>(
-    ACADEMY_PLANS.find((plan) => plan.id === requestedPlanId) ?? defaultPlan,
+    ACADEMY_PLANS.find((plan) => plan.id === requestedPlanId) ?? defaultPlan
   );
   const [selectedSubject, setSelectedSubject] = useState<AcademyCatalogSubject | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'PENDING' | 'SUCCESS' | 'FAILED'>('IDLE');
+  const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'PENDING' | 'SUCCESS' | 'FAILED'>(
+    'IDLE'
+  );
   const [paypackRef, setPaypackRef] = useState<string | null>(null);
 
   const highlightProgramId = useMemo(() => {
@@ -280,7 +282,7 @@ export function PublicAcademyPage() {
 
   const catalogSubjects = useMemo(
     () => groupProgramsBySubject(programsQuery.data ?? []),
-    [programsQuery.data],
+    [programsQuery.data]
   );
 
   const highlightSubjectId = useMemo(() => {
@@ -288,7 +290,9 @@ export function PublicAcademyPage() {
       return null;
     }
 
-    return programsQuery.data?.find((program) => program.id === highlightProgramId)?.subjectId ?? null;
+    return (
+      programsQuery.data?.find((program) => program.id === highlightProgramId)?.subjectId ?? null
+    );
   }, [highlightProgramId, programsQuery.data]);
 
   useEffect(() => {
@@ -325,7 +329,9 @@ export function PublicAcademyPage() {
     currentSubscription?.status === 'ACTIVE' || currentSubscription?.status === 'TRIAL';
   const subjectLimit = currentSubscription?.subjectLimit ?? currentSubscription?.courseLimit ?? 3;
   const remainingSubjectSlots =
-    currentSubscription?.remainingSubjectSlots ?? currentSubscription?.remainingSlots ?? subjectLimit;
+    currentSubscription?.remainingSubjectSlots ??
+    currentSubscription?.remainingSlots ??
+    subjectLimit;
 
   function navigateToLogin(planId: PurchasableAcademyPlan['id']) {
     const params = new URLSearchParams({
@@ -422,7 +428,8 @@ export function PublicAcademyPage() {
             Smart School <span className="text-brand-400">Academy</span>
           </h1>
           <p className="mx-auto mt-6 max-w-3xl text-lg font-medium text-gray-100">
-            Activate a plan, then choose up to 3 academy subjects and unlock every course under each selected subject.
+            Activate a plan, then choose up to 3 academy subjects and unlock every course under each
+            selected subject.
           </p>
         </div>
       </section>
@@ -430,7 +437,11 @@ export function PublicAcademyPage() {
       <section className="border-b border-slate-200 bg-slate-50 py-8">
         <div className="mx-auto grid w-full max-w-6xl gap-4 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
           {[
-            { step: 1, title: 'Create account', desc: 'Register or sign in with your academy learner account.' },
+            {
+              step: 1,
+              title: 'Create account',
+              desc: 'Register or sign in with your academy learner account.',
+            },
             {
               step: 2,
               title: 'Activate plan',
@@ -442,7 +453,10 @@ export function PublicAcademyPage() {
               desc: 'Pick up to 3 academy subjects and access every course currently published under them.',
             },
           ].map((item) => (
-            <div key={item.step} className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div
+              key={item.step}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
+            >
               <div className="flex items-start gap-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
                   {item.step}
@@ -461,10 +475,15 @@ export function PublicAcademyPage() {
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">Step 1</p>
-              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">Choose your plan</h2>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
+                Step 1
+              </p>
+              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">
+                Choose your plan
+              </h2>
               <p className="mt-3 max-w-2xl text-slate-600">
-                All plans unlock the same academy catalog flow. The difference is how long your chosen subject access stays active.
+                All plans unlock the same academy catalog flow. The difference is how long your
+                chosen subject access stays active.
               </p>
             </div>
             {currentSubscription ? (
@@ -474,14 +493,17 @@ export function PublicAcademyPage() {
                   {formatPlanName(currentSubscription.planCode)} · {currentSubscription.status}
                 </p>
                 <p className="mt-1 text-brand-900/80">Slots used: {slotUsage}</p>
-                <p className="mt-1 text-brand-900/80">Expires: {formatExpiry(currentSubscription.expiresAt)}</p>
+                <p className="mt-1 text-brand-900/80">
+                  Expires: {formatExpiry(currentSubscription.expiresAt)}
+                </p>
               </div>
             ) : null}
           </div>
 
           {auth.me && !isPublicLearner ? (
             <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
-              You are signed in to a workspace account. Academy plans require a public academy learner account.
+              You are signed in to a workspace account. Academy plans require a public academy
+              learner account.
             </div>
           ) : null}
 
@@ -499,19 +521,29 @@ export function PublicAcademyPage() {
                       : 'border-slate-200 bg-white hover:border-brand-200',
                   ].join(' ')}
                 >
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">{plan.name}</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
+                    {plan.name}
+                  </p>
                   <p className="mt-4 text-4xl font-black text-slate-900">
                     {plan.price.toLocaleString()}
-                    <span className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">RWF</span>
+                    <span className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                      RWF
+                    </span>
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-700">{plan.durationDays} days access</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-700">
+                    {plan.durationDays} days access
+                  </p>
                   <p className="mt-4 text-sm leading-relaxed text-slate-600">{plan.description}</p>
                   <button
                     type="button"
                     onClick={() => handlePlanClick(plan)}
                     className="mt-6 w-full rounded-2xl bg-brand-500 px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-brand-600"
                   >
-                    {auth.me ? (isCurrentPlan ? `Renew ${plan.name}` : `Choose ${plan.name}`) : `Continue with ${plan.name}`}
+                    {auth.me
+                      ? isCurrentPlan
+                        ? `Renew ${plan.name}`
+                        : `Choose ${plan.name}`
+                      : `Continue with ${plan.name}`}
                   </button>
                 </article>
               );
@@ -520,8 +552,11 @@ export function PublicAcademyPage() {
 
           {subscriptionQuery.data?.pendingPayment ? (
             <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-950">
-              Payment pending for <span className="font-semibold capitalize">{subscriptionQuery.data.pendingPayment.planCode}</span>.
-              Confirm the MoMo request on your phone to activate the plan.
+              Payment pending for{' '}
+              <span className="font-semibold capitalize">
+                {subscriptionQuery.data.pendingPayment.planCode}
+              </span>
+              . Confirm the MoMo request on your phone to activate the plan.
             </div>
           ) : null}
         </div>
@@ -531,10 +566,15 @@ export function PublicAcademyPage() {
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">Step 2</p>
-              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">Choose up to 3 subjects</h2>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
+                Step 2
+              </p>
+              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">
+                Choose up to 3 subjects
+              </h2>
               <p className="mt-3 max-w-2xl text-slate-600">
-                Your plan controls time. Your selected subjects unlock every course under them. Remove one selected subject any time to free a slot.
+                Your plan controls time. Your selected subjects unlock every course under them.
+                Remove one selected subject any time to free a slot.
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-700 shadow-sm">
@@ -553,7 +593,8 @@ export function PublicAcademyPage() {
             </div>
           ) : catalogSubjects.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center text-slate-600 shadow-sm">
-              No academy subjects are ready yet. Link public academy programs to subject-based courses to show them here.
+              No academy subjects are ready yet. Link public academy programs to subject-based
+              courses to show them here.
             </div>
           ) : (
             <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
@@ -600,9 +641,13 @@ export function PublicAcademyPage() {
                             Selected on plan
                           </span>
                         ) : null}
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{subject.code}</span>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                          {subject.code}
+                        </span>
                       </div>
-                      <h3 className="text-2xl font-bold tracking-tight text-slate-900">{subject.name}</h3>
+                      <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+                        {subject.name}
+                      </h3>
                       <p className="mt-4 flex-1 text-[15px] leading-relaxed text-slate-600">
                         {buildSubjectDescription(subject)}
                       </p>
@@ -610,7 +655,8 @@ export function PublicAcademyPage() {
                       <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
                         <p className="flex items-center gap-2 font-semibold text-slate-900">
                           <BookOpen className="h-4 w-4 text-brand-600" />
-                          {subject.courseCount} course{subject.courseCount === 1 ? '' : 's'} available
+                          {subject.courseCount} course{subject.courseCount === 1 ? '' : 's'}{' '}
+                          available
                         </p>
                         <p className="mt-1">
                           {subject.courseTitles.length > 0
@@ -627,9 +673,13 @@ export function PublicAcademyPage() {
 
                       <div className="mt-6 space-y-3">
                         {accessible?.expiresAt ? (
-                          <p className="text-sm text-slate-500">Access ends {formatExpiry(accessible.expiresAt)}</p>
+                          <p className="text-sm text-slate-500">
+                            Access ends {formatExpiry(accessible.expiresAt)}
+                          </p>
                         ) : currentSubscription?.expiresAt ? (
-                          <p className="text-sm text-slate-500">Current plan ends {formatExpiry(currentSubscription.expiresAt)}</p>
+                          <p className="text-sm text-slate-500">
+                            Current plan ends {formatExpiry(currentSubscription.expiresAt)}
+                          </p>
                         ) : null}
 
                         <div className="flex gap-3">
@@ -649,7 +699,9 @@ export function PublicAcademyPage() {
                             onClick={() => handleSubjectAction(subject)}
                             className={[
                               'flex-[1.35] rounded-2xl px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition',
-                              accessible || canAdd ? 'bg-brand-500 hover:bg-brand-600' : 'bg-slate-400',
+                              accessible || canAdd
+                                ? 'bg-brand-500 hover:bg-brand-600'
+                                : 'bg-slate-400',
                             ].join(' ')}
                           >
                             {accessible
@@ -715,12 +767,15 @@ export function PublicAcademyPage() {
                 <span>{selectedPlan.price.toLocaleString()} RWF</span>
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                After payment, choose up to 3 academy subjects. Renewing extends the same selected set until you change it.
+                After payment, choose up to 3 academy subjects. Renewing extends the same selected
+                set until you change it.
               </p>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-800">MoMo phone number</label>
+              <label className="mb-2 block text-sm font-bold text-slate-800">
+                MoMo phone number
+              </label>
               <input
                 type="tel"
                 required
@@ -754,7 +809,8 @@ export function PublicAcademyPage() {
             </div>
             <h3 className="mt-8 text-xl font-bold text-slate-900">Waiting for confirmation</h3>
             <p className="mt-4 max-w-xs text-slate-600">
-              Confirm the MoMo request on your phone. Once payment succeeds, your plan will activate here automatically.
+              Confirm the MoMo request on your phone. Once payment succeeds, your plan will activate
+              here automatically.
             </p>
           </div>
         ) : paymentStatus === 'SUCCESS' ? (
@@ -764,7 +820,8 @@ export function PublicAcademyPage() {
             </div>
             <h3 className="mt-8 text-2xl font-bold text-slate-900">Plan activated</h3>
             <p className="mt-4 text-slate-600">
-              Your academy plan is now active. Close this window and choose up to 3 subjects from the catalog below.
+              Your academy plan is now active. Close this window and choose up to 3 subjects from
+              the catalog below.
             </p>
             <button
               type="button"
@@ -814,7 +871,9 @@ export function PublicAcademyPage() {
             <p className="mt-1">{selectedSubject?.courseCount ?? 0}</p>
             <p className="mt-4 font-semibold text-slate-900">Description</p>
             <p className="mt-1 whitespace-pre-wrap text-slate-600">
-              {selectedSubject ? buildSubjectDescription(selectedSubject) : 'Academy subject details.'}
+              {selectedSubject
+                ? buildSubjectDescription(selectedSubject)
+                : 'Academy subject details.'}
             </p>
             {selectedSubject?.courseTitles.length ? (
               <>
@@ -841,7 +900,9 @@ export function PublicAcademyPage() {
               }}
               className="w-full rounded-2xl bg-brand-500 py-4 text-sm font-black uppercase tracking-widest text-white transition hover:bg-brand-600"
             >
-              {accessibleSubjectsById.get(selectedSubject.id) ? 'View subject courses' : 'Use this subject'}
+              {accessibleSubjectsById.get(selectedSubject.id)
+                ? 'View subject courses'
+                : 'Use this subject'}
             </button>
           ) : null}
         </div>

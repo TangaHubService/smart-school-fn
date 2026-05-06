@@ -162,15 +162,21 @@ export function TeacherDashboardPage() {
           <h2 className="text-lg font-bold text-slate-900">{t('dashboard.attendanceTitle')}</h2>
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-              <span className="text-sm font-medium text-slate-700">{t('dashboard.classesWithSessions')}</span>
+              <span className="text-sm font-medium text-slate-700">
+                {t('dashboard.classesWithSessions')}
+              </span>
               <span className="font-semibold text-slate-900">
                 {data.todayAttendance.totalClasses - data.todayAttendance.pendingClasses} /{' '}
                 {data.todayAttendance.totalClasses}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-              <span className="text-sm font-medium text-slate-700">{t('dashboard.studentsMarked')}</span>
-              <span className="font-semibold text-slate-900">{data.todayAttendance.markedStudents}</span>
+              <span className="text-sm font-medium text-slate-700">
+                {t('dashboard.studentsMarked')}
+              </span>
+              <span className="font-semibold text-slate-900">
+                {data.todayAttendance.markedStudents}
+              </span>
             </div>
             {data.todayAttendance.pendingClasses > 0 && (
               <Link
@@ -206,7 +212,9 @@ export function TeacherDashboardPage() {
                 </Link>
               ))
             ) : (
-              <p className="py-6 text-center text-sm text-slate-500">{t('dashboard.noUpcomingExams')}</p>
+              <p className="py-6 text-center text-sm text-slate-500">
+                {t('dashboard.noUpcomingExams')}
+              </p>
             )}
           </div>
         </div>

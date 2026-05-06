@@ -101,7 +101,7 @@ function AuditorAssignmentFields(props: {
               resetLocationForLevel(event.target.value as AuditorLevel, {
                 ...props.value,
                 level: event.target.value as AuditorLevel,
-              }),
+              })
             )
           }
           className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
@@ -128,7 +128,9 @@ function AuditorAssignmentFields(props: {
         <span className="font-medium">Province</span>
         <select
           value={props.value.province}
-          onChange={(event) => props.onChange({ province: event.target.value, district: '', sector: '' })}
+          onChange={(event) =>
+            props.onChange({ province: event.target.value, district: '', sector: '' })
+          }
           disabled={!needsProvince}
           className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400 disabled:bg-slate-50 disabled:text-slate-400"
         >
@@ -203,7 +205,8 @@ function ScopeHistoryCard({ scope }: { scope: GovAuditorScope }) {
       ) : null}
       {scope.startsAt || scope.endsAt ? (
         <p className="text-sm text-slate-700">
-          Window: {formatDateLabel(scope.startsAt) ?? 'Immediate'} to {formatDateLabel(scope.endsAt) ?? 'Open-ended'}
+          Window: {formatDateLabel(scope.startsAt) ?? 'Immediate'} to{' '}
+          {formatDateLabel(scope.endsAt) ?? 'Open-ended'}
         </p>
       ) : null}
       {scope.notes ? <p className="text-sm leading-6 text-slate-700">{scope.notes}</p> : null}
@@ -219,8 +222,12 @@ export function GovAuditorsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedAuditor, setSelectedAuditor] = useState<GovAuditor | null>(null);
   const [detailAuditor, setDetailAuditor] = useState<GovAuditor | null>(null);
-  const [createForm, setCreateForm] = useState<GovAuditorCreateFormValue>(() => defaultGovAuditorCreateForm);
-  const [assignmentForm, setAssignmentForm] = useState<GovAuditorAssignmentFormValue>(() => defaultGovAuditorAssignmentForm);
+  const [createForm, setCreateForm] = useState<GovAuditorCreateFormValue>(
+    () => defaultGovAuditorCreateForm
+  );
+  const [assignmentForm, setAssignmentForm] = useState<GovAuditorAssignmentFormValue>(
+    () => defaultGovAuditorAssignmentForm
+  );
 
   const auditorsQuery = useQuery({
     queryKey: ['gov-auditors', search],
@@ -293,7 +300,8 @@ export function GovAuditorsPage() {
   });
 
   const deactivateMutation = useMutation({
-    mutationFn: (scopeId: string) => updateGovScopeApi(auth.accessToken!, scopeId, { isActive: false }),
+    mutationFn: (scopeId: string) =>
+      updateGovScopeApi(auth.accessToken!, scopeId, { isActive: false }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['gov-auditors'] }),
@@ -318,7 +326,7 @@ export function GovAuditorsPage() {
         ...auditor,
         activeScope: getActiveScope(auditor),
       })),
-    [auditors],
+    [auditors]
   );
 
   const detailScopes = detailScopesQuery.data?.items ?? detailAuditor?.scopes ?? [];
@@ -358,7 +366,10 @@ export function GovAuditorsPage() {
 
   if (auditorsQuery.isPending) {
     return (
-      <SectionCard title="Auditor Management" subtitle="Create and assign government auditors by Rwanda location.">
+      <SectionCard
+        title="Auditor Management"
+        subtitle="Create and assign government auditors by Rwanda location."
+      >
         <div className="grid gap-3">
           <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
           <div className="h-24 animate-pulse rounded-xl bg-brand-100" />
@@ -446,7 +457,8 @@ export function GovAuditorsPage() {
                     <p>{auditor.activeScope?.label ?? auditor.assignmentLabel}</p>
                     {auditor.activeScope?.assignedBy ? (
                       <p className="text-xs text-slate-500">
-                        Assigned by {auditor.activeScope.assignedBy.firstName} {auditor.activeScope.assignedBy.lastName}
+                        Assigned by {auditor.activeScope.assignedBy.firstName}{' '}
+                        {auditor.activeScope.assignedBy.lastName}
                       </p>
                     ) : null}
                   </td>
@@ -528,7 +540,10 @@ export function GovAuditorsPage() {
                 type="text"
                 value={createForm.firstName}
                 onChange={(event) =>
-                  setCreateForm((current: GovAuditorCreateFormValue) => ({ ...current, firstName: event.target.value }))
+                  setCreateForm((current: GovAuditorCreateFormValue) => ({
+                    ...current,
+                    firstName: event.target.value,
+                  }))
                 }
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                 required
@@ -540,7 +555,10 @@ export function GovAuditorsPage() {
                 type="text"
                 value={createForm.lastName}
                 onChange={(event) =>
-                  setCreateForm((current: GovAuditorCreateFormValue) => ({ ...current, lastName: event.target.value }))
+                  setCreateForm((current: GovAuditorCreateFormValue) => ({
+                    ...current,
+                    lastName: event.target.value,
+                  }))
                 }
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                 required
@@ -552,7 +570,10 @@ export function GovAuditorsPage() {
                 type="email"
                 value={createForm.email}
                 onChange={(event) =>
-                  setCreateForm((current: GovAuditorCreateFormValue) => ({ ...current, email: event.target.value }))
+                  setCreateForm((current: GovAuditorCreateFormValue) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
                 }
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                 required
@@ -564,7 +585,10 @@ export function GovAuditorsPage() {
                 type="text"
                 value={createForm.phone}
                 onChange={(event) =>
-                  setCreateForm((current: GovAuditorCreateFormValue) => ({ ...current, phone: event.target.value }))
+                  setCreateForm((current: GovAuditorCreateFormValue) => ({
+                    ...current,
+                    phone: event.target.value,
+                  }))
                 }
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               />
@@ -575,7 +599,10 @@ export function GovAuditorsPage() {
                 type="password"
                 value={createForm.password}
                 onChange={(event) =>
-                  setCreateForm((current: GovAuditorCreateFormValue) => ({ ...current, password: event.target.value }))
+                  setCreateForm((current: GovAuditorCreateFormValue) => ({
+                    ...current,
+                    password: event.target.value,
+                  }))
                 }
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
                 required
@@ -585,7 +612,9 @@ export function GovAuditorsPage() {
 
           <div className="rounded-xl border border-brand-100 bg-brand-50/50 p-4">
             <h3 className="text-sm font-semibold text-slate-900">Assignment</h3>
-            <p className="mb-3 text-xs text-slate-600">Choose the highest Rwanda location this auditor should cover.</p>
+            <p className="mb-3 text-xs text-slate-600">
+              Choose the highest Rwanda location this auditor should cover.
+            </p>
             <AuditorAssignmentFields
               value={createForm}
               onChange={(next) =>
@@ -619,13 +648,20 @@ export function GovAuditorsPage() {
           setSelectedAuditor(null);
           setAssignmentForm(defaultGovAuditorAssignmentForm);
         }}
-        title={selectedAuditor ? `Reassign ${selectedAuditor.firstName} ${selectedAuditor.lastName}` : 'Reassign Auditor'}
+        title={
+          selectedAuditor
+            ? `Reassign ${selectedAuditor.firstName} ${selectedAuditor.lastName}`
+            : 'Reassign Auditor'
+        }
       >
         <form className="space-y-4" onSubmit={handleAssignSubmit}>
           <AuditorAssignmentFields
             value={assignmentForm}
             onChange={(next) =>
-              setAssignmentForm((current: GovAuditorAssignmentFormValue) => ({ ...current, ...next }))
+              setAssignmentForm((current: GovAuditorAssignmentFormValue) => ({
+                ...current,
+                ...next,
+              }))
             }
           />
 
@@ -665,7 +701,10 @@ export function GovAuditorsPage() {
             <textarea
               value={assignmentForm.notes}
               onChange={(event) =>
-                setAssignmentForm((current: GovAuditorAssignmentFormValue) => ({ ...current, notes: event.target.value }))
+                setAssignmentForm((current: GovAuditorAssignmentFormValue) => ({
+                  ...current,
+                  notes: event.target.value,
+                }))
               }
               rows={4}
               placeholder="Optional context for the assignment."
@@ -695,14 +734,18 @@ export function GovAuditorsPage() {
       <Modal
         open={!!detailAuditor}
         onClose={() => setDetailAuditor(null)}
-        title={detailAuditor ? `${detailAuditor.firstName} ${detailAuditor.lastName}` : 'Auditor Details'}
+        title={
+          detailAuditor ? `${detailAuditor.firstName} ${detailAuditor.lastName}` : 'Auditor Details'
+        }
       >
         {detailAuditor ? (
           <div className="grid gap-4">
             <div className="grid gap-4 rounded-2xl border border-brand-100 bg-brand-50/50 p-4 md:grid-cols-2">
               <div className="space-y-2">
                 <p className="text-sm text-slate-700">{detailAuditor.email}</p>
-                <p className="text-sm text-slate-700">{detailAuditor.phone || 'No phone number saved'}</p>
+                <p className="text-sm text-slate-700">
+                  {detailAuditor.phone || 'No phone number saved'}
+                </p>
                 <p className="text-sm text-slate-700">Level: {detailAuditor.level}</p>
                 <p className="text-sm text-slate-700">
                   Account created {new Date(detailAuditor.createdAt).toLocaleDateString()}
@@ -715,7 +758,8 @@ export function GovAuditorsPage() {
                 <p className="text-sm text-slate-700">Status: {detailAuditor.status}</p>
                 {detailActiveScope?.assignedBy ? (
                   <p className="text-sm text-slate-700">
-                    Assigned by {detailActiveScope.assignedBy.firstName} {detailActiveScope.assignedBy.lastName}
+                    Assigned by {detailActiveScope.assignedBy.firstName}{' '}
+                    {detailActiveScope.assignedBy.lastName}
                   </p>
                 ) : null}
                 {detailActiveScope?.startsAt || detailActiveScope?.endsAt ? (
@@ -730,7 +774,9 @@ export function GovAuditorsPage() {
             <div className="grid gap-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-900">Assignment History</h3>
-                {detailScopesQuery.isPending ? <p className="text-xs text-slate-500">Refreshing assignments...</p> : null}
+                {detailScopesQuery.isPending ? (
+                  <p className="text-xs text-slate-500">Refreshing assignments...</p>
+                ) : null}
               </div>
 
               {detailScopesQuery.isError ? (

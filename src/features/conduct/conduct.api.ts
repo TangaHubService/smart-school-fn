@@ -162,7 +162,7 @@ export function createConductIncidentApi(
     severity?: ConductSeverity;
     location?: string;
     reporterNotes?: string;
-  },
+  }
 ) {
   return apiRequest<ConductIncident>('/conduct/incidents', {
     method: 'POST',
@@ -182,7 +182,7 @@ export function listConductIncidentsApi(
     q?: string;
     page?: number;
     pageSize?: number;
-  },
+  }
 ) {
   const query = new URLSearchParams();
 
@@ -216,7 +216,7 @@ export function listConductIncidentsApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
@@ -239,7 +239,7 @@ export function updateConductIncidentApi(
     occurredAt?: string;
     location?: string | null;
     reporterNotes?: string | null;
-  },
+  }
 ) {
   return apiRequest<ConductIncident>(`/conduct/incidents/${incidentId}`, {
     method: 'PATCH',
@@ -258,7 +258,7 @@ export function addConductActionApi(
     actionDate: string;
     dueDate?: string;
     completedAt?: string;
-  },
+  }
 ) {
   return apiRequest<ConductIncident>(`/conduct/incidents/${incidentId}/actions`, {
     method: 'POST',
@@ -272,7 +272,7 @@ export function resolveConductIncidentApi(
   incidentId: string,
   payload: {
     resolutionSummary: string;
-  },
+  }
 ) {
   return apiRequest<ConductIncident>(`/conduct/incidents/${incidentId}/resolve`, {
     method: 'POST',
@@ -284,7 +284,7 @@ export function resolveConductIncidentApi(
 export function getStudentConductProfileApi(
   accessToken: string,
   studentId: string,
-  params?: { page?: number; pageSize?: number },
+  params?: { page?: number; pageSize?: number }
 ) {
   const query = new URLSearchParams();
 
@@ -300,13 +300,13 @@ export function getStudentConductProfileApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }
 
 export function getMyConductProfileApi(
   accessToken: string,
-  params?: { page?: number; pageSize?: number },
+  params?: { page?: number; pageSize?: number }
 ) {
   const query = new URLSearchParams();
 
@@ -322,6 +322,6 @@ export function getMyConductProfileApi(
     {
       method: 'GET',
       accessToken,
-    },
+    }
   );
 }

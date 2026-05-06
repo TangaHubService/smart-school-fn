@@ -37,7 +37,7 @@ export function listTimetableSlotsApi(
     termId?: string;
     classRoomId?: string;
     teacherUserId?: string;
-  },
+  }
 ) {
   const query = new URLSearchParams();
   query.set('academicYearId', params.academicYearId);
@@ -45,10 +45,10 @@ export function listTimetableSlotsApi(
   if (params.classRoomId) query.set('classRoomId', params.classRoomId);
   if (params.teacherUserId) query.set('teacherUserId', params.teacherUserId);
 
-  return apiRequest<ListTimetableSlotsResponse>(
-    `/timetable?${query.toString()}`,
-    { method: 'GET', accessToken },
-  );
+  return apiRequest<ListTimetableSlotsResponse>(`/timetable?${query.toString()}`, {
+    method: 'GET',
+    accessToken,
+  });
 }
 
 export function createTimetableSlotApi(
@@ -62,7 +62,7 @@ export function createTimetableSlotApi(
     periodNumber: number;
     startTime: string;
     endTime: string;
-  },
+  }
 ) {
   return apiRequest<TimetableSlot>('/timetable', {
     method: 'POST',
@@ -83,7 +83,7 @@ export function updateTimetableSlotApi(
     periodNumber: number;
     startTime: string;
     endTime: string;
-  }>,
+  }>
 ) {
   return apiRequest<TimetableSlot>(`/timetable/${slotId}`, {
     method: 'PATCH',
@@ -112,7 +112,7 @@ export function bulkUpsertTimetableSlotsApi(
       startTime: string;
       endTime: string;
     }>;
-  },
+  }
 ) {
   return apiRequest<{ created: number; slots: TimetableSlot[] }>('/timetable/bulk', {
     method: 'POST',

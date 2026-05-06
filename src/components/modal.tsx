@@ -62,7 +62,7 @@ export function Modal({
         aria-label={title}
         className={clsx(
           'relative z-10 w-full rounded-xl bg-white',
-          size === 'wide' ? 'max-w-6xl' : 'max-w-xl',
+          size === 'wide' ? 'max-w-6xl' : 'max-w-xl'
         )}
       >
         <header className="flex items-start justify-between gap-3 border-b border-brand-100 px-4 py-3 sm:px-5">
@@ -81,7 +81,9 @@ export function Modal({
 
         <div className="max-h-[70vh] overflow-auto px-4 py-4 sm:px-5">{children}</div>
 
-        {footer ? <footer className="border-t border-brand-100 px-4 py-3 sm:px-5">{footer}</footer> : null}
+        {footer ? (
+          <footer className="border-t border-brand-100 px-4 py-3 sm:px-5">{footer}</footer>
+        ) : null}
       </section>
     </div>
   );

@@ -87,38 +87,55 @@ export function GovSchoolDetailPage() {
       >
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Total incidents</p>
-            <p className="mt-2 text-3xl font-bold text-slate-950">{detail.summary.totalIncidents}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Total incidents
+            </p>
+            <p className="mt-2 text-3xl font-bold text-slate-950">
+              {detail.summary.totalIncidents}
+            </p>
           </div>
           <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Open</p>
             <p className="mt-2 text-3xl font-bold text-slate-950">{detail.summary.openIncidents}</p>
           </div>
           <div className="rounded-2xl border border-brand-100 bg-brand-50/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Resolved</p>
-            <p className="mt-2 text-3xl font-bold text-slate-950">{detail.summary.resolvedIncidents}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Resolved
+            </p>
+            <p className="mt-2 text-3xl font-bold text-slate-950">
+              {detail.summary.resolvedIncidents}
+            </p>
           </div>
         </div>
 
         <div className="mt-4 rounded-2xl border border-brand-100 bg-white p-4 text-sm leading-6 text-slate-700">
-          This school is available because it matches the current government scope rules. Auditors can plan audits and
-          leave oversight feedback here, but school-owned conduct actions remain read-only.
+          This school is available because it matches the current government scope rules. Auditors
+          can plan audits and leave oversight feedback here, but school-owned conduct actions remain
+          read-only.
         </div>
       </SectionCard>
 
-      <SectionCard title="Recent Incidents" subtitle="The latest conduct records visible for this school only.">
+      <SectionCard
+        title="Recent Incidents"
+        subtitle="The latest conduct records visible for this school only."
+      >
         {detail.recentIncidents.length ? (
           <div className="grid gap-3">
             {detail.recentIncidents.map((incident) => (
-              <article key={incident.id} className="rounded-2xl border border-brand-100 bg-white p-4">
+              <article
+                key={incident.id}
+                className="rounded-2xl border border-brand-100 bg-white p-4"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-base font-bold text-slate-950">{incident.title}</h3>
                     <p className="text-sm text-slate-700">
-                      {incident.student.firstName} {incident.student.lastName} • {incident.severity} •{' '}
-                      {incident.status.replace('_', ' ')}
+                      {incident.student.firstName} {incident.student.lastName} • {incident.severity}{' '}
+                      • {incident.status.replace('_', ' ')}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">{formatDateTime(incident.occurredAt)}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {formatDateTime(incident.occurredAt)}
+                    </p>
                   </div>
                   <Link
                     to={`/gov/incidents/${incident.id}`}

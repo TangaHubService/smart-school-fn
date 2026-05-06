@@ -134,7 +134,8 @@ export function GovAuditsPage() {
                   <td className="px-4 py-3">
                     <p className="font-semibold text-slate-900">{audit.school.name}</p>
                     <p className="text-xs text-slate-500">
-                      {audit.school.sector ?? 'N/A'} / {audit.school.district ?? 'N/A'} / {audit.school.province ?? 'N/A'}
+                      {audit.school.sector ?? 'N/A'} / {audit.school.district ?? 'N/A'} /{' '}
+                      {audit.school.province ?? 'N/A'}
                     </p>
                   </td>
                   <td className="px-4 py-3 text-slate-700">{formatAuditType(audit.auditType)}</td>

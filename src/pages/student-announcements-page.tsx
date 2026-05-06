@@ -21,8 +21,7 @@ export function StudentAnnouncementsPage() {
 
   const announcementsQuery = useQuery({
     queryKey: ['announcements', 'me', page],
-    queryFn: () =>
-      listMyAnnouncementsApi(auth.accessToken!, { page, pageSize: 12 }),
+    queryFn: () => listMyAnnouncementsApi(auth.accessToken!, { page, pageSize: 12 }),
   });
 
   const items = announcementsQuery.data?.items ?? [];
@@ -34,10 +33,7 @@ export function StudentAnnouncementsPage() {
   };
 
   return (
-    <SectionCard
-      title="Announcements"
-      subtitle="School announcements relevant to you."
-    >
+    <SectionCard title="Announcements" subtitle="School announcements relevant to you.">
       {announcementsQuery.isPending ? (
         <div className="grid gap-2">
           <div className="h-20 animate-pulse rounded-lg bg-brand-100" />
@@ -62,15 +58,11 @@ export function StudentAnnouncementsPage() {
         />
       ) : null}
 
-      {!announcementsQuery.isPending &&
-      !announcementsQuery.isError &&
-      items.length === 0 ? (
+      {!announcementsQuery.isPending && !announcementsQuery.isError && items.length === 0 ? (
         <EmptyState message="No announcements for you at the moment." />
       ) : null}
 
-      {!announcementsQuery.isPending &&
-      !announcementsQuery.isError &&
-      items.length > 0 ? (
+      {!announcementsQuery.isPending && !announcementsQuery.isError && items.length > 0 ? (
         <div className="grid gap-3">
           {items.map((item) => (
             <article
@@ -78,12 +70,9 @@ export function StudentAnnouncementsPage() {
               className="rounded-xl border border-brand-100 bg-white p-4 shadow-sm"
             >
               <h3 className="mb-2 font-semibold text-slate-800">{item.title}</h3>
-              <p className="whitespace-pre-wrap text-sm text-slate-600">
-                {item.body}
-              </p>
+              <p className="whitespace-pre-wrap text-sm text-slate-600">{item.body}</p>
               <div className="mt-2 text-xs text-slate-500">
-                By {item.author.firstName} {item.author.lastName} •{' '}
-                {formatDate(item.publishedAt)}
+                By {item.author.firstName} {item.author.lastName} • {formatDate(item.publishedAt)}
               </div>
             </article>
           ))}

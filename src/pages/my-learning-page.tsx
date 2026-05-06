@@ -50,7 +50,10 @@ export function MyLearningPage() {
         <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-200" />
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-64 animate-pulse rounded-2xl bg-slate-100 placeholder-shimmer" />
+            <div
+              key={i}
+              className="h-64 animate-pulse rounded-2xl bg-slate-100 placeholder-shimmer"
+            />
           ))}
         </div>
       </div>
@@ -97,7 +100,12 @@ export function MyLearningPage() {
             const nextId = getResumeLessonId(course, course.completedLessonIds ?? []);
             const nextLesson = nextId ? course.lessons.find((l) => l.id === nextId) : null;
             return (
-              <CourseProgressCard key={course.id} course={course} metrics={metrics} nextLesson={nextLesson} />
+              <CourseProgressCard
+                key={course.id}
+                course={course}
+                metrics={metrics}
+                nextLesson={nextLesson}
+              />
             );
           })}
         </div>
@@ -117,7 +125,7 @@ function CourseProgressCard({
 }) {
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-brand-200 hover:shadow-md">
-        <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="inline-flex items-center rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-800 ring-1 ring-brand-100">
             {course.classRoom?.name ?? 'Academy course'}
@@ -147,7 +155,8 @@ function CourseProgressCard({
           <div className="flex items-center gap-2 overflow-hidden">
             <Clock className="h-4 w-4 text-brand-500" />
             <span className="truncate text-sm font-medium text-slate-700">
-              {nextLesson?.title ?? (metrics.overallProgress >= 100 ? 'Course complete' : 'Open course')}
+              {nextLesson?.title ??
+                (metrics.overallProgress >= 100 ? 'Course complete' : 'Open course')}
             </span>
           </div>
         </div>
@@ -158,7 +167,11 @@ function CourseProgressCard({
           to={`/student/courses/${course.id}`}
           className="flex-1 rounded-xl bg-brand-500 py-2.5 text-center text-sm font-medium text-white transition hover:bg-brand-600"
         >
-          {metrics.overallProgress === 0 ? 'Start' : metrics.overallProgress >= 100 ? 'Review' : 'Resume'}
+          {metrics.overallProgress === 0
+            ? 'Start'
+            : metrics.overallProgress >= 100
+              ? 'Review'
+              : 'Resume'}
         </Link>
         <Link
           to={`/student/courses/${course.id}`}

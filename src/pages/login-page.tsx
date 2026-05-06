@@ -48,7 +48,7 @@ export function LoginPage() {
   const requestedPlan = searchParams.get('plan');
   const returnTo = useMemo(
     () => combineReturnTo(searchParams.get('returnTo'), requestedPlan),
-    [requestedPlan, searchParams],
+    [requestedPlan, searchParams]
   );
 
   const loginForm = useForm<LoginFormValues>({
@@ -141,8 +141,14 @@ export function LoginPage() {
         className="absolute inset-0 bg-gradient-to-br from-[#173C7F]/70 via-black/50 to-black/70"
         aria-hidden="true"
       />
-      <div className="absolute -top-48 left-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl" aria-hidden="true" />
-      <div className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
+      <div
+        className="absolute -top-48 left-8 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute -bottom-56 right-8 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl"
+        aria-hidden="true"
+      />
 
       <section className="relative z-10 w-full max-w-xl rounded-3xl border border-white/30 bg-white/80 p-6 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.65)] ring-1 ring-white/20 backdrop-blur-xl sm:p-8">
         <h1 className="text-2xl font-bold text-slate-900">{t('login.brand')}</h1>
@@ -160,7 +166,10 @@ export function LoginPage() {
             noValidate
           >
             <div>
-              <label htmlFor="identifier" className="mb-1 block text-sm font-semibold text-slate-800">
+              <label
+                htmlFor="identifier"
+                className="mb-1 block text-sm font-semibold text-slate-800"
+              >
                 {t('login.identifier')}
               </label>
               <input
@@ -179,7 +188,10 @@ export function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="login-password" className="mb-1 block text-sm font-semibold text-slate-800">
+              <label
+                htmlFor="login-password"
+                className="mb-1 block text-sm font-semibold text-slate-800"
+              >
                 {t('login.password')}
               </label>
               <div className="relative">
@@ -194,7 +206,9 @@ export function LoginPage() {
                   type="button"
                   onClick={() => setShowLoginPassword((current) => !current)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 rounded px-1 text-xs font-semibold text-brand-600 transition hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300"
-                  aria-label={showLoginPassword ? t('login.hidePasswordAria') : t('login.showPasswordAria')}
+                  aria-label={
+                    showLoginPassword ? t('login.hidePasswordAria') : t('login.showPasswordAria')
+                  }
                 >
                   {showLoginPassword ? t('login.hidePassword') : t('login.showPassword')}
                 </button>
@@ -249,7 +263,10 @@ export function LoginPage() {
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="firstName" className="mb-1 block text-sm font-semibold text-slate-800">
+                <label
+                  htmlFor="firstName"
+                  className="mb-1 block text-sm font-semibold text-slate-800"
+                >
                   First name
                 </label>
                 <input
@@ -260,11 +277,16 @@ export function LoginPage() {
                   {...registerForm.register('firstName')}
                 />
                 {registerForm.formState.errors.firstName ? (
-                  <p className="mt-1 text-xs text-red-700">{registerForm.formState.errors.firstName.message}</p>
+                  <p className="mt-1 text-xs text-red-700">
+                    {registerForm.formState.errors.firstName.message}
+                  </p>
                 ) : null}
               </div>
               <div>
-                <label htmlFor="lastName" className="mb-1 block text-sm font-semibold text-slate-800">
+                <label
+                  htmlFor="lastName"
+                  className="mb-1 block text-sm font-semibold text-slate-800"
+                >
                   Last name
                 </label>
                 <input
@@ -275,14 +297,19 @@ export function LoginPage() {
                   {...registerForm.register('lastName')}
                 />
                 {registerForm.formState.errors.lastName ? (
-                  <p className="mt-1 text-xs text-red-700">{registerForm.formState.errors.lastName.message}</p>
+                  <p className="mt-1 text-xs text-red-700">
+                    {registerForm.formState.errors.lastName.message}
+                  </p>
                 ) : null}
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="username" className="mb-1 block text-sm font-semibold text-slate-800">
+                <label
+                  htmlFor="username"
+                  className="mb-1 block text-sm font-semibold text-slate-800"
+                >
                   Username
                 </label>
                 <input
@@ -293,11 +320,16 @@ export function LoginPage() {
                   {...registerForm.register('username')}
                 />
                 {registerForm.formState.errors.username ? (
-                  <p className="mt-1 text-xs text-red-700">{registerForm.formState.errors.username.message}</p>
+                  <p className="mt-1 text-xs text-red-700">
+                    {registerForm.formState.errors.username.message}
+                  </p>
                 ) : null}
               </div>
               <div>
-                <label htmlFor="register-email" className="mb-1 block text-sm font-semibold text-slate-800">
+                <label
+                  htmlFor="register-email"
+                  className="mb-1 block text-sm font-semibold text-slate-800"
+                >
                   Email
                 </label>
                 <input
@@ -308,14 +340,19 @@ export function LoginPage() {
                   {...registerForm.register('email')}
                 />
                 {registerForm.formState.errors.email ? (
-                  <p className="mt-1 text-xs text-red-700">{registerForm.formState.errors.email.message}</p>
+                  <p className="mt-1 text-xs text-red-700">
+                    {registerForm.formState.errors.email.message}
+                  </p>
                 ) : null}
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="register-password" className="mb-1 block text-sm font-semibold text-slate-800">
+                <label
+                  htmlFor="register-password"
+                  className="mb-1 block text-sm font-semibold text-slate-800"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -335,11 +372,16 @@ export function LoginPage() {
                   </button>
                 </div>
                 {registerForm.formState.errors.password ? (
-                  <p className="mt-1 text-xs text-red-700">{registerForm.formState.errors.password.message}</p>
+                  <p className="mt-1 text-xs text-red-700">
+                    {registerForm.formState.errors.password.message}
+                  </p>
                 ) : null}
               </div>
               <div>
-                <label htmlFor="confirmPassword" className="mb-1 block text-sm font-semibold text-slate-800">
+                <label
+                  htmlFor="confirmPassword"
+                  className="mb-1 block text-sm font-semibold text-slate-800"
+                >
                   Confirm password
                 </label>
                 <div className="relative">
@@ -355,11 +397,15 @@ export function LoginPage() {
                     onClick={() => setShowRegisterConfirmPassword((current) => !current)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded px-1 text-xs font-semibold text-brand-600 transition hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300"
                   >
-                    {showRegisterConfirmPassword ? t('login.hidePassword') : t('login.showPassword')}
+                    {showRegisterConfirmPassword
+                      ? t('login.hidePassword')
+                      : t('login.showPassword')}
                   </button>
                 </div>
                 {registerForm.formState.errors.confirmPassword ? (
-                  <p className="mt-1 text-xs text-red-700">{registerForm.formState.errors.confirmPassword.message}</p>
+                  <p className="mt-1 text-xs text-red-700">
+                    {registerForm.formState.errors.confirmPassword.message}
+                  </p>
                 ) : null}
               </div>
             </div>

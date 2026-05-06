@@ -83,17 +83,12 @@ export function AnnouncementDetailPage() {
 
   function toggleClass(classId: string) {
     setTargetClassRoomIds((prev) =>
-      prev.includes(classId) ? prev.filter((x) => x !== classId) : [...prev, classId],
+      prev.includes(classId) ? prev.filter((x) => x !== classId) : [...prev, classId]
     );
   }
 
   if (!id) {
-    return (
-      <StateView
-        title="Invalid announcement"
-        message="The announcement ID is missing."
-      />
-    );
+    return <StateView title="Invalid announcement" message="The announcement ID is missing." />;
   }
 
   if (announcementQuery.isError || (!announcementQuery.isPending && !item)) {
@@ -176,14 +171,19 @@ export function AnnouncementDetailPage() {
           {audience === 'CLASS_ROOM' ? (
             <div className="flex flex-wrap gap-2">
               {classes.map((c: { id: string; code: string; name: string }) => (
-                <label key={c.id} className="flex items-center gap-2 rounded-lg border border-brand-100 px-3 py-2">
+                <label
+                  key={c.id}
+                  className="flex items-center gap-2 rounded-lg border border-brand-100 px-3 py-2"
+                >
                   <input
                     type="checkbox"
                     checked={targetClassRoomIds.includes(c.id)}
                     onChange={() => toggleClass(c.id)}
                     className="rounded border-brand-200"
                   />
-                  <span className="text-sm">{c.code} - {c.name}</span>
+                  <span className="text-sm">
+                    {c.code} - {c.name}
+                  </span>
                 </label>
               ))}
             </div>
@@ -236,7 +236,10 @@ export function AnnouncementDetailPage() {
           <p className="whitespace-pre-wrap text-slate-600">{item.body}</p>
           <div className="mt-4 text-sm text-slate-500">
             Audience: {item.audience} •{' '}
-            {item.publishedAt ? `Published ${new Date(item.publishedAt).toLocaleString()}` : 'Draft'} •{' '}
+            {item.publishedAt
+              ? `Published ${new Date(item.publishedAt).toLocaleString()}`
+              : 'Draft'}{' '}
+            •{' '}
             {item.expiresAt ? `Expires ${new Date(item.expiresAt).toLocaleString()}` : 'No expiry'}
           </div>
           {canManage ? (

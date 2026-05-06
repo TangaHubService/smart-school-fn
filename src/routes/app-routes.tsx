@@ -76,8 +76,7 @@ import { PublicAboutPage } from '../pages/public-about-page';
 import { PublicContactPage } from '../pages/public-contact-page';
 import { PublicCoursesPage } from '../pages/public-courses-page';
 import { PublicProgramsAdvertPage } from '../pages/public-programs-advert-page';
-import { PublicJobsPage } from '../pages/public-jobs-page';
-import { PublicJobDetailPage } from '../pages/public-job-detail-page';
+
 import { PrivacyPage } from '../pages/privacy-page';
 import { TermsPage } from '../pages/terms-page';
 import { CookiesPage } from '../pages/cookies-page';
@@ -98,8 +97,7 @@ export function AppRoutes() {
         <Route path="/courses/categories" element={<PublicCoursesPage />} />
         <Route path="/courses/category/:categoryId" element={<PublicCoursesPage />} />
         <Route path="/tuition" element={<Navigate to="/academy" replace />} />
-        <Route path="/job-listing" element={<PublicJobsPage />} />
-        <Route path="/job-listing/:slug" element={<PublicJobDetailPage />} />
+
         <Route path="/contact" element={<PublicContactPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
@@ -136,8 +134,14 @@ export function AppRoutes() {
           </Route>
 
           <Route element={<RequirePermission permission="tenants.create" />}>
-            <Route path="/super-admin/tenants/new" element={<Navigate to="/super-admin/schools?create=1" replace />} />
-            <Route path="/super-admin/schools/new" element={<Navigate to="/super-admin/schools?create=1" replace />} />
+            <Route
+              path="/super-admin/tenants/new"
+              element={<Navigate to="/super-admin/schools?create=1" replace />}
+            />
+            <Route
+              path="/super-admin/schools/new"
+              element={<Navigate to="/super-admin/schools?create=1" replace />}
+            />
           </Route>
 
           <Route element={<RequirePermission permission="school.setup.manage" />}>
@@ -219,10 +223,16 @@ export function AppRoutes() {
             </Route>
             {assessmentsFeatureEnabled ? (
               <>
-                <Route path="/admin/assignments" element={<Navigate to="/admin/assessments" replace />} />
+                <Route
+                  path="/admin/assignments"
+                  element={<Navigate to="/admin/assessments" replace />}
+                />
                 <Route element={<RequirePermission permission="assessments.read" />}>
                   <Route path="/admin/assessments" element={<AssessmentsPage />} />
-                  <Route path="/admin/assessments/:assessmentId" element={<AssessmentDetailPage />} />
+                  <Route
+                    path="/admin/assessments/:assessmentId"
+                    element={<AssessmentDetailPage />}
+                  />
                 </Route>
               </>
             ) : (
@@ -232,7 +242,10 @@ export function AppRoutes() {
             )}
             <Route element={<RequirePermission permission="students.read" />}>
               <Route path="/admin/students" element={<StudentsPage />} />
-              <Route path="/admin/students/:studentId/conduct" element={<StudentConductProfilePage />} />
+              <Route
+                path="/admin/students/:studentId/conduct"
+                element={<StudentConductProfilePage />}
+              />
             </Route>
           </Route>
 
@@ -250,8 +263,14 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="students.my_courses.read" />}>
             <Route path="/student/courses" element={<StudentCoursesPage />} />
             <Route path="/student/courses/:courseId" element={<StudentCoursesPage />} />
-            <Route path="/student/courses/:courseId/lessons/:lessonId" element={<StudentCoursesPage />} />
-            <Route path="/student/courses/:courseId/tests/:assignmentId" element={<StudentCoursesPage />} />
+            <Route
+              path="/student/courses/:courseId/lessons/:lessonId"
+              element={<StudentCoursesPage />}
+            />
+            <Route
+              path="/student/courses/:courseId/tests/:assignmentId"
+              element={<StudentCoursesPage />}
+            />
             <Route path="/student/assignments" element={<StudentAssignmentsPage />} />
           </Route>
           <Route element={<RequirePermission permission="report_cards.my_read" />}>
@@ -260,7 +279,10 @@ export function AppRoutes() {
           {assessmentsFeatureEnabled ? (
             <Route element={<RequirePermission permission="assessments.submit" />}>
               <Route path="/student/assessments" element={<StudentAssessmentsPage />} />
-              <Route path="/student/assessments/:assessmentId" element={<StudentAssessmentDetailPage />} />
+              <Route
+                path="/student/assessments/:assessmentId"
+                element={<StudentAssessmentDetailPage />}
+              />
               <Route
                 path="/student/assessments/:assessmentId/attempts/:attemptId"
                 element={<StudentAssessmentAttemptPage />}
@@ -290,11 +312,17 @@ export function AppRoutes() {
           ) : null}
           <Route path="/conduct" element={<Navigate to="/admin/conduct-marks" replace />} />
           <Route path="/students" element={<Navigate to="/admin/classes" replace />} />
-          <Route path="/student-results" element={<Navigate to="/student/report-cards" replace />} />
+          <Route
+            path="/student-results"
+            element={<Navigate to="/student/report-cards" replace />}
+          />
           <Route path="/parent-results" element={<Navigate to="/parent/report-cards" replace />} />
           <Route path="/parents" element={<Navigate to="/admin/parents" replace />} />
           <Route path="/staff" element={<Navigate to="/admin/staff" replace />} />
-          <Route path="/tenants/new" element={<Navigate to="/super-admin/schools?create=1" replace />} />
+          <Route
+            path="/tenants/new"
+            element={<Navigate to="/super-admin/schools?create=1" replace />}
+          />
         </Route>
       </Route>
 

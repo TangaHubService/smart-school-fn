@@ -29,10 +29,7 @@ import {
   htmlToPlainText,
 } from '../features/assessments/assessment-ui';
 import { hasPermission } from '../features/auth/auth-helpers';
-import {
-  listAcademicYearsApi,
-  listClassRoomsApi,
-} from '../features/sprint1/sprint1.api';
+import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { getCourseDetailApi, listCoursesApi } from '../features/sprint4/lms.api';
 
 interface AcademicYearOption {
@@ -146,7 +143,9 @@ export function AssessmentsPage() {
       publishAssessmentApi(auth.accessToken!, assessmentId, isPublished),
     onSuccess: (_result, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['assessments'] });
-      void queryClient.invalidateQueries({ queryKey: ['assessment-detail', variables.assessmentId] });
+      void queryClient.invalidateQueries({
+        queryKey: ['assessment-detail', variables.assessmentId],
+      });
       showToast({
         type: 'success',
         title: variables.isPublished ? 'Assessment published' : 'Assessment moved back to draft',
@@ -179,11 +178,11 @@ export function AssessmentsPage() {
 
   const academicYears = useMemo(
     () => ((yearsQuery.data as AcademicYearOption[] | undefined) ?? []).slice(),
-    [yearsQuery.data],
+    [yearsQuery.data]
   );
   const classRooms = useMemo(
     () => ((classesQuery.data as ClassRoomOption[] | undefined) ?? []).slice(),
-    [classesQuery.data],
+    [classesQuery.data]
   );
   const courseOptions = courseOptionsQuery.data?.items ?? [];
   const lessonsForCreate = createCourseDetailQuery.data?.lessons.items ?? [];
@@ -290,7 +289,10 @@ export function AssessmentsPage() {
           {assessmentsQuery.isPending ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="h-48 animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
+                <div
+                  key={index}
+                  className="h-48 animate-pulse rounded-2xl border border-brand-100 bg-white/70"
+                />
               ))}
             </div>
           ) : null}
@@ -337,13 +339,21 @@ export function AssessmentsPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
-                      <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.counts.questions} questions</span>
-                      <span className="rounded-full bg-brand-100 px-2.5 py-1">{assessment.counts.attempts} attempts</span>
-                      <span className="rounded-full bg-brand-100 px-2.5 py-1">{formatAssessmentDateTime(assessment.dueAt)}</span>
+                      <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                        {assessment.counts.questions} questions
+                      </span>
+                      <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                        {assessment.counts.attempts} attempts
+                      </span>
+                      <span className="rounded-full bg-brand-100 px-2.5 py-1">
+                        {formatAssessmentDateTime(assessment.dueAt)}
+                      </span>
                     </div>
 
                     <div className="grid gap-1 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                      <p className="break-words font-medium text-slate-900">{assessment.course.classRoom.name}</p>
+                      <p className="break-words font-medium text-slate-900">
+                        {assessment.course.classRoom.name}
+                      </p>
                       <p className="break-words">{assessment.course.academicYear.name}</p>
                     </div>
 
@@ -402,7 +412,9 @@ export function AssessmentsPage() {
                               title: assessment.title,
                             })
                           }
-                          disabled={assessment.counts.attempts > 0 || deleteAssessmentMutation.isPending}
+                          disabled={
+                            assessment.counts.attempts > 0 || deleteAssessmentMutation.isPending
+                          }
                           title={
                             assessment.counts.attempts > 0
                               ? 'Assessments cannot be deleted after students start attempting them.'
@@ -456,7 +468,9 @@ export function AssessmentsPage() {
             </button>
             <button
               type="button"
-              onClick={assessmentForm.handleSubmit((values) => createAssessmentMutation.mutate(values))}
+              onClick={assessmentForm.handleSubmit((values) =>
+                createAssessmentMutation.mutate(values)
+              )}
               disabled={createAssessmentMutation.isPending}
               className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
@@ -480,7 +494,9 @@ export function AssessmentsPage() {
               ))}
             </select>
             {assessmentForm.formState.errors.courseId ? (
-              <span className="text-xs text-rose-600">{assessmentForm.formState.errors.courseId.message}</span>
+              <span className="text-xs text-rose-600">
+                {assessmentForm.formState.errors.courseId.message}
+              </span>
             ) : null}
           </label>
 
@@ -521,7 +537,9 @@ export function AssessmentsPage() {
               placeholder="End of unit quick check"
             />
             {assessmentForm.formState.errors.title ? (
-              <span className="text-xs text-rose-600">{assessmentForm.formState.errors.title.message}</span>
+              <span className="text-xs text-rose-600">
+                {assessmentForm.formState.errors.title.message}
+              </span>
             ) : null}
           </label>
 
@@ -590,7 +608,9 @@ export function AssessmentsPage() {
             </button>
             <button
               type="button"
-              onClick={() => assessmentToDelete && deleteAssessmentMutation.mutate(assessmentToDelete.id)}
+              onClick={() =>
+                assessmentToDelete && deleteAssessmentMutation.mutate(assessmentToDelete.id)
+              }
               disabled={deleteAssessmentMutation.isPending}
               className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
