@@ -83,7 +83,10 @@
     "student-assignments": "Assignments",
     "student-report-cards": "Report Cards",
     "student-assessments": "Tests",
-    "student-announcements": "Announcements"
+    "student-announcements": "Announcements",
+    "auditor-dashboard": "Dashboard",
+    "auditor-schools": "Schools",
+    "auditor-audits": "Audit History"
   },
   "connection": {
     "offlineTitle": "You are offline. Reconnect to submit quizzes and sync progress.",

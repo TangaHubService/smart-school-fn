@@ -6,7 +6,6 @@ import { ProtectedRoute } from '../components/protected-route';
 import { RequireAnyPermission, RequirePermission } from '../components/require-permission';
 import { RequireSetupComplete } from '../components/require-setup-complete';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
-import { govAuditingFeatureEnabled } from '../features/gov/feature';
 import { AcademicYearsPage } from '../pages/academic-years-page';
 import { AcceptInvitePage } from '../pages/accept-invite-page';
 import { AssessmentDetailPage } from '../pages/assessment-detail-page';
@@ -20,18 +19,6 @@ import { AcademyProgramsAdminPage } from '../pages/academy-programs-admin-page';
 import { CoursesPage } from '../pages/courses-page';
 import { DashboardPage } from '../pages/dashboard-page';
 import { ExamsPage } from '../pages/exams-page';
-import { GovMyScopePage } from '../pages/gov-my-scope-page';
-import { GovActivityLogsPage } from '../pages/gov-activity-logs-page';
-import { GovAuditsPage } from '../pages/gov-audits-page';
-import { GovAuditorsPage } from '../pages/gov-auditors-page';
-import { GovConductAuditPage } from '../pages/gov-conduct-audit-page';
-import { GovDashboardPage } from '../pages/gov-dashboard-page';
-import { GovIncidentDetailPage } from '../pages/gov-incident-detail-page';
-import { GovIncidentsPage } from '../pages/gov-incidents-page';
-import { GovPlanAuditPage } from '../pages/gov-plan-audit-page';
-import { GovReportsPage } from '../pages/gov-reports-page';
-import { GovSchoolDetailPage } from '../pages/gov-school-detail-page';
-import { GovSchoolsPage } from '../pages/gov-schools-page';
 import { LoginPage } from '../pages/login-page';
 import { ForgotPasswordPage } from '../pages/forgot-password-page';
 import { ResetPasswordPage } from '../pages/reset-password-page';
@@ -81,6 +68,11 @@ import { PrivacyPage } from '../pages/privacy-page';
 import { TermsPage } from '../pages/terms-page';
 import { CookiesPage } from '../pages/cookies-page';
 import { TeacherLearningInsightsPage } from '../pages/teacher-learning-insights-page';
+import { AuditorDashboardPage } from '../pages/auditor-dashboard-page';
+import { AuditorSchoolsPage } from '../pages/auditor-schools-page';
+import { AuditorAuditFormPage } from '../pages/auditor-audit-form-page';
+import { AuditorAuditHistoryPage } from '../pages/auditor-audit-history-page';
+import { AdminAuditorsPage } from '../pages/admin-auditors-page';
 
 export function AppRoutes() {
   return (
@@ -131,6 +123,7 @@ export function AppRoutes() {
             <Route path="/super-admin/support" element={<SupportCenterPage />} />
             <Route path="/super-admin/audit-logs" element={<AuditLogsPage />} />
             <Route path="/super-admin/access-control" element={<AccessControlPage />} />
+            <Route path="/super-admin/auditors" element={<AdminAuditorsPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="tenants.create" />}>
@@ -148,31 +141,13 @@ export function AppRoutes() {
             <Route path="/admin/setup" element={<SetupWizardPage />} />
           </Route>
 
-          {govAuditingFeatureEnabled ? (
-            <>
-              <Route element={<RequirePermission permission="gov.dashboard.read" />}>
-                <Route path="/gov" element={<GovDashboardPage />} />
-                <Route path="/gov/reports" element={<GovReportsPage />} />
-                <Route path="/gov/activity-logs" element={<GovActivityLogsPage />} />
-              </Route>
-              <Route element={<RequirePermission permission="gov.schools.read" />}>
-                <Route path="/gov/schools" element={<GovSchoolsPage />} />
-                <Route path="/gov/schools/:tenantId" element={<GovSchoolDetailPage />} />
-                <Route path="/gov/audits" element={<GovAuditsPage />} />
-                <Route path="/gov/audits/:auditId/conduct" element={<GovConductAuditPage />} />
-              </Route>
-              <Route element={<RequirePermission permission="gov.feedback.manage" />}>
-                <Route path="/gov/audits/new" element={<GovPlanAuditPage />} />
-              </Route>
-              <Route element={<RequirePermission permission="gov.incidents.read" />}>
-                <Route path="/gov/incidents" element={<GovIncidentsPage />} />
-                <Route path="/gov/my-scope" element={<GovMyScopePage />} />
-              </Route>
-              <Route element={<RequirePermission permission="gov.auditors.manage" />}>
-                <Route path="/gov/admin/auditors" element={<GovAuditorsPage />} />
-              </Route>
-            </>
-          ) : null}
+          <Route element={<RequireAnyPermission permissions={['academic_audit.read', 'academic_audit.list', 'academic_audit.submit']} />}>
+            <Route path="/auditor" element={<AuditorDashboardPage />} />
+            <Route path="/auditor/dashboard" element={<AuditorDashboardPage />} />
+            <Route path="/auditor/schools" element={<AuditorSchoolsPage />} />
+            <Route path="/auditor/audits" element={<AuditorAuditHistoryPage />} />
+            <Route path="/auditor/audit/:schoolId/:module" element={<AuditorAuditFormPage />} />
+          </Route>
 
           <Route element={<RequireSetupComplete />}>
             <Route element={<RequirePermission permission="academic_year.manage" />}>

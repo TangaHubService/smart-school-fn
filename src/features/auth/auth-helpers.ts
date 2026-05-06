@@ -21,12 +21,12 @@ export function getDefaultLandingPath(me: MeResponse | null | undefined): string
     return '/login';
   }
 
-  if (isSuperAdmin(me)) {
-    return '/admin';
+  if (hasRole(me, 'GOV_AUDITOR')) {
+    return '/auditor/dashboard';
   }
 
-  if (hasPermission(me, 'gov.dashboard.read')) {
-    return '/gov';
+  if (isSuperAdmin(me)) {
+    return '/admin';
   }
 
   if (hasPermission(me, 'school.setup.manage')) {

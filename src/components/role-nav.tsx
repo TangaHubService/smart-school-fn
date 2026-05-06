@@ -19,15 +19,13 @@ import {
   Shapes,
   ShieldCheck,
   Users,
-  UserSquare2,
   type LucideIcon,
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../features/auth/auth.context';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
-import { govAuditingFeatureEnabled } from '../features/gov/feature';
 import { hasPermission, hasRole, isSchoolSetupComplete } from '../features/auth/auth-helpers';
 
 type SetupState = 'ANY' | 'INCOMPLETE' | 'COMPLETE';
@@ -47,11 +45,10 @@ const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
   dashboard: 'Dashboard',
   tenants: 'School Management',
   users: 'Users',
-  'gov-auditors': 'Auditor Management',
   announcements: 'Announcements',
   'audit-logs': 'Activity Logs',
-  'gov-audits': 'Audits',
-  'gov-reports': 'Reports',
+  'auditor-management': 'Auditor Management',
+  subscriptions: 'Subscription Management',
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -80,6 +77,15 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Building2,
     roles: ['SUPER_ADMIN'],
     requiredPermissions: ['tenants.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'auditor-management',
+    label: 'Auditor Management',
+    to: '/super-admin/auditors',
+    icon: ShieldCheck,
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: [],
     setupState: 'ANY',
   },
   {
@@ -133,7 +139,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Attendance',
     to: '/admin/attendance',
     icon: ClipboardList,
-    roles: ['SCHOOL_ADMIN', 'TEACHER'],
+    roles: ['SCHOOL_ADMIN', 'TEACHER', 'GOV_AUDITOR'],
     requiredPermissions: ['attendance.read'],
     setupState: 'COMPLETE',
   },
@@ -152,7 +158,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Course Management',
     to: '/admin/courses',
     icon: BookOpen,
-    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'GOV_AUDITOR'],
     requiredPermissionsOr: ['courses.read', 'subject.manage'],
     requiredPermissions: [],
     setupState: 'COMPLETE',
@@ -162,7 +168,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Learning insights',
     to: '/admin/learning-insights',
     icon: BarChart3,
-    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'GOV_AUDITOR'],
     requiredPermissionsOr: ['courses.read', 'subject.manage'],
     requiredPermissions: [],
     setupState: 'COMPLETE',
@@ -182,7 +188,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Continuous Assessment Test',
     to: '/admin/assessments',
     icon: BadgeCheck,
-    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'GOV_AUDITOR'],
     requiredPermissionsOr: ['assessments.read', 'courses.read'],
     requiredPermissions: [],
     setupState: 'COMPLETE',
@@ -201,7 +207,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Marks',
     to: '/admin/class-marks',
     icon: FileBarChart2,
-    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'GOV_AUDITOR'],
     requiredPermissions: ['exams.read'],
     setupState: 'COMPLETE',
   },
@@ -229,7 +235,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Timetable',
     to: '/admin/timetable',
     icon: CalendarDays,
-    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'GOV_AUDITOR'],
     requiredPermissions: ['timetable.read'],
     setupState: 'COMPLETE',
   },
@@ -324,78 +330,6 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
-    key: 'gov-dashboard',
-    label: 'Gov Dashboard',
-    to: '/gov',
-    icon: Home,
-    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
-    requiredPermissions: ['gov.dashboard.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'gov-schools',
-    label: 'Gov Schools',
-    to: '/gov/schools',
-    icon: Building2,
-    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
-    requiredPermissions: ['gov.schools.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'gov-audits',
-    label: 'Audits',
-    to: '/gov/audits',
-    icon: ClipboardCheck,
-    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
-    requiredPermissions: ['gov.schools.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'gov-reports',
-    label: 'Reports',
-    to: '/gov/reports',
-    icon: FileBarChart2,
-    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
-    requiredPermissions: ['gov.dashboard.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'gov-activity-logs',
-    label: 'Activity Logs',
-    to: '/gov/activity-logs',
-    icon: ClipboardList,
-    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
-    requiredPermissions: ['gov.dashboard.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'gov-incidents',
-    label: 'Gov Incidents',
-    to: '/gov/incidents',
-    icon: FileBarChart2,
-    roles: ['GOV_AUDITOR', 'SUPER_ADMIN'],
-    requiredPermissions: ['gov.incidents.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'my-scope',
-    label: 'My Scope',
-    to: '/gov/my-scope',
-    icon: ShieldCheck,
-    roles: ['GOV_AUDITOR'],
-    requiredPermissions: ['gov.dashboard.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'gov-auditors',
-    label: 'Auditor Admin',
-    to: '/gov/admin/auditors',
-    icon: ShieldCheck,
-    roles: ['SUPER_ADMIN'],
-    requiredPermissions: ['gov.auditors.manage'],
-    setupState: 'ANY',
-  },
-  {
     key: 'student-dashboard',
     label: 'Dashboard',
     to: '/student/dashboard',
@@ -458,6 +392,60 @@ export const NAV_ITEMS: NavItem[] = [
     requiredPermissions: ['announcements.my_read'],
     setupState: 'ANY',
   },
+  {
+    key: 'auditor-dashboard',
+    label: 'Dashboard',
+    to: '/auditor/dashboard',
+    icon: Home,
+    roles: ['GOV_AUDITOR'],
+    requiredPermissions: ['academic_audit.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'auditor-attendance',
+    label: 'Attendance',
+    to: '/auditor/schools?module=ATTENDANCE',
+    icon: ClipboardList,
+    roles: ['GOV_AUDITOR'],
+    requiredPermissions: ['attendance.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'auditor-courses',
+    label: 'Course Management',
+    to: '/auditor/schools?module=COURSE_MANAGEMENT',
+    icon: BookOpen,
+    roles: ['GOV_AUDITOR'],
+    requiredPermissions: ['courses.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'auditor-learning-insights',
+    label: 'Learning Insights',
+    to: '/auditor/schools?module=LEARNING_INSIGHTS',
+    icon: BarChart3,
+    roles: ['GOV_AUDITOR'],
+    requiredPermissions: ['courses.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'auditor-continuous-assessment',
+    label: 'Continuous Assessment Test',
+    to: '/auditor/schools?module=CONTINUOUS_ASSESSMENTS',
+    icon: ClipboardCheck,
+    roles: ['GOV_AUDITOR'],
+    requiredPermissions: ['assessments.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'auditor-marks',
+    label: 'Marks',
+    to: '/auditor/schools?module=MARKS',
+    icon: FileBarChart2,
+    roles: ['GOV_AUDITOR'],
+    requiredPermissions: ['exams.read'],
+    setupState: 'ANY',
+  },
 ];
 
 interface RoleNavProps {
@@ -467,9 +455,15 @@ interface RoleNavProps {
 export function RoleNav({ onNavigate }: RoleNavProps) {
   const { t } = useTranslation('common');
   const auth = useAuth();
+  const location = useLocation();
   const setupComplete = isSchoolSetupComplete(auth.me);
   const superAdmin = hasRole(auth.me, 'SUPER_ADMIN');
+  const auditor = hasRole(auth.me, 'GOV_AUDITOR');
   const schoolAdmin = hasPermission(auth.me, 'school.setup.manage') && !superAdmin;
+  const activeAuditorModule =
+    new URLSearchParams(location.search).get('module') ??
+    location.pathname.match(/^\/auditor\/audit\/[^/]+\/([^/]+)/)?.[1] ??
+    null;
 
   const getDashboardLabel = () => {
     if (superAdmin) return t('headerTitle.superAdmin');
@@ -481,10 +475,47 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     'dashboard',
     'tenants',
     'users',
-    'gov-auditors',
     'announcements',
     'audit-logs',
     'subscriptions',
+    'auditor-management',
+  ]);
+  const ADMIN_KEYS = new Set([
+    'dashboard',
+    'classes',
+    'students',
+    'teachers',
+    'parents',
+    'courses',
+    'subjects',
+    'attendance',
+    'exams',
+    'class-marks',
+    'report-cards',
+    'timetable',
+    'announcements',
+    'learning-insights',
+    'assignments',
+    'assessments',
+    'conduct-marks',
+    'staff',
+    'users',
+    'roles',
+    'school-setup',
+    'settings',
+    'reports',
+    'audit-logs',
+    'my-classes',
+    'incidents',
+  ]);
+
+  const AUDITOR_KEYS = new Set([
+    'auditor-dashboard',
+    'auditor-attendance',
+    'auditor-courses',
+    'auditor-learning-insights',
+    'auditor-continuous-assessment',
+    'auditor-marks',
   ]);
 
   const items = NAV_ITEMS.filter((item) => {
@@ -495,10 +526,6 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
       return false;
     }
 
-    if (!govAuditingFeatureEnabled && item.key.startsWith('gov-')) {
-      return false;
-    }
-
     // Hide academy programs for non-academy schools.
     if (item.key === 'academy-programs' && !auth.me?.tenant?.isAcademyCatalog) {
       return false;
@@ -506,6 +533,10 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
 
     if (superAdmin) {
       return SUPER_ADMIN_KEYS.has(item.key);
+    }
+
+    if (auditor) {
+      return AUDITOR_KEYS.has(item.key);
     }
 
     const hasAllowedRole = item.roles.some((role) => hasRole(auth.me, role));
@@ -525,7 +556,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
       return false;
     }
 
-    if (item.setupState === 'COMPLETE' && !setupComplete) {
+    if (item.setupState === 'COMPLETE' && !setupComplete && !auditor) {
       return false;
     }
 
@@ -535,6 +566,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
   return (
     <nav aria-label="Primary" className="grid w-max gap-0.5">
       {items.map((item) => {
+        const itemModule = item.to.match(/[?&]module=([^&]+)/)?.[1] ?? null;
         const label =
           item.key === 'dashboard' || item.key === 'student-dashboard'
             ? item.key === 'student-dashboard'
@@ -551,14 +583,16 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
               to={item.to}
               end={item.key === 'dashboard' || item.key === 'student-dashboard'}
               onClick={onNavigate}
-              className={({ isActive }) =>
-                clsx(
+              className={({ isActive }) => {
+                const itemIsActive = itemModule ? activeAuditorModule === itemModule : isActive;
+
+                return clsx(
                   'group flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition duration-150',
-                  isActive
+                  itemIsActive
                     ? 'bg-white text-[#173C7F] shadow-sm ring-1 ring-brand-200'
                     : 'text-white/90 hover:bg-white/20 hover:text-white'
-                )
-              }
+                );
+              }}
             >
               <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{label}</span>

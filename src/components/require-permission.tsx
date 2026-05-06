@@ -10,8 +10,9 @@ interface RequirePermissionProps {
 export function RequirePermission({ permission }: RequirePermissionProps) {
   const auth = useAuth();
   const isSuperAdmin = hasRole(auth.me, 'SUPER_ADMIN');
+  const isAuditor = hasRole(auth.me, 'GOV_AUDITOR');
 
-  if (isSuperAdmin) {
+  if (isSuperAdmin || isAuditor) {
     return <Outlet />;
   }
 
@@ -31,8 +32,9 @@ interface RequireAnyPermissionProps {
 export function RequireAnyPermission({ permissions }: RequireAnyPermissionProps) {
   const auth = useAuth();
   const isSuperAdmin = hasRole(auth.me, 'SUPER_ADMIN');
+  const isAuditor = hasRole(auth.me, 'GOV_AUDITOR');
 
-  if (isSuperAdmin) {
+  if (isSuperAdmin || isAuditor) {
     return <Outlet />;
   }
 
