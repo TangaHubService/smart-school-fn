@@ -21,7 +21,10 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  if (hasRole(auth.me, 'GOV_AUDITOR') && (location.pathname === '/admin' || location.pathname === '/dashboard')) {
+  if (
+    hasRole(auth.me, 'GOV_AUDITOR') &&
+    (location.pathname === '/admin' || location.pathname === '/dashboard')
+  ) {
     return <Navigate to="/auditor/dashboard" replace />;
   }
 

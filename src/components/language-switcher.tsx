@@ -8,7 +8,6 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
 
   return (
     <label className={`flex items-center gap-2 text-sm ${className}`} title={t('language.label')}>
-      <Languages className="h-4 w-4" aria-hidden />
       <select
         value={i18n.language.startsWith('rw') ? 'rw' : i18n.language.startsWith('fr') ? 'fr' : 'en'}
         onChange={(e) => {

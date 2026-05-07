@@ -58,9 +58,7 @@ export function ContactForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name as keyof FormErrors]) {
@@ -114,9 +112,7 @@ export function ContactForm() {
               placeholder="John Doe"
               className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
-            {errors.name && (
-              <p className="text-xs text-red-500">{errors.name}</p>
-            )}
+            {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -135,9 +131,7 @@ export function ContactForm() {
               placeholder="john@example.com"
               className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
-            {errors.email && (
-              <p className="text-xs text-red-500">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
           </div>
         </div>
 
@@ -157,9 +151,7 @@ export function ContactForm() {
             placeholder="How can we help you?"
             className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
-          {errors.subject && (
-            <p className="text-xs text-red-500">{errors.subject}</p>
-          )}
+          {errors.subject && <p className="text-xs text-red-500">{errors.subject}</p>}
         </div>
 
         <div className="space-y-1.5">
@@ -178,9 +170,7 @@ export function ContactForm() {
             placeholder="Tell us more about what you need..."
             className="w-full resize-none rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
-          {errors.message && (
-            <p className="text-xs text-red-500">{errors.message}</p>
-          )}
+          {errors.message && <p className="text-xs text-red-500">{errors.message}</p>}
         </div>
 
         <button

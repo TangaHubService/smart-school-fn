@@ -20,8 +20,8 @@ export function HeroSection() {
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-300 md:text-xl">
-          Have questions or need assistance? Our team is here to help you with
-          any inquiries about Smart School Rwanda.
+          Have questions or need assistance? Our team is here to help you with any inquiries about
+          Smart School Rwanda.
         </p>
 
         <div className="mt-10 flex flex-wrap justify-center gap-6 md:gap-8">

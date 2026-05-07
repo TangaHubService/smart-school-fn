@@ -221,15 +221,7 @@ export const NAV_ITEMS: NavItem[] = [
     requiredPermissions: [],
     setupState: 'COMPLETE',
   },
-  {
-    key: 'report-cards',
-    label: 'Report cards',
-    to: '/admin/report-cards',
-    icon: FileBarChart2,
-    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
-    requiredPermissions: ['report_cards.read'],
-    setupState: 'COMPLETE',
-  },
+
   {
     key: 'timetable',
     label: 'Timetable',

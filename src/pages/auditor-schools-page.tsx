@@ -56,7 +56,7 @@ export function AuditorSchoolsPage() {
     s.displayName.toLowerCase().includes(search.toLowerCase())
   );
   const selectedSchoolInScope = selectedSchoolId
-    ? schools?.some((school) => school.id === selectedSchoolId) ?? false
+    ? (schools?.some((school) => school.id === selectedSchoolId) ?? false)
     : false;
   const activeSchoolId = selectedSchoolInScope ? selectedSchoolId : null;
 
@@ -103,7 +103,7 @@ export function AuditorSchoolsPage() {
                 isActive
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-                }`}
+              }`}
             >
               {ACADEMIC_AUDIT_MODULE_LABELS[module]}
             </button>

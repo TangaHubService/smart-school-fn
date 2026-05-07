@@ -35,9 +35,7 @@ export function ContactInfo() {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-bold text-slate-900">Contact Information</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Reach out to us through any of these channels.
-      </p>
+      <p className="mt-1 text-sm text-slate-500">Reach out to us through any of these channels.</p>
 
       <div className="mt-6 space-y-4">
         {contactDetails.map((item) => (

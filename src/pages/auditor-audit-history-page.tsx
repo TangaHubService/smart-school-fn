@@ -72,28 +72,19 @@ export function AuditorAuditHistoryPage() {
                     : 'bg-red-100 text-red-700';
 
               return (
-                <div
-                  key={audit.id}
-                  className="rounded-lg border bg-white p-4 shadow-sm"
-                >
+                <div key={audit.id} className="rounded-lg border bg-white p-4 shadow-sm">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
                       <div className="rounded-lg bg-slate-100 p-2">
                         <Icon className="h-5 w-5 text-slate-600" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-slate-900">
-                          {audit.school.displayName}
-                        </h3>
+                        <h3 className="font-medium text-slate-900">{audit.school.displayName}</h3>
                         <p className="text-sm text-slate-500">
                           {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]}
                         </p>
                         <p className="text-xs text-slate-400 mt-1">
-                          {[
-                            audit.school.province,
-                            audit.school.district,
-                            audit.school.sector,
-                          ]
+                          {[audit.school.province, audit.school.district, audit.school.sector]
                             .filter(Boolean)
                             .join(' / ')}
                         </p>

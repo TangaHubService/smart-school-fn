@@ -141,7 +141,17 @@ export function AppRoutes() {
             <Route path="/admin/setup" element={<SetupWizardPage />} />
           </Route>
 
-          <Route element={<RequireAnyPermission permissions={['academic_audit.read', 'academic_audit.list', 'academic_audit.submit']} />}>
+          <Route
+            element={
+              <RequireAnyPermission
+                permissions={[
+                  'academic_audit.read',
+                  'academic_audit.list',
+                  'academic_audit.submit',
+                ]}
+              />
+            }
+          >
             <Route path="/auditor" element={<AuditorDashboardPage />} />
             <Route path="/auditor/dashboard" element={<AuditorDashboardPage />} />
             <Route path="/auditor/schools" element={<AuditorSchoolsPage />} />
