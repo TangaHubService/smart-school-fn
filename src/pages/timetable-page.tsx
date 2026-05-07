@@ -7,7 +7,6 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
-import { listCoursesApi } from '../features/sprint4/lms.api';
 import {
   bulkUpsertTimetableSlotsApi,
   listTimetableSlotsApi,
@@ -16,6 +15,7 @@ import {
 import {
   listAcademicYearsApi,
   listClassRoomsApi,
+  listSubjectsApi,
   listTermsApi,
 } from '../features/sprint1/sprint1.api';
 
@@ -87,15 +87,10 @@ export function TimetablePage() {
       }),
   });
 
-  const coursesQuery = useQuery({
-    queryKey: ['courses', academicYearId, classRoomId],
-    enabled: Boolean(academicYearId && classRoomId && isEditMode),
-    queryFn: () =>
-      listCoursesApi(auth.accessToken!, {
-        academicYearId,
-        classId: classRoomId,
-        pageSize: 100,
-      }),
+  const subjectsQuery = useQuery({
+    queryKey: ['subjects'],
+    enabled: isEditMode,
+    queryFn: () => listSubjectsApi(auth.accessToken!),
   });
 
   const years = (yearsQuery.data ?? []) as Array<{ id: string; name: string }>;
@@ -106,10 +101,10 @@ export function TimetablePage() {
   }>;
   const classes = (classesQuery.data ?? []) as Array<{ id: string; code: string; name: string }>;
   const slots = slotsQuery.data?.slots ?? [];
-  const courses = (coursesQuery.data?.items ?? []) as Array<{
+  const subjects = (subjectsQuery.data ?? []) as Array<{
     id: string;
-    title: string;
-    subject?: { name: string } | null;
+    code: string;
+    name: string;
   }>;
 
   const effectiveTermId = termId || terms[0]?.id;
@@ -117,12 +112,12 @@ export function TimetablePage() {
   const saveMutation = useMutation({
     mutationFn: () => {
       const slots = Object.entries(editGrid)
-        .filter(([, courseId]) => courseId)
-        .map(([key, courseId]) => {
+        .filter(([, subjectId]) => subjectId)
+        .map(([key, subjectId]) => {
           const [day, period] = key.split('-').map(Number);
           const p = DEFAULT_PERIODS.find((x) => x.num === period)!;
           return {
-            courseId,
+            subjectId,
             dayOfWeek: day,
             periodNumber: period,
             startTime: p.start,
@@ -155,7 +150,8 @@ export function TimetablePage() {
   const initEditGrid = useCallback(() => {
     const next: Record<string, string> = {};
     for (const s of slots) {
-      next[`${s.dayOfWeek}-${s.periodNumber}`] = s.courseId;
+      const subjectId = s.course?.subject?.id ?? '';
+      next[`${s.dayOfWeek}-${s.periodNumber}`] = subjectId;
     }
     setEditGrid(next);
   }, [slots]);
@@ -193,11 +189,11 @@ export function TimetablePage() {
     saveMutation.mutate();
   };
 
-  const setEditCell = (day: number, period: number, courseId: string) => {
+  const setEditCell = (day: number, period: number, subjectId: string) => {
     const key = `${day}-${period}`;
     setEditGrid((prev) =>
-      courseId
-        ? { ...prev, [key]: courseId }
+      subjectId
+        ? { ...prev, [key]: subjectId }
         : (() => {
             const { [key]: _, ...rest } = prev;
             return rest;
@@ -379,15 +375,9 @@ export function TimetablePage() {
       {isEditMode && academicYearId && classRoomId ? (
         <div className="mb-4 space-y-2">
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Select a course for each slot. Leave empty to clear. Courses must exist for this class
-            and academic year.
+            Select a subject for each slot. Leave empty to clear. A course will be created
+            automatically if it doesn't exist.
           </div>
-          {!coursesQuery.isPending && courses.length === 0 ? (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
-              No courses found for this class and academic year. Create courses first in{' '}
-              <strong>Courses & Subjects</strong>.
-            </div>
-          ) : null}
           {terms.length > 1 && !termId ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
               Select a term above to save the timetable.
@@ -426,18 +416,11 @@ export function TimetablePage() {
                             className="h-9 w-full rounded-lg border border-brand-200 px-2 text-sm outline-none focus:border-brand-400"
                           >
                             <option value="">—</option>
-                            {courses.map(
-                              (c: {
-                                id: string;
-                                title: string;
-                                subject?: { name: string } | null;
-                              }) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.title}
-                                  {c.subject?.name ? ` (${c.subject.name})` : ''}
-                                </option>
-                              )
-                            )}
+                            {subjects.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.code} - {s.name}
+                              </option>
+                            ))}
                           </select>
                         </td>
                       ))}

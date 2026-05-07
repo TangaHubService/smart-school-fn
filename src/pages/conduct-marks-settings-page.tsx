@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
 import { ConductDeductionForm } from '../components/conduct-deduction-form';
+import { AppDrawer } from '../components/drawer';
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
@@ -125,30 +126,20 @@ export function ConductMarksSettingsPage() {
             }
           ></SectionCard>
 
-          {recordConductModalOpen ? (
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="conduct-settings-modal-title"
-              onClick={(e) => {
-                if (e.target === e.currentTarget) {
-                  setRecordConductModalOpen(false);
-                }
-              }}
-            >
-              <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-brand-100 bg-white p-5 shadow-xl">
-                <ConductDeductionForm
-                  accessToken={auth.accessToken}
-                  titleId="conduct-settings-modal-title"
-                  description=""
-                  showCancel
-                  onCancel={() => setRecordConductModalOpen(false)}
-                  onSuccess={() => setRecordConductModalOpen(false)}
-                />
-              </div>
-            </div>
-          ) : null}
+          <AppDrawer
+            open={recordConductModalOpen}
+            title="Record student conduct"
+            onClose={() => setRecordConductModalOpen(false)}
+            size="wide"
+          >
+            <ConductDeductionForm
+              accessToken={auth.accessToken}
+              description=""
+              showCancel
+              onCancel={() => setRecordConductModalOpen(false)}
+              onSuccess={() => setRecordConductModalOpen(false)}
+            />
+          </AppDrawer>
         </>
       ) : null}
 

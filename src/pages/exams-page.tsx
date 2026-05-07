@@ -13,8 +13,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ConfirmDrawer } from '../components/confirm-drawer';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { DrawerForm } from '../components/drawer-form';
+import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -809,195 +811,158 @@ export function ExamsPage() {
         </div>
       </SectionCard>
 
-      <Modal
+      <DrawerForm
         open={isExamModalOpen}
         title={examModalMode === 'edit' ? 'Edit test / exam' : 'Create test / exam'}
-        description={
-          examModalMode === 'edit'
-            ? 'Update the exam setup, naming, and assessment weights for this record.'
-            : 'Set the class, subject, and grading scheme before entering marks.'
-        }
-        onClose={closeExamModal}
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={closeExamModal}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={examForm.handleSubmit(submitExam)}
-              disabled={isSavingExam || isTeacherExamSubjectMissing}
-              className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {isSavingExam ? 'Saving...' : examModalMode === 'edit' ? 'Save changes' : 'Save exam'}
-            </button>
-          </div>
-        }
+        onCancel={closeExamModal}
+        isLoading={isSavingExam}
+        submitLabel={examModalMode === 'edit' ? 'Save changes' : 'Save exam'}
+        onSubmit={examForm.handleSubmit(submitExam)}
       >
-        <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
-          {isTeacherOnly && !subjects.length ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              No subject is assigned to your teaching load yet. Ask an administrator to assign at
-              least one subject before creating exams.
-            </div>
-          ) : null}
-
-          {isExamScopeLockedByMarks ? (
-            <div className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-slate-700">
-              This exam already has marks entered. You can still update details like the name,
-              weight, date, or grading scheme, but term, class, and subject stay fixed until the
-              marks are removed.
-            </div>
-          ) : null}
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Term</span>
-              <select
-                {...examForm.register('termId')}
-                disabled={isExamScopeLockedByMarks}
-                className={inputClassName}
-              >
-                <option value="">Select term</option>
-                {terms.map((term) => (
-                  <option key={term.id} value={term.id}>
-                    {term.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Class</span>
-              <select
-                {...examForm.register('classRoomId')}
-                disabled={isExamScopeLockedByMarks}
-                className={inputClassName}
-              >
-                <option value="">Select class</option>
-                {classRooms.map((classRoom) => (
-                  <option key={classRoom.id} value={classRoom.id}>
-                    {classRoom.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Subject</span>
-              <select
-                {...examForm.register('subjectId')}
-                disabled={isExamScopeLockedByMarks}
-                className={inputClassName}
-              >
-                <option value="">Select subject</option>
-                {subjects.map((subject) => (
-                  <option key={subject.id} value={subject.id}>
-                    {subject.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Grading scheme</span>
-              <select {...examForm.register('gradingSchemeId')} className={inputClassName}>
-                <option value="">Use default scheme</option>
-                {schemes.map((scheme) => (
-                  <option key={scheme.id} value={scheme.id}>
-                    {scheme.name} v{scheme.version}
-                  </option>
-                ))}
-              </select>
-            </label>
+        {isTeacherOnly && !subjects.length ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            No subject is assigned to your teaching load yet. Ask an administrator to assign at
+            least one subject before creating exams.
           </div>
+        ) : null}
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Exam type</span>
-              <select {...examForm.register('examType')} className={inputClassName}>
-                <option value="CAT">CAT (Continuous Assessment)</option>
-                <option value="EXAM">EXAM (End of term)</option>
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Exam name</span>
-              <input
-                {...examForm.register('name')}
-                className={inputClassName}
-                placeholder="Mid-term mathematics"
-              />
-            </label>
+        {isExamScopeLockedByMarks ? (
+          <div className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-slate-700">
+            This exam already has marks entered. You can still update details like the name, weight,
+            date, or grading scheme, but term, class, and subject stay fixed until the marks are
+            removed.
           </div>
+        ) : null}
 
+        <div className="grid gap-4 md:grid-cols-2">
           <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Description</span>
-            <textarea
-              {...examForm.register('description')}
-              rows={3}
-              className={textareaClassName}
-              placeholder="Optional notes about the exam scope."
+            <span>Term</span>
+            <select
+              {...examForm.register('termId')}
+              disabled={isExamScopeLockedByMarks}
+              className={inputClassName}
+            >
+              <option value="">Select term</option>
+              {terms.map((term) => (
+                <option key={term.id} value={term.id}>
+                  {term.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Class</span>
+            <select
+              {...examForm.register('classRoomId')}
+              disabled={isExamScopeLockedByMarks}
+              className={inputClassName}
+            >
+              <option value="">Select class</option>
+              {classRooms.map((classRoom) => (
+                <option key={classRoom.id} value={classRoom.id}>
+                  {classRoom.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Subject</span>
+            <select
+              {...examForm.register('subjectId')}
+              disabled={isExamScopeLockedByMarks}
+              className={inputClassName}
+            >
+              <option value="">Select subject</option>
+              {subjects.map((subject) => (
+                <option key={subject.id} value={subject.id}>
+                  {subject.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Grading scheme</span>
+            <select {...examForm.register('gradingSchemeId')} className={inputClassName}>
+              <option value="">Use default scheme</option>
+              {schemes.map((scheme) => (
+                <option key={scheme.id} value={scheme.id}>
+                  {scheme.name} v{scheme.version}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Exam type</span>
+            <select {...examForm.register('examType')} className={inputClassName}>
+              <option value="CAT">CAT (Continuous Assessment)</option>
+              <option value="EXAM">EXAM (End of term)</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Exam name</span>
+            <input
+              {...examForm.register('name')}
+              className={inputClassName}
+              placeholder="Mid-term mathematics"
             />
           </label>
+        </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Total marks</span>
-              <input
-                type="number"
-                min={1}
-                max={500}
-                {...examForm.register('totalMarks')}
-                className={inputClassName}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Weight</span>
-              <input
-                type="number"
-                min={1}
-                max={500}
-                {...examForm.register('weight')}
-                className={inputClassName}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Exam date</span>
-              <input
-                type="datetime-local"
-                {...examForm.register('examDate')}
-                className={inputClassName}
-              />
-            </label>
-          </div>
-        </form>
-      </Modal>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Description</span>
+          <textarea
+            {...examForm.register('description')}
+            rows={3}
+            className={textareaClassName}
+            placeholder="Optional notes about the exam scope."
+          />
+        </label>
 
-      <Modal
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Total marks</span>
+            <input
+              type="number"
+              min={1}
+              max={500}
+              {...examForm.register('totalMarks')}
+              className={inputClassName}
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Weight</span>
+            <input
+              type="number"
+              min={1}
+              max={500}
+              {...examForm.register('weight')}
+              className={inputClassName}
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Exam date</span>
+            <input
+              type="datetime-local"
+              {...examForm.register('examDate')}
+              className={inputClassName}
+            />
+          </label>
+        </div>
+      </DrawerForm>
+
+      <DrawerForm
         open={isSchemeModalOpen}
         title="Grading scheme"
-        description="Define the school grade bands used for report cards."
-        onClose={() => setIsSchemeModalOpen(false)}
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsSchemeModalOpen(false)}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => createSchemeMutation.mutate()}
-              disabled={createSchemeMutation.isPending}
-              className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Save scheme
-            </button>
-          </div>
-        }
+        onCancel={() => setIsSchemeModalOpen(false)}
+        isLoading={createSchemeMutation.isPending}
+        submitLabel="Save scheme"
+        onSubmit={(e) => {
+          e.preventDefault();
+          createSchemeMutation.mutate();
+        }}
       >
         <div className="grid gap-4">
           <label className="grid gap-1 text-sm font-medium text-slate-700">
@@ -1090,14 +1055,19 @@ export function ExamsPage() {
             ))}
           </div>
         </div>
-      </Modal>
+      </DrawerForm>
 
-      <Modal
+      <DrawerForm
         open={Boolean(marksExamId)}
         title={examDetailQuery.data ? `Marks entry: ${examDetailQuery.data.name}` : 'Marks entry'}
-        description="Use the grid to enter marks quickly. Leave a cell empty if a mark is still pending."
-        onClose={() => setMarksExamId('')}
-        footer={
+        onCancel={() => setMarksExamId('')}
+        isLoading={saveMarksMutation.isPending}
+        submitLabel="Save marks"
+        onSubmit={(e) => {
+          e.preventDefault();
+          saveMarksMutation.mutate();
+        }}
+        actions={
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm text-slate-600">
               {examDetailQuery.data?.warnings.missingCount ? (
@@ -1116,10 +1086,10 @@ export function ExamsPage() {
                 Close
               </button>
               <button
-                type="button"
-                onClick={() => saveMarksMutation.mutate()}
+                type="submit"
+                form="drawer-form"
                 disabled={saveMarksMutation.isPending || !examDetailQuery.data || !isMarksEditable}
-                className="rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 Save marks
               </button>
@@ -1224,54 +1194,26 @@ export function ExamsPage() {
             </div>
           </div>
         )}
-      </Modal>
+      </DrawerForm>
 
-      <Modal
+      <ConfirmDrawer
         open={Boolean(pendingDeleteExam)}
         title="Delete test / exam"
-        description="This removes the exam record and any marks entered for it."
-        onClose={() => {
+        message={`This removes ${
+          pendingDeleteExam?.name ?? 'this exam'
+        } from ${pendingDeleteExam?.classRoom.name ?? 'the selected class'} and any marks entered for it. This action cannot be undone.`}
+        onCancel={() => {
           if (!deleteExamMutation.isPending) {
             setPendingDeleteExam(null);
           }
         }}
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setPendingDeleteExam(null)}
-              disabled={deleteExamMutation.isPending}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => void confirmDeleteExam()}
-              disabled={deleteExamMutation.isPending}
-              className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
-            >
-              {deleteExamMutation.isPending ? 'Deleting...' : 'Delete exam'}
-            </button>
-          </div>
-        }
-      >
-        <div className="grid gap-3">
-          <p className="text-sm text-slate-700">
-            Delete <span className="font-semibold text-slate-900">{pendingDeleteExam?.name}</span>{' '}
-            from{' '}
-            <span className="font-semibold text-slate-900">
-              {pendingDeleteExam?.classRoom.name}
-            </span>
-            ?
-          </p>
-          <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800">
-            This action cannot be undone.
-          </div>
-        </div>
-      </Modal>
+        onConfirm={() => void confirmDeleteExam()}
+        confirmLabel="Delete exam"
+        isDestructive
+        isLoading={deleteExamMutation.isPending}
+      />
 
-      <Modal
+      <AppDrawer
         open={isConductModalOpen}
         title="Conduct grades"
         description="Enter conduct grade per student for the selected term and class. Shown on report cards."
@@ -1388,7 +1330,7 @@ export function ExamsPage() {
             </div>
           </div>
         )}
-      </Modal>
+      </AppDrawer>
     </div>
   );
 }

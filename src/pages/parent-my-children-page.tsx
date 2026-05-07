@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
@@ -195,7 +195,7 @@ export function ParentMyChildrenPage() {
         </div>
       ) : null}
 
-      <Modal
+      <AppDrawer
         open={Boolean(selectedStudent)}
         onClose={() => setSelectedStudent(null)}
         title="Attendance History"
@@ -303,9 +303,9 @@ export function ParentMyChildrenPage() {
             )}
           </div>
         ) : null}
-      </Modal>
+      </AppDrawer>
 
-      <Modal
+      <AppDrawer
         open={Boolean(learningStudent)}
         onClose={() => setLearningStudent(null)}
         title="Learning summary"
@@ -403,7 +403,7 @@ export function ParentMyChildrenPage() {
             </div>
           </div>
         ) : null}
-      </Modal>
+      </AppDrawer>
     </SectionCard>
   );
 }

@@ -18,8 +18,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { useSetStudentHeaderActions } from '../contexts/student-header-actions.context';
+import { DrawerForm } from '../components/drawer-form';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { RichContent } from '../components/rich-content';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
@@ -1221,72 +1222,50 @@ export function StudentCoursesPage() {
         </div>
       ) : null}
 
-      <Modal
+      <DrawerForm
         open={Boolean(submissionAssignment)}
         title={
           submissionAssignment ? `Submit · ${submissionAssignment.title}` : 'Submit assignment'
         }
-        description=""
         onClose={() => {
           setSubmissionAssignment(null);
           setSubmissionFile(null);
           submissionForm.reset(defaultSubmissionForm);
         }}
+        onCancel={() => {
+          setSubmissionAssignment(null);
+          setSubmissionFile(null);
+          submissionForm.reset(defaultSubmissionForm);
+        }}
+        onSubmit={submissionForm.handleSubmit((values) => submitAssignmentMutation.mutate(values))}
+        isLoading={submitAssignmentMutation.isPending}
+        submitLabel="Save submission"
+        formId="submit-assignment-form"
       >
-        <form
-          className="grid gap-4"
-          onSubmit={submissionForm.handleSubmit((values) =>
-            submitAssignmentMutation.mutate(values)
-          )}
-        >
-          <FormField
-            label="Text answer"
-            error={submissionForm.formState.errors.textAnswer?.message}
-          >
-            <textarea
-              {...submissionForm.register('textAnswer')}
-              rows={6}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-            />
-          </FormField>
-          <FormField label="Link" error={submissionForm.formState.errors.linkUrl?.message}>
-            <input
-              {...submissionForm.register('linkUrl')}
-              placeholder="https://..."
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-            />
-          </FormField>
-          <FormField label="Attachment">
-            <input
-              type="file"
-              onChange={(event) => setSubmissionFile(event.target.files?.[0] ?? null)}
-              className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-slate-700"
-            />
-          </FormField>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setSubmissionAssignment(null);
-                setSubmissionFile(null);
-                submissionForm.reset(defaultSubmissionForm);
-              }}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitAssignmentMutation.isPending}
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {submitAssignmentMutation.isPending ? 'Submitting...' : 'Save submission'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        <FormField label="Text answer" error={submissionForm.formState.errors.textAnswer?.message}>
+          <textarea
+            {...submissionForm.register('textAnswer')}
+            rows={6}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          />
+        </FormField>
+        <FormField label="Link" error={submissionForm.formState.errors.linkUrl?.message}>
+          <input
+            {...submissionForm.register('linkUrl')}
+            placeholder="https://..."
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          />
+        </FormField>
+        <FormField label="Attachment">
+          <input
+            type="file"
+            onChange={(event) => setSubmissionFile(event.target.files?.[0] ?? null)}
+            className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-slate-700"
+          />
+        </FormField>
+      </DrawerForm>
 
-      <Modal
+      <AppDrawer
         open={Boolean(completionCourse)}
         title="🎉 Course Completed!"
         description=""
@@ -1327,7 +1306,7 @@ export function StudentCoursesPage() {
             </button>
           </div>
         </div>
-      </Modal>
+      </AppDrawer>
     </div>
   );
 }

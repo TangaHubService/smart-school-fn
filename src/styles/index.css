@@ -9,6 +9,42 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes app-drawer-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-drawer-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes app-drawer-panel-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes app-drawer-panel-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
 :root {
   font-family: 'Poppins', ui-sans-serif, system-ui;
   color: #111827;
@@ -37,6 +73,33 @@ body {
 
 ::selection {
   background: rgba(30, 90, 168, 0.20);
+}
+
+@layer components {
+  .app-drawer-overlay[data-state='open'] {
+    animation: app-drawer-overlay-in 280ms ease-out both;
+  }
+
+  .app-drawer-overlay[data-state='closed'] {
+    animation: app-drawer-overlay-out 220ms ease-in both;
+  }
+
+  .app-drawer-panel[data-state='open'] {
+    animation: app-drawer-panel-in 300ms ease-out both;
+    will-change: transform;
+  }
+
+  .app-drawer-panel[data-state='closed'] {
+    animation: app-drawer-panel-out 240ms ease-in both;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-drawer-overlay[data-state],
+    .app-drawer-panel[data-state] {
+      animation-duration: 1ms;
+    }
+  }
 }
 
 .rich-editor-content p.is-editor-empty:first-child::before {

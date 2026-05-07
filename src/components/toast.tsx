@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-type ToastType = 'success' | 'error' | 'info';
+type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 interface ToastInput {
   type: ToastType;
@@ -70,6 +70,7 @@ function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: () => void }
   const styleByType: Record<ToastType, string> = {
     success: 'border-success-100 bg-success-50 text-success-700',
     error: 'border-danger-100 bg-danger-50 text-danger-700',
+    warning: 'border-amber-200 bg-amber-50 text-amber-800',
     info: 'border-brand-200 bg-white text-slate-900',
   };
 

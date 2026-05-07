@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import { UserPlus, Search, X, Loader2 } from 'lucide-react';
 
 import { SectionCard } from '../components/section-card';
-import { Modal } from '../components/modal';
+import { DrawerForm } from '../components/drawer-form';
+import { AppDrawer } from '../components/drawer';
 import { useToast } from '../components/toast';
 import {
   listAuditorsApi,
@@ -406,13 +407,19 @@ export function AdminAuditorsPage() {
         )}
       </SectionCard>
 
-      <Modal
+      <DrawerForm
         open={showAssignModal}
-        onClose={() => {
+        title={editingAuditor ? `Assign Scope - ${editingAuditor.name}` : 'Add New Auditor'}
+        onCancel={() => {
           setShowAssignModal(false);
           resetForm();
         }}
-        title={editingAuditor ? `Assign Scope - ${editingAuditor.name}` : 'Add New Auditor'}
+        isLoading={isSavingAuditor}
+        submitLabel={submitLabel}
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleAssign();
+        }}
       >
         <div className="space-y-4">
           {!editingAuditor && (
@@ -667,30 +674,8 @@ export function AdminAuditorsPage() {
               {formError}
             </div>
           )}
-
-          <div className="flex justify-end gap-2 pt-4">
-            <button
-              type="button"
-              onClick={() => {
-                setShowAssignModal(false);
-                resetForm();
-              }}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleAssign}
-              disabled={submitDisabled}
-              className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSavingAuditor && <Loader2 className="h-4 w-4 animate-spin" />}
-              {submitLabel}
-            </button>
-          </div>
         </div>
-      </Modal>
+      </DrawerForm>
     </div>
   );
 }

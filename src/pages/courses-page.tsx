@@ -19,8 +19,10 @@ import { Link } from 'react-router-dom';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ConfirmDrawer } from '../components/confirm-drawer';
+import { DrawerForm } from '../components/drawer-form';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { RichContent } from '../components/rich-content';
 import { RichTextEditor } from '../components/rich-text-editor';
 import { SectionCard } from '../components/section-card';
@@ -1292,7 +1294,7 @@ export function CoursesPage() {
         </div>
       </SectionCard>
 
-      <Modal
+      <DrawerForm
         open={isCourseModalOpen}
         title={courseModalMode === 'edit' ? 'Edit course' : 'Create course'}
         description={
@@ -1300,85 +1302,60 @@ export function CoursesPage() {
             ? 'Update the class, academic year, and subject details for this course.'
             : 'Set the class, academic year, and subject first.'
         }
-        onClose={() => {
+        onCancel={() => {
           setIsCourseModalOpen(false);
           setCourseModalCourseId('');
         }}
+        onSubmit={courseForm.handleSubmit(submitCourse)}
+        isLoading={
+          createCourseMutation.isPending ||
+          updateCourseMutation.isPending ||
+          isCourseSetupLookupError ||
+          isCourseSetupMissing ||
+          isTeacherSubjectMissing
+        }
+        submitLabel={courseModalMode === 'edit' ? 'Save changes' : 'Create course'}
       >
-        <form className="grid gap-4" onSubmit={courseForm.handleSubmit(submitCourse)}>
-          {isCourseSetupLookupError ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              Could not load academic years, classes, or subjects. Refresh the page and try again.
-            </div>
-          ) : null}
-
-          {!isCourseSetupLookupError && isCourseSetupMissing ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {isTeacherOnly && !subjects.length
-                ? 'No subject is assigned to your teaching load yet. Ask an administrator to assign at least one subject.'
-                : 'Create at least one academic year and one class before creating a course.'}
-            </div>
-          ) : null}
-
-          <FormField label="Course title" error={courseForm.formState.errors.title?.message}>
-            <input
-              {...courseForm.register('title')}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-            />
-          </FormField>
-
-          <FormField label="Description" error={courseForm.formState.errors.description?.message}>
-            <textarea
-              {...courseForm.register('description')}
-              rows={4}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-            />
-          </FormField>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              label="Academic year"
-              error={courseForm.formState.errors.academicYearId?.message}
-            >
-              <select
-                {...courseForm.register('academicYearId')}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-              >
-                <option value="">Select academic year</option>
-                {academicYears.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-
-            <FormField label="Class" error={courseForm.formState.errors.classRoomId?.message}>
-              <select
-                {...courseForm.register('classRoomId')}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-              >
-                <option value="">Select class</option>
-                {classRooms.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </FormField>
+        {isCourseSetupLookupError ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Could not load academic years, classes, or subjects. Refresh the page and try again.
           </div>
+        ) : null}
 
-          <FormField label="Subject" error={courseForm.formState.errors.subjectId?.message}>
+        {!isCourseSetupLookupError && isCourseSetupMissing ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {isTeacherOnly && !subjects.length
+              ? 'No subject is assigned to your teaching load yet. Ask an administrator to assign at least one subject.'
+              : 'Create at least one academic year and one class before creating a course.'}
+          </div>
+        ) : null}
+
+        <FormField label="Course title" error={courseForm.formState.errors.title?.message}>
+          <input
+            {...courseForm.register('title')}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          />
+        </FormField>
+
+        <FormField label="Description" error={courseForm.formState.errors.description?.message}>
+          <textarea
+            {...courseForm.register('description')}
+            rows={4}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          />
+        </FormField>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            label="Academic year"
+            error={courseForm.formState.errors.academicYearId?.message}
+          >
             <select
-              {...courseForm.register('subjectId')}
+              {...courseForm.register('academicYearId')}
               className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
             >
-              {isTeacherOnly ? (
-                <option value="">Select subject</option>
-              ) : (
-                <option value="">No subject</option>
-              )}
-              {subjects.map((item) => (
+              <option value="">Select academic year</option>
+              {academicYears.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
                 </option>
@@ -1386,74 +1363,56 @@ export function CoursesPage() {
             </select>
           </FormField>
 
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsCourseModalOpen(false);
-                setCourseModalCourseId('');
-              }}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
+          <FormField label="Class" error={courseForm.formState.errors.classRoomId?.message}>
+            <select
+              {...courseForm.register('classRoomId')}
+              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={
-                createCourseMutation.isPending ||
-                updateCourseMutation.isPending ||
-                isCourseSetupLookupError ||
-                isCourseSetupMissing ||
-                isTeacherSubjectMissing
-              }
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {createCourseMutation.isPending || updateCourseMutation.isPending
-                ? 'Saving...'
-                : courseModalMode === 'edit'
-                  ? 'Save changes'
-                  : 'Create course'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+              <option value="">Select class</option>
+              {classRooms.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </div>
 
-      <Modal
+        <FormField label="Subject" error={courseForm.formState.errors.subjectId?.message}>
+          <select
+            {...courseForm.register('subjectId')}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          >
+            {isTeacherOnly ? (
+              <option value="">Select subject</option>
+            ) : (
+              <option value="">No subject</option>
+            )}
+            {subjects.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
+      </DrawerForm>
+
+      <ConfirmDrawer
         open={Boolean(pendingDelete)}
         title={pendingDelete?.type === 'lesson' ? 'Delete lesson' : 'Delete course'}
-        description={pendingDelete?.description}
-        onClose={() => {
+        message={`${pendingDelete?.description ?? 'This item will be deleted.'} This action cannot be undone.`}
+        onCancel={() => {
           if (!isDeletePending) {
             setPendingDelete(null);
           }
         }}
-        footer={
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setPendingDelete(null)}
-              disabled={isDeletePending}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => void confirmDelete()}
-              disabled={isDeletePending}
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
-            >
-              {isDeletePending ? 'Deleting...' : 'Confirm delete'}
-            </button>
-          </div>
-        }
-      >
-        <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-800">
-          This action cannot be undone.
-        </div>
-      </Modal>
+        onConfirm={() => void confirmDelete()}
+        confirmLabel="Confirm delete"
+        isDestructive
+        isLoading={isDeletePending}
+      />
 
-      <Modal
+      <DrawerForm
         open={isLessonModalOpen}
         title={lessonModalMode === 'edit' ? 'Edit lesson' : 'Add lesson'}
         description={
@@ -1461,115 +1420,89 @@ export function CoursesPage() {
             ? 'Update lesson content, links, or attached media.'
             : 'Students only see lessons after you publish them.'
         }
-        onClose={() => setIsLessonModalOpen(false)}
+        onCancel={() => setIsLessonModalOpen(false)}
+        onSubmit={lessonForm.handleSubmit(submitLesson)}
+        isLoading={createLessonMutation.isPending || updateLessonMutation.isPending}
+        submitLabel={lessonModalMode === 'edit' ? 'Save changes' : 'Save lesson'}
       >
-        <form className="grid gap-4" onSubmit={lessonForm.handleSubmit(submitLesson)}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Lesson title" error={lessonForm.formState.errors.title?.message}>
-              <input
-                {...lessonForm.register('title')}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-              />
-            </FormField>
-            <FormField label="Sequence" error={lessonForm.formState.errors.sequence?.message}>
-              <input
-                type="number"
-                min={1}
-                {...lessonForm.register('sequence')}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-              />
-            </FormField>
-          </div>
-
-          <FormField label="Summary" error={lessonForm.formState.errors.summary?.message}>
-            <textarea
-              {...lessonForm.register('summary')}
-              rows={3}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Lesson title" error={lessonForm.formState.errors.title?.message}>
+            <input
+              {...lessonForm.register('title')}
               className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
             />
           </FormField>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              label="Content type"
-              error={lessonForm.formState.errors.contentType?.message}
-            >
-              <select
-                {...lessonForm.register('contentType')}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-              >
-                <option value="TEXT">Text</option>
-                <option value="PDF">PDF file</option>
-                <option value="VIDEO">Video</option>
-                <option value="LINK">External link</option>
-              </select>
-            </FormField>
-
-            <FormField
-              label="External URL"
-              error={lessonForm.formState.errors.externalUrl?.message}
-            >
-              <input
-                {...lessonForm.register('externalUrl')}
-                placeholder="https://..."
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-              />
-            </FormField>
-          </div>
-
-          <FormField label="Body" error={lessonForm.formState.errors.body?.message}>
-            <Controller
-              control={lessonForm.control}
-              name="body"
-              render={({ field }) => (
-                <RichTextEditor
-                  value={field.value ?? '<p></p>'}
-                  onChange={field.onChange}
-                  placeholder="Write the lesson content, examples, and key steps."
-                />
-              )}
-            />
-          </FormField>
-
-          <FormField label="Attachment" error={lessonFileError ?? undefined}>
+          <FormField label="Sequence" error={lessonForm.formState.errors.sequence?.message}>
             <input
-              type="file"
-              onChange={(event) => {
-                setLessonFile(event.target.files?.[0] ?? null);
-                setLessonFileError(null);
-              }}
-              className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-slate-700"
+              type="number"
+              min={1}
+              {...lessonForm.register('sequence')}
+              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
             />
-            {lessonModalMode === 'edit' && selectedLesson?.fileAsset ? (
-              <span className="text-xs text-slate-500">
-                Current file: {selectedLesson.fileAsset.originalName}. Upload a new file to replace
-                it.
-              </span>
-            ) : null}
+          </FormField>
+        </div>
+
+        <FormField label="Summary" error={lessonForm.formState.errors.summary?.message}>
+          <textarea
+            {...lessonForm.register('summary')}
+            rows={3}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          />
+        </FormField>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Content type" error={lessonForm.formState.errors.contentType?.message}>
+            <select
+              {...lessonForm.register('contentType')}
+              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+            >
+              <option value="TEXT">Text</option>
+              <option value="PDF">PDF file</option>
+              <option value="VIDEO">Video</option>
+              <option value="LINK">External link</option>
+            </select>
           </FormField>
 
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsLessonModalOpen(false)}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={createLessonMutation.isPending || updateLessonMutation.isPending}
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {createLessonMutation.isPending || updateLessonMutation.isPending
-                ? 'Saving...'
-                : lessonModalMode === 'edit'
-                  ? 'Save changes'
-                  : 'Save lesson'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+          <FormField label="External URL" error={lessonForm.formState.errors.externalUrl?.message}>
+            <input
+              {...lessonForm.register('externalUrl')}
+              placeholder="https://..."
+              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+            />
+          </FormField>
+        </div>
+
+        <FormField label="Body" error={lessonForm.formState.errors.body?.message}>
+          <Controller
+            control={lessonForm.control}
+            name="body"
+            render={({ field }) => (
+              <RichTextEditor
+                value={field.value ?? '<p></p>'}
+                onChange={field.onChange}
+                placeholder="Write the lesson content, examples, and key steps."
+              />
+            )}
+          />
+        </FormField>
+
+        <FormField label="Attachment" error={lessonFileError ?? undefined}>
+          <input
+            type="file"
+            onChange={(event) => {
+              setLessonFile(event.target.files?.[0] ?? null);
+              setLessonFileError(null);
+            }}
+            className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-slate-700"
+          />
+          {lessonModalMode === 'edit' && selectedLesson?.fileAsset ? (
+            <span className="text-xs text-slate-500">
+              Current file: {selectedLesson.fileAsset.originalName}. Upload a new file to replace
+              it.
+            </span>
+          ) : null}
+        </FormField>
+      </DrawerForm>
     </div>
   );
 }

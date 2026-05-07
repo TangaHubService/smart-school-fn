@@ -11,9 +11,29 @@ import {
 } from '../features/announcements/announcements.api';
 import { listClassRoomsApi } from '../features/sprint1/sprint1.api';
 
+interface AnnouncementCreateFormProps {
+  onCancel: () => void;
+  onSuccess: () => void;
+}
+
 export function AnnouncementCreatePage() {
-  const auth = useAuth();
   const navigate = useNavigate();
+
+  return (
+    <SectionCard
+      title="New Announcement"
+      subtitle="Create a school announcement. Choose audience to target specific classes or grade levels."
+    >
+      <AnnouncementCreateForm
+        onCancel={() => navigate('/admin/announcements')}
+        onSuccess={() => navigate('/admin/announcements')}
+      />
+    </SectionCard>
+  );
+}
+
+export function AnnouncementCreateForm({ onCancel, onSuccess }: AnnouncementCreateFormProps) {
+  const auth = useAuth();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
@@ -40,7 +60,7 @@ export function AnnouncementCreatePage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['announcements'] });
       showToast({ type: 'success', title: 'Announcement created' });
-      navigate('/admin/announcements');
+      onSuccess();
     },
     onError: (error) => {
       showToast({
@@ -60,10 +80,12 @@ export function AnnouncementCreatePage() {
   }
 
   return (
-    <SectionCard
-      title="New Announcement"
-      subtitle="Create a school announcement. Choose audience to target specific classes or grade levels."
-    >
+    <>
+      {classesQuery.isError ? (
+        <div className="mb-4 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+          Could not load classes. You can still create a school-wide announcement.
+        </div>
+      ) : null}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -155,13 +177,14 @@ export function AnnouncementCreatePage() {
           </button>
           <button
             type="button"
-            onClick={() => navigate('/admin/announcements')}
+            onClick={onCancel}
+            disabled={createMutation.isPending}
             className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700"
           >
             Cancel
           </button>
         </div>
       </form>
-    </SectionCard>
+    </>
   );
 }

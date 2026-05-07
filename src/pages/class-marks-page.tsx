@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { EmptyState } from '../components/empty-state';
+import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -1035,33 +1036,30 @@ export function ClassMarksPage() {
         ) : null}
       </SectionCard>
 
-      {conductModalOpen && grid?.academicYear?.id && auth.accessToken ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="conduct-modal-title"
-        >
-          <div className="w-full max-w-md rounded-2xl border border-brand-100 bg-white p-5 shadow-xl">
-            <ConductDeductionForm
-              key={`${grid.term.id}-${grid.classRoom.id}`}
-              accessToken={auth.accessToken}
-              lockedContext={{
-                academicYearId: grid.academicYear.id,
-                termId: grid.term.id,
-                classRoomId: grid.classRoom.id,
-              }}
-              students={conductModalStudents}
-              defaultStudentId={grid.students[0]?.studentId}
-              titleId="conduct-modal-title"
-              description=""
-              showCancel
-              onCancel={() => setConductModalOpen(false)}
-              onSuccess={() => setConductModalOpen(false)}
-            />
-          </div>
-        </div>
-      ) : null}
+      <AppDrawer
+        open={conductModalOpen && Boolean(grid?.academicYear?.id && auth.accessToken)}
+        title="Record conduct deduction"
+        onClose={() => setConductModalOpen(false)}
+        size="compact"
+      >
+        {grid?.academicYear?.id && auth.accessToken ? (
+          <ConductDeductionForm
+            key={`${grid.term.id}-${grid.classRoom.id}`}
+            accessToken={auth.accessToken}
+            lockedContext={{
+              academicYearId: grid.academicYear.id,
+              termId: grid.term.id,
+              classRoomId: grid.classRoom.id,
+            }}
+            students={conductModalStudents}
+            defaultStudentId={grid.students[0]?.studentId}
+            description=""
+            showCancel
+            onCancel={() => setConductModalOpen(false)}
+            onSuccess={() => setConductModalOpen(false)}
+          />
+        ) : null}
+      </AppDrawer>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
   getRwandaCells,
@@ -56,6 +57,7 @@ function buildDefaultValues(tenantName: string): SchoolProfileValues {
 
 export function SetupWizardPage() {
   const auth = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const form = useForm<SchoolProfileValues>({
     resolver: zodResolver(schoolProfileSchema),
@@ -253,7 +255,7 @@ export function SetupWizardPage() {
                     const asset = await uploadFileToCloudinary(auth.accessToken!, 'logo', file);
                     form.setValue('logoUrl', asset.secureUrl, { shouldDirty: true });
                   } catch (err: any) {
-                    alert(err.message || 'Logo upload failed');
+                    showToast({ type: 'error', title: 'Logo upload failed', message: err.message });
                   }
                 }}
                 className="mt-1 block text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100"

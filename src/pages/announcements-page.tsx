@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
+import { AppDrawer } from '../components/drawer';
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
@@ -10,6 +11,7 @@ import {
   AnnouncementItem,
   listAnnouncementsApi,
 } from '../features/announcements/announcements.api';
+import { AnnouncementCreateForm } from './announcement-create-page';
 
 function formatDate(value: string | null) {
   if (!value) return '—';
@@ -21,9 +23,9 @@ function formatDate(value: string | null) {
 
 export function AnnouncementsPage() {
   const auth = useAuth();
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [publishedOnly, setPublishedOnly] = useState(true);
+  const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
 
   const announcementsQuery = useQuery({
     queryKey: ['announcements', page, publishedOnly],
@@ -52,12 +54,13 @@ export function AnnouncementsPage() {
       subtitle="School-wide and targeted announcements for students and staff."
       action={
         canManage || isSuperAdmin ? (
-          <Link
-            to="/admin/announcements/new"
+          <button
+            type="button"
+            onClick={() => setIsCreateDrawerOpen(true)}
             className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
           >
             New announcement
-          </Link>
+          </button>
         ) : null
       }
     >
@@ -136,6 +139,21 @@ export function AnnouncementsPage() {
           ) : null}
         </div>
       ) : null}
+
+      <AppDrawer
+        open={isCreateDrawerOpen}
+        title="New announcement"
+        description="Create a school announcement and choose who should receive it."
+        onClose={() => setIsCreateDrawerOpen(false)}
+      >
+        <AnnouncementCreateForm
+          onCancel={() => setIsCreateDrawerOpen(false)}
+          onSuccess={() => {
+            setIsCreateDrawerOpen(false);
+            setPage(1);
+          }}
+        />
+      </AppDrawer>
     </SectionCard>
   );
 }

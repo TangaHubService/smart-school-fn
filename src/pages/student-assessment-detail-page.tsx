@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { RichContent } from '../components/rich-content';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
@@ -234,7 +234,7 @@ export function StudentAssessmentDetailPage() {
         </div>
       </SectionCard>
 
-      <Modal
+      <AppDrawer
         open={isStartOpen}
         title={startStep === 0 ? 'Test instructions' : 'Ready to start?'}
         description={
@@ -314,7 +314,7 @@ export function StudentAssessmentDetailPage() {
             </ul>
           </div>
         )}
-      </Modal>
+      </AppDrawer>
     </div>
   );
 }

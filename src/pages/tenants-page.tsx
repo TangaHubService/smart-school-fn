@@ -6,7 +6,9 @@ import { z } from 'zod';
 import { useSearchParams } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { ConfirmDrawer } from '../components/confirm-drawer';
+import { DrawerForm } from '../components/drawer-form';
+import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -297,7 +299,6 @@ export function TenantsPage() {
   const createError = createSchoolMutation.error as ApiClientError | null;
   const detailError = schoolDetailQuery.error as ApiClientError | null;
   const updateError = updateSchoolMutation.error as ApiClientError | null;
-  const updateStatusError = updateSchoolStatusMutation.error as ApiClientError | null;
 
   return (
     <SectionCard
@@ -475,21 +476,45 @@ export function TenantsPage() {
         </div>
       ) : null}
 
-      <Modal
+      <DrawerForm
         open={isCreateModalOpen}
-        onClose={closeCreateModal}
         title={createdSchool ? 'Invite School Admin' : 'Create School'}
-        description={
+        onCancel={closeCreateModal}
+        isLoading={createdSchool ? inviteAdminMutation.isPending : createSchoolMutation.isPending}
+        submitLabel={createdSchool ? 'Send invitation' : 'Create school'}
+        actions={
+          createdSchool ? (
+            <div className="flex justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  inviteAdminMutation.reset();
+                  setCreatedSchool(null);
+                }}
+                disabled={inviteAdminMutation.isPending}
+                className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                form="drawer-form"
+                disabled={inviteAdminMutation.isPending}
+                className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {inviteAdminMutation.isPending ? 'Sending...' : 'Send invitation'}
+              </button>
+            </div>
+          ) : undefined
+        }
+        onSubmit={
           createdSchool
-            ? `Step 2 of 2. Send a school admin invitation for ${createdSchool.name}.`
-            : 'Step 1 of 2. Create the school workspace first.'
+            ? inviteForm.handleSubmit((values) => inviteAdminMutation.mutate(values))
+            : createForm.handleSubmit((values) => createSchoolMutation.mutate(values))
         }
       >
         {!createdSchool ? (
-          <form
-            className="grid gap-3"
-            onSubmit={createForm.handleSubmit((values) => createSchoolMutation.mutate(values))}
-          >
+          <>
             <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">
               Step 1 of 2: School workspace
             </div>
@@ -541,29 +566,9 @@ export function TenantsPage() {
             {createError ? (
               <StateView title="Could not create school" message={createError.message} />
             ) : null}
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeCreateModal}
-                className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={createSchoolMutation.isPending}
-                className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {createSchoolMutation.isPending ? 'Creating...' : 'Create school'}
-              </button>
-            </div>
-          </form>
+          </>
         ) : (
-          <form
-            className="grid gap-3"
-            onSubmit={inviteForm.handleSubmit((values) => inviteAdminMutation.mutate(values))}
-          >
+          <>
             <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">
               Step 2 of 2: School admin invitation
             </div>
@@ -583,31 +588,11 @@ export function TenantsPage() {
               />
             </label>
             <FieldError message={inviteForm.formState.errors.email?.message} />
-
-            <div className="flex justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  inviteAdminMutation.reset();
-                  setCreatedSchool(null);
-                }}
-                className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-              >
-                Back
-              </button>
-              <button
-                type="submit"
-                disabled={inviteAdminMutation.isPending}
-                className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {inviteAdminMutation.isPending ? 'Sending...' : 'Send invitation'}
-              </button>
-            </div>
-          </form>
+          </>
         )}
-      </Modal>
+      </DrawerForm>
 
-      <Modal
+      <AppDrawer
         open={Boolean(viewSchoolId)}
         onClose={closeViewModal}
         title="School Details"
@@ -624,13 +609,15 @@ export function TenantsPage() {
         ) : schoolDetailQuery.data ? (
           <SchoolDetailView detail={schoolDetailQuery.data as SchoolDetail} />
         ) : null}
-      </Modal>
+      </AppDrawer>
 
-      <Modal
+      <DrawerForm
         open={Boolean(editSchoolId)}
-        onClose={closeEditModal}
         title="Edit School"
-        description="Update school workspace details without changing academic data."
+        onCancel={closeEditModal}
+        isLoading={updateSchoolMutation.isPending}
+        submitLabel="Save changes"
+        onSubmit={editForm.handleSubmit((values) => updateSchoolMutation.mutate(values))}
       >
         {schoolDetailQuery.isPending ? (
           <div className="grid gap-2" role="status" aria-live="polite">
@@ -641,10 +628,7 @@ export function TenantsPage() {
         ) : detailError ? (
           <StateView title="Could not load school for editing" message={detailError.message} />
         ) : (
-          <form
-            className="grid gap-3"
-            onSubmit={editForm.handleSubmit((values) => updateSchoolMutation.mutate(values))}
-          >
+          <>
             <label className="grid gap-1 text-sm font-semibold text-slate-800">
               School code
               <input
@@ -715,98 +699,33 @@ export function TenantsPage() {
             {updateError ? (
               <StateView title="Could not update school" message={updateError.message} />
             ) : null}
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeEditModal}
-                className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={updateSchoolMutation.isPending}
-                className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {updateSchoolMutation.isPending ? 'Saving...' : 'Save changes'}
-              </button>
-            </div>
-          </form>
+          </>
         )}
-      </Modal>
+      </DrawerForm>
 
-      <Modal
+      <ConfirmDrawer
         open={Boolean(statusTargetSchool)}
-        onClose={closeDeleteModal}
+        onCancel={closeDeleteModal}
         title={statusTargetSchool?.isActive ? 'Deactivate School' : 'Reactivate School'}
-        description={
+        message={
           statusTargetSchool?.isActive
-            ? 'Deactivating a school signs out active sessions and revokes pending invites. The school can be reactivated later.'
-            : 'Reactivating a school allows users in this school to sign in again.'
+            ? `Deactivating ${statusTargetSchool.name} signs out active sessions and revokes pending invites. The school can be reactivated later.`
+            : `Reactivating ${statusTargetSchool?.name ?? 'this school'} allows users in this school to sign in again.`
         }
-      >
-        <div className="grid gap-3">
-          <div
-            className={
-              statusTargetSchool?.isActive
-                ? 'rounded-lg border border-danger-100 bg-danger-50 px-3 py-3 text-sm text-danger-700'
-                : 'rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-3 text-sm text-emerald-700'
-            }
-          >
-            {statusTargetSchool?.isActive
-              ? 'You are about to deactivate '
-              : 'You are about to reactivate '}
-            <strong>{statusTargetSchool?.name}</strong>.
-          </div>
-          {updateStatusError ? (
-            <StateView
-              title={
-                statusTargetSchool?.isActive
-                  ? 'Could not deactivate school'
-                  : 'Could not reactivate school'
-              }
-              message={updateStatusError.message}
-            />
-          ) : null}
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={closeDeleteModal}
-              className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={!statusTargetSchool?.id || updateSchoolStatusMutation.isPending}
-              onClick={() => {
-                if (!statusTargetSchool?.id) {
-                  return;
-                }
+        confirmLabel={statusTargetSchool?.isActive ? 'Deactivate school' : 'Reactivate school'}
+        isDestructive={statusTargetSchool?.isActive}
+        isLoading={updateSchoolStatusMutation.isPending}
+        onConfirm={() => {
+          if (!statusTargetSchool?.id) {
+            return;
+          }
 
-                updateSchoolStatusMutation.mutate({
-                  tenantId: statusTargetSchool.id,
-                  isActive: !statusTargetSchool.isActive,
-                });
-              }}
-              className={
-                statusTargetSchool?.isActive
-                  ? 'rounded-lg border border-danger-200 bg-danger-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60'
-                  : 'rounded-lg border border-emerald-200 bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60'
-              }
-            >
-              {updateSchoolStatusMutation.isPending
-                ? statusTargetSchool?.isActive
-                  ? 'Deactivating...'
-                  : 'Reactivating...'
-                : statusTargetSchool?.isActive
-                  ? 'Deactivate school'
-                  : 'Reactivate school'}
-            </button>
-          </div>
-        </div>
-      </Modal>
+          updateSchoolStatusMutation.mutate({
+            tenantId: statusTargetSchool.id,
+            isActive: !statusTargetSchool.isActive,
+          });
+        }}
+      />
     </SectionCard>
   );
 }
