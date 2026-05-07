@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { DrawerForm } from '../components/drawer-form';
+import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -437,283 +438,232 @@ export function ParentsPage() {
         </div>
       ) : null}
 
-      <Modal
+      <DrawerForm
         open={isCreateModalOpen}
-        onClose={() => {
+        title={editingParent ? 'Edit Parent' : 'Add Parent'}
+        onCancel={() => {
           setIsCreateModalOpen(false);
           setEditingParent(null);
           createParentMutation.reset();
           updateParentMutation.reset();
         }}
-        title={editingParent ? 'Edit Parent' : 'Add Parent'}
-        description={
-          editingParent
-            ? 'Update parent contact and portal login settings.'
-            : 'Create parent contact and optionally enable parent portal login.'
-        }
+        isLoading={createParentMutation.isPending || updateParentMutation.isPending}
+        submitLabel={editingParent ? 'Update parent' : 'Create parent'}
+        onSubmit={createForm.handleSubmit((values) => {
+          if (editingParent) {
+            updateParentMutation.mutate({
+              parentId: editingParent.id,
+              values,
+            });
+            return;
+          }
+          createParentMutation.mutate(values);
+        })}
       >
-        <form
-          className="grid gap-3"
-          onSubmit={createForm.handleSubmit((values) => {
-            if (editingParent) {
-              updateParentMutation.mutate({
-                parentId: editingParent.id,
-                values,
-              });
-              return;
-            }
-            createParentMutation.mutate(values);
-          })}
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              First Name
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...createForm.register('firstName')}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Last Name
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...createForm.register('lastName')}
-              />
-            </label>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Parent Code (optional)
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...createForm.register('parentCode')}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Phone (optional)
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...createForm.register('phone')}
-              />
-            </label>
-          </div>
-
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Email (optional)
+            First Name
             <input
               className="rounded-lg border border-brand-200 px-3 py-2"
-              {...createForm.register('email')}
+              {...createForm.register('firstName')}
             />
           </label>
-
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <input type="checkbox" {...createForm.register('createLogin')} />
-            Enable parent portal login
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Last Name
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...createForm.register('lastName')}
+            />
           </label>
+        </div>
 
-          {createForm.watch('createLogin') ? (
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Initial Password
-              <input
-                type="password"
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...createForm.register('password')}
-              />
-            </label>
-          ) : null}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Parent Code (optional)
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...createForm.register('parentCode')}
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Phone (optional)
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...createForm.register('phone')}
+            />
+          </label>
+        </div>
 
-          {(createParentMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700">
-              {(createParentMutation.error as ApiClientError).message}
-            </p>
-          ) : null}
-          {(updateParentMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700">
-              {(updateParentMutation.error as ApiClientError).message}
-            </p>
-          ) : null}
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Email (optional)
+          <input
+            className="rounded-lg border border-brand-200 px-3 py-2"
+            {...createForm.register('email')}
+          />
+        </label>
 
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsCreateModalOpen(false);
-                setEditingParent(null);
-              }}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={createParentMutation.isPending || updateParentMutation.isPending}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {createParentMutation.isPending || updateParentMutation.isPending
-                ? 'Saving...'
-                : editingParent
-                  ? 'Update parent'
-                  : 'Create parent'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <input type="checkbox" {...createForm.register('createLogin')} />
+          Enable parent portal login
+        </label>
 
-      <Modal
+        {createForm.watch('createLogin') ? (
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Initial Password
+            <input
+              type="password"
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...createForm.register('password')}
+            />
+          </label>
+        ) : null}
+
+        {(createParentMutation.error as ApiClientError | null) ? (
+          <p className="text-xs text-red-700">
+            {(createParentMutation.error as ApiClientError).message}
+          </p>
+        ) : null}
+        {(updateParentMutation.error as ApiClientError | null) ? (
+          <p className="text-xs text-red-700">
+            {(updateParentMutation.error as ApiClientError).message}
+          </p>
+        ) : null}
+      </DrawerForm>
+
+      <DrawerForm
         open={Boolean(linkTarget)}
-        onClose={() => {
+        title="Link Student"
+        onCancel={() => {
           setLinkTarget(null);
           setLinkSearch('');
           setLinkClassId('');
           linkForm.reset(defaultLinkForm);
           linkMutation.reset();
         }}
-        title="Link Student"
-        description={`Link a student to ${linkTarget?.name ?? 'parent'}.`}
+        isLoading={linkMutation.isPending}
+        submitLabel="Link student"
+        onSubmit={linkForm.handleSubmit((values) => {
+          if (!linkTarget) {
+            return;
+          }
+
+          linkMutation.mutate({ parentId: linkTarget.id, values });
+        })}
       >
-        <form
-          className="grid gap-3"
-          onSubmit={linkForm.handleSubmit((values) => {
-            if (!linkTarget) {
-              return;
-            }
-
-            linkMutation.mutate({ parentId: linkTarget.id, values });
-          })}
-        >
-          <input type="hidden" {...linkForm.register('studentId')} />
-          <div className="grid gap-1 text-sm font-semibold text-slate-800">
-            <label htmlFor="student-class-filter">Class</label>
-            <select
-              id="student-class-filter"
-              value={linkClassId}
-              onChange={(event) => {
-                setLinkClassId(event.target.value);
-                linkForm.setValue('studentId', '');
-              }}
-              disabled={classesQuery.isPending || classesQuery.isError}
-              className="rounded-lg border border-brand-200 px-3 py-2 disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              <option value="">All classes</option>
-              {classOptions.map((classRoom) => (
-                <option key={classRoom.id} value={classRoom.id}>
-                  {classRoom.name} ({classRoom.code})
-                </option>
-              ))}
-            </select>
-          </div>
-          {classesQuery.isPending ? (
-            <p className="text-xs text-slate-600">Loading classes...</p>
-          ) : null}
-          {classesQuery.isError ? (
-            <p className="text-xs text-red-700">
-              Could not load classes. You can retry by reopening this dialog.
-            </p>
-          ) : null}
-          <div className="grid gap-1 text-sm font-semibold text-slate-800">
-            <label htmlFor="student-lookup-input">Student Lookup</label>
-            <input
-              id="student-lookup-input"
-              value={linkSearch}
-              onChange={(event) => setLinkSearch(event.target.value)}
-              placeholder="Search by student name or code"
-              className="rounded-lg border border-brand-200 px-3 py-2"
-            />
-          </div>
-          {studentsForLinkQuery.isPending ? (
-            <p className="text-xs text-slate-600">Loading students...</p>
-          ) : null}
-          {studentsForLinkQuery.isError ? (
-            <p className="text-xs text-red-700">Could not load students. Try searching again.</p>
-          ) : null}
-          {!studentsForLinkQuery.isPending && !studentsForLinkQuery.isError ? (
-            <div className="max-h-44 overflow-y-auto rounded-lg border border-brand-100">
-              {studentOptions.length ? (
-                <div className="grid">
-                  {studentOptions.map((student) => {
-                    const isSelected = linkForm.watch('studentId') === student.id;
-                    return (
-                      <button
-                        key={student.id}
-                        type="button"
-                        onClick={() =>
-                          linkForm.setValue('studentId', student.id, { shouldValidate: true })
-                        }
-                        className={[
-                          'flex items-center justify-between border-b border-brand-50 px-3 py-2 text-left text-sm',
-                          isSelected
-                            ? 'bg-brand-100 text-slate-900'
-                            : 'bg-white text-slate-800 hover:bg-brand-50',
-                        ].join(' ')}
-                      >
-                        <span>
-                          <span className="block">
-                            {student.firstName} {student.lastName}
-                          </span>
-                          <span className="block text-xs text-slate-600">
-                            {student.currentEnrollment?.classRoom.name ?? 'No active class'}
-                          </span>
+        <input type="hidden" {...linkForm.register('studentId')} />
+        <div className="grid gap-1 text-sm font-semibold text-slate-800">
+          <label htmlFor="student-class-filter">Class</label>
+          <select
+            id="student-class-filter"
+            value={linkClassId}
+            onChange={(event) => {
+              setLinkClassId(event.target.value);
+              linkForm.setValue('studentId', '');
+            }}
+            disabled={classesQuery.isPending || classesQuery.isError}
+            className="rounded-lg border border-brand-200 px-3 py-2 disabled:bg-slate-50 disabled:text-slate-400"
+          >
+            <option value="">All classes</option>
+            {classOptions.map((classRoom) => (
+              <option key={classRoom.id} value={classRoom.id}>
+                {classRoom.name} ({classRoom.code})
+              </option>
+            ))}
+          </select>
+        </div>
+        {classesQuery.isPending ? (
+          <p className="text-xs text-slate-600">Loading classes...</p>
+        ) : null}
+        {classesQuery.isError ? (
+          <p className="text-xs text-red-700">
+            Could not load classes. You can retry by reopening this dialog.
+          </p>
+        ) : null}
+        <div className="grid gap-1 text-sm font-semibold text-slate-800">
+          <label htmlFor="student-lookup-input">Student Lookup</label>
+          <input
+            id="student-lookup-input"
+            value={linkSearch}
+            onChange={(event) => setLinkSearch(event.target.value)}
+            placeholder="Search by student name or code"
+            className="rounded-lg border border-brand-200 px-3 py-2"
+          />
+        </div>
+        {studentsForLinkQuery.isPending ? (
+          <p className="text-xs text-slate-600">Loading students...</p>
+        ) : null}
+        {studentsForLinkQuery.isError ? (
+          <p className="text-xs text-red-700">Could not load students. Try searching again.</p>
+        ) : null}
+        {!studentsForLinkQuery.isPending && !studentsForLinkQuery.isError ? (
+          <div className="max-h-44 overflow-y-auto rounded-lg border border-brand-100">
+            {studentOptions.length ? (
+              <div className="grid">
+                {studentOptions.map((student) => {
+                  const isSelected = linkForm.watch('studentId') === student.id;
+                  return (
+                    <button
+                      key={student.id}
+                      type="button"
+                      onClick={() =>
+                        linkForm.setValue('studentId', student.id, { shouldValidate: true })
+                      }
+                      className={[
+                        'flex items-center justify-between border-b border-brand-50 px-3 py-2 text-left text-sm',
+                        isSelected
+                          ? 'bg-brand-100 text-slate-900'
+                          : 'bg-white text-slate-800 hover:bg-brand-50',
+                      ].join(' ')}
+                    >
+                      <span>
+                        <span className="block">
+                          {student.firstName} {student.lastName}
                         </span>
-                        <span className="text-right text-xs text-slate-600">
-                          <span className="block">{student.studentCode}</span>
-                          <span className="block">
-                            {student.currentEnrollment?.classRoom.code ?? '-'}
-                          </span>
+                        <span className="block text-xs text-slate-600">
+                          {student.currentEnrollment?.classRoom.name ?? 'No active class'}
                         </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="px-3 py-2 text-sm text-slate-600">No students match your search.</p>
-              )}
-            </div>
-          ) : null}
-          {linkForm.formState.errors.studentId ? (
-            <p className="text-xs text-red-700">{linkForm.formState.errors.studentId.message}</p>
-          ) : null}
-
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Relationship
-            <select
-              className="rounded-lg border border-brand-200 px-3 py-2"
-              {...linkForm.register('relationship')}
-            >
-              <option value="MOTHER">Mother</option>
-              <option value="FATHER">Father</option>
-              <option value="GUARDIAN">Guardian</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </label>
-
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <input type="checkbox" {...linkForm.register('isPrimary')} />
-            Mark as primary contact for this student
-          </label>
-
-          {(linkMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700">{(linkMutation.error as ApiClientError).message}</p>
-          ) : null}
-
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setLinkTarget(null)}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={linkMutation.isPending}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {linkMutation.isPending ? 'Linking...' : 'Link student'}
-            </button>
+                      </span>
+                      <span className="text-right text-xs text-slate-600">
+                        <span className="block">{student.studentCode}</span>
+                        <span className="block">
+                          {student.currentEnrollment?.classRoom.code ?? '-'}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="px-3 py-2 text-sm text-slate-600">No students match your search.</p>
+            )}
           </div>
-        </form>
-      </Modal>
+        ) : null}
+        {linkForm.formState.errors.studentId ? (
+          <p className="text-xs text-red-700">{linkForm.formState.errors.studentId.message}</p>
+        ) : null}
+
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Relationship
+          <select
+            className="rounded-lg border border-brand-200 px-3 py-2"
+            {...linkForm.register('relationship')}
+          >
+            <option value="MOTHER">Mother</option>
+            <option value="FATHER">Father</option>
+            <option value="GUARDIAN">Guardian</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </label>
+
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <input type="checkbox" {...linkForm.register('isPrimary')} />
+          Mark as primary contact for this student
+        </label>
+
+        {(linkMutation.error as ApiClientError | null) ? (
+          <p className="text-xs text-red-700">{(linkMutation.error as ApiClientError).message}</p>
+        ) : null}
+      </DrawerForm>
     </SectionCard>
   );
 }

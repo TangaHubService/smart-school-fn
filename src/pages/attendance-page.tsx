@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -665,7 +665,7 @@ export function AttendancePage() {
         </>
       ) : null}
 
-      <Modal
+      <AppDrawer
         open={Boolean(selectedHistoryStudent)}
         onClose={() => setSelectedHistoryStudent(null)}
         title="Student Attendance History"
@@ -772,7 +772,7 @@ export function AttendancePage() {
             )}
           </div>
         ) : null}
-      </Modal>
+      </AppDrawer>
     </SectionCard>
   );
 }

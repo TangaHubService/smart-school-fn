@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { listActivityLogsApi } from '../features/audit/audit.api';
 import { SectionCard } from '../components/section-card';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 
 interface ActivityLog {
   id: string;
@@ -238,7 +238,7 @@ export function AuditLogsPage() {
         )}
       </SectionCard>
 
-      <Modal open={!!selectedLog} onClose={() => setSelectedLog(null)} title="Activity Details">
+      <AppDrawer open={!!selectedLog} onClose={() => setSelectedLog(null)} title="Activity Details">
         {selectedLog && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -362,7 +362,7 @@ export function AuditLogsPage() {
             </button>
           </div>
         )}
-      </Modal>
+      </AppDrawer>
     </section>
   );
 }

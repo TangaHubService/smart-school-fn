@@ -9,7 +9,7 @@ import {
   type AcademySubscriptionSummary,
   type Program,
 } from '../api/academy-api';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import backgroundImage from '../asset/background.jpg';
@@ -736,7 +736,7 @@ export function PublicAcademyPage() {
         </div>
       </section>
 
-      <Modal
+      <AppDrawer
         open={showCheckoutModal}
         onClose={() => {
           setShowCheckoutModal(false);
@@ -848,9 +848,9 @@ export function PublicAcademyPage() {
             </button>
           </div>
         )}
-      </Modal>
+      </AppDrawer>
 
-      <Modal
+      <AppDrawer
         open={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
         title={selectedSubject?.name || 'Subject details'}
@@ -906,7 +906,7 @@ export function PublicAcademyPage() {
             </button>
           ) : null}
         </div>
-      </Modal>
+      </AppDrawer>
     </main>
   );
 }

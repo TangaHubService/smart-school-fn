@@ -3,7 +3,7 @@ import { Eye, FileDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -222,7 +222,7 @@ export function ParentReportCardsPage() {
         </div>
       </SectionCard>
 
-      <Modal
+      <AppDrawer
         open={Boolean(previewUrl)}
         title="Report card preview"
         onClose={() => {
@@ -255,7 +255,7 @@ export function ParentReportCardsPage() {
             className="h-[70vh] w-full rounded-xl border border-brand-100"
           />
         ) : null}
-      </Modal>
+      </AppDrawer>
     </div>
   );
 }

@@ -5,8 +5,10 @@ import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ConfirmDrawer } from '../components/confirm-drawer';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
+import { DrawerForm } from '../components/drawer-form';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -717,165 +719,141 @@ export function StudentsPage() {
         </div>
       ) : null}
 
-      <Modal
+      <DrawerForm
         open={isStudentModalOpen}
+        title={editingStudent ? 'Edit Student' : 'Add Student'}
         onClose={() => {
           setIsStudentModalOpen(false);
           setEditingStudent(null);
           studentForm.reset(defaultStudentForm);
         }}
-        title={editingStudent ? 'Edit Student' : 'Add Student'}
-        description="Manage student profile and active enrollment."
+        onCancel={() => {
+          setIsStudentModalOpen(false);
+          setEditingStudent(null);
+          studentForm.reset(defaultStudentForm);
+        }}
+        onSubmit={studentForm.handleSubmit((values) => {
+          if (editingStudent) {
+            updateStudentMutation.mutate({ id: editingStudent.id, values });
+            return;
+          }
+
+          createStudentMutation.mutate(values);
+        })}
+        isLoading={createStudentMutation.isPending || updateStudentMutation.isPending}
+        submitLabel={editingStudent ? 'Update student' : 'Create student'}
       >
-        <form
-          className="grid gap-3"
-          onSubmit={studentForm.handleSubmit((values) => {
-            if (editingStudent) {
-              updateStudentMutation.mutate({ id: editingStudent.id, values });
-              return;
-            }
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Student Code
+          <input
+            className="rounded-lg border border-brand-200 px-3 py-2"
+            {...studentForm.register('studentCode')}
+          />
+        </label>
+        {studentForm.formState.errors.studentCode ? (
+          <p className="text-xs text-red-700">{studentForm.formState.errors.studentCode.message}</p>
+        ) : null}
 
-            createStudentMutation.mutate(values);
-          })}
-        >
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Student Code
+            First Name
             <input
               className="rounded-lg border border-brand-200 px-3 py-2"
-              {...studentForm.register('studentCode')}
+              {...studentForm.register('firstName')}
             />
           </label>
-          {studentForm.formState.errors.studentCode ? (
-            <p className="text-xs text-red-700">
-              {studentForm.formState.errors.studentCode.message}
-            </p>
-          ) : null}
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Last Name
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...studentForm.register('lastName')}
+            />
+          </label>
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              First Name
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...studentForm.register('firstName')}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Last Name
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...studentForm.register('lastName')}
-              />
-            </label>
-          </div>
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Email Address (Optional)
+          <input
+            type="email"
+            className="rounded-lg border border-brand-200 px-3 py-2"
+            placeholder="student@example.com"
+            {...studentForm.register('email')}
+          />
+        </label>
+        {studentForm.formState.errors.email ? (
+          <p className="text-xs text-red-700">{studentForm.formState.errors.email.message}</p>
+        ) : null}
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Gender
+            <select
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...studentForm.register('gender')}
+            >
+              <option value="">Not set</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+              <option value="UNDISCLOSED">Undisclosed</option>
+            </select>
+          </label>
 
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Email Address (Optional)
+            Date of Birth
             <input
-              type="email"
+              type="date"
               className="rounded-lg border border-brand-200 px-3 py-2"
-              placeholder="student@example.com"
-              {...studentForm.register('email')}
+              {...studentForm.register('dateOfBirth')}
             />
           </label>
-          {studentForm.formState.errors.email ? (
-            <p className="text-xs text-red-700">{studentForm.formState.errors.email.message}</p>
-          ) : null}
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Gender
-              <select
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...studentForm.register('gender')}
-              >
-                <option value="">Not set</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-                <option value="UNDISCLOSED">Undisclosed</option>
-              </select>
-            </label>
-
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Date of Birth
-              <input
-                type="date"
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...studentForm.register('dateOfBirth')}
-              />
-            </label>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Academic Year
-              <select
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...studentForm.register('academicYearId')}
-              >
-                <option value="">Select year</option>
-                {years.map((year) => (
-                  <option key={year.id} value={year.id}>
-                    {year.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Class
-              <select
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...studentForm.register('classRoomId')}
-              >
-                <option value="">Select class</option>
-                {classRooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.code} - {room.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {(createStudentMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700">
-              {(createStudentMutation.error as ApiClientError).message}
-            </p>
-          ) : null}
-          {(updateStudentMutation.error as ApiClientError | null) ? (
-            <p className="text-xs text-red-700">
-              {(updateStudentMutation.error as ApiClientError).message}
-            </p>
-          ) : null}
-
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsStudentModalOpen(false);
-                setEditingStudent(null);
-              }}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Academic Year
+            <select
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...studentForm.register('academicYearId')}
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={createStudentMutation.isPending || updateStudentMutation.isPending}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {createStudentMutation.isPending || updateStudentMutation.isPending
-                ? 'Saving...'
-                : editingStudent
-                  ? 'Update student'
-                  : 'Create student'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+              <option value="">Select year</option>
+              {years.map((year) => (
+                <option key={year.id} value={year.id}>
+                  {year.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-      <Modal
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Class
+            <select
+              className="rounded-lg border border-brand-200 px-3 py-2"
+              {...studentForm.register('classRoomId')}
+            >
+              <option value="">Select class</option>
+              {classRooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.code} - {room.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {(createStudentMutation.error as ApiClientError | null) ? (
+          <p className="text-xs text-red-700">
+            {(createStudentMutation.error as ApiClientError).message}
+          </p>
+        ) : null}
+        {(updateStudentMutation.error as ApiClientError | null) ? (
+          <p className="text-xs text-red-700">
+            {(updateStudentMutation.error as ApiClientError).message}
+          </p>
+        ) : null}
+      </DrawerForm>
+
+      <AppDrawer
         open={isImportPreviewOpen}
         onClose={closeImportPreview}
         title="Preview student import"
@@ -1127,42 +1105,24 @@ export function StudentsPage() {
             </div>
           ) : null}
         </div>
-      </Modal>
+      </AppDrawer>
 
-      <Modal
+      <ConfirmDrawer
         open={Boolean(studentToDelete)}
-        onClose={() => setStudentToDelete(null)}
+        onCancel={() => setStudentToDelete(null)}
         title="Delete Student"
-        description="This action will archive the student and remove active enrollment links."
-      >
-        <div className="grid gap-3">
-          <p className="text-sm text-slate-800">
-            Are you sure you want to delete{' '}
-            <span className="font-semibold">{studentToDelete?.name}</span>?
-          </p>
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setStudentToDelete(null)}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={deleteStudentMutation.isPending || !studentToDelete}
-              onClick={() => {
-                if (studentToDelete) {
-                  deleteStudentMutation.mutate(studentToDelete.id);
-                }
-              }}
-              className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {deleteStudentMutation.isPending ? 'Deleting...' : 'Delete'}
-            </button>
-          </div>
-        </div>
-      </Modal>
+        message={`This will archive ${
+          studentToDelete?.name ?? 'this student'
+        } and remove active enrollment links. This action cannot be undone from this screen.`}
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (studentToDelete) {
+            deleteStudentMutation.mutate(studentToDelete.id);
+          }
+        }}
+        isDestructive
+        isLoading={deleteStudentMutation.isPending}
+      />
     </SectionCard>
   );
 }

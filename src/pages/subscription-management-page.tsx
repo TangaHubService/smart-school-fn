@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreditCard, Plus, RefreshCw, School } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -293,7 +293,7 @@ export function SubscriptionManagementPage() {
         )}
       </SectionCard>
 
-      <Modal
+      <AppDrawer
         open={grantOpen}
         onClose={() => !grantMutation.isPending && setGrantOpen(false)}
         title="Grant access"
@@ -371,7 +371,7 @@ export function SubscriptionManagementPage() {
             />
           </label>
         </div>
-      </Modal>
+      </AppDrawer>
 
       {editSub ? (
         <EditSchoolSubscriptionModal
@@ -407,7 +407,7 @@ function EditSchoolSubscriptionModal({
   );
 
   return (
-    <Modal
+    <AppDrawer
       open
       onClose={() => !saving && onClose()}
       title="Adjust school subscription"
@@ -464,6 +464,6 @@ function EditSchoolSubscriptionModal({
           </select>
         </label>
       </div>
-    </Modal>
+    </AppDrawer>
   );
 }

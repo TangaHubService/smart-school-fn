@@ -5,8 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ConfirmDrawer } from '../components/confirm-drawer';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
+import { DrawerForm } from '../components/drawer-form';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -854,186 +856,134 @@ export function StaffPage() {
         ) : null}
       </SectionCard>
 
-      <Modal
+      <DrawerForm
         open={isInviteModalOpen}
+        title="Add Staff Invite"
         onClose={() => {
           setIsInviteModalOpen(false);
           inviteMutation.reset();
         }}
-        title="Add Staff Invite"
-        description="Create an invite and send acceptance instructions by email."
+        onCancel={() => setIsInviteModalOpen(false)}
+        onSubmit={inviteForm.handleSubmit((values) => inviteMutation.mutate(values))}
+        isLoading={inviteMutation.isPending}
+        submitLabel="Create invite"
       >
-        <form
-          className="grid gap-3"
-          onSubmit={inviteForm.handleSubmit((values) => inviteMutation.mutate(values))}
-        >
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Email
-            <input
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              placeholder="teacher@school.rw"
-              {...inviteForm.register('email')}
-            />
-          </label>
-          {inviteForm.formState.errors.email ? (
-            <p className="text-xs text-red-700">{inviteForm.formState.errors.email.message}</p>
-          ) : null}
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Email
+          <input
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            placeholder="teacher@school.rw"
+            {...inviteForm.register('email')}
+          />
+        </label>
+        {inviteForm.formState.errors.email ? (
+          <p className="text-xs text-red-700">{inviteForm.formState.errors.email.message}</p>
+        ) : null}
 
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Role name
-            <input
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              placeholder="TEACHER"
-              {...inviteForm.register('roleName')}
-            />
-          </label>
-          {inviteForm.formState.errors.roleName ? (
-            <p className="text-xs text-red-700">{inviteForm.formState.errors.roleName.message}</p>
-          ) : null}
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Role name
+          <input
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            placeholder="TEACHER"
+            {...inviteForm.register('roleName')}
+          />
+        </label>
+        {inviteForm.formState.errors.roleName ? (
+          <p className="text-xs text-red-700">{inviteForm.formState.errors.roleName.message}</p>
+        ) : null}
 
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Expires in days
-            <input
-              type="number"
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              {...inviteForm.register('expiresInDays', { valueAsNumber: true })}
-            />
-          </label>
-          {inviteForm.formState.errors.expiresInDays ? (
-            <p className="text-xs text-red-700">
-              {inviteForm.formState.errors.expiresInDays.message}
-            </p>
-          ) : null}
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Expires in days
+          <input
+            type="number"
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...inviteForm.register('expiresInDays', { valueAsNumber: true })}
+          />
+        </label>
+        {inviteForm.formState.errors.expiresInDays ? (
+          <p className="text-xs text-red-700">
+            {inviteForm.formState.errors.expiresInDays.message}
+          </p>
+        ) : null}
+      </DrawerForm>
 
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsInviteModalOpen(false)}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={inviteMutation.isPending}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {inviteMutation.isPending ? 'Creating...' : 'Create invite'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal
+      <DrawerForm
         open={Boolean(selectedMemberForEdit)}
-        onClose={() => setSelectedMemberForEdit(null)}
         title="Edit staff member"
-        description="Update profile and account status."
+        onClose={() => setSelectedMemberForEdit(null)}
+        onCancel={() => setSelectedMemberForEdit(null)}
+        onSubmit={editForm.handleSubmit((values) => updateMemberMutation.mutate(values))}
+        isLoading={updateMemberMutation.isPending}
+        submitLabel="Save"
       >
-        <form
-          className="grid gap-3"
-          onSubmit={editForm.handleSubmit((values) => updateMemberMutation.mutate(values))}
-        >
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            First name
-            <input
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              {...editForm.register('firstName')}
-            />
-          </label>
-          {editForm.formState.errors.firstName ? (
-            <p className="text-xs text-red-700">{editForm.formState.errors.firstName.message}</p>
-          ) : null}
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          First name
+          <input
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...editForm.register('firstName')}
+          />
+        </label>
+        {editForm.formState.errors.firstName ? (
+          <p className="text-xs text-red-700">{editForm.formState.errors.firstName.message}</p>
+        ) : null}
 
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Last name
-            <input
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              {...editForm.register('lastName')}
-            />
-          </label>
-          {editForm.formState.errors.lastName ? (
-            <p className="text-xs text-red-700">{editForm.formState.errors.lastName.message}</p>
-          ) : null}
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Last name
+          <input
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...editForm.register('lastName')}
+          />
+        </label>
+        {editForm.formState.errors.lastName ? (
+          <p className="text-xs text-red-700">{editForm.formState.errors.lastName.message}</p>
+        ) : null}
 
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Phone
-            <input
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              placeholder="Optional phone"
-              {...editForm.register('phone')}
-            />
-          </label>
-          {editForm.formState.errors.phone ? (
-            <p className="text-xs text-red-700">{editForm.formState.errors.phone.message}</p>
-          ) : null}
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Phone
+          <input
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            placeholder="Optional phone"
+            {...editForm.register('phone')}
+          />
+        </label>
+        {editForm.formState.errors.phone ? (
+          <p className="text-xs text-red-700">{editForm.formState.errors.phone.message}</p>
+        ) : null}
 
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Status
-            <select
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              {...editForm.register('status')}
-            >
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="INACTIVE">INACTIVE</option>
-              <option value="SUSPENDED">SUSPENDED</option>
-            </select>
-          </label>
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Status
+          <select
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...editForm.register('status')}
+          >
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+            <option value="SUSPENDED">SUSPENDED</option>
+          </select>
+        </label>
+      </DrawerForm>
 
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedMemberForEdit(null)}
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={updateMemberMutation.isPending}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {updateMemberMutation.isPending ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal
+      <ConfirmDrawer
         open={Boolean(deleteTarget)}
-        onClose={() => setDeleteTarget(null)}
+        onCancel={() => setDeleteTarget(null)}
         title="Confirm Delete"
-        description="This action is permanent for the current staff record."
-      >
-        <p className="text-sm text-slate-800">
-          Delete <strong>{deleteTarget?.label}</strong>?
-        </p>
-        {deleteError ? <p className="mt-2 text-xs text-red-700">{deleteError}</p> : null}
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setDeleteTarget(null)}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={deleteMutation.isPending}
-            onClick={async () => {
-              if (!deleteTarget) {
-                return;
-              }
-              await deleteMutation.mutateAsync(deleteTarget);
-            }}
-            className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-          >
-            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-          </button>
-        </div>
-      </Modal>
+        message={
+          deleteError
+            ? deleteError
+            : `Delete ${deleteTarget?.label ?? 'this staff record'}? This action is permanent for the current staff record.`
+        }
+        confirmLabel="Delete"
+        onConfirm={async () => {
+          if (!deleteTarget) {
+            return;
+          }
+          await deleteMutation.mutateAsync(deleteTarget);
+        }}
+        isDestructive
+        isLoading={deleteMutation.isPending}
+      />
 
-      <Modal
+      <AppDrawer
         open={Boolean(selectedMemberForView)}
         onClose={() => setSelectedMemberForView(null)}
         title={viewedMember ? `${formatMemberName(viewedMember)} details` : 'Staff details'}
@@ -1190,17 +1140,18 @@ export function StaffPage() {
             ) : null}
           </div>
         ) : null}
-      </Modal>
+      </AppDrawer>
 
-      <Modal
+      <DrawerForm
         open={Boolean(selectedTeacherForAssign)}
-        onClose={closeAssignSubjectModal}
         title={
           selectedTeacherForAssign
             ? `Assign subject to ${formatMemberName(selectedTeacherForAssign)}`
             : 'Assign subject'
         }
-        description="Type to search and select academic year, class, and subject."
+        onClose={closeAssignSubjectModal}
+        onCancel={closeAssignSubjectModal}
+        showActions={false}
       >
         <div className="grid gap-4">
           <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 md:grid-cols-2 xl:grid-cols-3">
@@ -1379,7 +1330,7 @@ export function StaffPage() {
             </button>
           </div>
         </div>
-      </Modal>
+      </DrawerForm>
     </div>
   );
 }

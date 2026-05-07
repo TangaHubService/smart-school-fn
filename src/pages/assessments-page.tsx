@@ -5,8 +5,9 @@ import { Controller, useForm } from 'react-hook-form';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { ConfirmDrawer } from '../components/confirm-drawer';
+import { DrawerForm } from '../components/drawer-form';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
 import { RichTextEditor } from '../components/rich-text-editor';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
@@ -452,178 +453,145 @@ export function AssessmentsPage() {
         </div>
       </SectionCard>
 
-      <Modal
+      <DrawerForm
         open={isCreateOpen}
         title="Create assessment"
-        description="Set the course, instructions, timing, and attempt limits before you add questions."
         onClose={() => setIsCreateOpen(false)}
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsCreateOpen(false)}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={assessmentForm.handleSubmit((values) =>
-                createAssessmentMutation.mutate(values)
-              )}
-              disabled={createAssessmentMutation.isPending}
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Save assessment
-            </button>
-          </div>
-        }
+        onCancel={() => setIsCreateOpen(false)}
+        onSubmit={assessmentForm.handleSubmit((values) => createAssessmentMutation.mutate(values))}
+        isLoading={createAssessmentMutation.isPending}
+        submitLabel="Save assessment"
+        size="wide"
+        formId="create-assessment-form"
       >
-        <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Course</span>
-            <select
-              {...assessmentForm.register('courseId')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-            >
-              <option value="">Select course</option>
-              {courseOptions.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.title}
-                </option>
-              ))}
-            </select>
-            {assessmentForm.formState.errors.courseId ? (
-              <span className="text-xs text-rose-600">
-                {assessmentForm.formState.errors.courseId.message}
-              </span>
-            ) : null}
-          </label>
+        <p className="text-sm text-slate-600">
+          Set the course, instructions, timing, and attempt limits before you add questions.
+        </p>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Course</span>
+          <select
+            {...assessmentForm.register('courseId')}
+            className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+          >
+            <option value="">Select course</option>
+            {courseOptions.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.title}
+              </option>
+            ))}
+          </select>
+          {assessmentForm.formState.errors.courseId ? (
+            <span className="text-xs text-rose-600">
+              {assessmentForm.formState.errors.courseId.message}
+            </span>
+          ) : null}
+        </label>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Test type</span>
-            <select
-              {...assessmentForm.register('type')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-            >
-              {assessmentTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Test type</span>
+          <select
+            {...assessmentForm.register('type')}
+            className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+          >
+            {assessmentTypeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Lesson (optional)</span>
-            <select
-              {...assessmentForm.register('lessonId')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-            >
-              <option value="">Course-level assessment</option>
-              {lessonsForCreate.map((lesson) => (
-                <option key={lesson.id} value={lesson.id}>
-                  {lesson.sequence}. {lesson.title}
-                </option>
-              ))}
-            </select>
-          </label>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Lesson (optional)</span>
+          <select
+            {...assessmentForm.register('lessonId')}
+            className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+          >
+            <option value="">Course-level assessment</option>
+            {lessonsForCreate.map((lesson) => (
+              <option key={lesson.id} value={lesson.id}>
+                {lesson.sequence}. {lesson.title}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Assessment title</span>
-            <input
-              {...assessmentForm.register('title')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-              placeholder="End of unit quick check"
-            />
-            {assessmentForm.formState.errors.title ? (
-              <span className="text-xs text-rose-600">
-                {assessmentForm.formState.errors.title.message}
-              </span>
-            ) : null}
-          </label>
-
-          <Controller
-            control={assessmentForm.control}
-            name="instructions"
-            render={({ field }) => (
-              <div className="grid gap-1 text-sm font-medium text-slate-700">
-                <span>Instructions</span>
-                <RichTextEditor
-                  value={field.value ?? '<p></p>'}
-                  onChange={field.onChange}
-                  placeholder="Explain how students should take this test."
-                  minHeightClassName="min-h-[180px]"
-                />
-              </div>
-            )}
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Assessment title</span>
+          <input
+            {...assessmentForm.register('title')}
+            className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+            placeholder="End of unit quick check"
           />
+          {assessmentForm.formState.errors.title ? (
+            <span className="text-xs text-rose-600">
+              {assessmentForm.formState.errors.title.message}
+            </span>
+          ) : null}
+        </label>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Due at</span>
-              <input
-                type="datetime-local"
-                {...assessmentForm.register('dueAt')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+        <Controller
+          control={assessmentForm.control}
+          name="instructions"
+          render={({ field }) => (
+            <div className="grid gap-1 text-sm font-medium text-slate-700">
+              <span>Instructions</span>
+              <RichTextEditor
+                value={field.value ?? '<p></p>'}
+                onChange={field.onChange}
+                placeholder="Explain how students should take this test."
+                minHeightClassName="min-h-[180px]"
               />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Timer (minutes)</span>
-              <input
-                type="number"
-                min={1}
-                max={240}
-                {...assessmentForm.register('timeLimitMinutes')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Max attempts</span>
-              <input
-                type="number"
-                min={1}
-                max={5}
-                {...assessmentForm.register('maxAttempts')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-              />
-            </label>
-          </div>
-        </form>
-      </Modal>
+            </div>
+          )}
+        />
 
-      <Modal
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Due at</span>
+            <input
+              type="datetime-local"
+              {...assessmentForm.register('dueAt')}
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Timer (minutes)</span>
+            <input
+              type="number"
+              min={1}
+              max={240}
+              {...assessmentForm.register('timeLimitMinutes')}
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Max attempts</span>
+            <input
+              type="number"
+              min={1}
+              max={5}
+              {...assessmentForm.register('maxAttempts')}
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+            />
+          </label>
+        </div>
+      </DrawerForm>
+
+      <ConfirmDrawer
         open={Boolean(assessmentToDelete)}
         title="Delete assessment"
-        description="This permanently removes the assessment and all of its questions. Students must not have started any attempts."
-        onClose={() => setAssessmentToDelete(null)}
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setAssessmentToDelete(null)}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                assessmentToDelete && deleteAssessmentMutation.mutate(assessmentToDelete.id)
-              }
-              disabled={deleteAssessmentMutation.isPending}
-              className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Delete assessment
-            </button>
-          </div>
+        message={`This permanently removes ${
+          assessmentToDelete?.title ?? 'this assessment'
+        } and all of its questions. Students must not have started any attempts. This action cannot be undone.`}
+        confirmLabel="Delete assessment"
+        onCancel={() => setAssessmentToDelete(null)}
+        onConfirm={() =>
+          assessmentToDelete && deleteAssessmentMutation.mutate(assessmentToDelete.id)
         }
-      >
-        <div className="grid gap-2 text-sm text-slate-700">
-          <p className="font-semibold text-slate-900">{assessmentToDelete?.title}</p>
-          <p>This action cannot be undone.</p>
-        </div>
-      </Modal>
+        isDestructive
+        isLoading={deleteAssessmentMutation.isPending}
+      />
     </div>
   );
 }

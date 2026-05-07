@@ -5,8 +5,9 @@ import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { DrawerForm } from '../components/drawer-form';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { RichContent } from '../components/rich-content';
 import { RichTextEditor } from '../components/rich-text-editor';
 import { SectionCard } from '../components/section-card';
@@ -523,127 +524,109 @@ export function AssignmentsPage() {
         </div>
       </SectionCard>
 
-      <Modal
+      <DrawerForm
         open={isCreateOpen}
         title="Create assignment"
-        description="Pick a course first, then optionally attach the assignment to a lesson."
         onClose={() => setIsCreateOpen(false)}
+        onCancel={() => setIsCreateOpen(false)}
+        onSubmit={assignmentForm.handleSubmit((values) => createAssignmentMutation.mutate(values))}
+        isLoading={createAssignmentMutation.isPending}
+        submitLabel="Create assignment"
+        size="wide"
+        formId="create-assignment-form"
+        formClassName="grid gap-4"
       >
-        <form
-          className="grid gap-4"
-          onSubmit={assignmentForm.handleSubmit((values) =>
-            createAssignmentMutation.mutate(values)
-          )}
-        >
-          <FormField label="Course" error={assignmentForm.formState.errors.courseId?.message}>
-            <select
-              {...assignmentForm.register('courseId')}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-            >
-              <option value="">Select course</option>
-              {courseOptions.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.title}
-                </option>
-              ))}
-            </select>
-          </FormField>
-
-          <FormField label="Lesson" error={assignmentForm.formState.errors.lessonId?.message}>
-            <select
-              {...assignmentForm.register('lessonId')}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-            >
-              <option value="">No linked lesson</option>
-              {createCourseDetailQuery.data?.lessons.items.map((lesson) => (
-                <option key={lesson.id} value={lesson.id}>
-                  {lesson.sequence}. {lesson.title}
-                </option>
-              ))}
-            </select>
-          </FormField>
-
-          <FormField label="Title" error={assignmentForm.formState.errors.title?.message}>
-            <input
-              {...assignmentForm.register('title')}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-            />
-          </FormField>
-
-          <FormField
-            label="Instructions"
-            error={assignmentForm.formState.errors.instructions?.message}
+        <p className="text-sm text-slate-600">
+          Pick a course first, then optionally attach the assignment to a lesson.
+        </p>
+        <FormField label="Course" error={assignmentForm.formState.errors.courseId?.message}>
+          <select
+            {...assignmentForm.register('courseId')}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
           >
-            <Controller
-              control={assignmentForm.control}
-              name="instructions"
-              render={({ field }) => (
-                <RichTextEditor
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Describe the task, the expected answer format, and grading criteria."
-                  minHeightClassName="min-h-[180px]"
-                />
-              )}
-            />
-          </FormField>
+            <option value="">Select course</option>
+            {courseOptions.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.title}
+              </option>
+            ))}
+          </select>
+        </FormField>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Due date" error={assignmentForm.formState.errors.dueAt?.message}>
-              <input
-                type="datetime-local"
-                {...assignmentForm.register('dueAt')}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+        <FormField label="Lesson" error={assignmentForm.formState.errors.lessonId?.message}>
+          <select
+            {...assignmentForm.register('lessonId')}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          >
+            <option value="">No linked lesson</option>
+            {createCourseDetailQuery.data?.lessons.items.map((lesson) => (
+              <option key={lesson.id} value={lesson.id}>
+                {lesson.sequence}. {lesson.title}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField label="Title" error={assignmentForm.formState.errors.title?.message}>
+          <input
+            {...assignmentForm.register('title')}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          />
+        </FormField>
+
+        <FormField
+          label="Instructions"
+          error={assignmentForm.formState.errors.instructions?.message}
+        >
+          <Controller
+            control={assignmentForm.control}
+            name="instructions"
+            render={({ field }) => (
+              <RichTextEditor
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Describe the task, the expected answer format, and grading criteria."
+                minHeightClassName="min-h-[180px]"
               />
-            </FormField>
+            )}
+          />
+        </FormField>
 
-            <FormField
-              label="Max points"
-              error={assignmentForm.formState.errors.maxPoints?.message}
-            >
-              <input
-                type="number"
-                min={1}
-                max={1000}
-                {...assignmentForm.register('maxPoints')}
-                className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-              />
-            </FormField>
-          </div>
-
-          <FormField label="Attachment">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Due date" error={assignmentForm.formState.errors.dueAt?.message}>
             <input
-              type="file"
-              onChange={(event) => setAttachmentFile(event.target.files?.[0] ?? null)}
-              className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-slate-700"
+              type="datetime-local"
+              {...assignmentForm.register('dueAt')}
+              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
             />
           </FormField>
 
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox" {...assignmentForm.register('isPublished')} />
-            Publish immediately
-          </label>
+          <FormField label="Max points" error={assignmentForm.formState.errors.maxPoints?.message}>
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              {...assignmentForm.register('maxPoints')}
+              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+            />
+          </FormField>
+        </div>
 
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsCreateOpen(false)}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={createAssignmentMutation.isPending}
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {createAssignmentMutation.isPending ? 'Saving...' : 'Create assignment'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        <FormField label="Attachment">
+          <input
+            type="file"
+            onChange={(event) => setAttachmentFile(event.target.files?.[0] ?? null)}
+            className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-slate-700"
+          />
+        </FormField>
 
-      <Modal
+        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <input type="checkbox" {...assignmentForm.register('isPublished')} />
+          Publish immediately
+        </label>
+      </DrawerForm>
+
+      <AppDrawer
         open={Boolean(selectedAssignment)}
         title={selectedAssignment ? `Submissions · ${selectedAssignment.title}` : 'Submissions'}
         description="Review and grade submissions for the selected assignment."
@@ -739,51 +722,37 @@ export function AssignmentsPage() {
             <EmptyState message="No submissions yet." />
           )
         ) : null}
-      </Modal>
+      </AppDrawer>
 
-      <Modal
+      <DrawerForm
         open={Boolean(gradingSubmissionId)}
         title="Grade submission"
-        description="Save points and feedback for the selected submission."
         onClose={() => setGradingSubmissionId(null)}
+        onCancel={() => setGradingSubmissionId(null)}
+        onSubmit={gradeForm.handleSubmit((values) => gradeSubmissionMutation.mutate(values))}
+        isLoading={gradeSubmissionMutation.isPending}
+        submitLabel="Save grade"
+        formId="grade-submission-form"
       >
-        <form
-          className="grid gap-4"
-          onSubmit={gradeForm.handleSubmit((values) => gradeSubmissionMutation.mutate(values))}
-        >
-          <FormField label="Points" error={gradeForm.formState.errors.gradePoints?.message}>
-            <input
-              type="number"
-              min={0}
-              {...gradeForm.register('gradePoints')}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-            />
-          </FormField>
-          <FormField label="Feedback" error={gradeForm.formState.errors.feedback?.message}>
-            <textarea
-              {...gradeForm.register('feedback')}
-              rows={5}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
-            />
-          </FormField>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setGradingSubmissionId(null)}
-              className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={gradeSubmissionMutation.isPending}
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {gradeSubmissionMutation.isPending ? 'Saving...' : 'Save grade'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        <p className="text-sm text-slate-600">
+          Save points and feedback for the selected submission.
+        </p>
+        <FormField label="Points" error={gradeForm.formState.errors.gradePoints?.message}>
+          <input
+            type="number"
+            min={0}
+            {...gradeForm.register('gradePoints')}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          />
+        </FormField>
+        <FormField label="Feedback" error={gradeForm.formState.errors.feedback?.message}>
+          <textarea
+            {...gradeForm.register('feedback')}
+            rows={5}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          />
+        </FormField>
+      </DrawerForm>
     </div>
   );
 }

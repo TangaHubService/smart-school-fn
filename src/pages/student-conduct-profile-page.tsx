@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { ConductDeductionForm } from '../components/conduct-deduction-form';
+import { AppDrawer } from '../components/drawer';
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
@@ -250,19 +251,15 @@ export function StudentConductProfilePage() {
         </SectionCard>
       )}
 
-      {conductModalOpen && auth.accessToken && enrollment && canRecordConductDeduction ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="student-conduct-modal-title"
-        >
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-brand-100 bg-white p-5 shadow-xl">
-            <h2 id="student-conduct-modal-title" className="text-lg font-bold text-slate-950">
-              Record conduct deduction
-            </h2>
-
-            <label className="mt-4 grid gap-1 text-sm font-medium text-slate-800">
+      <AppDrawer
+        open={conductModalOpen && Boolean(auth.accessToken && enrollment && canRecordConductDeduction)}
+        title="Record conduct deduction"
+        onClose={closeConductModal}
+        size="compact"
+      >
+        {auth.accessToken && enrollment ? (
+          <>
+            <label className="grid gap-1 text-sm font-medium text-slate-800">
               Term
               <select
                 value={deductTermId}
@@ -271,7 +268,7 @@ export function StudentConductProfilePage() {
                 className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400 disabled:opacity-60"
               >
                 {conductModalTermsQuery.isPending ? (
-                  <option value="">Loading terms…</option>
+                  <option value="">Loading terms...</option>
                 ) : modalTerms.length === 0 ? (
                   <option value="">No terms for this year</option>
                 ) : (
@@ -312,9 +309,9 @@ export function StudentConductProfilePage() {
                 Add terms for this academic year before recording deductions.
               </p>
             ) : null}
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </AppDrawer>
     </div>
   );
 }

@@ -19,8 +19,10 @@ import { Controller, useForm } from 'react-hook-form';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { ConfirmDrawer } from '../components/confirm-drawer';
+import { DrawerForm } from '../components/drawer-form';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
+import { AppDrawer } from '../components/drawer';
 import { RichContent } from '../components/rich-content';
 import { RichTextEditor } from '../components/rich-text-editor';
 import { SectionCard } from '../components/section-card';
@@ -1000,302 +1002,270 @@ export function AssessmentDetailPage() {
         </div>
       </SectionCard>
 
-      <Modal
+      <DrawerForm
         open={isAssessmentEditOpen}
         title="Edit assessment"
         description="Update the instructions, lesson link, timing, and attempt settings for this assessment."
         onClose={() => setIsAssessmentEditOpen(false)}
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsAssessmentEditOpen(false)}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={assessmentForm.handleSubmit((values) =>
-                updateAssessmentMutation.mutate(values)
-              )}
-              disabled={updateAssessmentMutation.isPending}
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Save changes
-            </button>
-          </div>
-        }
+        onCancel={() => setIsAssessmentEditOpen(false)}
+        onSubmit={assessmentForm.handleSubmit((values) => updateAssessmentMutation.mutate(values))}
+        isLoading={updateAssessmentMutation.isPending}
+        submitLabel="Save changes"
+        size="wide"
+        formId="edit-assessment-form"
       >
-        <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
-          <div className="rounded-2xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm text-slate-700">
-            {assessment.course.title} · {assessment.course.classRoom.name} ·{' '}
-            {assessment.course.academicYear.name}
-          </div>
+        <div className="rounded-2xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm text-slate-700">
+          {assessment.course.title} · {assessment.course.classRoom.name} ·{' '}
+          {assessment.course.academicYear.name}
+        </div>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Lesson (optional)</span>
-            <select
-              {...assessmentForm.register('lessonId')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-            >
-              <option value="">Course-level assessment</option>
-              {lessonOptions.map((lesson) => (
-                <option key={lesson.id} value={lesson.id}>
-                  {lesson.sequence}. {lesson.title}
-                </option>
-              ))}
-            </select>
-            {courseDetailQuery.isError ? (
-              <span className="text-xs text-amber-700">
-                Could not refresh course lessons. You can still save the current lesson selection.
-              </span>
-            ) : null}
-          </label>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Lesson (optional)</span>
+          <select
+            {...assessmentForm.register('lessonId')}
+            className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+          >
+            <option value="">Course-level assessment</option>
+            {lessonOptions.map((lesson) => (
+              <option key={lesson.id} value={lesson.id}>
+                {lesson.sequence}. {lesson.title}
+              </option>
+            ))}
+          </select>
+          {courseDetailQuery.isError ? (
+            <span className="text-xs text-amber-700">
+              Could not refresh course lessons. You can still save the current lesson selection.
+            </span>
+          ) : null}
+        </label>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Assessment title</span>
-            <input
-              {...assessmentForm.register('title')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-              placeholder="End of unit quick check"
-            />
-            {assessmentForm.formState.errors.title ? (
-              <span className="text-xs text-rose-600">
-                {assessmentForm.formState.errors.title.message}
-              </span>
-            ) : null}
-          </label>
-
-          <Controller
-            control={assessmentForm.control}
-            name="instructions"
-            render={({ field }) => (
-              <div className="grid gap-1 text-sm font-medium text-slate-700">
-                <span>Instructions</span>
-                <RichTextEditor
-                  value={field.value ?? '<p></p>'}
-                  onChange={field.onChange}
-                  placeholder="Explain how students should take this test."
-                  minHeightClassName="min-h-[180px]"
-                />
-              </div>
-            )}
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Assessment title</span>
+          <input
+            {...assessmentForm.register('title')}
+            className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+            placeholder="End of unit quick check"
           />
+          {assessmentForm.formState.errors.title ? (
+            <span className="text-xs text-rose-600">
+              {assessmentForm.formState.errors.title.message}
+            </span>
+          ) : null}
+        </label>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Due at</span>
-              <input
-                type="datetime-local"
-                {...assessmentForm.register('dueAt')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+        <Controller
+          control={assessmentForm.control}
+          name="instructions"
+          render={({ field }) => (
+            <div className="grid gap-1 text-sm font-medium text-slate-700">
+              <span>Instructions</span>
+              <RichTextEditor
+                value={field.value ?? '<p></p>'}
+                onChange={field.onChange}
+                placeholder="Explain how students should take this test."
+                minHeightClassName="min-h-[180px]"
               />
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Timer (minutes)</span>
-              <input
-                type="number"
-                min={1}
-                max={240}
-                {...assessmentForm.register('timeLimitMinutes')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-              />
-              {assessmentForm.formState.errors.timeLimitMinutes ? (
-                <span className="text-xs text-rose-600">
-                  {assessmentForm.formState.errors.timeLimitMinutes.message}
-                </span>
-              ) : null}
-            </label>
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Max attempts</span>
-              <input
-                type="number"
-                min={1}
-                max={5}
-                {...assessmentForm.register('maxAttempts')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-              />
-              {assessmentForm.formState.errors.maxAttempts ? (
-                <span className="text-xs text-rose-600">
-                  {assessmentForm.formState.errors.maxAttempts.message}
-                </span>
-              ) : null}
-            </label>
-          </div>
-        </form>
-      </Modal>
+            </div>
+          )}
+        />
 
-      <Modal
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Due at</span>
+            <input
+              type="datetime-local"
+              {...assessmentForm.register('dueAt')}
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Timer (minutes)</span>
+            <input
+              type="number"
+              min={1}
+              max={240}
+              {...assessmentForm.register('timeLimitMinutes')}
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+            />
+            {assessmentForm.formState.errors.timeLimitMinutes ? (
+              <span className="text-xs text-rose-600">
+                {assessmentForm.formState.errors.timeLimitMinutes.message}
+              </span>
+            ) : null}
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Max attempts</span>
+            <input
+              type="number"
+              min={1}
+              max={5}
+              {...assessmentForm.register('maxAttempts')}
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+            />
+            {assessmentForm.formState.errors.maxAttempts ? (
+              <span className="text-xs text-rose-600">
+                {assessmentForm.formState.errors.maxAttempts.message}
+              </span>
+            ) : null}
+          </label>
+        </div>
+      </DrawerForm>
+
+      <DrawerForm
         open={isQuestionOpen}
         title={editingQuestionId ? 'Edit question' : 'Add question'}
         description="Use MCQ for auto-corrected tests or open text for written responses."
         onClose={closeQuestionModal}
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={closeQuestionModal}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={questionForm.handleSubmit((values) =>
-                editingQuestionId
-                  ? updateQuestionMutation.mutate(values)
-                  : addQuestionMutation.mutate(values)
-              )}
-              disabled={
-                addQuestionMutation.isPending ||
-                updateQuestionMutation.isPending ||
-                isUploadingQuestionImage
-              }
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {editingQuestionId ? 'Save changes' : 'Save question'}
-            </button>
-          </div>
+        onCancel={closeQuestionModal}
+        onSubmit={questionForm.handleSubmit((values) =>
+          editingQuestionId
+            ? updateQuestionMutation.mutate(values)
+            : addQuestionMutation.mutate(values)
+        )}
+        isLoading={
+          addQuestionMutation.isPending ||
+          updateQuestionMutation.isPending ||
+          isUploadingQuestionImage
         }
+        submitLabel={editingQuestionId ? 'Save changes' : 'Save question'}
+        size="wide"
+        formId="assessment-question-form"
       >
-        <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
-          <input
-            ref={questionImageInputRef}
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) {
-                void handleQuestionImageFile(file);
-              }
-              event.target.value = '';
-            }}
-          />
+        <input
+          ref={questionImageInputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) {
+              void handleQuestionImageFile(file);
+            }
+            event.target.value = '';
+          }}
+        />
 
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Question prompt</span>
+          <textarea
+            {...questionForm.register('prompt')}
+            rows={3}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"
+          />
+        </label>
+
+        <div className="grid gap-3">
           <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Question prompt</span>
-            <textarea
-              {...questionForm.register('prompt')}
-              rows={3}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"
+            <span>Question image URL (optional)</span>
+            <input
+              {...questionForm.register('imageUrl')}
+              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+              placeholder="https://..."
             />
+            {questionForm.formState.errors.imageUrl ? (
+              <span className="text-xs text-rose-600">
+                {questionForm.formState.errors.imageUrl.message}
+              </span>
+            ) : null}
           </label>
 
-          <div className="grid gap-3">
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
-              <span>Question image URL (optional)</span>
-              <input
-                {...questionForm.register('imageUrl')}
-                className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-                placeholder="https://..."
-              />
-              {questionForm.formState.errors.imageUrl ? (
-                <span className="text-xs text-rose-600">
-                  {questionForm.formState.errors.imageUrl.message}
-                </span>
-              ) : null}
-            </label>
-
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => questionImageInputRef.current?.click()}
+              disabled={isUploadingQuestionImage}
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
+            >
+              <ImagePlus className="h-4 w-4" aria-hidden="true" />
+              {isUploadingQuestionImage ? 'Uploading image...' : 'Upload image'}
+            </button>
+            {questionImageUrl ? (
               <button
                 type="button"
-                onClick={() => questionImageInputRef.current?.click()}
-                disabled={isUploadingQuestionImage}
-                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
+                onClick={() =>
+                  questionForm.setValue('imageUrl', '', {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
               >
-                <ImagePlus className="h-4 w-4" aria-hidden="true" />
-                {isUploadingQuestionImage ? 'Uploading image...' : 'Upload image'}
+                <X className="h-4 w-4" aria-hidden="true" />
+                Remove image
               </button>
-              {questionImageUrl ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    questionForm.setValue('imageUrl', '', {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
-                  className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                  Remove image
-                </button>
-              ) : null}
-            </div>
-
-            {questionImageUrl ? (
-              <AssessmentQuestionImage
-                src={questionImageUrl}
-                alt="Question image preview"
-                className="max-w-2xl"
-              />
             ) : null}
           </div>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Explanation (optional)</span>
-            <textarea
-              {...questionForm.register('explanation')}
-              rows={2}
-              className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"
-              placeholder="Shown after submission to explain the answer."
+          {questionImageUrl ? (
+            <AssessmentQuestionImage
+              src={questionImageUrl}
+              alt="Question image preview"
+              className="max-w-2xl"
             />
-          </label>
+          ) : null}
+        </div>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Question type</span>
-            <select
-              {...questionForm.register('type')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-            >
-              <option value="MCQ_SINGLE">Multiple choice</option>
-              <option value="OPEN_TEXT">Open text</option>
-            </select>
-          </label>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Explanation (optional)</span>
+          <textarea
+            {...questionForm.register('explanation')}
+            rows={2}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-brand-400"
+            placeholder="Shown after submission to explain the answer."
+          />
+        </label>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Points</span>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              {...questionForm.register('points')}
-              className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-            />
-          </label>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Question type</span>
+          <select
+            {...questionForm.register('type')}
+            className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+          >
+            <option value="MCQ_SINGLE">Multiple choice</option>
+            <option value="OPEN_TEXT">Open text</option>
+          </select>
+        </label>
 
-          {selectedQuestionType === 'MCQ_SINGLE' ? (
-            <div className="grid gap-3">
-              {(['optionA', 'optionB', 'optionC', 'optionD'] as const).map((fieldName, index) => (
-                <label key={fieldName} className="grid gap-1 text-sm font-medium text-slate-700">
-                  <span>Option {String.fromCharCode(65 + index)}</span>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      aria-label={`Mark option ${String.fromCharCode(65 + index)} as correct`}
-                      checked={questionForm.watch('correctOptionIndex') === index}
-                      onChange={() => questionForm.setValue('correctOptionIndex', index)}
-                      className="h-4 w-4"
-                    />
-                    <input
-                      {...questionForm.register(fieldName)}
-                      className="h-11 flex-1 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
-                    />
-                  </div>
-                </label>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/70 px-3 py-3 text-sm text-slate-700">
-              Students will see a text box and answer this question in their own words.
-            </div>
-          )}
-        </form>
-      </Modal>
+        <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <span>Points</span>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            {...questionForm.register('points')}
+            className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+          />
+        </label>
 
-      <Modal
+        {selectedQuestionType === 'MCQ_SINGLE' ? (
+          <div className="grid gap-3">
+            {(['optionA', 'optionB', 'optionC', 'optionD'] as const).map((fieldName, index) => (
+              <label key={fieldName} className="grid gap-1 text-sm font-medium text-slate-700">
+                <span>Option {String.fromCharCode(65 + index)}</span>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    aria-label={`Mark option ${String.fromCharCode(65 + index)} as correct`}
+                    checked={questionForm.watch('correctOptionIndex') === index}
+                    onChange={() => questionForm.setValue('correctOptionIndex', index)}
+                    className="h-4 w-4"
+                  />
+                  <input
+                    {...questionForm.register(fieldName)}
+                    className="h-11 flex-1 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
+                  />
+                </div>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/70 px-3 py-3 text-sm text-slate-700">
+            Students will see a text box and answer this question in their own words.
+          </div>
+        )}
+      </DrawerForm>
+
+      <AppDrawer
         open={isBulkImportOpen}
         title="Import questions from Excel"
         description="Use the template headers. MCQ rows should fill options A-D and set the correct option as A, B, C, or D."
@@ -1422,70 +1392,33 @@ export function AssessmentDetailPage() {
             />
           )}
         </div>
-      </Modal>
+      </AppDrawer>
 
-      <Modal
+      <ConfirmDrawer
         open={Boolean(questionToDelete)}
         title="Delete question"
-        description="This removes the question from the assessment. Student attempts must not exist."
-        onClose={() => setQuestionToDelete(null)}
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setQuestionToDelete(null)}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => questionToDelete && deleteQuestionMutation.mutate(questionToDelete.id)}
-              disabled={deleteQuestionMutation.isPending}
-              className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Delete question
-            </button>
-          </div>
-        }
-      >
-        <p className="text-sm text-slate-700">
-          Question {questionToDelete?.sequence}: {questionToDelete?.prompt}
-        </p>
-      </Modal>
+        message={`This removes question ${questionToDelete?.sequence ?? ''}: ${
+          questionToDelete?.prompt ?? 'this question'
+        }. Student attempts must not exist.`}
+        onCancel={() => setQuestionToDelete(null)}
+        onConfirm={() => questionToDelete && deleteQuestionMutation.mutate(questionToDelete.id)}
+        confirmLabel="Delete question"
+        isDestructive
+        isLoading={deleteQuestionMutation.isPending}
+      />
 
-      <Modal
+      <ConfirmDrawer
         open={isDeleteAssessmentOpen}
         title="Delete assessment"
-        description="This permanently removes the assessment and all of its questions. Students must not have started any attempts."
-        onClose={() => setIsDeleteAssessmentOpen(false)}
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsDeleteAssessmentOpen(false)}
-              className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => deleteAssessmentMutation.mutate()}
-              disabled={deleteAssessmentMutation.isPending}
-              className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Delete assessment
-            </button>
-          </div>
-        }
-      >
-        <div className="grid gap-2 text-sm text-slate-700">
-          <p className="font-semibold text-slate-900">{assessment.title}</p>
-          <p>This action cannot be undone.</p>
-        </div>
-      </Modal>
+        message={`This permanently removes ${assessment.title} and all of its questions. Students must not have started any attempts. This action cannot be undone.`}
+        onCancel={() => setIsDeleteAssessmentOpen(false)}
+        onConfirm={() => deleteAssessmentMutation.mutate()}
+        confirmLabel="Delete assessment"
+        isDestructive
+        isLoading={deleteAssessmentMutation.isPending}
+      />
 
-      <Modal
+      <AppDrawer
         open={isRegradeOpen}
         title="Review attempt"
         description="Inspect auto-grading and override points where needed."
@@ -1665,7 +1598,7 @@ export function AssessmentDetailPage() {
         ) : (
           <EmptyState title="No attempt selected" message="Choose a submitted attempt to review." />
         )}
-      </Modal>
+      </AppDrawer>
     </div>
   );
 }

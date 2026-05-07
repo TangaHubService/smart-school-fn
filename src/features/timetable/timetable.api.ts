@@ -106,7 +106,8 @@ export function bulkUpsertTimetableSlotsApi(
     termId: string;
     classRoomId: string;
     slots: Array<{
-      courseId: string;
+      subjectId?: string;
+      courseId?: string;
       dayOfWeek: number;
       periodNumber: number;
       startTime: string;

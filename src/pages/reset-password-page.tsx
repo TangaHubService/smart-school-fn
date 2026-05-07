@@ -8,6 +8,7 @@ import { useState, useRef } from 'react';
 import { resetPasswordApi, verifyOtpApi } from '../features/auth/auth.api';
 import { resetPasswordSchema, ResetPasswordInput } from '../features/auth/auth.schema';
 import { ApiClientError } from '../types/api';
+import { useToast } from '../components/toast';
 import { useTranslation } from 'react-i18next';
 
 function OtpBoxes({
@@ -92,6 +93,7 @@ function OtpBoxes({
 
 export function ResetPasswordPage() {
   const { t } = useTranslation('auth');
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const step = searchParams.get('step') || 'otp';
@@ -126,7 +128,7 @@ export function ResetPasswordPage() {
   const mutation = useMutation({
     mutationFn: resetPasswordApi,
     onSuccess: () => {
-      alert(t('reset.successAlert'));
+      showToast({ type: 'success', title: 'Success', message: t('reset.successAlert') });
       navigate('/login');
     },
   });

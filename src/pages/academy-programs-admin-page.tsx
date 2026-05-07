@@ -6,8 +6,8 @@ import { useForm, type UseFormReturn } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 
+import { DrawerForm } from '../components/drawer-form';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -257,88 +257,64 @@ export function AcademyProgramsAdminPage() {
         </div>
       )}
 
-      <Modal
+      <DrawerForm
         open={createOpen}
         onClose={() => {
           setCreateOpen(false);
           createMutation.reset();
         }}
+        onCancel={() => {
+          setCreateOpen(false);
+          createMutation.reset();
+        }}
         title="New academy program"
-        description="Appears on /academy when this school is the catalog tenant."
+        onSubmit={createForm.handleSubmit((values) => createMutation.mutate(values))}
+        isLoading={createMutation.isPending}
+        submitLabel="Create"
+        formId="create-academy-program-form"
       >
-        <form
-          className="grid max-h-[70vh] gap-3 overflow-y-auto pr-1"
-          onSubmit={createForm.handleSubmit((values) => createMutation.mutate(values))}
-        >
-          <ProgramFormFields form={createForm} courseOptions={courseOptions} />
-          {createMutation.error ? (
-            <StateView
-              title="Could not create"
-              message={(createMutation.error as ApiClientError).message}
-            />
-          ) : null}
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setCreateOpen(false)}
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {createMutation.isPending ? 'Saving…' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        <p className="text-sm text-slate-600">
+          Appears on /academy when this school is the catalog tenant.
+        </p>
+        <ProgramFormFields form={createForm} courseOptions={courseOptions} />
+        {createMutation.error ? (
+          <StateView
+            title="Could not create"
+            message={(createMutation.error as ApiClientError).message}
+          />
+        ) : null}
+      </DrawerForm>
 
-      <Modal
+      <DrawerForm
         open={Boolean(editing)}
         onClose={() => {
           setEditing(null);
           updateMutation.reset();
         }}
+        onCancel={() => {
+          setEditing(null);
+          updateMutation.reset();
+        }}
         title="Edit academy program"
-        description={editing?.title}
+        onSubmit={editForm.handleSubmit((values) => {
+          if (!editing) {
+            return;
+          }
+          updateMutation.mutate({ id: editing.id, values });
+        })}
+        isLoading={updateMutation.isPending}
+        submitLabel="Save"
+        formId="edit-academy-program-form"
       >
-        <form
-          className="grid max-h-[70vh] gap-3 overflow-y-auto pr-1"
-          onSubmit={editForm.handleSubmit((values) => {
-            if (!editing) {
-              return;
-            }
-            updateMutation.mutate({ id: editing.id, values });
-          })}
-        >
-          <ProgramFormFields form={editForm} courseOptions={courseOptions} />
-          {updateMutation.error ? (
-            <StateView
-              title="Could not update"
-              message={(updateMutation.error as ApiClientError).message}
-            />
-          ) : null}
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setEditing(null)}
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm font-semibold text-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={updateMutation.isPending}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {updateMutation.isPending ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        {editing?.title ? <p className="text-sm text-slate-600">{editing.title}</p> : null}
+        <ProgramFormFields form={editForm} courseOptions={courseOptions} />
+        {updateMutation.error ? (
+          <StateView
+            title="Could not update"
+            message={(updateMutation.error as ApiClientError).message}
+          />
+        ) : null}
+      </DrawerForm>
     </SectionCard>
   );
 }

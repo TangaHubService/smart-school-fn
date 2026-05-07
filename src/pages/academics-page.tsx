@@ -4,8 +4,9 @@ import { ReactNode, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ConfirmDrawer } from '../components/confirm-drawer';
+import { DrawerForm } from '../components/drawer-form';
 import { EmptyState } from '../components/empty-state';
-import { Modal } from '../components/modal';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -842,388 +843,343 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         </SectionCard>
       ) : null}
 
-      <Modal
+      <DrawerForm
         open={isYearModalOpen}
         onClose={() => setIsYearModalOpen(false)}
+        onCancel={() => setIsYearModalOpen(false)}
         title={editingYearId ? 'Update Academic Year' : 'Add Academic Year'}
         description="Set year details and whether it is the current year."
-      >
-        <form
-          className="grid gap-3"
-          onSubmit={yearForm.handleSubmit(async (values) => {
-            try {
-              if (editingYearId) {
-                await updateYearMutation.mutateAsync({ id: editingYearId, values });
-              } else {
-                await createYearMutation.mutateAsync(values);
-              }
-
-              setIsYearModalOpen(false);
-              setEditingYearId(null);
-              yearForm.reset(academicYearDefaults);
-            } catch (error) {
-              showToast({
-                type: 'error',
-                title: 'Save failed',
-                message: error instanceof Error ? error.message : 'Could not save academic year',
-              });
+        onSubmit={yearForm.handleSubmit(async (values) => {
+          try {
+            if (editingYearId) {
+              await updateYearMutation.mutateAsync({ id: editingYearId, values });
+            } else {
+              await createYearMutation.mutateAsync(values);
             }
-          })}
-        >
+
+            setIsYearModalOpen(false);
+            setEditingYearId(null);
+            yearForm.reset(academicYearDefaults);
+          } catch (error) {
+            showToast({
+              type: 'error',
+              title: 'Save failed',
+              message: error instanceof Error ? error.message : 'Could not save academic year',
+            });
+          }
+        })}
+        isLoading={isSavingYear}
+        submitLabel={editingYearId ? 'Update year' : 'Create year'}
+        formId="academic-year-form"
+      >
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Name
+          <input
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...yearForm.register('name')}
+          />
+        </label>
+        <FieldError message={yearForm.formState.errors.name?.message} />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Start date
+            <input
+              type="date"
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...yearForm.register('startDate')}
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            End date
+            <input
+              type="date"
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...yearForm.register('endDate')}
+            />
+          </label>
+        </div>
+
+        <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <input type="checkbox" {...yearForm.register('isCurrent')} /> Mark as current year
+        </label>
+      </DrawerForm>
+
+      <DrawerForm
+        open={isTermModalOpen}
+        onClose={() => setIsTermModalOpen(false)}
+        onCancel={() => setIsTermModalOpen(false)}
+        title={editingTermId ? 'Update Term' : 'Add Term'}
+        description="Create or update a term under an academic year."
+        onSubmit={termForm.handleSubmit(async (values) => {
+          try {
+            if (editingTermId) {
+              await updateTermMutation.mutateAsync({ id: editingTermId, values });
+            } else {
+              await createTermMutation.mutateAsync(values);
+            }
+
+            setIsTermModalOpen(false);
+            setEditingTermId(null);
+            termForm.reset(termDefaults);
+          } catch (error) {
+            showToast({
+              type: 'error',
+              title: 'Save failed',
+              message: error instanceof Error ? error.message : 'Could not save term',
+            });
+          }
+        })}
+        isLoading={isSavingTerm}
+        submitLabel={editingTermId ? 'Update term' : 'Create term'}
+        formId="term-form"
+      >
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Academic year
+          <select
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...termForm.register('academicYearId')}
+          >
+            <option value="">Select year</option>
+            {years.map((year) => (
+              <option key={year.id} value={year.id}>
+                {year.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <FieldError message={termForm.formState.errors.academicYearId?.message} />
+
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Name
             <input
               className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              {...yearForm.register('name')}
+              {...termForm.register('name')}
             />
           </label>
-          <FieldError message={yearForm.formState.errors.name?.message} />
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Start date
-              <input
-                type="date"
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...yearForm.register('startDate')}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              End date
-              <input
-                type="date"
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...yearForm.register('endDate')}
-              />
-            </label>
-          </div>
-
-          <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <input type="checkbox" {...yearForm.register('isCurrent')} /> Mark as current year
-          </label>
-
-          <ModalActions
-            isSubmitting={isSavingYear}
-            submitLabel={editingYearId ? 'Update year' : 'Create year'}
-            onCancel={() => setIsYearModalOpen(false)}
-          />
-        </form>
-      </Modal>
-
-      <Modal
-        open={isTermModalOpen}
-        onClose={() => setIsTermModalOpen(false)}
-        title={editingTermId ? 'Update Term' : 'Add Term'}
-        description="Create or update a term under an academic year."
-      >
-        <form
-          className="grid gap-3"
-          onSubmit={termForm.handleSubmit(async (values) => {
-            try {
-              if (editingTermId) {
-                await updateTermMutation.mutateAsync({ id: editingTermId, values });
-              } else {
-                await createTermMutation.mutateAsync(values);
-              }
-
-              setIsTermModalOpen(false);
-              setEditingTermId(null);
-              termForm.reset(termDefaults);
-            } catch (error) {
-              showToast({
-                type: 'error',
-                title: 'Save failed',
-                message: error instanceof Error ? error.message : 'Could not save term',
-              });
-            }
-          })}
-        >
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Academic year
-            <select
+            Sequence
+            <input
+              type="number"
               className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              {...termForm.register('academicYearId')}
-            >
-              <option value="">Select year</option>
-              {years.map((year) => (
-                <option key={year.id} value={year.id}>
-                  {year.name}
-                </option>
-              ))}
-            </select>
+              {...termForm.register('sequence', { valueAsNumber: true })}
+            />
           </label>
-          <FieldError message={termForm.formState.errors.academicYearId?.message} />
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Name
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...termForm.register('name')}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Sequence
-              <input
-                type="number"
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...termForm.register('sequence', { valueAsNumber: true })}
-              />
-            </label>
-          </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Start date
+            <input
+              type="date"
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...termForm.register('startDate')}
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            End date
+            <input
+              type="date"
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...termForm.register('endDate')}
+            />
+          </label>
+        </div>
+      </DrawerForm>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Start date
-              <input
-                type="date"
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...termForm.register('startDate')}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              End date
-              <input
-                type="date"
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...termForm.register('endDate')}
-              />
-            </label>
-          </div>
-
-          <ModalActions
-            isSubmitting={isSavingTerm}
-            submitLabel={editingTermId ? 'Update term' : 'Create term'}
-            onCancel={() => setIsTermModalOpen(false)}
-          />
-        </form>
-      </Modal>
-
-      <Modal
+      <DrawerForm
         open={isGradeModalOpen}
         onClose={() => setIsGradeModalOpen(false)}
+        onCancel={() => setIsGradeModalOpen(false)}
         title={editingGradeId ? 'Update Grade Level' : 'Add Grade Level'}
         description="Manage grade level code, name, and ordering rank."
-      >
-        <form
-          className="grid gap-3"
-          onSubmit={gradeForm.handleSubmit(async (values) => {
-            try {
-              if (editingGradeId) {
-                await updateGradeMutation.mutateAsync({ id: editingGradeId, values });
-              } else {
-                await createGradeMutation.mutateAsync(values);
-              }
-
-              setIsGradeModalOpen(false);
-              setEditingGradeId(null);
-              gradeForm.reset(gradeLevelDefaults);
-            } catch (error) {
-              showToast({
-                type: 'error',
-                title: 'Save failed',
-                message: error instanceof Error ? error.message : 'Could not save grade level',
-              });
+        onSubmit={gradeForm.handleSubmit(async (values) => {
+          try {
+            if (editingGradeId) {
+              await updateGradeMutation.mutateAsync({ id: editingGradeId, values });
+            } else {
+              await createGradeMutation.mutateAsync(values);
             }
-          })}
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Code
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...gradeForm.register('code')}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Name
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...gradeForm.register('name')}
-              />
-            </label>
-          </div>
+
+            setIsGradeModalOpen(false);
+            setEditingGradeId(null);
+            gradeForm.reset(gradeLevelDefaults);
+          } catch (error) {
+            showToast({
+              type: 'error',
+              title: 'Save failed',
+              message: error instanceof Error ? error.message : 'Could not save grade level',
+            });
+          }
+        })}
+        isLoading={isSavingGrade}
+        submitLabel={editingGradeId ? 'Update level' : 'Create level'}
+        formId="grade-level-form"
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Rank
+            Code
             <input
-              type="number"
               className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              {...gradeForm.register('rank', { valueAsNumber: true })}
+              {...gradeForm.register('code')}
             />
           </label>
-
-          <ModalActions
-            isSubmitting={isSavingGrade}
-            submitLabel={editingGradeId ? 'Update level' : 'Create level'}
-            onCancel={() => setIsGradeModalOpen(false)}
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Name
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...gradeForm.register('name')}
+            />
+          </label>
+        </div>
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Rank
+          <input
+            type="number"
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...gradeForm.register('rank', { valueAsNumber: true })}
           />
-        </form>
-      </Modal>
+        </label>
+      </DrawerForm>
 
-      <Modal
+      <DrawerForm
         open={isClassModalOpen}
         onClose={() => setIsClassModalOpen(false)}
+        onCancel={() => setIsClassModalOpen(false)}
         title={editingClassId ? 'Update Class' : 'Add Class'}
         description="Assign class to a grade level and set capacity."
-      >
-        <form
-          className="grid gap-3"
-          onSubmit={classForm.handleSubmit(async (values) => {
-            try {
-              if (editingClassId) {
-                await updateClassMutation.mutateAsync({ id: editingClassId, values });
-              } else {
-                await createClassMutation.mutateAsync(values);
-              }
-
-              setIsClassModalOpen(false);
-              setEditingClassId(null);
-              classForm.reset(classDefaults);
-            } catch (error) {
-              showToast({
-                type: 'error',
-                title: 'Save failed',
-                message: error instanceof Error ? error.message : 'Could not save class',
-              });
+        onSubmit={classForm.handleSubmit(async (values) => {
+          try {
+            if (editingClassId) {
+              await updateClassMutation.mutateAsync({ id: editingClassId, values });
+            } else {
+              await createClassMutation.mutateAsync(values);
             }
-          })}
-        >
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Grade level
-            <select
-              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              {...classForm.register('gradeLevelId')}
-            >
-              <option value="">Select grade level</option>
-              {gradeLevels.map((level) => (
-                <option key={level.id} value={level.id}>
-                  {level.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <FieldError message={classForm.formState.errors.gradeLevelId?.message} />
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Code
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...classForm.register('code')}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Name
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...classForm.register('name')}
-              />
-            </label>
-          </div>
+            setIsClassModalOpen(false);
+            setEditingClassId(null);
+            classForm.reset(classDefaults);
+          } catch (error) {
+            showToast({
+              type: 'error',
+              title: 'Save failed',
+              message: error instanceof Error ? error.message : 'Could not save class',
+            });
+          }
+        })}
+        isLoading={isSavingClass}
+        submitLabel={editingClassId ? 'Update class' : 'Create class'}
+        formId="class-room-form"
+      >
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Grade level
+          <select
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...classForm.register('gradeLevelId')}
+          >
+            <option value="">Select grade level</option>
+            {gradeLevels.map((level) => (
+              <option key={level.id} value={level.id}>
+                {level.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <FieldError message={classForm.formState.errors.gradeLevelId?.message} />
 
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Capacity
+            Code
             <input
-              type="number"
               className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-              {...classForm.register('capacity', { valueAsNumber: true })}
+              {...classForm.register('code')}
             />
           </label>
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Name
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...classForm.register('name')}
+            />
+          </label>
+        </div>
 
-          <ModalActions
-            isSubmitting={isSavingClass}
-            submitLabel={editingClassId ? 'Update class' : 'Create class'}
-            onCancel={() => setIsClassModalOpen(false)}
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Capacity
+          <input
+            type="number"
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...classForm.register('capacity', { valueAsNumber: true })}
           />
-        </form>
-      </Modal>
+        </label>
+      </DrawerForm>
 
-      <Modal
+      <DrawerForm
         open={canManageSubjects && isSubjectModalOpen}
         onClose={() => setIsSubjectModalOpen(false)}
+        onCancel={() => setIsSubjectModalOpen(false)}
         title={editingSubjectId ? 'Update Subject' : 'Add Subject'}
         description="Configure subject code, name, and whether it is core."
-      >
-        <form
-          className="grid gap-3"
-          onSubmit={subjectForm.handleSubmit(async (values) => {
-            try {
-              if (editingSubjectId) {
-                await updateSubjectMutation.mutateAsync({ id: editingSubjectId, values });
-              } else {
-                await createSubjectMutation.mutateAsync(values);
-              }
-
-              setIsSubjectModalOpen(false);
-              setEditingSubjectId(null);
-              subjectForm.reset(subjectDefaults);
-            } catch (error) {
-              showToast({
-                type: 'error',
-                title: 'Save failed',
-                message: error instanceof Error ? error.message : 'Could not save subject',
-              });
+        onSubmit={subjectForm.handleSubmit(async (values) => {
+          try {
+            if (editingSubjectId) {
+              await updateSubjectMutation.mutateAsync({ id: editingSubjectId, values });
+            } else {
+              await createSubjectMutation.mutateAsync(values);
             }
-          })}
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Code
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...subjectForm.register('code')}
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Name
-              <input
-                className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-                {...subjectForm.register('name')}
-              />
-            </label>
-          </div>
 
-          <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <input type="checkbox" {...subjectForm.register('isCore')} /> Core subject
-          </label>
-
-          <ModalActions
-            isSubmitting={isSavingSubject}
-            submitLabel={editingSubjectId ? 'Update subject' : 'Create subject'}
-            onCancel={() => setIsSubjectModalOpen(false)}
-          />
-        </form>
-      </Modal>
-
-      <Modal
-        open={Boolean(deleteTarget)}
-        onClose={() => setDeleteTarget(null)}
-        title="Confirm Delete"
-        description="This will soft delete the record. You can no longer see it in active lists."
+            setIsSubjectModalOpen(false);
+            setEditingSubjectId(null);
+            subjectForm.reset(subjectDefaults);
+          } catch (error) {
+            showToast({
+              type: 'error',
+              title: 'Save failed',
+              message: error instanceof Error ? error.message : 'Could not save subject',
+            });
+          }
+        })}
+        isLoading={isSavingSubject}
+        submitLabel={editingSubjectId ? 'Update subject' : 'Create subject'}
+        formId="subject-form"
       >
-        <p className="text-sm text-slate-800">
-          Are you sure you want to delete <strong>{deleteTarget?.label}</strong>?
-        </p>
-        {deleteError ? <p className="mt-2 text-xs text-red-700">{deleteError}</p> : null}
-
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setDeleteTarget(null)}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => void confirmDelete()}
-            disabled={isDeleting}
-            className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </button>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Code
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...subjectForm.register('code')}
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Name
+            <input
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              {...subjectForm.register('name')}
+            />
+          </label>
         </div>
-      </Modal>
+
+        <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <input type="checkbox" {...subjectForm.register('isCore')} /> Core subject
+        </label>
+      </DrawerForm>
+
+      <ConfirmDrawer
+        open={Boolean(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+        title="Confirm Delete"
+        message={
+          deleteError
+            ? deleteError
+            : `Delete ${deleteTarget?.label ?? 'this record'}? This will soft delete the record so it no longer appears in active lists.`
+        }
+        confirmLabel="Delete"
+        onConfirm={() => void confirmDelete()}
+        isDestructive
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
@@ -1292,35 +1248,6 @@ function FieldError({ message }: { message?: string }) {
     <p className="text-xs text-red-700" aria-live="polite">
       {message}
     </p>
-  );
-}
-
-function ModalActions({
-  isSubmitting,
-  submitLabel,
-  onCancel,
-}: {
-  isSubmitting: boolean;
-  submitLabel: string;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="mt-2 flex justify-end gap-2">
-      <button
-        type="button"
-        onClick={onCancel}
-        className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-      >
-        {isSubmitting ? 'Saving...' : submitLabel}
-      </button>
-    </div>
   );
 }
 
