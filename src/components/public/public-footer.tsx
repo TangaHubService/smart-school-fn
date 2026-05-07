@@ -4,6 +4,10 @@ import { Link } from 'react-router-dom';
 
 import logo from '../../asset/logo.jpg';
 
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 export function PublicFooter() {
   const { t } = useTranslation('public');
   return (
@@ -11,7 +15,7 @@ export function PublicFooter() {
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-6">
-            <Link to="/" className="flex items-center gap-3">
+            <Link to="/" onClick={scrollToTop} className="flex items-center gap-3">
               <img src={logo} alt="SmartSchool logo" className="h-10 w-10 rounded-lg shadow-lg" />
               <span className="text-xl font-bold tracking-tight text-white">Smart school</span>
             </Link>
@@ -37,23 +41,23 @@ export function PublicFooter() {
             </h4>
             <ul className="space-y-3 text-[13px]">
               <li>
-                <Link to="/courses" className="transition-colors hover:text-brand-300">
+                <Link to="/courses" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
                   {t('footer.courses')}
                 </Link>
               </li>
               <li>
-                <Link to="/academy" className="transition-colors hover:text-brand-300">
+                <Link to="/academy" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
                   {t('footer.academy')}
                 </Link>
               </li>
               <li>
-                <Link to="/academy" className="transition-colors hover:text-brand-300">
+                <Link to="/academy" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
                   {t('footer.pricing')}
                 </Link>
               </li>
 
               <li>
-                <Link to="/about" className="transition-colors hover:text-brand-300">
+                <Link to="/about" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
                   {t('footer.mission')}
                 </Link>
               </li>
@@ -66,22 +70,22 @@ export function PublicFooter() {
             </h4>
             <ul className="space-y-3 text-[13px]">
               <li>
-                <Link to="/contact" className="transition-colors hover:text-brand-300">
+                <Link to="/contact" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
                   {t('footer.contactUs')}
                 </Link>
               </li>
               <li>
-                <Link to="/login" className="transition-colors hover:text-brand-300">
+                <Link to="/login" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
                   {t('footer.helpCenter')}
                 </Link>
               </li>
               <li>
-                <Link to="/login" className="transition-colors hover:text-brand-300">
+                <Link to="/login" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
                   {t('footer.studentPortal')}
                 </Link>
               </li>
               <li>
-                <Link to="/login" className="transition-colors hover:text-brand-300">
+                <Link to="/login" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
                   {t('footer.examAccess')}
                 </Link>
               </li>
@@ -99,11 +103,15 @@ export function PublicFooter() {
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-brand-300" />
-                <span>smartschoolrwanda@gmail.com</span>
+                <a href="mailto:smartschoolrwanda@gmail.com" className="transition-colors hover:text-brand-300">
+                  smartschoolrwanda@gmail.com
+                </a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-brand-300" />
-                <span>+250 781 212 252</span>
+                <a href="tel:+250781212252" className="transition-colors hover:text-brand-300">
+                  +250 781 212 252
+                </a>
               </li>
             </ul>
           </div>
@@ -114,13 +122,13 @@ export function PublicFooter() {
             © {new Date().getFullYear()} {t('footer.rights')}
           </p>
           <div className="flex gap-6 text-[11px] uppercase tracking-wider text-slate-500">
-            <Link to="/privacy" className="transition-colors hover:text-brand-300">
+            <Link to="/privacy" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
               {t('footer.privacy')}
             </Link>
-            <Link to="/terms" className="transition-colors hover:text-brand-300">
+            <Link to="/terms" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
               {t('footer.terms')}
             </Link>
-            <Link to="/cookies" className="transition-colors hover:text-brand-300">
+            <Link to="/cookies" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
               {t('footer.cookies')}
             </Link>
           </div>
