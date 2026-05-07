@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 
 import { loginApi, logoutApi, meApi, verifyTwoFactorApi, resendTwoFactorOtpApi } from './auth.api';
-import { LoginFormValues, LoginResponse, MeResponse } from './auth.schema';
+import { AmbiguousLoginResponse, LoginFormValues, LoginResponse, MeResponse } from './auth.schema';
 import {
   clearSessionTokens,
   getSessionRefreshToken,
@@ -24,7 +24,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoadingSession: boolean;
   pendingTwoFactor: PendingTwoFactor | null;
-  login: (payload: LoginFormValues) => Promise<LoginResponse>;
+  login: (payload: LoginFormValues) => Promise<LoginResponse | AmbiguousLoginResponse>;
   setSessionTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
   logout: () => Promise<void>;
   setPendingTwoFactor: (pending: PendingTwoFactor | null) => void;
@@ -85,17 +85,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
     queryClient.removeQueries({ queryKey: ['me'] });
   }
 
-  async function login(payload: LoginFormValues): Promise<LoginResponse> {
+  async function login(payload: LoginFormValues): Promise<LoginResponse | AmbiguousLoginResponse> {
     const result = await loginApi(payload);
     queryClient.removeQueries({ queryKey: ['me'] });
     if ('requiresTwoFactor' in result && result.requiresTwoFactor) {
-      // Do not set tokens yet; store pending state
       setPendingTwoFactor({ email: payload.identifier });
       return result;
     }
+    if ('requiresSchoolSelection' in result && result.requiresSchoolSelection) {
+      return result;
+    }
+    const loginResult = result as LoginResponse;
     setTokens({
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
+      accessToken: loginResult.accessToken,
+      refreshToken: loginResult.refreshToken,
     });
     return result;
   }

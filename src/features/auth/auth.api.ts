@@ -1,16 +1,25 @@
 import { apiRequest } from '../../api/client';
 import {
+  AmbiguousLoginResponse,
   ForgotPasswordInput,
   LoginFormValues,
   LoginResponse,
   MeResponse,
   RegisterInput,
   ResetPasswordInput,
+  SelectSchoolInput,
   VerifyOtpInput,
 } from './auth.schema';
 
-export async function loginApi(payload: LoginFormValues): Promise<LoginResponse> {
-  return apiRequest<LoginResponse>('/auth/login', {
+export async function loginApi(payload: LoginFormValues): Promise<LoginResponse | AmbiguousLoginResponse> {
+  return apiRequest<LoginResponse | AmbiguousLoginResponse>('/auth/login', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export async function selectSchoolApi(payload: SelectSchoolInput): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>('/auth/select-school', {
     method: 'POST',
     body: payload,
   });

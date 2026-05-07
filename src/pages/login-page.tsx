@@ -7,12 +7,15 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
-import { registerApi } from '../features/auth/auth.api';
+import { registerApi, selectSchoolApi } from '../features/auth/auth.api';
 import {
+  type AmbiguousLoginResponse,
   type LoginFormValues,
+  type LoginResponse,
   type RegisterInput,
   loginFormSchema,
   registerFormSchema,
+  selectSchoolSchema,
 } from '../features/auth/auth.schema';
 import { ApiClientError } from '../types/api';
 
@@ -50,6 +53,10 @@ export function LoginPage() {
     () => combineReturnTo(searchParams.get('returnTo'), requestedPlan),
     [requestedPlan, searchParams]
   );
+
+  const [matchedSchools, setMatchedSchools] = useState<
+    AmbiguousLoginResponse['matchedSchools'] | null
+  >(null);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -106,6 +113,29 @@ export function LoginPage() {
         navigate('/otp', { replace: true });
         return;
       }
+      if ('requiresSchoolSelection' in data && data.requiresSchoolSelection) {
+        setMatchedSchools(data.matchedSchools);
+        loginForm.setValue('password', '');
+        return;
+      }
+      const loginData = data as LoginResponse;
+      navigate(resolvePostAuthPath(loginData.roles), { replace: true });
+    },
+  });
+
+  const selectSchoolMutation = useMutation({
+    mutationFn: (payload: { tenantId: string }) =>
+      selectSchoolApi({
+        identifier: loginForm.getValues('identifier'),
+        password: loginForm.getValues('password'),
+        tenantId: payload.tenantId,
+      }),
+    onSuccess: (data: LoginResponse) => {
+      if ('requiresTwoFactor' in data && data.requiresTwoFactor) {
+        navigate('/otp', { replace: true });
+        return;
+      }
+      setMatchedSchools(null);
       navigate(resolvePostAuthPath(data.roles), { replace: true });
     },
   });
@@ -122,6 +152,7 @@ export function LoginPage() {
   });
 
   const loginError = loginMutation.error as ApiClientError | null;
+  const selectSchoolError = selectSchoolMutation.error as ApiClientError | null;
   const registerError = registerMutation.error as ApiClientError | null;
 
   const helperText =
@@ -228,6 +259,47 @@ export function LoginPage() {
               <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {loginError.message}
               </p>
+            ) : null}
+
+                {selectSchoolError ? (
+                  <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {selectSchoolError.message}
+                  </p>
+                ) : null}
+
+                {matchedSchools ? (
+              <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 space-y-3">
+                <p className="text-sm font-semibold text-brand-900">
+                  Your account exists in multiple schools. Please select one:
+                </p>
+                <div className="space-y-2">
+                  {matchedSchools.map((school) => (
+                    <button
+                      key={school.tenantId}
+                      type="button"
+                      onClick={() =>
+                        selectSchoolMutation.mutate({ tenantId: school.tenantId })
+                      }
+                      disabled={selectSchoolMutation.isPending}
+                      className="w-full rounded-lg border border-brand-300 bg-white px-4 py-3 text-left text-sm hover:bg-brand-100 transition disabled:opacity-50"
+                    >
+                      <span className="font-semibold text-brand-800">{school.schoolName}</span>
+                      <span className="block text-xs text-slate-500">{school.tenantName}</span>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMatchedSchools(null);
+                    loginForm.setValue('password', '');
+                    loginMutation.reset();
+                  }}
+                  className="w-full text-center text-xs text-slate-500 hover:text-slate-700"
+                >
+                  Back to login
+                </button>
+              </div>
             ) : null}
 
             <button

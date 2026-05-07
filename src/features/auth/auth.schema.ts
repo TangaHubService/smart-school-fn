@@ -86,6 +86,23 @@ export interface LoginResponse {
   roles: string[];
   permissions: string[];
 }
+
+export interface AmbiguousLoginResponse {
+  requiresSchoolSelection: true;
+  matchedSchools: Array<{
+    tenantId: string;
+    tenantName: string;
+    schoolName: string;
+  }>;
+}
+
+export const selectSchoolSchema = z.object({
+  identifier: z.string().trim().toLowerCase(),
+  password: z.string().min(8),
+  tenantId: z.string().uuid(),
+});
+
+export type SelectSchoolInput = z.infer<typeof selectSchoolSchema>;
 export const forgotPasswordSchema = z.object({
   email: z.string().trim().email('Enter a valid email'),
 });
