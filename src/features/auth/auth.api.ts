@@ -72,8 +72,15 @@ export async function verifyOtpApi(payload: VerifyOtpInput): Promise<{ message: 
   });
 }
 
-export async function resetPasswordApi(payload: ResetPasswordInput): Promise<{ message: string }> {
-  return apiRequest('/auth/reset-password', {
+export async function verifyTwoFactorApi(payload: { email: string; otp: string }): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>('/auth/verify-two-factor', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export async function resendTwoFactorOtpApi(payload: { email: string }): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/resend-two-factor-otp', {
     method: 'POST',
     body: payload,
   });

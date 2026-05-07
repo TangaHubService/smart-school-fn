@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 
-import { loginApi, logoutApi, meApi } from './auth.api';
+import { loginApi, logoutApi, meApi, verifyTwoFactorApi, resendTwoFactorOtpApi } from './auth.api';
 import { LoginFormValues, LoginResponse, MeResponse } from './auth.schema';
 import {
   clearSessionTokens,
@@ -12,15 +12,24 @@ import {
   subscribeToSession,
 } from './auth.session';
 
+interface PendingTwoFactor {
+  email: string;
+  role?: string;
+}
+
 interface AuthContextValue {
   accessToken: string | null;
   refreshToken: string | null;
   me: MeResponse | null;
   isAuthenticated: boolean;
   isLoadingSession: boolean;
+  pendingTwoFactor: PendingTwoFactor | null;
   login: (payload: LoginFormValues) => Promise<LoginResponse>;
   setSessionTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
   logout: () => Promise<void>;
+  setPendingTwoFactor: (pending: PendingTwoFactor | null) => void;
+  verifyTwoFactor: (otp: string) => Promise<LoginResponse>;
+  resendTwoFactorOtp: () => Promise<{ message: string }>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -31,6 +40,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [isBootstrappingSession, setIsBootstrappingSession] = useState(
     () => !getSessionTokens().accessToken && Boolean(getSessionTokens().refreshToken)
   );
+  const [pendingTwoFactor, setPendingTwoFactor] = useState<PendingTwoFactor | null>(null);
 
   const accessToken = session.accessToken;
   const refreshToken = session.refreshToken;
@@ -78,6 +88,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
   async function login(payload: LoginFormValues): Promise<LoginResponse> {
     const result = await loginApi(payload);
     queryClient.removeQueries({ queryKey: ['me'] });
+    if ('requiresTwoFactor' in result && result.requiresTwoFactor) {
+      // Do not set tokens yet; store pending state
+      setPendingTwoFactor({ email: payload.identifier });
+      return result;
+    }
     setTokens({
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -103,6 +118,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     clearSession();
+    setPendingTwoFactor(null);
+  }
+
+  async function verifyTwoFactor(otp: string): Promise<LoginResponse> {
+    if (!pendingTwoFactor) throw new Error('No pending 2FA');
+    const result = await verifyTwoFactorApi({ email: pendingTwoFactor.email, otp });
+    setTokens({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+    setPendingTwoFactor(null);
+    return result;
+  }
+
+  async function resendTwoFactorOtp(): Promise<{ message: string }> {
+    if (!pendingTwoFactor) throw new Error('No pending 2FA');
+    return resendTwoFactorOtpApi({ email: pendingTwoFactor.email });
   }
 
   const value = useMemo<AuthContextValue>(
@@ -112,11 +144,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
       me: meQuery.data ?? null,
       isAuthenticated: Boolean(accessToken && meQuery.data),
       isLoadingSession: (Boolean(accessToken) && meQuery.isLoading) || isBootstrappingSession,
+      pendingTwoFactor,
       login,
       setSessionTokens: handleSetSessionTokens,
       logout,
+      setPendingTwoFactor,
+      verifyTwoFactor,
+      resendTwoFactorOtp,
     }),
-    [accessToken, refreshToken, meQuery.data, meQuery.isLoading, isBootstrappingSession]
+    [accessToken, refreshToken, meQuery.data, meQuery.isLoading, isBootstrappingSession, pendingTwoFactor]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

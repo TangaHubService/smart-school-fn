@@ -102,6 +102,10 @@ export function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: (payload: LoginFormValues) => auth.login(payload),
     onSuccess: (data) => {
+      if ('requiresTwoFactor' in data && data.requiresTwoFactor) {
+        navigate('/otp', { replace: true });
+        return;
+      }
       navigate(resolvePostAuthPath(data.roles), { replace: true });
     },
   });
