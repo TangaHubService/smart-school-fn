@@ -85,3 +85,10 @@ export async function resendTwoFactorOtpApi(payload: { email: string }): Promise
     body: payload,
   });
 }
+
+export async function resetPasswordApi(payload: ResetPasswordInput): Promise<{ message: string }> {
+  return apiRequest('/auth/reset-password', {
+    method: 'POST',
+    body: payload,
+  });
+}
