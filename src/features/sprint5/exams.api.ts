@@ -233,6 +233,7 @@ export interface PublicReportCardVerificationResponse {
   valid: boolean;
   verificationCode: string;
   verificationUrl: string;
+  pdfDownloadUrl: string;
   school: {
     name: string;
     code: string | null;

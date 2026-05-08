@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, FileBadge2, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Download, FileBadge2, ShieldAlert, ShieldCheck, QrCode } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
 import { verifyReportCardPublicApi } from '../features/sprint5/exams.api';
 
 export function ReportCardVerificationPage() {
   const { snapshotId = '' } = useParams();
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const verificationQuery = useQuery({
     queryKey: ['report-card-verification', snapshotId],
@@ -15,6 +17,28 @@ export function ReportCardVerificationPage() {
   });
 
   const data = verificationQuery.data;
+
+  const handleDownloadPdf = async () => {
+    if (!data?.pdfDownloadUrl) return;
+    setIsDownloading(true);
+    try {
+      const response = await fetch(data.pdfDownloadUrl);
+      if (!response.ok) throw new Error('Failed to download');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data.student.studentCode}-report-card.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error('Download failed:', error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-brand-50 px-4 py-10">
@@ -29,7 +53,7 @@ export function ReportCardVerificationPage() {
               <div className="grid gap-1">
                 <h1 className="text-3xl font-black text-slate-950">Smart School Rwanda</h1>
                 <p className="max-w-2xl text-sm text-slate-700 sm:text-base">
-                  Scan results from the QR code land here. This page only confirms whether a
+                  Scan results from the QR code land here. This page confirms whether a
                   published report card is authentic.
                 </p>
               </div>
@@ -117,6 +141,26 @@ export function ReportCardVerificationPage() {
                   </p>
                 </div>
               </div>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloading}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                  {isDownloading ? 'Downloading...' : 'Download PDF'}
+                </button>
+                <a
+                  href={data.verificationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-brand-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 transition-colors hover:bg-brand-50"
+                >
+                  <QrCode className="h-4 w-4" aria-hidden="true" />
+                  View Verification Page
+                </a>
+              </div>
             </article>
 
             <aside className="rounded-[28px] border border-brand-100 bg-white p-6 shadow-soft sm:p-8">
@@ -141,6 +185,12 @@ export function ReportCardVerificationPage() {
                   <p className="text-sm text-slate-700">
                     District: {data.school.district ?? 'Not specified'}
                   </p>
+                </div>
+                <div className="rounded-3xl border border-brand-100 bg-brand-50/70 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                    Verification URL
+                  </p>
+                  <p className="mt-2 break-all text-xs text-slate-600">{data.verificationUrl}</p>
                 </div>
               </div>
             </aside>
