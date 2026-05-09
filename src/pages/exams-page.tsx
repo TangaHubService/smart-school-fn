@@ -365,10 +365,14 @@ export function ExamsPage() {
       });
     },
     onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : 'Request failed';
       showToast({
         type: 'error',
         title: 'Could not lock results',
-        message: error instanceof Error ? error.message : 'Request failed',
+        message: message.includes('|')
+          ? message.split('|').pop()?.trim() || message
+          : message,
       });
     },
   });
@@ -388,10 +392,14 @@ export function ExamsPage() {
       });
     },
     onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : 'Request failed';
       showToast({
         type: 'error',
         title: 'Could not unlock results',
-        message: error instanceof Error ? error.message : 'Request failed',
+        message: message.includes('|')
+          ? message.split('|').pop()?.trim() || message
+          : message,
       });
     },
   });
@@ -448,10 +456,14 @@ export function ExamsPage() {
       });
     },
     onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : 'Request failed';
       showToast({
         type: 'error',
         title: 'Could not publish results',
-        message: error instanceof Error ? error.message : 'Request failed',
+        message: message.includes('|')
+          ? message.split('|').pop()?.trim() || message
+          : message,
       });
     },
   });
