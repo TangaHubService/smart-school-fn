@@ -534,3 +534,10 @@ export function getMyChildLearningApi(accessToken: string, studentId: string) {
     accessToken,
   });
 }
+
+export function deleteParentApi(accessToken: string, parentId: string) {
+  return apiRequest<{ deleted: boolean }>(`/parents/${parentId}`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}

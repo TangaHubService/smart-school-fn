@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FileDown, FileSpreadsheet } from 'lucide-react';
 import { z } from 'zod';
 
 import { EmptyState } from '../components/empty-state';
@@ -23,6 +24,7 @@ import {
   syncAttendanceQueue,
 } from '../features/sprint3/attendance-queue';
 import { ApiClientError } from '../types/api';
+import { exportToExcel, exportToPDF } from '../utils/report-export';
 
 const statusOptions: Array<{ value: AttendanceStatus; label: string }> = [
   { value: 'PRESENT', label: 'Present' },
@@ -297,6 +299,58 @@ export function AttendancePage() {
     });
   }
 
+  const handleExportExcel = () => {
+    const students = classAttendanceQuery.data?.students ?? [];
+    if (!students.length) return;
+    
+    const className = selectedClassId ? classesQuery.data?.find(c => c.id === selectedClassId)?.name : 'Class';
+    const data = {
+      title: `Attendance - ${className || 'Class'}`,
+      subtitle: `Date: ${date}`,
+      columns: [
+        { header: '#', key: 'index' },
+        { header: 'Student Code', key: 'studentCode' },
+        { header: 'Student Name', key: 'studentName' },
+        { header: 'Status', key: 'status' },
+        { header: 'Remarks', key: 'remarks' },
+      ],
+      rows: students.map((row, idx) => ({
+        index: idx + 1,
+        studentCode: row.studentCode,
+        studentName: `${row.firstName} ${row.lastName}`,
+        status: gridRows[row.studentId]?.status ?? 'PRESENT',
+        remarks: gridRows[row.studentId]?.remarks ?? '',
+      })),
+    };
+    exportToExcel(data);
+  };
+
+  const handleExportPDF = () => {
+    const students = classAttendanceQuery.data?.students ?? [];
+    if (!students.length) return;
+    
+    const className = selectedClassId ? classesQuery.data?.find(c => c.id === selectedClassId)?.name : 'Class';
+    const data = {
+      title: `Attendance - ${className || 'Class'}`,
+      subtitle: `Date: ${date}`,
+      columns: [
+        { header: '#', key: 'index' },
+        { header: 'Student Code', key: 'studentCode' },
+        { header: 'Student Name', key: 'studentName' },
+        { header: 'Status', key: 'status' },
+        { header: 'Remarks', key: 'remarks' },
+      ],
+      rows: students.map((row, idx) => ({
+        index: idx + 1,
+        studentCode: row.studentCode,
+        studentName: `${row.firstName} ${row.lastName}`,
+        status: gridRows[row.studentId]?.status ?? 'PRESENT',
+        remarks: gridRows[row.studentId]?.remarks ?? '',
+      })),
+    };
+    exportToPDF(data);
+  };
+
   async function handleSaveAttendance() {
     const students = classAttendanceQuery.data?.students ?? [];
 
@@ -387,6 +441,26 @@ export function AttendancePage() {
       subtitle="Mark class attendance quickly with offline queue and background sync."
       action={
         <div className="flex flex-wrap gap-2">
+          {classAttendanceQuery.data && classAttendanceQuery.data.students.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+              >
+                <FileSpreadsheet className="mr-1.5 h-4 w-4 inline" />
+                Export Excel
+              </button>
+              <button
+                type="button"
+                onClick={handleExportPDF}
+                className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+              >
+                <FileDown className="mr-1.5 h-4 w-4 inline" />
+                Export PDF
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={() => applyBulkStatus('PRESENT')}

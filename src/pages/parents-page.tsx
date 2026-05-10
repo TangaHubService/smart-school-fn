@@ -10,6 +10,7 @@ import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
+import { ConfirmDrawer } from '../components/confirm-drawer';
 import { useAuth } from '../features/auth/auth.context';
 import { listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import {
@@ -18,6 +19,7 @@ import {
   linkParentStudentApi,
   listParentsApi,
   updateParentApi,
+  deleteParentApi,
 } from '../features/sprint2/sprint2.api';
 import { ApiClientError } from '../types/api';
 
@@ -87,6 +89,7 @@ export function ParentsPage() {
   const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null);
   const [linkSearch, setLinkSearch] = useState('');
   const [linkClassId, setLinkClassId] = useState('');
+  const [deletingParent, setDeletingParent] = useState<{ id: string; name: string } | null>(null);
 
   const createForm = useForm<CreateParentForm>({
     resolver: zodResolver(createParentSchema),
@@ -204,6 +207,22 @@ export function ParentsPage() {
       showToast({
         type: 'error',
         title: 'Could not link student',
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const deleteParentMutation = useMutation({
+    mutationFn: (parentId: string) => deleteParentApi(auth.accessToken!, parentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parents'] });
+      setDeletingParent(null);
+      showToast({ type: 'success', title: 'Parent deleted successfully' });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not delete parent',
         message: error instanceof Error ? error.message : 'Request failed',
       });
     },
@@ -401,6 +420,18 @@ export function ParentsPage() {
                         className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
                       >
                         Link student
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDeletingParent({
+                            id: parent.id,
+                            name: `${parent.firstName} ${parent.lastName}`,
+                          })
+                        }
+                        className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
+                      >
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -664,6 +695,22 @@ export function ParentsPage() {
           <p className="text-xs text-red-700">{(linkMutation.error as ApiClientError).message}</p>
         ) : null}
       </DrawerForm>
+
+      <ConfirmDrawer
+        open={Boolean(deletingParent)}
+        title="Delete Parent"
+        message={`Are you sure you want to delete "${deletingParent?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        isLoading={deleteParentMutation.isPending}
+        onConfirm={() => {
+          if (deletingParent) {
+            deleteParentMutation.mutate(deletingParent.id);
+          }
+        }}
+        onCancel={() => setDeletingParent(null)}
+      />
     </SectionCard>
   );
 }

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FileDown, FileSpreadsheet } from 'lucide-react';
 
 import { EmptyState } from '../components/empty-state';
 import { AppDrawer } from '../components/drawer';
@@ -22,6 +23,7 @@ import {
   listTermsApi,
 } from '../features/sprint1/sprint1.api';
 import { listStudentsApi } from '../features/sprint2/sprint2.api';
+import { exportToExcel, exportToPDF } from '../utils/report-export';
 
 const inputClass =
   'w-14 rounded border border-brand-200 bg-white px-1 py-1 text-center text-sm outline-none focus:border-brand-500';
@@ -88,6 +90,134 @@ export function ClassMarksPage() {
     setLedgerClassId('');
     setLedgerStudentId('');
   }, [ledgerAcademicYearId]);
+
+  const handleExportExcel = () => {
+    const ledgerSubjects = ledgerQuery.data?.subjects ?? [];
+    
+    const baseColumns = [
+      { header: 'Rank', key: 'rank' },
+      { header: 'Student Name', key: 'studentName' },
+      { header: 'Student Code', key: 'studentCode' },
+      { header: 'Class', key: 'classCode' },
+      { header: 'Term', key: 'termName' },
+      { header: 'Academic Year', key: 'academicYearName' },
+    ];
+
+    const subjectColumns = ledgerSubjects.flatMap((sub: { id: string; name: string; code: string }) => [
+      { header: `${sub.code} CAT %`, key: `${sub.id}_cat` },
+      { header: `${sub.code} Exam %`, key: `${sub.id}_exam` },
+      { header: `${sub.code} Total`, key: `${sub.id}_total` },
+    ]);
+
+    const totalColumns = [
+      { header: 'Term Total', key: 'total' },
+      { header: 'Average', key: 'average' },
+      { header: 'Grade', key: 'grade' },
+      { header: 'Remark', key: 'remark' },
+    ];
+
+    const columns = [...baseColumns, ...subjectColumns, ...totalColumns];
+
+    const rows = ledgerItems.map((row) => {
+      const rowData: Record<string, string | number> = {
+        rank: row.rank,
+        studentName: `${row.student.firstName} ${row.student.lastName}`,
+        studentCode: row.student.studentCode,
+        classCode: row.classRoom.code,
+        termName: row.term.name,
+        academicYearName: row.academicYear.name,
+        total: row.studentTermTotal.toFixed(1),
+        average: row.studentTermAverage.toFixed(1),
+        grade: row.termGrade,
+        remark: row.termRemark || '',
+      };
+
+      ledgerSubjects.forEach((sub: { id: string; name: string; code: string }) => {
+        const score = row.scores[sub.id];
+        if (score) {
+          rowData[`${sub.id}_cat`] = score.testPercent != null ? score.testPercent.toFixed(1) : '—';
+          rowData[`${sub.id}_exam`] = score.examPercent != null ? score.examPercent.toFixed(1) : '—';
+          rowData[`${sub.id}_total`] = score.subjectScore.toFixed(1);
+        } else {
+          rowData[`${sub.id}_cat`] = '—';
+          rowData[`${sub.id}_exam`] = '—';
+          rowData[`${sub.id}_total`] = '—';
+        }
+      });
+
+      return rowData;
+    });
+
+    const data = {
+      title: 'Student Marks Ledger',
+      subtitle: `${ledgerAcademicYearId ? 'Academic Year' : 'All Years'} | ${ledgerTermId ? 'Term' : 'All Terms'} | ${ledgerClassId ? 'Class' : 'All Classes'}`,
+      columns,
+      rows,
+    };
+    exportToExcel(data);
+  };
+
+  const handleExportPDF = () => {
+    const ledgerSubjects = ledgerQuery.data?.subjects ?? [];
+    
+    const baseColumns = [
+      { header: 'Rank', key: 'rank' },
+      { header: 'Student', key: 'studentName' },
+      { header: 'Code', key: 'studentCode' },
+      { header: 'Class', key: 'classCode' },
+      { header: 'Term', key: 'termName' },
+    ];
+
+    const subjectColumns = ledgerSubjects.flatMap((sub: { id: string; name: string; code: string }) => [
+      { header: `${sub.code} CAT`, key: `${sub.id}_cat` },
+      { header: `${sub.code} Exam`, key: `${sub.id}_exam` },
+      { header: `${sub.code} Tot`, key: `${sub.id}_total` },
+    ]);
+
+    const totalColumns = [
+      { header: 'Total', key: 'total' },
+      { header: 'Avg', key: 'average' },
+      { header: 'Grade', key: 'grade' },
+    ];
+
+    const columns = [...baseColumns, ...subjectColumns, ...totalColumns];
+
+    const rows = ledgerItems.map((row) => {
+      const rowData: Record<string, string | number> = {
+        rank: row.rank,
+        studentName: `${row.student.firstName} ${row.student.lastName}`,
+        studentCode: row.student.studentCode,
+        classCode: row.classRoom.code,
+        termName: row.term.name,
+        total: row.studentTermTotal.toFixed(1),
+        average: row.studentTermAverage.toFixed(1),
+        grade: row.termGrade,
+      };
+
+      ledgerSubjects.forEach((sub: { id: string; name: string; code: string }) => {
+        const score = row.scores[sub.id];
+        if (score) {
+          rowData[`${sub.id}_cat`] = score.testPercent != null ? score.testPercent.toFixed(1) : '—';
+          rowData[`${sub.id}_exam`] = score.examPercent != null ? score.examPercent.toFixed(1) : '—';
+          rowData[`${sub.id}_total`] = score.subjectScore.toFixed(1);
+        } else {
+          rowData[`${sub.id}_cat`] = '—';
+          rowData[`${sub.id}_exam`] = '—';
+          rowData[`${sub.id}_total`] = '—';
+        }
+      });
+
+      return rowData;
+    });
+
+    const data = {
+      title: 'Student Marks Ledger',
+      subtitle: `${ledgerAcademicYearId ? 'Academic Year' : 'All Years'} | ${ledgerTermId ? 'Term' : 'All Terms'} | ${ledgerClassId ? 'Class' : 'All Classes'}`,
+      columns,
+      rows,
+    };
+    exportToPDF(data);
+  };
 
   const yearsQuery = useQuery({
     queryKey: ['academic-years'],
@@ -313,11 +443,32 @@ export function ClassMarksPage() {
     (ledgerPagination?.totalItems ?? 0) === 0;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-6 overflow-visible">
       <SectionCard
         title="Marks"
-        subtitle="All student marks loads every academic year by default (paginated). Narrow with Academic year, or use Class entry grid to enter CAT / EXAM marks."
-        action={null}
+        subtitle=""
+        action={
+          tab === 'overview' && ledgerItems.length > 0 ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Export Excel
+              </button>
+              <button
+                type="button"
+                onClick={handleExportPDF}
+                className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+              >
+                <FileDown className="h-4 w-4" />
+                Export PDF
+              </button>
+            </div>
+          ) : null
+        }
       >
         <div className="mb-4 flex flex-wrap gap-2 border-b border-brand-100 pb-4">
           <button
@@ -492,8 +643,8 @@ export function ClassMarksPage() {
 
             {!ledgerQuery.isPending && !ledgerQuery.isError && ledgerItems.length > 0 ? (
               <>
-                <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
-                  <table className="w-full min-w-full table-auto border-collapse text-left text-sm">
+                <div className="overflow-x-auto rounded-xl border border-brand-100">
+                  <table className="min-w-[1200px] w-full table-auto border-collapse text-left text-sm">
                     <thead>
                       <tr className="border-b border-brand-200 bg-brand-50">
                         <th
