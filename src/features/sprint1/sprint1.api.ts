@@ -351,7 +351,7 @@ export function listAcademicYearsApi(accessToken: string) {
   return apiRequest('/academic-years', {
     method: 'GET',
     accessToken,
-  });
+  }) as Promise<{ items: Array<{ id: string; name: string; isCurrent: boolean }> }>;
 }
 
 export function createAcademicYearApi(

@@ -44,6 +44,7 @@ export function AppShell() {
   const superAdmin = isSuperAdmin(auth.me);
 
   const isStudent = hasRole(auth.me, 'STUDENT') || hasRole(auth.me, 'PUBLIC_LEARNER');
+  const isParent = hasRole(auth.me, 'PARENT');
   const isTeacher =
     hasRole(auth.me, 'TEACHER') &&
     !hasRole(auth.me, 'SCHOOL_ADMIN') &&
@@ -56,7 +57,9 @@ export function AppShell() {
         ? t('headerTitle.studentPortal')
         : isTeacher
           ? t('headerTitle.teacherPortal')
-          : t('headerTitle.dashboard');
+          : isParent
+            ? t('headerTitle.parentPortal')
+            : t('headerTitle.dashboard');
 
   const userDisplayName =
     `${auth.me?.firstName ?? ''} ${auth.me?.lastName ?? ''}`.trim() || auth.me?.email || 'User';
@@ -142,7 +145,9 @@ export function AppShell() {
                       ? t('headerTitle.studentPortal')
                       : isTeacher
                         ? t('headerTitle.teacherPortal')
-                        : 'RWANDA ADMIN OS'}
+                        : isParent
+                          ? t('headerTitle.parentPortal')
+                          : 'RWANDA ADMIN OS'}
                   </p>
                 </div>
               </div>

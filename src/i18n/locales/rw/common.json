@@ -31,7 +31,8 @@
     "superAdmin": "Ikibaho cya Super Admin",
     "dashboard": "Ikibaho",
     "studentPortal": "Portal y'Umunyeshuri",
-    "teacherPortal": "Portal ya Mwarimu"
+    "teacherPortal": "Portal ya Mwarimu",
+    "parentPortal": "Portal y'Umubyeyi"
   },
   "studentHeader": {
     "dashboard": "Ikibaho",

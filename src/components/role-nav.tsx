@@ -322,6 +322,24 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'parent-dashboard',
+    label: 'Dashboard',
+    to: '/parent/dashboard',
+    icon: Home,
+    roles: ['PARENT'],
+    requiredPermissions: ['parents.my_children.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'parent-my-children',
+    label: 'My Children',
+    to: '/parent/my-children',
+    icon: Users,
+    roles: ['PARENT'],
+    requiredPermissions: ['parents.my_children.read'],
+    setupState: 'ANY',
+  },
+  {
     key: 'parent-report-cards',
     label: 'Report Cards',
     to: '/parent/report-cards',
@@ -330,6 +348,7 @@ export const NAV_ITEMS: NavItem[] = [
     requiredPermissions: ['report_cards.my_read'],
     setupState: 'ANY',
   },
+  
   {
     key: 'student-dashboard',
     label: 'Dashboard',

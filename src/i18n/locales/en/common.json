@@ -31,7 +31,8 @@
     "superAdmin": "Super Admin Dashboard",
     "dashboard": "Dashboard",
     "studentPortal": "Student Portal",
-    "teacherPortal": "Teacher Portal"
+    "teacherPortal": "Teacher Portal",
+    "parentPortal": "Parent Portal"
   },
   "studentHeader": {
     "dashboard": "Dashboard",

@@ -315,8 +315,8 @@ export function StudentsPage() {
     },
   });
 
-  const years = ((yearsQuery.data as any[]) ?? []) as any[];
-  const classRooms = ((classesQuery.data as any[]) ?? []) as any[];
+  const years = ((yearsQuery.data as { items?: any[] })?.items ?? []);
+  const classRooms = ((classesQuery.data as { items?: any[] })?.items ?? []);
   const selectedImportAcademicYear = useMemo(
     () => years.find((year) => year.id === importAcademicYearId) ?? null,
     [years, importAcademicYearId]

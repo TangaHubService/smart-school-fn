@@ -23,8 +23,10 @@ import { LoginPage } from '../pages/login-page';
 import { ForgotPasswordPage } from '../pages/forgot-password-page';
 import { ResetPasswordPage } from '../pages/reset-password-page';
 import { OtpVerificationPage } from '../pages/OtpVerificationPage';
+import { ParentDashboardPage } from '../pages/parent-dashboard-page';
 import { ParentMyChildrenPage } from '../pages/parent-my-children-page';
 import { ParentReportCardsPage } from '../pages/parent-report-cards-page';
+
 import { ParentsPage } from '../pages/parents-page';
 import { ReportCardVerificationPage } from '../pages/report-card-verification-page';
 import { ReportCardsPage } from '../pages/report-cards-page';
@@ -240,7 +242,10 @@ export function AppRoutes() {
           </Route>
 
           <Route element={<RequirePermission permission="parents.my_children.read" />}>
+            <Route path="/parent" element={<Navigate to="/parent/dashboard" replace />} />
+            <Route path="/parent/dashboard" element={<ParentDashboardPage />} />
             <Route path="/parent/my-children" element={<ParentMyChildrenPage />} />
+            
           </Route>
           <Route element={<RequirePermission permission="report_cards.my_read" />}>
             <Route path="/parent/report-cards" element={<ParentReportCardsPage />} />

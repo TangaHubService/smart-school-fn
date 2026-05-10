@@ -27,11 +27,12 @@
     "loggedInAs": "Connecté en tant que {{name}}, cliquez pour ouvrir le menu profil",
     "actionRequired": "Action requise: complétez le profil de l'école et l'assistant de configuration pour débloquer les modules académiques, classes, élèves, matières et personnel."
   },
-  "headerTitle": {
-    "superAdmin": "Tableau de bord Super Admin",
-    "dashboard": "Tableau de bord",
+"headerTitle": {
+    "superAdmin": "Super Admin Dashboard",
+    "dashboard": "Dashboard",
     "studentPortal": "Portail Étudiant",
-    "teacherPortal": "Portail Enseignant"
+    "teacherPortal": "Portail Enseignant",
+    "parentPortal": "Portail Parent"
   },
   "studentHeader": {
     "dashboard": "Tableau de bord",
