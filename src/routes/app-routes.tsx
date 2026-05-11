@@ -76,6 +76,7 @@ import { AuditorSchoolsPage } from '../pages/auditor-schools-page';
 import { AuditorAuditFormPage } from '../pages/auditor-audit-form-page';
 import { AuditorAuditHistoryPage } from '../pages/auditor-audit-history-page';
 import { AdminAuditorsPage } from '../pages/admin-auditors-page';
+import { AdminAuditReportsPage } from '../pages/admin-audit-reports-page';
 
 export function AppRoutes() {
   return (
@@ -286,6 +287,10 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="staff.invite" />}>
             <Route path="/admin/staff" element={<StaffPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="academic_audit.read" />}>
+            <Route path="/admin/audit-reports" element={<AdminAuditReportsPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="users.read" />}>

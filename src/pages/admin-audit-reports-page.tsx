@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
+  BadgeCheck,
+  BarChart3,
+  Bell,
   BookOpen,
   CalendarDays,
   ClipboardCheck,
   ClipboardList,
   FileBarChart2,
-  Loader2,
   Search,
   TrendingUp,
 } from 'lucide-react';
@@ -29,14 +31,14 @@ const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   TIMETABLE: CalendarDays,
 };
 
-export function AuditorAuditHistoryPage() {
+export function AdminAuditReportsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [moduleFilter, setModuleFilter] = useState<AcademicAuditModule | ''>('');
   const [statusFilter, setStatusFilter] = useState<AcademicAuditStatus | ''>('');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['auditor-audits', page, moduleFilter, statusFilter, search],
+    queryKey: ['school-audit-reports', page, moduleFilter, statusFilter],
     queryFn: () =>
       listAuditsApi({
         page,
@@ -51,7 +53,7 @@ export function AuditorAuditHistoryPage() {
   }
 
   if (error) {
-    return <StateView title="Error loading audits" variant="error" />;
+    return <StateView title="Error loading audit reports" variant="error" />;
   }
 
   if (!data) {
@@ -66,8 +68,10 @@ export function AuditorAuditHistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Audit History</h1>
-        <p className="text-sm text-slate-500 mt-1">View all submitted audits</p>
+        <h1 className="text-2xl font-bold text-slate-900">Audit Reports</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Government audit reports submitted for your school
+        </p>
       </div>
 
       <div className="rounded-lg border bg-white p-4 shadow-sm">
@@ -111,12 +115,12 @@ export function AuditorAuditHistoryPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Search school</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Search auditor</label>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search school..."
+                placeholder="Search auditor..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -131,7 +135,11 @@ export function AuditorAuditHistoryPage() {
 
       {filteredItems.length === 0 ? (
         <div className="rounded-lg border bg-white p-8 text-center">
-          <p className="text-slate-500">No audits match your current filters.</p>
+          <p className="text-slate-500">
+            {items.length === 0
+              ? 'No audit reports submitted for your school yet.'
+              : 'No audit reports match your current filters.'}
+          </p>
         </div>
       ) : (
         <>
@@ -153,14 +161,11 @@ export function AuditorAuditHistoryPage() {
                         <Icon className="h-5 w-5 text-slate-600" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-slate-900">{audit.school.displayName}</h3>
-                        <p className="text-sm text-slate-500">
-                          {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-1">
-                          {[audit.school.province, audit.school.district, audit.school.sector]
-                            .filter(Boolean)
-                            .join(' / ')}
+                        <h3 className="font-medium text-slate-900">
+                          {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]} Audit
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-1">
+                          Submitted by government auditor
                         </p>
                       </div>
                     </div>

@@ -268,6 +268,15 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
+    key: 'audit-reports',
+    label: 'Audit Reports',
+    to: '/admin/audit-reports',
+    icon: ClipboardList,
+    roles: ['SCHOOL_ADMIN', 'SUPER_ADMIN'],
+    requiredPermissions: ['academic_audit.read'],
+    setupState: 'ANY',
+  },
+  {
     key: 'access-control',
     label: 'Access Control',
     to: '/super-admin/access-control',
@@ -466,6 +475,15 @@ export const NAV_ITEMS: NavItem[] = [
     requiredPermissions: ['exams.read'],
     setupState: 'ANY',
   },
+  {
+    key: 'auditor-audit-history',
+    label: 'Audit History',
+    to: '/auditor/audits',
+    icon: ClipboardList,
+    roles: ['GOV_AUDITOR'],
+    requiredPermissions: ['academic_audit.read'],
+    setupState: 'ANY',
+  },
 ];
 
 interface RoleNavProps {
@@ -499,6 +517,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     'audit-logs',
     'subscriptions',
     'auditor-management',
+    'audit-reports',
   ]);
   const ADMIN_KEYS = new Set([
     'dashboard',
@@ -527,6 +546,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     'audit-logs',
     'my-classes',
     'incidents',
+    'audit-reports',
   ]);
 
   const AUDITOR_KEYS = new Set([
@@ -536,6 +556,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
     'auditor-learning-insights',
     'auditor-continuous-assessment',
     'auditor-marks',
+    'auditor-audit-history',
   ]);
 
   const items = NAV_ITEMS.filter((item) => {

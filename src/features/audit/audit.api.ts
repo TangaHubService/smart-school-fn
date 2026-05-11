@@ -96,6 +96,15 @@ export const ACADEMIC_AUDIT_MODULE_LABELS: Record<AcademicAuditModule, string> =
   TIMETABLE: 'Timetable',
 };
 
+export const ACADEMIC_AUDIT_STATUS_LABELS: Record<AcademicAuditStatus, string> = {
+  DRAFT: 'Draft',
+  SUBMITTED: 'Submitted',
+  UNDER_REVIEW: 'Under Review',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  NEEDS_REVISION: 'Needs Revision',
+};
+
 export function isAuditorAuditModule(value: string | null): value is AuditorAuditModule {
   return AUDITOR_AUDIT_MODULES.some((module) => module === value);
 }
@@ -270,6 +279,14 @@ export type AcademicAuditModuleData =
   | MarksData
   | TimetableData;
 
+export type AcademicAuditStatus =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'UNDER_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'NEEDS_REVISION';
+
 interface SubmitAuditInput {
   schoolId: string;
   module: AcademicAuditModule;
@@ -285,8 +302,17 @@ interface AcademicAudit {
   module: AcademicAuditModule;
   subType: string;
   score: number;
+  status: AcademicAuditStatus;
   comment: string;
   recommendation: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+  reviewedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
   createdAt: string;
 }
 
@@ -308,6 +334,7 @@ interface AcademicAuditListItem {
   };
   module: AcademicAuditModule;
   score: number;
+  status: AcademicAuditStatus;
   comment: string;
   recommendation: string;
   createdAt: string;
@@ -328,6 +355,13 @@ interface ListAuditsParams {
   pageSize?: number;
   schoolId?: string;
   module?: AcademicAuditModule;
+  status?: AcademicAuditStatus;
+  auditorId?: string;
+  from?: string;
+  to?: string;
+  province?: string;
+  district?: string;
+  sector?: string;
 }
 
 export async function listAuditsApi(params: ListAuditsParams = {}): Promise<ListAuditsResponse> {
@@ -336,6 +370,13 @@ export async function listAuditsApi(params: ListAuditsParams = {}): Promise<List
   if (params.pageSize) query.pageSize = String(params.pageSize);
   if (params.schoolId) query.schoolId = params.schoolId;
   if (params.module) query.module = params.module;
+  if (params.status) query.status = params.status;
+  if (params.auditorId) query.auditorId = params.auditorId;
+  if (params.from) query.from = params.from;
+  if (params.to) query.to = params.to;
+  if (params.province) query.province = params.province;
+  if (params.district) query.district = params.district;
+  if (params.sector) query.sector = params.sector;
 
   const queryString = new URLSearchParams(query).toString();
   const path = queryString ? `/gov/audits?${queryString}` : '/gov/audits';

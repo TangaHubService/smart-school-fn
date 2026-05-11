@@ -340,11 +340,11 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     },
   });
 
-  const years = ((yearsQuery.data as { items?: any[] })?.items ?? []);
-  const terms = ((termsQuery.data as { items?: any[] })?.items ?? []);
-  const gradeLevels = ((gradeLevelsQuery.data as { items?: any[] })?.items ?? []);
-  const classRooms = ((classRoomsQuery.data as { items?: any[] })?.items ?? []);
-  const subjects = ((subjectsQuery.data as { items?: any[] })?.items ?? []);
+  const years = (yearsQuery.data ?? []) as any[];
+  const terms = (termsQuery.data ?? []) as any[];
+  const gradeLevels = (gradeLevelsQuery.data ?? []) as any[];
+  const classRooms = (classRoomsQuery.data ?? []) as any[];
+  const subjects = (subjectsQuery.data ?? []) as any[];
 
   const yearNameMap = useMemo(() => new Map(years.map((year) => [year.id, year.name])), [years]);
 
