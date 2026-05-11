@@ -28,7 +28,7 @@ export function ParentTimetablePage() {
   });
 
   const children = childrenQuery.data?.students ?? [];
-  const currentYear = yearsQuery.data?.items.find(y => y.isCurrent) ?? yearsQuery.data?.items[0];
+  const currentYear = yearsQuery.data?.find((y: any) => y.isCurrent) ?? yearsQuery.data?.[0];
   const classRoomId = children.find(c => c.id === selectedChildId)?.currentEnrollment?.classRoom.id;
 
   const timetableQuery = useQuery({

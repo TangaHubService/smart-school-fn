@@ -11,10 +11,11 @@ import { useQuery } from '@tanstack/react-query';
 const ACADEMIC_YEAR_STORAGE_KEY = 'smart-school-selected-academic-year-id';
 
 interface AcademicYearItem {
+  endDate: string | number | Date;
+  startDate: string | number | Date;
   id: string;
   name: string;
-  startDate: string;
-  endDate: string;
+  isCurrent: boolean;
 }
 
 export function getStoredAcademicYearId(): string | null {
