@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Loader2, Pencil, Plus } from 'lucide-react';
+import { ExternalLink, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { Link } from 'react-router-dom';
@@ -15,6 +15,7 @@ import { useAuth } from '../features/auth/auth.context';
 import {
   AcademyProgram,
   createAcademyProgramApi,
+  deleteAcademyProgramApi,
   listAcademyProgramsApi,
   listCoursesApi,
   updateAcademyProgramApi,
@@ -25,6 +26,7 @@ const programFormSchema = z.object({
   title: z.string().trim().min(2).max(120),
   description: z.string().trim().max(2000).optional(),
   thumbnail: z.string().trim().max(2000).optional().or(z.literal('')),
+  section: z.string().trim().max(200).optional().or(z.literal('')),
   price: z.coerce.number().positive('Price must be greater than 0'),
   durationDays: z.coerce.number().int().min(1).max(3650),
   isActive: z.boolean(),
@@ -38,6 +40,7 @@ const defaultProgramForm: ProgramFormValues = {
   title: '',
   description: '',
   thumbnail: '',
+  section: '',
   price: 10000,
   durationDays: 30,
   isActive: true,
@@ -84,6 +87,7 @@ export function AcademyProgramsAdminPage() {
         title: values.title,
         description: values.description?.trim() || undefined,
         thumbnail: values.thumbnail?.trim() || undefined,
+        section: values.section?.trim() || undefined,
         price: values.price,
         durationDays: values.durationDays,
         isActive: values.isActive,
@@ -111,6 +115,7 @@ export function AcademyProgramsAdminPage() {
         title: values.title,
         description: values.description?.trim() ? values.description.trim() : null,
         thumbnail: values.thumbnail?.trim() ? values.thumbnail.trim() : null,
+        section: values.section?.trim() ? values.section.trim() : null,
         price: values.price,
         durationDays: values.durationDays,
         isActive: values.isActive,
@@ -131,12 +136,29 @@ export function AcademyProgramsAdminPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (programId: string) =>
+      deleteAcademyProgramApi(auth.accessToken!, programId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-academy-programs'] }),
+        queryClient.invalidateQueries({ queryKey: ['academy-programs'] }),
+      ]);
+      showToast({
+        type: 'success',
+        title: 'Program deleted',
+        message: 'The program has been removed.',
+      });
+    },
+  });
+
   function openEdit(program: AcademyProgram) {
     setEditing(program);
     editForm.reset({
       title: program.title,
       description: program.description ?? '',
       thumbnail: program.thumbnail ?? '',
+      section: program.section ?? '',
       price: program.price,
       durationDays: program.durationDays,
       isActive: program.isActive,
@@ -216,6 +238,7 @@ export function AcademyProgramsAdminPage() {
             <thead className="bg-brand-50 text-slate-700">
               <tr>
                 <th className="px-3 py-2 font-semibold">Title</th>
+                <th className="px-3 py-2 font-semibold">Section</th>
                 <th className="px-3 py-2 font-semibold">Legacy price (RWF)</th>
                 <th className="px-3 py-2 font-semibold">Days</th>
                 <th className="px-3 py-2 font-semibold">Public</th>
@@ -230,6 +253,7 @@ export function AcademyProgramsAdminPage() {
                     <p className="font-medium text-slate-900">{row.title}</p>
                     <p className="text-xs text-slate-500">{row.isActive ? 'Active' : 'Inactive'}</p>
                   </td>
+                  <td className="px-3 py-2 text-xs text-slate-600">{row.section ?? '—'}</td>
                   <td className="px-3 py-2 font-mono text-xs">
                     {Number(row.price).toLocaleString()}
                   </td>
@@ -240,14 +264,29 @@ export function AcademyProgramsAdminPage() {
                   </td>
                   <td className="px-3 py-2 text-right">
                     {canManage ? (
-                      <button
-                        type="button"
-                        onClick={() => openEdit(row)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-2 py-1 text-xs font-semibold text-slate-700"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                        Edit
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openEdit(row)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-2 py-1 text-xs font-semibold text-slate-700"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Delete "${row.title}"? This action cannot be undone.`)) {
+                              deleteMutation.mutate(row.id);
+                            }
+                          }}
+                          disabled={deleteMutation.isPending}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 ml-2"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      </>
                     ) : null}
                   </td>
                 </tr>

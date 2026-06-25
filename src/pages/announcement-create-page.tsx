@@ -41,7 +41,10 @@ export function AnnouncementCreateForm({ onCancel, onSuccess }: AnnouncementCrea
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<AnnouncementAudience>('ALL');
   const [targetClassRoomIds, setTargetClassRoomIds] = useState<string[]>([]);
+  const [targetRoleNames, setTargetRoleNames] = useState<string[]>([]);
   const [publishNow, setPublishNow] = useState(true);
+
+  const roleOptions = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'STUDENT', 'PARENT', 'GOV_AUDITOR'];
 
   const classesQuery = useQuery({
     queryKey: ['class-rooms'],
@@ -55,6 +58,7 @@ export function AnnouncementCreateForm({ onCancel, onSuccess }: AnnouncementCrea
         body,
         audience,
         targetClassRoomIds: audience === 'CLASS_ROOM' ? targetClassRoomIds : undefined,
+        targetRoleNames: audience === 'SPECIFIC_ROLES' ? targetRoleNames : undefined,
         publishedAt: publishNow ? new Date().toISOString() : undefined,
       }),
     onSuccess: () => {
@@ -133,6 +137,7 @@ export function AnnouncementCreateForm({ onCancel, onSuccess }: AnnouncementCrea
             <option value="ALL">All (school-wide)</option>
             <option value="CLASS_ROOM">Specific classes</option>
             <option value="GRADE_LEVEL">Grade level</option>
+            <option value="SPECIFIC_ROLES">Specific roles</option>
           </select>
         </label>
         {audience === 'CLASS_ROOM' ? (
@@ -153,6 +158,31 @@ export function AnnouncementCreateForm({ onCancel, onSuccess }: AnnouncementCrea
                   <span className="text-sm">
                     {c.code} - {c.name}
                   </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {audience === 'SPECIFIC_ROLES' ? (
+          <div className="grid gap-2">
+            <p className="text-sm font-semibold text-slate-800">Select roles</p>
+            <div className="flex flex-wrap gap-2">
+              {roleOptions.map((role) => (
+                <label
+                  key={role}
+                  className="flex items-center gap-2 rounded-lg border border-brand-100 px-3 py-2"
+                >
+                  <input
+                    type="checkbox"
+                    checked={targetRoleNames.includes(role)}
+                    onChange={() =>
+                      setTargetRoleNames((prev) =>
+                        prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+                      )
+                    }
+                    className="rounded border-brand-200"
+                  />
+                  <span className="text-sm">{role.replace(/_/g, ' ')}</span>
                 </label>
               ))}
             </div>

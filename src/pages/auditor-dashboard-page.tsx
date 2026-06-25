@@ -1,12 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  BadgeCheck,
   BarChart3,
   BookOpen,
   CalendarDays,
+  ChevronDown,
   ClipboardCheck,
   ClipboardList,
+  Download,
   FileBarChart2,
+  FileSpreadsheet,
+  GraduationCap,
+  MapPin,
   School,
   TrendingUp,
 } from 'lucide-react';
@@ -16,6 +23,7 @@ import {
   ACADEMIC_AUDIT_MODULE_LABELS,
   AUDITOR_AUDIT_MODULES,
   getAuditorDashboardApi,
+  getAuditorReportApi,
   type AcademicAuditModule,
 } from '../features/audit/audit.api';
 
@@ -29,9 +37,18 @@ const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
 };
 
 export function AuditorDashboardPage() {
+  const [activeTab, setActiveTab] = useState<'overview' | 'report'>('overview');
+  const [showReport, setShowReport] = useState(false);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['auditor-dashboard'],
     queryFn: getAuditorDashboardApi,
+  });
+
+  const reportQuery = useQuery({
+    queryKey: ['auditor-report'],
+    queryFn: getAuditorReportApi,
+    enabled: showReport,
   });
 
   if (isLoading) {
@@ -52,114 +69,362 @@ export function AuditorDashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Auditor Dashboard</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Scope: {scope.level} - {scope.country}
-          {scope.province && ` / ${scope.province}`}
-          {scope.district && ` / ${scope.district}`}
-          {scope.sector && ` / ${scope.sector}`}
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-blue-100 p-3">
-              <School className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Schools in Scope</p>
-              <p className="text-2xl font-bold text-slate-900">{stats.totalSchoolsInScope}</p>
-            </div>
+        <div className="mt-2 flex flex-wrap items-center gap-4 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-semibold text-slate-900">{scope.level}</span>
           </div>
-        </div>
-
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-green-100 p-3">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Completed Audits</p>
-              <p className="text-2xl font-bold text-slate-900">{stats.completedAudits}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-amber-100 p-3">
-              <FileBarChart2 className="h-5 w-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Pending Schools</p>
-              <p className="text-2xl font-bold text-slate-900">{stats.pendingSchools}</p>
-            </div>
-          </div>
+          <span className="text-sm text-slate-500">—</span>
+          <span className="text-sm text-slate-700">{scope.country}</span>
+          {scope.province && (
+            <>
+              <ChevronDown className="h-3 w-3 rotate-270 text-slate-400" />
+              <span className="text-sm text-slate-700">{scope.province}</span>
+            </>
+          )}
+          {scope.district && (
+            <>
+              <ChevronDown className="h-3 w-3 rotate-270 text-slate-400" />
+              <span className="text-sm text-slate-700">{scope.district}</span>
+            </>
+          )}
+          {scope.sector && (
+            <>
+              <ChevronDown className="h-3 w-3 rotate-270 text-slate-400" />
+              <span className="text-sm text-slate-700">{scope.sector}</span>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="rounded-lg border bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Audit Modules</h2>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {AUDITOR_AUDIT_MODULES.map((module) => {
-            const Icon = MODULE_ICONS[module];
-            return (
-              <Link
-                key={module}
-                to={`/auditor/schools?module=${module}`}
-                className="flex items-center gap-4 rounded-lg border border-slate-200 p-4 transition hover:border-blue-300 hover:shadow-md"
-              >
-                <div className="rounded-lg bg-blue-50 p-2">
-                  <Icon className="h-5 w-5 text-blue-600" />
+      <div className="flex gap-2 border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-2 text-sm font-semibold ${
+            activeTab === 'overview'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('report');
+            setShowReport(true);
+          }}
+          className={`px-4 py-2 text-sm font-semibold ${
+            activeTab === 'report'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Report
+        </button>
+      </div>
+
+      {activeTab === 'overview' && (
+        <>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-blue-100 p-3">
+                  <School className="h-5 w-5 text-blue-600" />
                 </div>
-                <span className="font-medium text-slate-900">
-                  {ACADEMIC_AUDIT_MODULE_LABELS[module]}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Schools in Scope</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.totalSchoolsInScope}</p>
+                </div>
+              </div>
+            </div>
 
-      <div className="rounded-lg border bg-white p-6 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Audits</h2>
-        </div>
+            <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-green-100 p-3">
+                  <BadgeCheck className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Completed Audits</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.completedAudits}</p>
+                </div>
+              </div>
+            </div>
 
-        {recentAudits.length === 0 ? (
-          <p className="text-sm text-slate-500">No audits submitted yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {recentAudits.map((audit) => {
-              const Icon = MODULE_ICONS[audit.module] || FileBarChart2;
-              return (
-                <div
-                  key={audit.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-100 p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="h-4 w-4 text-slate-400" />
-                    <div>
-                      <p className="font-medium text-slate-900">{audit.school}</p>
-                      <p className="text-sm text-slate-500">
-                        {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]}
-                      </p>
+            <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-amber-100 p-3">
+                  <FileBarChart2 className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Pending Schools</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.pendingSchools}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Audit Modules</h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {AUDITOR_AUDIT_MODULES.map((module) => {
+                const Icon = MODULE_ICONS[module];
+                return (
+                  <Link
+                    key={module}
+                    to={`/auditor/schools?module=${module}`}
+                    className="flex items-center gap-4 rounded-lg border border-slate-200 p-4 transition hover:border-blue-300 hover:shadow-md"
+                  >
+                    <div className="rounded-lg bg-blue-50 p-2">
+                      <Icon className="h-5 w-5 text-blue-600" />
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-slate-900">{audit.score}%</p>
-                    <p className="text-xs text-slate-500">
-                      {new Date(audit.createdAt).toLocaleDateString()}
-                    </p>
+                    <span className="font-medium text-slate-900">
+                      {ACADEMIC_AUDIT_MODULE_LABELS[module]}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-white p-6 shadow-sm">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Recent Audits</h2>
+            </div>
+
+            {recentAudits.length === 0 ? (
+              <p className="text-sm text-slate-500">No audits submitted yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {recentAudits.map((audit) => {
+                  const Icon = MODULE_ICONS[audit.module] || FileBarChart2;
+                  return (
+                    <div
+                      key={audit.id}
+                      className="flex items-center justify-between rounded-lg border border-slate-100 p-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="h-4 w-4 text-slate-400" />
+                        <div>
+                          <p className="font-medium text-slate-900">{audit.school}</p>
+                          <p className="text-sm text-slate-500">
+                            {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-slate-900">{audit.score}%</p>
+                        <p className="text-xs text-slate-500">
+                          {new Date(audit.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'report' && (
+        <div className="space-y-6">
+          {reportQuery.isLoading && <StateView title="Generating report..." loading />}
+          {reportQuery.isError && (
+            <StateView title="Could not load report" variant="error" />
+          )}
+          {reportQuery.data && (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-slate-900">Audit Report</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rows = [
+                      ['School', 'Province', 'District', 'Sector', 'Audits', 'Latest Score'],
+                      ...reportQuery.data.report.schools.map(s => [
+                        s.name,
+                        s.province || '',
+                        s.district || '',
+                        s.sector || '',
+                        String(s.auditCount),
+                        s.latestScore !== null ? `${s.latestScore}%` : '—',
+                      ]),
+                    ];
+                    const csv = rows.map(r => r.join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'audit-report.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                >
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </button>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                  <p className="text-xs font-medium text-slate-500">Schools in Scope</p>
+                  <p className="text-xl font-bold text-slate-900">
+                    {reportQuery.data.report.totalSchoolsInScope}
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                  <p className="text-xs font-medium text-slate-500">Schools Audited</p>
+                  <p className="text-xl font-bold text-slate-900">
+                    {reportQuery.data.report.schoolsAudited}
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                  <p className="text-xs font-medium text-slate-500">Total Audits</p>
+                  <p className="text-xl font-bold text-slate-900">
+                    {reportQuery.data.report.totalAudits}
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                  <p className="text-xs font-medium text-slate-500">Average Score</p>
+                  <p className="text-xl font-bold text-slate-900">
+                    {reportQuery.data.report.averageScore !== null
+                      ? `${reportQuery.data.report.averageScore}%`
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+
+              {Object.keys(reportQuery.data.report.moduleDistribution).length > 0 && (
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                  <h3 className="mb-3 text-sm font-semibold text-slate-900">
+                    Audit Distribution by Module
+                  </h3>
+                  <div className="space-y-2">
+                    {Object.entries(reportQuery.data.report.moduleDistribution).map(
+                      ([module, count]) => {
+                        const total = reportQuery.data.report.totalAudits;
+                        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                        return (
+                          <div key={module} className="flex items-center gap-3">
+                            <span className="w-40 text-sm text-slate-700">
+                              {ACADEMIC_AUDIT_MODULE_LABELS[module as AcademicAuditModule] || module}
+                            </span>
+                            <div className="flex-1 rounded-full bg-slate-100 h-2">
+                              <div
+                                className="h-2 rounded-full bg-blue-600"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="w-16 text-right text-sm font-medium text-slate-600">
+                              {count} ({pct}%)
+                            </span>
+                          </div>
+                        );
+                      }
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              )}
+
+              <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">
+                  School Audit Summary
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-xs font-medium text-slate-500">
+                        <th className="py-2 pr-4">School</th>
+                        <th className="py-2 pr-4">Location</th>
+                        <th className="py-2 pr-4">Audits</th>
+                        <th className="py-2">Latest Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportQuery.data.report.schools.map(school => (
+                        <tr key={school.id} className="border-b border-slate-100">
+                          <td className="py-2 pr-4 font-medium text-slate-900">{school.name}</td>
+                          <td className="py-2 pr-4 text-slate-600">
+                            {[school.province, school.district, school.sector]
+                              .filter(Boolean)
+                              .join(', ') || '—'}
+                          </td>
+                          <td className="py-2 pr-4 text-slate-700">{school.auditCount}</td>
+                          <td className="py-2">
+                            {school.latestScore !== null ? (
+                              <span
+                                className={`font-semibold ${
+                                  school.latestScore >= 75
+                                    ? 'text-green-600'
+                                    : school.latestScore >= 50
+                                      ? 'text-amber-600'
+                                      : 'text-red-600'
+                                }`}
+                              >
+                                {school.latestScore}%
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">
+                  Recent Audits
+                </h3>
+                {reportQuery.data.report.recentAudits.length === 0 ? (
+                  <p className="text-sm text-slate-500">No audits found.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {reportQuery.data.report.recentAudits.map(audit => {
+                      const Icon = MODULE_ICONS[audit.module] || FileBarChart2;
+                      return (
+                        <div
+                          key={audit.id}
+                          className="flex items-center justify-between rounded-lg border border-slate-100 p-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="h-4 w-4 text-slate-400" />
+                            <div>
+                              <p className="font-medium text-slate-900">{audit.school}</p>
+                              <p className="text-xs text-slate-500">
+                                {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]} —{' '}
+                                {new Date(audit.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <span
+                            className={`font-semibold ${
+                              audit.score >= 75
+                                ? 'text-green-600'
+                                : audit.score >= 50
+                                  ? 'text-amber-600'
+                                  : 'text-red-600'
+                            }`}
+                          >
+                            {audit.score}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

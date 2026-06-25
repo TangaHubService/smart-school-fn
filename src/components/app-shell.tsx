@@ -24,6 +24,7 @@ import {
   isSuperAdmin,
 } from '../features/auth/auth-helpers';
 import { SetStudentHeaderActionsContext } from '../contexts/student-header-actions.context';
+import { AcademicYearSelector } from './academic-year-selector';
 import { ConnectionStatusBanner } from './connection-status-banner';
 import { LanguageSwitcher } from './language-switcher';
 import { LowBandwidthToggle } from './low-bandwidth-toggle';
@@ -223,6 +224,7 @@ export function AppShell() {
                   <div className="hidden items-center gap-2 lg:flex">
                     <LowBandwidthToggle />
                     <LanguageSwitcher className="[&_span]:text-white/85 [&_select]:border-white/25 [&_select]:bg-white/10 [&_select]:text-white" />
+                    <AcademicYearSelector />
                   </div>
 
                   <div className="relative">

@@ -670,6 +670,7 @@ export interface AcademyProgram {
   title: string;
   description: string | null;
   thumbnail: string | null;
+  section: string | null;
   price: number;
   durationDays: number;
   isActive: boolean;
@@ -693,6 +694,7 @@ export function createAcademyProgramApi(
     title: string;
     description?: string;
     thumbnail?: string;
+    section?: string;
     price: number;
     durationDays?: number;
     isActive?: boolean;
@@ -714,6 +716,7 @@ export function updateAcademyProgramApi(
     title?: string;
     description?: string | null;
     thumbnail?: string | null;
+    section?: string | null;
     price?: number;
     durationDays?: number;
     isActive?: boolean;
@@ -725,5 +728,12 @@ export function updateAcademyProgramApi(
     method: 'PATCH',
     accessToken,
     body: payload,
+  });
+}
+
+export function deleteAcademyProgramApi(accessToken: string, programId: string) {
+  return apiRequest<{ id: string; deleted: boolean }>(`/academy-programs/${programId}`, {
+    method: 'DELETE',
+    accessToken,
   });
 }

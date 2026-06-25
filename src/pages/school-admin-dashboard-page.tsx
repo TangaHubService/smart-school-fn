@@ -21,6 +21,7 @@ import {
   type SchoolAdminDashboardData,
   type SchoolAdminDashboardFilters,
 } from '../features/dashboard/dashboard.api';
+import { ActiveUsersWidget, CompletionRatesWidget, EnrollmentTrendsWidget, RevenueWidget } from '../components/dashboard/dashboard-widgets';
 import { useQuery } from '@tanstack/react-query';
 
 function formatChange(change: number): string {
@@ -301,6 +302,28 @@ export function SchoolAdminDashboardPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <SchoolUpcomingExamsCard data={data} />
         <SchoolLatestReportsCard data={data} />
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <RevenueWidget
+          totalRevenue={data.revenue.totalRevenue}
+          monthlyRevenue={data.revenue.monthlyRevenue}
+          revenueThisMonth={data.revenue.revenueThisMonth}
+          revenueChange={data.revenue.revenueChange}
+        />
+        <EnrollmentTrendsWidget
+          weekly={data.enrollmentTrends.weekly}
+          monthly={data.enrollmentTrends.monthly}
+        />
+        <CompletionRatesWidget
+          courseCompletionRate={data.completionRates.courseCompletionRate}
+          assessmentCompletionRate={data.completionRates.assessmentCompletionRate}
+          overallRate={data.completionRates.overallRate}
+        />
+        <ActiveUsersWidget
+          weeklyActive={data.activeUsers.weeklyActive}
+          monthlyActive={data.activeUsers.monthlyActive}
+        />
       </div>
     </section>
   );

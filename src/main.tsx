@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { queryClient } from './app/query-client';
 import { ToastProvider } from './components/toast';
 import { AuthProvider } from './features/auth/auth.context';
+import { AcademicYearProvider } from './contexts/academic-year-context';
 import { AppRoutes } from './routes/app-routes';
 import './i18n/config';
 import './styles/index.css';
@@ -19,7 +20,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <ToastProvider>
         <BrowserRouter>
           <AuthProvider>
-            <AppRoutes />
+            <AcademicYearProvider>
+              <AppRoutes />
+            </AcademicYearProvider>
           </AuthProvider>
         </BrowserRouter>
       </ToastProvider>

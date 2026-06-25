@@ -39,6 +39,25 @@ export interface SuperAdminDashboardData {
     weekly: Array<{ label: string; logins: number; courses: number; exams: number }>;
     monthly: Array<{ label: string; logins: number; courses: number; exams: number }>;
   };
+  revenue: {
+    totalRevenue: number;
+    monthlyRevenue: Array<{ month: string; amount: number }>;
+    revenueThisMonth: number;
+    revenueChange: number;
+  };
+  enrollmentTrends: {
+    weekly: Array<{ label: string; count: number }>;
+    monthly: Array<{ label: string; count: number }>;
+  };
+  completionRates: {
+    courseCompletionRate: number | null;
+    assessmentCompletionRate: number | null;
+    overallRate: number | null;
+  };
+  activeUsers: {
+    weeklyActive: number;
+    monthlyActive: number;
+  };
 }
 
 export interface SuperAdminDashboardFilters {
@@ -95,6 +114,25 @@ export interface SchoolAdminDashboardData {
   systemAnalytics: {
     weekly: Array<{ label: string; logins: number; attendance: number; assignments: number }>;
     monthly: Array<{ label: string; logins: number; attendance: number; assignments: number }>;
+  };
+  revenue: {
+    totalRevenue: number;
+    monthlyRevenue: Array<{ month: string; amount: number }>;
+    revenueThisMonth: number;
+    revenueChange: number;
+  };
+  enrollmentTrends: {
+    weekly: Array<{ label: string; count: number }>;
+    monthly: Array<{ label: string; count: number }>;
+  };
+  completionRates: {
+    courseCompletionRate: number | null;
+    assessmentCompletionRate: number | null;
+    overallRate: number | null;
+  };
+  activeUsers: {
+    weeklyActive: number;
+    monthlyActive: number;
   };
 }
 

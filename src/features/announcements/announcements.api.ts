@@ -1,6 +1,6 @@
 import { apiRequest } from '../../api/client';
 
-export type AnnouncementAudience = 'ALL' | 'CLASS_ROOM' | 'GRADE_LEVEL';
+export type AnnouncementAudience = 'ALL' | 'CLASS_ROOM' | 'GRADE_LEVEL' | 'SPECIFIC_ROLES';
 
 export interface AnnouncementItem {
   id: string;
@@ -84,6 +84,7 @@ export function createAnnouncementApi(
     audience?: AnnouncementAudience;
     targetClassRoomIds?: string[];
     targetGradeLevelIds?: string[];
+    targetRoleNames?: string[];
     publishedAt?: string;
     expiresAt?: string;
   }
@@ -104,6 +105,7 @@ export function updateAnnouncementApi(
     audience: AnnouncementAudience;
     targetClassRoomIds: string[];
     targetGradeLevelIds: string[];
+    targetRoleNames: string[];
     publishedAt: string | null;
     expiresAt: string | null;
   }>

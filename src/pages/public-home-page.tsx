@@ -1,4 +1,4 @@
-import { ArrowRight, Award, Clock, Play, Star, Users } from 'lucide-react';
+import { ArrowRight, Award, Clock, Play, Users } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 
 import backgroundImage from '../asset/background.jpg';
@@ -6,39 +6,6 @@ import { useAuth } from '../features/auth/auth.context';
 import { getDefaultLandingPath } from '../features/auth/auth-helpers';
 import { PublicCommunityCTA } from '../components/public/public-community-cta';
 import { PublicAcademyProgramsShowcase } from '../components/public/public-academy-showcase';
-
-const programs = [
-  {
-    title: 'Governance, Administration & Policy',
-    description:
-      'Administrative assistants, accountants, HR officers, project staff, and policy support roles that keep institutions operating effectively.',
-  },
-  {
-    title: 'Education, Research & Training',
-    description:
-      'Primary and secondary teaching, TVET instruction, tutoring, research support, and curriculum development for modern learning.',
-  },
-  {
-    title: 'Health, Social Services & Welfare',
-    description:
-      'Nursing, community health, welfare support, and frontline service skills that strengthen social well-being and care delivery.',
-  },
-  {
-    title: 'ICT, Technology & Innovation',
-    description:
-      'IT support, software practice, data operations, and digital innovation paths for our expanding technology economy.',
-  },
-  {
-    title: 'Infrastructure, Construction & Manufacturing',
-    description:
-      'Engineering support, site supervision, technical trades, and production quality competencies for infrastructure growth.',
-  },
-  {
-    title: 'Business, Finance, Trade & Hospitality',
-    description:
-      'Customer service, sales, accounting, credit, and business operations capabilities across retail, service, and enterprise sectors.',
-  },
-];
 
 const reasons = [
   {
@@ -140,50 +107,6 @@ export function PublicHomePage() {
         ctaLabel="Full catalog & plans"
       />
 
-      <section className="bg-slate-50 py-20">
-        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-14 text-center">
-            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">
-              Featured Programs
-            </h2>
-            <div className="mx-auto mt-6 h-1 w-16 rounded-full bg-brand-500" />
-            <p className="mx-auto mt-6 max-w-3xl text-lg text-slate-500">
-              Industry-relevant pathways focused on employability, productivity, and lifelong
-              learning.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {programs.map((program, index) => {
-              const wide = index % 2 === 0;
-              return (
-                <article
-                  key={program.title}
-                  className={[
-                    'rounded-3xl border border-slate-100 bg-white p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition hover:-translate-y-1 hover:shadow-[0_30px_70px_rgba(0,0,0,0.08)]',
-                    wide ? 'lg:col-span-7' : 'lg:col-span-5',
-                  ].join(' ')}
-                >
-                  <div className="mb-6 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
-                    <Star className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-xl font-bold tracking-tight text-slate-900">
-                    {program.title}
-                  </h3>
-                  <p className="mt-3 text-[15px] leading-7 text-slate-600">{program.description}</p>
-                  <Link
-                    to="/courses"
-                    className="mt-6 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-brand-600"
-                  >
-                    Explore details
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       <section className="bg-white py-20">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">

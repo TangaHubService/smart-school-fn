@@ -188,3 +188,63 @@ export const academyApi = {
   getProgramContent: (id: string) =>
     apiRequest<ProgramContentResponse>(`/public-academy/programs/${id}/content`),
 };
+
+export interface AcademicYearSummary {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  isActive: boolean;
+  terms: Array<{ id: string; name: string; sequence: number }>;
+}
+
+export interface TermSummary {
+  id: string;
+  name: string;
+  sequence: number;
+}
+
+export interface AcademicYearPreference {
+  academicYearId: string;
+  termId: string | null;
+  academicYear: { id: string; name: string; isCurrent: boolean } | null;
+}
+
+export function listAcademicYearsApi(accessToken: string, params?: { isActive?: boolean }) {
+  const query = params?.isActive !== undefined ? `?isActive=${params.isActive}` : '';
+  return apiRequest<{ items: AcademicYearSummary[] }>(`/academic-years${query}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function getAcademicYearPreferenceApi(accessToken: string) {
+  return apiRequest<AcademicYearPreference | null>('/academic-years/preference', {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function setAcademicYearPreferenceApi(
+  accessToken: string,
+  payload: { academicYearId: string; termId?: string }
+) {
+  return apiRequest<AcademicYearPreference>('/academic-years/preference', {
+    method: 'PUT',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function getFileViewUrlApi(accessToken: string, assetId: string) {
+  return apiRequest<{
+    id: string;
+    secureUrl: string;
+    originalName: string;
+    mimeType: string | null;
+  }>(`/files/${assetId}/view`, {
+    method: 'GET',
+    accessToken,
+  });
+}

@@ -387,3 +387,49 @@ export async function listAuditsApi(params: ListAuditsParams = {}): Promise<List
 export async function getAuditByIdApi(auditId: string): Promise<AcademicAudit> {
   return apiRequest(`/gov/audits/${auditId}`);
 }
+
+export interface AuditorScopeResponse {
+  level: 'NATIONAL' | 'PROVINCE' | 'DISTRICT' | 'SECTOR';
+  country: string;
+  province: string | null;
+  district: string | null;
+  sector: string | null;
+  isActive: boolean;
+}
+
+export async function getAuditorScopeApi(): Promise<AuditorScopeResponse> {
+  return apiRequest('/admin/auditors/scope');
+}
+
+export interface AuditorReportData {
+  scope: AuditorScope;
+  report: {
+    totalSchoolsInScope: number;
+    schoolsAudited: number;
+    pendingSchools: number;
+    totalAudits: number;
+    averageScore: number | null;
+    moduleDistribution: Record<string, number>;
+    schools: Array<{
+      id: string;
+      name: string;
+      province: string | null;
+      district: string | null;
+      sector: string | null;
+      auditCount: number;
+      latestScore: number | null;
+    }>;
+    recentAudits: Array<{
+      id: string;
+      school: string;
+      module: AcademicAuditModule;
+      score: number;
+      status: string;
+      createdAt: string;
+    }>;
+  };
+}
+
+export async function getAuditorReportApi(): Promise<AuditorReportData> {
+  return apiRequest('/admin/auditors/report');
+}

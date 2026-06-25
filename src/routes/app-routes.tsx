@@ -54,6 +54,7 @@ import { SupportCenterPage } from '../pages/support-center-page';
 import { SystemSettingsPage } from '../pages/system-settings-page';
 import { UsersPage } from '../pages/users-page';
 import { StudentAssignmentsPage } from '../pages/student-assignments-page';
+import { StudentChatPage } from '../pages/student-chat-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
 import { StudentAcademicYearSelectPage } from '../pages/student-academic-year-select-page';
@@ -71,6 +72,7 @@ import { PrivacyPage } from '../pages/privacy-page';
 import { TermsPage } from '../pages/terms-page';
 import { CookiesPage } from '../pages/cookies-page';
 import { TeacherLearningInsightsPage } from '../pages/teacher-learning-insights-page';
+import { TeacherLessonPlansPage } from '../pages/teacher-lesson-plans-page';
 import { AuditorDashboardPage } from '../pages/auditor-dashboard-page';
 import { AuditorSchoolsPage } from '../pages/auditor-schools-page';
 import { AuditorAuditFormPage } from '../pages/auditor-audit-form-page';
@@ -204,6 +206,7 @@ export function AppRoutes() {
               <Route path="/admin/academy-programs" element={<AcademyProgramsAdminPage />} />
               <Route path="/admin/my-classes" element={<TeacherMyClassesPage />} />
               <Route path="/admin/subjects" element={<SubjectsPage />} />
+              <Route path="/teacher/lesson-plans" element={<TeacherLessonPlansPage />} />
             </Route>
             <Route
               element={<RequireAnyPermission permissions={['courses.read', 'subject.manage']} />}
@@ -253,6 +256,7 @@ export function AppRoutes() {
           </Route>
 
           <Route element={<RequirePermission permission="students.my_courses.read" />}>
+            <Route path="/student/chat/:classRoomId" element={<StudentChatPage />} />
             <Route path="/student/courses" element={<StudentCoursesPage />} />
             <Route path="/student/courses/:courseId" element={<StudentCoursesPage />} />
             <Route
