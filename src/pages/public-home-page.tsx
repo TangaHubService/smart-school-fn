@@ -1,4 +1,4 @@
-import { ArrowRight, Award, Clock, Play, Users } from 'lucide-react';
+import { ArrowRight, Award, Clock, Play, Star, Users } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 
 import backgroundImage from '../asset/background.jpg';
