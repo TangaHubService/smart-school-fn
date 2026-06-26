@@ -318,23 +318,23 @@ export function SchoolAdminDashboardPage() {
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <RevenueWidget
-          totalRevenue={data.revenue.totalRevenue}
-          monthlyRevenue={data.revenue.monthlyRevenue}
-          revenueThisMonth={data.revenue.revenueThisMonth}
-          revenueChange={data.revenue.revenueChange}
+          totalRevenue={data.revenue?.totalRevenue ?? 0}
+          monthlyRevenue={data.revenue?.monthlyRevenue ?? []}
+          revenueThisMonth={data.revenue?.revenueThisMonth ?? 0}
+          revenueChange={data.revenue?.revenueChange ?? 0}
         />
         <EnrollmentTrendsWidget
-          weekly={data.enrollmentTrends.weekly}
-          monthly={data.enrollmentTrends.monthly}
+          weekly={data.enrollmentTrends?.weekly ?? []}
+          monthly={data.enrollmentTrends?.monthly ?? []}
         />
         <CompletionRatesWidget
-          courseCompletionRate={data.completionRates.courseCompletionRate}
-          assessmentCompletionRate={data.completionRates.assessmentCompletionRate}
-          overallRate={data.completionRates.overallRate}
+          courseCompletionRate={data.completionRates?.courseCompletionRate ?? null}
+          assessmentCompletionRate={data.completionRates?.assessmentCompletionRate ?? null}
+          overallRate={data.completionRates?.overallRate ?? null}
         />
         <ActiveUsersWidget
-          weeklyActive={data.activeUsers.weeklyActive}
-          monthlyActive={data.activeUsers.monthlyActive}
+          weeklyActive={data.activeUsers?.weeklyActive ?? 0}
+          monthlyActive={data.activeUsers?.monthlyActive ?? 0}
         />
       </div>
 
