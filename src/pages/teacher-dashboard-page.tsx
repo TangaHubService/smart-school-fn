@@ -14,6 +14,9 @@ import {
   DashboardQuickActionsDropdown,
   type DashboardQuickActionItem,
 } from '../components/dashboard/quick-actions-dropdown';
+import { ActiveStudentList, type ActiveStudent } from '../components/dashboard/active-student-list';
+import { RecommendationsWidget, type Recommendation } from '../components/dashboard/recommendations-widget';
+import { AnnouncementsWidget, type Announcement } from '../components/dashboard/announcements-widget';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import { getTeacherDashboardApi } from '../features/dashboard/dashboard.api';
@@ -218,6 +221,12 @@ export function TeacherDashboardPage() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <ActiveStudentList students={[]} />
+        <RecommendationsWidget items={[]} />
+        <AnnouncementsWidget items={[]} />
       </div>
     </section>
   );

@@ -18,10 +18,14 @@ import {
 import { listCoursesApi } from '../features/sprint4/lms.api';
 import {
   getSchoolAdminDashboardApi,
+  getDemographicsApi,
   type SchoolAdminDashboardData,
   type SchoolAdminDashboardFilters,
+  type DemographicsData,
 } from '../features/dashboard/dashboard.api';
 import { ActiveUsersWidget, CompletionRatesWidget, EnrollmentTrendsWidget, RevenueWidget } from '../components/dashboard/dashboard-widgets';
+import { DemographicsWidget } from '../components/dashboard/demographics-widget';
+import { LessonPlanAuditTable, type LessonPlanAuditItem } from '../components/dashboard/lesson-plan-audit-table';
 import { useQuery } from '@tanstack/react-query';
 
 function formatChange(change: number): string {
@@ -59,6 +63,8 @@ const SCHOOL_ADMIN_QUICK_ACTIONS: DashboardQuickActionItem[] = [
 export function SchoolAdminDashboardPage() {
   const auth = useAuth();
   const [analyticsTab, setAnalyticsTab] = useState<'weekly' | 'monthly'>('weekly');
+
+  const [demogSegment, setDemogSegment] = useState<'sector' | 'grade' | 'academicYear'>('grade');
 
   const [filters, setFilters] = useState<SchoolAdminDashboardFilters>({
     academicYear: '',
@@ -179,6 +185,12 @@ export function SchoolAdminDashboardPage() {
     queryKey: ['dashboard', 'school-admin', appliedFilters],
     enabled: Boolean(auth.accessToken),
     queryFn: () => getSchoolAdminDashboardApi(auth.accessToken!, appliedFilters),
+  });
+
+  const demogQuery = useQuery({
+    queryKey: ['dashboard', 'demographics', appliedFilters.academicYear, appliedFilters.term],
+    enabled: Boolean(auth.accessToken),
+    queryFn: () => getDemographicsApi(auth.accessToken!, { academicYear: appliedFilters.academicYear, term: appliedFilters.term }),
   });
 
   if (isError) {
@@ -325,6 +337,17 @@ export function SchoolAdminDashboardPage() {
           monthlyActive={data.activeUsers.monthlyActive}
         />
       </div>
+
+      {demogQuery.data && (
+        <DemographicsWidget
+          data={demogQuery.data}
+          isLoading={demogQuery.isPending}
+          segment={demogSegment}
+          onSegmentChange={setDemogSegment}
+        />
+      )}
+
+      <LessonPlanAuditTable items={[]} />
     </section>
   );
 }

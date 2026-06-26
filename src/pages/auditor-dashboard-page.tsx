@@ -18,7 +18,10 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
+import { DemographicsWidget } from '../components/dashboard/demographics-widget';
 import { StateView } from '../components/state-view';
+import { useAuth } from '../features/auth/auth.context';
+import { getDemographicsApi } from '../features/dashboard/dashboard.api';
 import {
   ACADEMIC_AUDIT_MODULE_LABELS,
   AUDITOR_AUDIT_MODULES,
@@ -37,12 +40,20 @@ const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
 };
 
 export function AuditorDashboardPage() {
+  const auth = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'report'>('overview');
   const [showReport, setShowReport] = useState(false);
+  const [demogSegment, setDemogSegment] = useState<'sector' | 'grade' | 'academicYear'>('sector');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['auditor-dashboard'],
     queryFn: getAuditorDashboardApi,
+  });
+
+  const demogQuery = useQuery({
+    queryKey: ['dashboard', 'demographics', 'auditor'],
+    enabled: Boolean(auth.accessToken),
+    queryFn: () => getDemographicsApi(auth.accessToken!),
   });
 
   const reportQuery = useQuery({
@@ -127,6 +138,15 @@ export function AuditorDashboardPage() {
 
       {activeTab === 'overview' && (
         <>
+          {demogQuery.data && (
+            <DemographicsWidget
+              data={demogQuery.data}
+              isLoading={demogQuery.isPending}
+              segment={demogSegment}
+              onSegmentChange={setDemogSegment}
+            />
+          )}
+
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-lg border bg-white p-6 shadow-sm">
               <div className="flex items-center gap-3">

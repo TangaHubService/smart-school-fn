@@ -9,8 +9,10 @@ import {
   CircleDashed,
   Clock,
   FileBarChart2,
+  FileText,
   Home,
   Loader2,
+  MessageCircle,
   PlayCircle,
 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -20,6 +22,8 @@ import {
   DashboardQuickActionsDropdown,
   type DashboardQuickActionItem,
 } from '../components/dashboard/quick-actions-dropdown';
+import { ActiveCoursesHierarchy, type CourseHierarchyItem } from '../components/dashboard/active-courses-hierarchy';
+import { PaymentStatusWidget } from '../components/dashboard/payment-status-widget';
 import { StateView } from '../components/state-view';
 import { getStoredAcademicYearId } from './student-academic-year-select-page';
 import { useAuth } from '../features/auth/auth.context';
@@ -199,6 +203,43 @@ export function StudentDashboardPage() {
           value={data.metrics.reportCards}
           to="/student/report-cards"
         />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ActiveCoursesHierarchy items={[]} />
+        </div>
+        <div className="flex flex-col gap-4">
+          <PaymentStatusWidget totalFees={0} paidFees={0} />
+
+          <Link
+            to="/student/courses"
+            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-brand-200 hover:shadow-md"
+          >
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Secure PDF Viewer</p>
+              <p className="text-xs text-slate-500">View course materials</p>
+            </div>
+            <ChevronRight className="ml-auto h-5 w-5 shrink-0 text-slate-300" />
+          </Link>
+
+          <Link
+            to="/student/chat"
+            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-brand-200 hover:shadow-md"
+          >
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+              <MessageCircle className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Student Group Chat</p>
+              <p className="text-xs text-slate-500">Discuss with classmates</p>
+            </div>
+            <ChevronRight className="ml-auto h-5 w-5 shrink-0 text-slate-300" />
+          </Link>
+        </div>
       </div>
 
       <StudentUpcomingExamsCard data={data} />

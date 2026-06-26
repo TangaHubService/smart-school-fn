@@ -258,6 +258,35 @@ export interface TeacherDashboardData {
   }>;
 }
 
+export interface DemographicsData {
+  totalStudents: number;
+  totalBoys: number;
+  totalGirls: number;
+  studentsWithDisabilities: number;
+  disabilitiesBreakdown?: {
+    visual: number;
+    hearing: number;
+    mobility: number;
+    intellectual: number;
+    other: number;
+  };
+  bySector: Array<{ sector: string; boys: number; girls: number; disabilities: number }>;
+  byGrade: Array<{ grade: string; boys: number; girls: number; disabilities: number }>;
+  byAcademicYear: Array<{ year: string; boys: number; girls: number; disabilities: number }>;
+}
+
+export function getDemographicsApi(
+  accessToken: string,
+  filters?: { academicYear?: string; term?: string }
+) {
+  const params = new URLSearchParams();
+  if (filters?.academicYear) params.set('academicYear', filters.academicYear);
+  if (filters?.term) params.set('term', filters.term);
+  const query = params.toString();
+  const path = query ? `/dashboard/demographics?${query}` : '/dashboard/demographics';
+  return apiRequest<DemographicsData>(path, { method: 'GET', accessToken });
+}
+
 export function getTeacherDashboardApi(accessToken: string) {
   return apiRequest<TeacherDashboardData>('/dashboard/teacher', {
     method: 'GET',
