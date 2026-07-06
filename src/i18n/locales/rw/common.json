@@ -42,7 +42,8 @@
     "tests": "Ibizamini",
     "news": "Amakuru",
     "reportCards": "Ikarita y'amanota",
-    "announcements": "Amatangazo"
+    "announcements": "Amatangazo",
+    "chat": "Igikorwa"
   },
   "nav": {
     "dashboard": "Ikibaho",

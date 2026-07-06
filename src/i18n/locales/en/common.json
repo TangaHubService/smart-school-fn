@@ -42,7 +42,8 @@
     "tests": "Tests",
     "news": "News",
     "reportCards": "Report cards",
-    "announcements": "Announcements"
+    "announcements": "Announcements",
+    "chat": "Chat"
   },
   "nav": {
     "dashboard": "Dashboard",

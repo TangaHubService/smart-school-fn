@@ -86,6 +86,9 @@ export function AppShell() {
           title: t('studentHeader.announcements'),
         }
       : null,
+    hasPermission(auth.me, 'chat.read')
+      ? { to: '/student/chat', label: t('studentHeader.chat') }
+      : null,
   ].filter(Boolean) as Array<{ to: string; label: string; title?: string }>;
 
   function closeMobileNav() {

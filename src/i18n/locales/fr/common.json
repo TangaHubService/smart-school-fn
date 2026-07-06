@@ -42,7 +42,8 @@
     "tests": "Tests",
     "news": "Actualités",
     "reportCards": "Bulletins",
-    "announcements": "Annonces"
+    "announcements": "Annonces",
+    "chat": "Discussion"
   },
   "nav": {
     "dashboard": "Tableau de bord",
