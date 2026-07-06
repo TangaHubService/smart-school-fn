@@ -30,7 +30,8 @@ export async function uploadFileToCloudinary(
     | 'logo'
     | 'assessment-question'
     | 'announcement'
-    | 'audit-evidence',
+    | 'audit-evidence'
+    | 'chat',
   file: File
 ): Promise<UploadedAssetPayload> {
   const signed = await signUploadApi(accessToken, {

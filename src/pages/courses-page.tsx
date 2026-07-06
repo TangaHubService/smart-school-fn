@@ -8,6 +8,7 @@ import {
   ExternalLink,
   FilePlus2,
   Lock,
+  MessageCircle,
   Pencil,
   Plus,
   RotateCcw,
@@ -1027,7 +1028,7 @@ export function CoursesPage() {
                                 </div>
                               </button>
 
-                              <div className="grid grid-cols-3 gap-2 border-t border-brand-100 px-4 py-3">
+                              <div className="grid grid-cols-4 gap-2 border-t border-brand-100 px-4 py-3">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1039,6 +1040,13 @@ export function CoursesPage() {
                                   <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                                   Open
                                 </button>
+                                <Link
+                                  to={`/admin/chat/${course.classRoom.id}`}
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                  <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Chat
+                                </Link>
                                 <button
                                   type="button"
                                   onClick={() => openEditCourse(course)}

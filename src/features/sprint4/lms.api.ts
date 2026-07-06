@@ -681,7 +681,8 @@ export function signUploadApi(
       | 'logo'
       | 'assessment-question'
       | 'announcement'
-      | 'audit-evidence';
+      | 'audit-evidence'
+      | 'chat';
     fileName: string;
   }
 ) {

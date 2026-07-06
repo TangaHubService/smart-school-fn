@@ -54,7 +54,7 @@ import { SupportCenterPage } from '../pages/support-center-page';
 import { SystemSettingsPage } from '../pages/system-settings-page';
 import { UsersPage } from '../pages/users-page';
 import { StudentAssignmentsPage } from '../pages/student-assignments-page';
-import { StudentChatPage } from '../pages/student-chat-page';
+import { ClassChatPage } from '../pages/class-chat-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
 import { StudentAcademicYearSelectPage } from '../pages/student-academic-year-select-page';
@@ -208,6 +208,9 @@ export function AppRoutes() {
               <Route path="/admin/subjects" element={<SubjectsPage />} />
               <Route path="/teacher/lesson-plans" element={<TeacherLessonPlansPage />} />
             </Route>
+            <Route element={<RequirePermission permission="chat.read" />}>
+              <Route path="/admin/chat/:classRoomId" element={<ClassChatPage />} />
+            </Route>
             <Route
               element={<RequireAnyPermission permissions={['courses.read', 'subject.manage']} />}
             >
@@ -255,8 +258,11 @@ export function AppRoutes() {
             <Route path="/parent/report-cards" element={<ParentReportCardsPage />} />
           </Route>
 
+          <Route element={<RequirePermission permission="chat.read" />}>
+            <Route path="/student/chat" element={<ClassChatPage />} />
+            <Route path="/student/chat/:classRoomId" element={<ClassChatPage />} />
+          </Route>
           <Route element={<RequirePermission permission="students.my_courses.read" />}>
-            <Route path="/student/chat/:classRoomId" element={<StudentChatPage />} />
             <Route path="/student/courses" element={<StudentCoursesPage />} />
             <Route path="/student/courses/:courseId" element={<StudentCoursesPage />} />
             <Route
