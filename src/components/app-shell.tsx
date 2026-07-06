@@ -9,13 +9,14 @@ import {
   LogOut,
   Mail,
   Menu,
+  MessageCircle,
   PanelLeftClose,
   PanelLeftOpen,
   User,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/auth.context';
 import {
   hasPermission,
@@ -349,6 +350,15 @@ export function AppShell() {
           </section>
         </SetStudentHeaderActionsContext.Provider>
       </div>
+      {isStudent ? (
+        <Link
+          to="/student/chat"
+          className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-brand-600 text-white shadow-lg transition hover:bg-brand-700 active:scale-95"
+          aria-label={t('studentHeader.chat')}
+        >
+          <MessageCircle className="h-6 w-6" />
+        </Link>
+      ) : null}
       <ConnectionStatusBanner />
     </main>
   );
