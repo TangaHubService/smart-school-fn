@@ -1,22 +1,30 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  BadgeCheck,
-  BarChart3,
-  Bell,
   BookOpen,
   CalendarDays,
+  CheckCircle2,
   ClipboardCheck,
   ClipboardList,
+  Download,
   FileBarChart2,
+  RotateCcw,
   Search,
   TrendingUp,
+  XCircle,
 } from 'lucide-react';
 
 import { StateView } from '../components/state-view';
+import { AppDrawer } from '../components/drawer';
+import { useToast } from '../components/toast';
+import { useAuth } from '../features/auth/auth.context';
+import { hasPermission } from '../features/auth/auth-helpers';
 import {
   ACADEMIC_AUDIT_MODULE_LABELS,
   ACADEMIC_AUDIT_STATUS_LABELS,
+  downloadAuditReportPdfApi,
+  reopenAuditApi,
+  reviewAuditApi,
   listAuditsApi,
   type AcademicAuditModule,
   type AcademicAuditStatus,
@@ -29,13 +37,80 @@ const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   CONTINUOUS_ASSESSMENTS: ClipboardCheck,
   MARKS: FileBarChart2,
   TIMETABLE: CalendarDays,
+  FINANCE: ClipboardList,
+  TEACHERS: ClipboardList,
+  STUDENT_RECORDS: ClipboardList,
+  INFRASTRUCTURE: ClipboardList,
+  ICT: ClipboardList,
+  SAFETY: ClipboardList,
+  COMPLIANCE: ClipboardCheck,
 };
 
 export function AdminAuditReportsPage() {
+  const auth = useAuth();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const canReview = hasPermission(auth.me, 'academic_audit.review');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [moduleFilter, setModuleFilter] = useState<AcademicAuditModule | ''>('');
   const [statusFilter, setStatusFilter] = useState<AcademicAuditStatus | ''>('');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{ id: string; decision: 'REJECTED' | 'NEEDS_REVISION' } | null>(
+    null
+  );
+  const [reviewNote, setReviewNote] = useState('');
+
+  const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['school-audit-reports'] });
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, decision, reviewNote: note }: { id: string; decision: 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION'; reviewNote?: string }) =>
+      reviewAuditApi(id, { decision, reviewNote: note }),
+    onSuccess: () => {
+      showToast({ type: 'success', title: 'Review recorded' });
+      invalidate();
+      setReviewTarget(null);
+      setReviewNote('');
+    },
+    onError: (err) =>
+      showToast({
+        type: 'error',
+        title: 'Could not record review',
+        message: err instanceof Error ? err.message : 'Request failed',
+      }),
+  });
+
+  const reopenMutation = useMutation({
+    mutationFn: ({ id, note }: { id: string; note?: string }) => reopenAuditApi(id, { reviewNote: note }),
+    onSuccess: () => {
+      showToast({ type: 'success', title: 'Audit reopened for revision' });
+      invalidate();
+    },
+    onError: (err) =>
+      showToast({
+        type: 'error',
+        title: 'Could not reopen audit',
+        message: err instanceof Error ? err.message : 'Request failed',
+      }),
+  });
+
+  async function handleDownloadPdf(auditId: string) {
+    setDownloadingId(auditId);
+    try {
+      const blob = await downloadAuditReportPdfApi(auth.accessToken!, auditId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      showToast({
+        type: 'error',
+        title: 'Could not download report',
+        message: err instanceof Error ? err.message : 'Request failed',
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['school-audit-reports', page, moduleFilter, statusFilter],
@@ -202,10 +277,91 @@ export function AdminAuditReportsPage() {
                       )}
                     </div>
                   )}
+
+                  <div className="mt-3 flex flex-wrap justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadPdf(audit.id)}
+                      disabled={downloadingId === audit.id}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {downloadingId === audit.id ? 'Preparing…' : 'Download report'}
+                    </button>
+
+                    {canReview && (audit.status === 'SUBMITTED' || audit.status === 'UNDER_REVIEW') ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => reviewMutation.mutate({ id: audit.id, decision: 'APPROVED' })}
+                          disabled={reviewMutation.isPending}
+                          className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 transition hover:bg-green-100 disabled:opacity-50"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewTarget({ id: audit.id, decision: 'REJECTED' })}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-100"
+                        >
+                          <XCircle className="h-3.5 w-3.5" />
+                          Reject
+                        </button>
+                      </>
+                    ) : null}
+
+                    {canReview && (audit.status === 'APPROVED' || audit.status === 'REJECTED') ? (
+                      <button
+                        type="button"
+                        onClick={() => reopenMutation.mutate({ id: audit.id })}
+                        disabled={reopenMutation.isPending}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Reopen for revision
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               );
             })}
           </div>
+
+          <AppDrawer
+            open={Boolean(reviewTarget)}
+            onClose={() => {
+              setReviewTarget(null);
+              setReviewNote('');
+            }}
+            title="Reject audit report"
+            description="Explain what needs to change before this can be approved."
+          >
+            <div className="space-y-4">
+              <textarea
+                rows={5}
+                value={reviewNote}
+                onChange={(e) => setReviewNote(e.target.value)}
+                placeholder="What needs to change?"
+                className="w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-blue-500"
+              />
+              <button
+                type="button"
+                disabled={reviewMutation.isPending}
+                onClick={() =>
+                  reviewTarget &&
+                  reviewMutation.mutate({
+                    id: reviewTarget.id,
+                    decision: reviewTarget.decision,
+                    reviewNote: reviewNote.trim() || undefined,
+                  })
+                }
+                className="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {reviewMutation.isPending ? 'Saving…' : 'Reject with feedback'}
+              </button>
+            </div>
+          </AppDrawer>
 
           {pagination.totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">

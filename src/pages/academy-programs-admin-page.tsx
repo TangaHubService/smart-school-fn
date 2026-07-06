@@ -17,9 +17,9 @@ import {
   createAcademyProgramApi,
   deleteAcademyProgramApi,
   listAcademyProgramsApi,
-  listCoursesApi,
   updateAcademyProgramApi,
 } from '../features/sprint4/lms.api';
+import { listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { ApiClientError } from '../types/api';
 
 const programFormSchema = z.object({
@@ -31,7 +31,7 @@ const programFormSchema = z.object({
   durationDays: z.coerce.number().int().min(1).max(3650),
   isActive: z.boolean(),
   listedInPublicCatalog: z.boolean(),
-  courseId: z.string().optional(),
+  classRoomId: z.string().optional(),
 });
 
 type ProgramFormValues = z.infer<typeof programFormSchema>;
@@ -45,7 +45,7 @@ const defaultProgramForm: ProgramFormValues = {
   durationDays: 30,
   isActive: true,
   listedInPublicCatalog: true,
-  courseId: '',
+  classRoomId: '',
 };
 
 export function AcademyProgramsAdminPage() {
@@ -63,13 +63,21 @@ export function AcademyProgramsAdminPage() {
     enabled: Boolean(auth.accessToken),
   });
 
-  const coursesQuery = useQuery({
-    queryKey: ['admin-academy-program-courses'],
-    queryFn: () => listCoursesApi(auth.accessToken!, { page: 1, pageSize: 100 }),
+  const classRoomsQuery = useQuery({
+    queryKey: ['admin-academy-program-class-rooms'],
+    queryFn: () => listClassRoomsApi(auth.accessToken!),
     enabled: Boolean(auth.accessToken) && (createOpen || Boolean(editing)),
   });
 
-  const courseOptions = useMemo(() => coursesQuery.data?.items ?? [], [coursesQuery.data]);
+  const classRoomOptions = useMemo(
+    () =>
+      (classRoomsQuery.data ?? []) as Array<{
+        id: string;
+        name: string;
+        gradeLevel: { name: string };
+      }>,
+    [classRoomsQuery.data]
+  );
 
   const createForm = useForm<ProgramFormValues>({
     resolver: zodResolver(programFormSchema),
@@ -92,7 +100,7 @@ export function AcademyProgramsAdminPage() {
         durationDays: values.durationDays,
         isActive: values.isActive,
         listedInPublicCatalog: values.listedInPublicCatalog,
-        courseId: values.courseId?.trim() ? values.courseId.trim() : null,
+        classRoomId: values.classRoomId?.trim() ? values.classRoomId.trim() : null,
       }),
     onSuccess: async () => {
       await Promise.all([
@@ -120,7 +128,7 @@ export function AcademyProgramsAdminPage() {
         durationDays: values.durationDays,
         isActive: values.isActive,
         listedInPublicCatalog: values.listedInPublicCatalog,
-        courseId: values.courseId?.trim() ? values.courseId.trim() : null,
+        classRoomId: values.classRoomId?.trim() ? values.classRoomId.trim() : null,
       }),
     onSuccess: async () => {
       await Promise.all([
@@ -163,7 +171,7 @@ export function AcademyProgramsAdminPage() {
       durationDays: program.durationDays,
       isActive: program.isActive,
       listedInPublicCatalog: program.listedInPublicCatalog,
-      courseId: program.courseId ?? '',
+      classRoomId: program.classRoomId ?? '',
     });
   }
 
@@ -172,7 +180,7 @@ export function AcademyProgramsAdminPage() {
   return (
     <SectionCard
       title="Academy programs (public catalog)"
-      subtitle="These catalog items appear on /academy for plan-based access. Link an LMS course so selected learners can open the content after activating a plan."
+      subtitle="These catalog items appear on /academy for class-based access. Link a class so learners unlock every subject, course, and lesson in it after purchasing."
       action={
         canManage ? (
           <button
@@ -216,7 +224,7 @@ export function AcademyProgramsAdminPage() {
       ) : !programsQuery.data?.length ? (
         <EmptyState
           title="No academy programs yet"
-          message="Create a catalog program, keep the legacy price filled for old records, and link it to an LMS course so learners can open it from their plan."
+          message="Create a catalog program and link it to a class so learners unlock every subject, course, and lesson in that class after purchasing."
           action={
             canManage ? (
               <button
@@ -242,7 +250,7 @@ export function AcademyProgramsAdminPage() {
                 <th className="px-3 py-2 font-semibold">Legacy price (RWF)</th>
                 <th className="px-3 py-2 font-semibold">Days</th>
                 <th className="px-3 py-2 font-semibold">Public</th>
-                <th className="px-3 py-2 font-semibold">Linked course</th>
+                <th className="px-3 py-2 font-semibold">Linked class</th>
                 <th className="px-3 py-2 font-semibold text-right">Actions</th>
               </tr>
             </thead>
@@ -260,7 +268,9 @@ export function AcademyProgramsAdminPage() {
                   <td className="px-3 py-2">{row.durationDays}</td>
                   <td className="px-3 py-2">{row.listedInPublicCatalog ? 'Yes' : 'No'}</td>
                   <td className="px-3 py-2 text-xs text-slate-600">
-                    {row.linkedCourse ? row.linkedCourse.title : '—'}
+                    {row.linkedClassRoom
+                      ? `${row.linkedClassRoom.name} (${row.linkedClassRoom.gradeLevelName})`
+                      : '—'}
                   </td>
                   <td className="px-3 py-2 text-right">
                     {canManage ? (
@@ -315,7 +325,7 @@ export function AcademyProgramsAdminPage() {
         <p className="text-sm text-slate-600">
           Appears on /academy when this school is the catalog tenant.
         </p>
-        <ProgramFormFields form={createForm} courseOptions={courseOptions} />
+        <ProgramFormFields form={createForm} classRoomOptions={classRoomOptions} />
         {createMutation.error ? (
           <StateView
             title="Could not create"
@@ -346,7 +356,7 @@ export function AcademyProgramsAdminPage() {
         formId="edit-academy-program-form"
       >
         {editing?.title ? <p className="text-sm text-slate-600">{editing.title}</p> : null}
-        <ProgramFormFields form={editForm} courseOptions={courseOptions} />
+        <ProgramFormFields form={editForm} classRoomOptions={classRoomOptions} />
         {updateMutation.error ? (
           <StateView
             title="Could not update"
@@ -360,14 +370,13 @@ export function AcademyProgramsAdminPage() {
 
 function ProgramFormFields({
   form,
-  courseOptions,
+  classRoomOptions,
 }: {
   form: UseFormReturn<ProgramFormValues>;
-  courseOptions: Array<{
+  classRoomOptions: Array<{
     id: string;
-    title: string;
-    classRoom: { name: string };
-    academicYear: { name: string };
+    name: string;
+    gradeLevel: { name: string };
   }>;
 }) {
   return (
@@ -402,7 +411,7 @@ function ProgramFormFields({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          Legacy price (RWF)
+          Price (RWF)
           <input
             type="number"
             step="1"
@@ -411,8 +420,7 @@ function ProgramFormFields({
             {...form.register('price')}
           />
           <span className="text-xs font-normal text-slate-500">
-            Kept for older per-program purchases. The public academy now charges by time plan
-            instead.
+            Charged once to unlock every subject, course, and lesson in the linked class.
           </span>
         </label>
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
@@ -430,18 +438,22 @@ function ProgramFormFields({
       ) : null}
 
       <label className="grid gap-1 text-sm font-semibold text-slate-800">
-        Link to LMS course (optional)
+        Link to class (required for purchasable access)
         <select
           className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-          {...form.register('courseId')}
+          {...form.register('classRoomId')}
         >
           <option value="">None</option>
-          {courseOptions.map((c) => (
+          {classRoomOptions.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.title} — {c.classRoom.name} ({c.academicYear.name})
+              {c.name} ({c.gradeLevel.name})
             </option>
           ))}
         </select>
+        <span className="text-xs font-normal text-slate-500">
+          Purchasing this program unlocks every subject, course, lesson, and assessment in the
+          linked class.
+        </span>
       </label>
 
       <label className="flex items-center gap-2 text-sm font-medium text-slate-800">

@@ -5,15 +5,49 @@ export interface Program {
   title: string;
   description?: string | null;
   thumbnail?: string | null;
+  section?: string | null;
   price: number;
   durationDays: number;
-  courseId?: string | null;
-  subjectId?: string | null;
-  subjectName?: string | null;
-  subjectCode?: string | null;
-  subjectDescription?: string | null;
-  subjectCourseCount?: number;
-  subjectCourseTitles?: string[];
+  classRoomId?: string | null;
+  className?: string | null;
+  gradeLevelId?: string | null;
+  gradeLevelName?: string | null;
+  classSubjectCount?: number;
+  classCourseCount?: number;
+  classCourseTitles?: string[];
+}
+
+export interface AcademyCatalogSubject {
+  id: string;
+  name: string;
+  courseCount: number;
+}
+
+export interface AcademyCatalogClassRoom {
+  id: string;
+  name: string;
+  programId: string;
+  price: number;
+  thumbnail: string | null;
+  subjects: AcademyCatalogSubject[];
+}
+
+export interface AcademyCatalogGradeLevel {
+  id: string;
+  name: string;
+  rank: number;
+  classRooms: AcademyCatalogClassRoom[];
+}
+
+export interface AcademyCatalogAcademicYear {
+  id: string;
+  name: string;
+  isCurrent: boolean;
+  gradeLevels: AcademyCatalogGradeLevel[];
+}
+
+export interface AcademyCatalogTree {
+  academicYears: AcademyCatalogAcademicYear[];
 }
 
 export interface ProgramEnrollment {
@@ -59,37 +93,27 @@ export interface AcademySubscriptionSummary {
     status: AcademySubscriptionStatus;
     isTrial: boolean;
     expiresAt: string | null;
-    subjectLimit: number;
-    remainingSubjectSlots: number;
-    courseLimit: number;
-    remainingSlots: number;
+    classLimit: number;
+    remainingClassSlots: number;
   };
-  selectedSubjects: Array<{
-    subjectId: string;
-    subjectName: string;
-    subjectCode: string;
-    subjectDescription: string | null;
+  selectedClasses: Array<{
+    classRoomId: string;
+    className: string;
+    gradeLevelName: string;
     thumbnail: string | null;
-    courseCount: number;
-    programCount: number;
-    courseIds: string[];
-    programIds: string[];
-    programTitles: string[];
+    programId: string;
+    programTitle: string;
     expiresAt: string | null;
     isTrial: boolean;
     isLegacy: boolean;
   }>;
-  accessibleSubjects: Array<{
-    subjectId: string;
-    subjectName: string;
-    subjectCode: string;
-    subjectDescription: string | null;
+  accessibleClasses: Array<{
+    classRoomId: string;
+    className: string;
+    gradeLevelName: string;
     thumbnail: string | null;
-    courseCount: number;
-    programCount: number;
-    courseIds: string[];
-    programIds: string[];
-    programTitles: string[];
+    programId: string;
+    programTitle: string;
     expiresAt: string | null;
     isTrial: boolean;
     isLegacy: boolean;
@@ -100,9 +124,8 @@ export interface AcademySubscriptionSummary {
     title: string;
     description: string | null;
     thumbnail: string | null;
-    courseId: string | null;
-    subjectId: string | null;
-    subjectName: string | null;
+    classRoomId: string | null;
+    className: string | null;
     expiresAt: string | null;
     isTrial: boolean;
   }>;
@@ -112,9 +135,8 @@ export interface AcademySubscriptionSummary {
     title: string;
     description: string | null;
     thumbnail: string | null;
-    courseId: string | null;
-    subjectId: string | null;
-    subjectName: string | null;
+    classRoomId: string | null;
+    className: string | null;
     expiresAt: string | null;
     isTrial: boolean;
     isLegacy: boolean;
@@ -144,6 +166,8 @@ export interface AcademyPlanCheckoutResponse {
 export const academyApi = {
   getPrograms: () => apiRequest<Program[]>('/public-academy/programs'),
 
+  getCatalogTree: () => apiRequest<AcademyCatalogTree>('/public-academy/catalog/tree'),
+
   getProgramById: (id: string) => apiRequest<Program>(`/public-academy/programs/${id}`),
 
   getSubscriptionSummary: () =>
@@ -155,14 +179,14 @@ export const academyApi = {
       body: data,
     }),
 
-  selectSubject: (subjectId: string) =>
-    apiRequest<AcademySubscriptionSummary>('/public-academy/subscription/subjects/select', {
+  selectClass: (classRoomId: string) =>
+    apiRequest<AcademySubscriptionSummary>('/public-academy/subscription/classes/select', {
       method: 'POST',
-      body: { subjectId },
+      body: { classRoomId },
     }),
 
-  removeSubject: (subjectId: string) =>
-    apiRequest<AcademySubscriptionSummary>(`/public-academy/subscription/subjects/${subjectId}`, {
+  removeClass: (classRoomId: string) =>
+    apiRequest<AcademySubscriptionSummary>(`/public-academy/subscription/classes/${classRoomId}`, {
       method: 'DELETE',
     }),
 
@@ -187,6 +211,9 @@ export const academyApi = {
 
   getProgramContent: (id: string) =>
     apiRequest<ProgramContentResponse>(`/public-academy/programs/${id}/content`),
+
+  getClassContent: (classRoomId: string) =>
+    apiRequest<ProgramContentResponse>(`/public-academy/classes/${classRoomId}/content`),
 };
 
 export interface AcademicYearSummary {

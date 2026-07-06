@@ -4,8 +4,8 @@ import { Link, Navigate } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
 import { hasRole } from '../features/auth/auth-helpers';
+import { useAcademicYear } from '../contexts/academic-year-context';
 import { listMyCoursesApi } from '../features/sprint4/lms.api';
-import { getStoredAcademicYearId } from './student-academic-year-select-page';
 import { StateView } from '../components/state-view';
 import { ProgressRing } from '../components/progress-ring';
 import { SectionCard } from '../components/section-card';
@@ -13,10 +13,10 @@ import { getCourseProgressMetrics, getResumeLessonId } from '../utils/course-pro
 
 export function MyLearningPage() {
   const auth = useAuth();
-  const academicYearId = getStoredAcademicYearId();
+  const { academicYearId, isLoading: isAcademicYearLoading } = useAcademicYear();
   const isPublicLearner = hasRole(auth.me, 'PUBLIC_LEARNER');
 
-  if (!academicYearId && !isPublicLearner) {
+  if (!isAcademicYearLoading && !academicYearId && !isPublicLearner) {
     return <Navigate to="/student/academic-year" replace />;
   }
 

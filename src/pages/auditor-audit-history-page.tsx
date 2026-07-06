@@ -1,24 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import {
   BookOpen,
   CalendarDays,
   ClipboardCheck,
   ClipboardList,
+  Download,
   FileBarChart2,
-  Loader2,
+  Pencil,
   Search,
   TrendingUp,
 } from 'lucide-react';
 
 import { StateView } from '../components/state-view';
+import { useAuth } from '../features/auth/auth.context';
+import { useToast } from '../components/toast';
 import {
   ACADEMIC_AUDIT_MODULE_LABELS,
   ACADEMIC_AUDIT_STATUS_LABELS,
+  downloadAuditReportPdfApi,
   listAuditsApi,
   type AcademicAuditModule,
   type AcademicAuditStatus,
 } from '../features/audit/audit.api';
+
+const EDITABLE_STATUSES: AcademicAuditStatus[] = ['DRAFT', 'NEEDS_REVISION'];
 
 const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   ATTENDANCE: ClipboardList,
@@ -27,13 +34,41 @@ const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   CONTINUOUS_ASSESSMENTS: ClipboardCheck,
   MARKS: FileBarChart2,
   TIMETABLE: CalendarDays,
+  FINANCE: ClipboardList,
+  TEACHERS: ClipboardList,
+  STUDENT_RECORDS: ClipboardList,
+  INFRASTRUCTURE: ClipboardList,
+  ICT: ClipboardList,
+  SAFETY: ClipboardList,
+  COMPLIANCE: ClipboardCheck,
 };
 
 export function AuditorAuditHistoryPage() {
+  const auth = useAuth();
+  const { showToast } = useToast();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [moduleFilter, setModuleFilter] = useState<AcademicAuditModule | ''>('');
   const [statusFilter, setStatusFilter] = useState<AcademicAuditStatus | ''>('');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  async function handleDownloadPdf(auditId: string) {
+    setDownloadingId(auditId);
+    try {
+      const blob = await downloadAuditReportPdfApi(auth.accessToken!, auditId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      showToast({
+        type: 'error',
+        title: 'Could not download report',
+        message: err instanceof Error ? err.message : 'Request failed',
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['auditor-audits', page, moduleFilter, statusFilter, search],
@@ -197,6 +232,28 @@ export function AuditorAuditHistoryPage() {
                       )}
                     </div>
                   )}
+
+                  <div className="mt-3 flex justify-end gap-2">
+                    {EDITABLE_STATUSES.includes(audit.status) ? (
+                      <Link
+                        to={`/auditor/audit/${audit.school.id}/${audit.module}?auditId=${audit.id}`}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Continue editing
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void handleDownloadPdf(audit.id)}
+                        disabled={downloadingId === audit.id}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        {downloadingId === audit.id ? 'Preparing…' : 'Download report'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

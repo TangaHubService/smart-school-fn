@@ -32,7 +32,7 @@ function ProgramAdvertCard({ program }: { program: Program }) {
           <span className="font-semibold text-slate-700">{program.durationDays} days default</span>
           <Link
             to={`/academy`}
-            state={{ highlightProgramId: program.id }}
+            state={{ highlightClassRoomId: program.classRoomId }}
             className="inline-flex items-center gap-1 font-black uppercase tracking-wider text-brand-600 hover:text-brand-700"
           >
             Enroll

@@ -221,10 +221,10 @@ export function AppShell() {
                 <span className="text-sm font-bold text-white">{headerTitle}</span>
 
                 <div className="ml-auto flex items-center gap-2">
+                  <AcademicYearSelector />
                   <div className="hidden items-center gap-2 lg:flex">
                     <LowBandwidthToggle />
                     <LanguageSwitcher className="[&_span]:text-white/85 [&_select]:border-white/25 [&_select]:bg-white/10 [&_select]:text-white" />
-                    <AcademicYearSelector />
                   </div>
 
                   <div className="relative">

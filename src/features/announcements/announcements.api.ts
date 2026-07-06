@@ -1,14 +1,37 @@
 import { apiRequest } from '../../api/client';
+import type { UploadedAssetPayload } from '../sprint4/lms.api';
 
-export type AnnouncementAudience = 'ALL' | 'CLASS_ROOM' | 'GRADE_LEVEL' | 'SPECIFIC_ROLES';
+export type AnnouncementAudience =
+  | 'ALL'
+  | 'CLASS_ROOM'
+  | 'GRADE_LEVEL'
+  | 'SUBJECT'
+  | 'SPECIFIC_ROLES'
+  | 'INDIVIDUAL_USERS';
+
+export type AnnouncementPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+
+export interface AnnouncementAttachment {
+  id: string;
+  originalName: string;
+  mimeType: string | null;
+  bytes: number | null;
+  // null for PDFs — fetch via the protected file stream endpoint instead.
+  secureUrl: string | null;
+}
 
 export interface AnnouncementItem {
   id: string;
   title: string;
   body: string;
   audience: AnnouncementAudience;
-  targetClassRoomIds?: string[];
-  targetGradeLevelIds?: string[];
+  priority: AnnouncementPriority;
+  targetClassRoomIds: string[];
+  targetGradeLevelIds: string[];
+  targetSubjectIds: string[];
+  targetRoleNames: string[];
+  targetUserIds: string[];
+  emailNotify: boolean;
   publishedAt: string | null;
   expiresAt: string | null;
   createdAt?: string;
@@ -18,6 +41,9 @@ export interface AnnouncementItem {
     firstName: string;
     lastName: string;
   };
+  attachments: AnnouncementAttachment[];
+  isRead?: boolean;
+  readAt?: string | null;
 }
 
 export interface AnnouncementListResponse {
@@ -57,9 +83,10 @@ export function listAnnouncementsApi(
 
 export function listMyAnnouncementsApi(
   accessToken: string,
-  params?: { page?: number; pageSize?: number }
+  params?: { unreadOnly?: boolean; page?: number; pageSize?: number }
 ) {
   const query = new URLSearchParams();
+  if (params?.unreadOnly) query.set('unreadOnly', 'true');
   if (params?.page) query.set('page', String(params.page));
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
 
@@ -69,6 +96,13 @@ export function listMyAnnouncementsApi(
   );
 }
 
+export function markAnnouncementReadApi(accessToken: string, id: string) {
+  return apiRequest<{ read: boolean }>(`/announcements/${id}/read`, {
+    method: 'POST',
+    accessToken,
+  });
+}
+
 export function getAnnouncementApi(accessToken: string, id: string) {
   return apiRequest<AnnouncementItem>(`/announcements/${id}`, {
     method: 'GET',
@@ -76,19 +110,23 @@ export function getAnnouncementApi(accessToken: string, id: string) {
   });
 }
 
-export function createAnnouncementApi(
-  accessToken: string,
-  payload: {
-    title: string;
-    body: string;
-    audience?: AnnouncementAudience;
-    targetClassRoomIds?: string[];
-    targetGradeLevelIds?: string[];
-    targetRoleNames?: string[];
-    publishedAt?: string;
-    expiresAt?: string;
-  }
-) {
+export interface AnnouncementWritePayload {
+  title: string;
+  body: string;
+  audience?: AnnouncementAudience;
+  priority?: AnnouncementPriority;
+  targetClassRoomIds?: string[];
+  targetGradeLevelIds?: string[];
+  targetSubjectIds?: string[];
+  targetRoleNames?: string[];
+  targetUserIds?: string[];
+  attachments?: UploadedAssetPayload[];
+  emailNotify?: boolean;
+  publishedAt?: string;
+  expiresAt?: string;
+}
+
+export function createAnnouncementApi(accessToken: string, payload: AnnouncementWritePayload) {
   return apiRequest<AnnouncementItem>('/announcements', {
     method: 'POST',
     accessToken,
@@ -96,19 +134,16 @@ export function createAnnouncementApi(
   });
 }
 
+export interface AnnouncementUpdatePayload
+  extends Omit<Partial<AnnouncementWritePayload>, 'publishedAt' | 'expiresAt'> {
+  publishedAt?: string | null;
+  expiresAt?: string | null;
+}
+
 export function updateAnnouncementApi(
   accessToken: string,
   id: string,
-  payload: Partial<{
-    title: string;
-    body: string;
-    audience: AnnouncementAudience;
-    targetClassRoomIds: string[];
-    targetGradeLevelIds: string[];
-    targetRoleNames: string[];
-    publishedAt: string | null;
-    expiresAt: string | null;
-  }>
+  payload: AnnouncementUpdatePayload
 ) {
   return apiRequest<AnnouncementItem>(`/announcements/${id}`, {
     method: 'PATCH',

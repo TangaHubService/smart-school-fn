@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   BookOpen,
@@ -10,19 +10,30 @@ import {
   FileBarChart2,
   Loader2,
   Save,
+  Send,
   TrendingUp,
 } from 'lucide-react';
 
 import { StateView } from '../components/state-view';
+import { useAuth } from '../features/auth/auth.context';
+import { useToast } from '../components/toast';
+import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
+import type { UploadedAssetPayload } from '../features/sprint4/lms.api';
 import {
   ACADEMIC_AUDIT_MODULE_LABELS,
+  getAuditByIdApi,
   getSchoolAttendanceApi,
   getSchoolCoursesApi,
   getSchoolLearningInsightsApi,
   getSchoolAssessmentsApi,
   getSchoolMarksApi,
+  getSchoolTimetableApi,
   isAuditorAuditModule,
+  isAuditorFreeformModule,
+  listAuditorSchoolsApi,
   submitAcademicAuditApi,
+  submitDraftAuditApi,
+  updateAcademicAuditApi,
   type AcademicAuditModule,
   type AcademicAuditModuleData,
 } from '../features/audit/audit.api';
@@ -34,21 +45,58 @@ const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   CONTINUOUS_ASSESSMENTS: ClipboardCheck,
   MARKS: FileBarChart2,
   TIMETABLE: CalendarDays,
+  FINANCE: ClipboardList,
+  TEACHERS: ClipboardList,
+  STUDENT_RECORDS: ClipboardList,
+  INFRASTRUCTURE: ClipboardList,
+  ICT: ClipboardList,
+  SAFETY: ClipboardList,
+  COMPLIANCE: ClipboardCheck,
 };
 
 export function AuditorAuditFormPage() {
   const { schoolId, module } = useParams<{ schoolId: string; module: AcademicAuditModule }>();
+  const [searchParams] = useSearchParams();
+  const auditId = searchParams.get('auditId');
   const navigate = useNavigate();
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [score, setScore] = useState(50);
   const [comment, setComment] = useState('');
   const [recommendation, setRecommendation] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+  const [pendingAction, setPendingAction] = useState<'draft' | 'submit' | null>(null);
 
   const moduleParam = module ?? null;
-  const moduleEnum: AcademicAuditModule = isAuditorAuditModule(moduleParam)
-    ? moduleParam
-    : 'ATTENDANCE';
+  const moduleEnum: AcademicAuditModule =
+    isAuditorAuditModule(moduleParam) || isAuditorFreeformModule(moduleParam)
+      ? moduleParam
+      : 'ATTENDANCE';
+  const isFreeform = isAuditorFreeformModule(moduleEnum);
   const Icon = MODULE_ICONS[moduleEnum];
+
+  const existingAuditQuery = useQuery({
+    queryKey: ['audit', auditId],
+    queryFn: () => getAuditByIdApi(auditId!),
+    enabled: Boolean(auditId),
+  });
+
+  useEffect(() => {
+    const audit = existingAuditQuery.data;
+    if (audit) {
+      setScore(audit.score);
+      setComment(audit.comment ?? '');
+      setRecommendation(audit.recommendation ?? '');
+    }
+  }, [existingAuditQuery.data]);
+
+  const schoolsQuery = useQuery({
+    queryKey: ['auditor-schools'],
+    queryFn: listAuditorSchoolsApi,
+    enabled: isFreeform,
+  });
+  const schoolName = schoolsQuery.data?.find((s) => s.id === schoolId)?.displayName ?? '';
 
   const { data, isLoading, error } = useQuery<AcademicAuditModuleData>({
     queryKey: [`school-${moduleEnum.toLowerCase()}`, schoolId],
@@ -64,53 +112,114 @@ export function AuditorAuditFormPage() {
           return getSchoolAssessmentsApi(schoolId!);
         case 'MARKS':
           return getSchoolMarksApi(schoolId!);
+        case 'TIMETABLE':
+          return getSchoolTimetableApi(schoolId!);
         default:
           throw new Error('Unknown module');
       }
     },
-    enabled: !!schoolId,
+    enabled: !!schoolId && !isFreeform,
   });
 
-  const submitMutation = useMutation({
+  const onSaved = (asDraft: boolean) => {
+    showToast({ type: 'success', title: asDraft ? 'Draft saved' : 'Audit submitted' });
+    void queryClient.invalidateQueries({ queryKey: ['auditor-audits'] });
+    navigate('/auditor/history');
+  };
+
+  const onSaveError = (err: unknown) => {
+    showToast({
+      type: 'error',
+      title: 'Could not save audit',
+      message: err instanceof Error ? err.message : 'Request failed',
+    });
+  };
+
+  const createMutation = useMutation({
     mutationFn: submitAcademicAuditApi,
-    onSuccess: () => {
-      navigate(`/auditor/schools?module=${moduleEnum}&schoolId=${schoolId}`);
-    },
+    onSuccess: (_, variables) => onSaved(Boolean(variables.asDraft)),
+    onError: onSaveError,
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment.trim()) {
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      ...rest
+    }: {
+      id: string;
+      score: number;
+      comment?: string;
+      recommendation?: string;
+      attachments?: UploadedAssetPayload[];
+    }) => updateAcademicAuditApi(id, rest),
+    onError: onSaveError,
+  });
+
+  const submitDraftMutation = useMutation({
+    mutationFn: submitDraftAuditApi,
+    onError: onSaveError,
+  });
+
+  const handleSubmit = async (asDraft: boolean) => {
+    if (!asDraft && !comment.trim()) {
+      showToast({ type: 'error', title: 'Add findings before submitting' });
       return;
     }
 
-    setIsSubmitting(true);
+    setPendingAction(asDraft ? 'draft' : 'submit');
     try {
-      await submitMutation.mutateAsync({
+      // Omit (rather than send `[]`) when no new files were picked, so editing a draft
+      // without touching the file input doesn't wipe out previously uploaded evidence.
+      const attachments = attachmentFiles.length
+        ? await Promise.all(
+            attachmentFiles.map((file) => uploadFileToCloudinary(auth.accessToken!, 'audit-evidence', file))
+          )
+        : undefined;
+
+      if (auditId) {
+        await updateMutation.mutateAsync({
+          id: auditId,
+          score,
+          comment: comment.trim() || undefined,
+          recommendation: recommendation.trim() || undefined,
+          attachments,
+        });
+        if (!asDraft) {
+          await submitDraftMutation.mutateAsync(auditId);
+        }
+        onSaved(asDraft);
+        return;
+      }
+
+      await createMutation.mutateAsync({
         schoolId: schoolId!,
         module: moduleEnum,
         score,
-        comment: comment.trim(),
+        comment: comment.trim() || undefined,
         recommendation: recommendation.trim() || undefined,
+        attachments: attachments ?? [],
+        asDraft,
       });
     } catch (err) {
-      console.error('Failed to submit audit:', err);
+      console.error('Failed to save audit:', err);
     } finally {
-      setIsSubmitting(false);
+      setPendingAction(null);
     }
   };
 
-  if (isLoading) {
+  if (!isFreeform && isLoading) {
     return <StateView title="Loading data..." loading />;
   }
 
-  if (error) {
+  if (!isFreeform && error) {
     return <StateView title="Error loading data" variant="error" />;
   }
 
-  if (!data) {
+  if (!isFreeform && !data) {
     return <StateView title="No data" variant="empty" />;
   }
+
+  const isBusy = pendingAction !== null;
 
   return (
     <div className="space-y-6">
@@ -134,17 +243,32 @@ export function AuditorAuditFormPage() {
               <h2 className="text-lg font-semibold text-slate-900">
                 {ACADEMIC_AUDIT_MODULE_LABELS[moduleEnum]}
               </h2>
-              <p className="text-sm text-slate-500">{data.school.displayName}</p>
+              <p className="text-sm text-slate-500">{isFreeform ? schoolName : data!.school.displayName}</p>
             </div>
           </div>
 
-          <div className="space-y-4">{renderModuleSummary(moduleEnum, data)}</div>
+          <div className="space-y-4">
+            {isFreeform ? (
+              <p className="text-sm text-slate-500">
+                This category has no auto-pulled summary. Record your on-site findings, score, and
+                supporting evidence in the form.
+              </p>
+            ) : (
+              renderModuleSummary(moduleEnum, data!)
+            )}
+          </div>
         </div>
 
         <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Submit Audit</h2>
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Audit Report</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSubmit(false);
+            }}
+            className="space-y-4"
+          >
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Score: {score}%
@@ -174,7 +298,6 @@ export function AuditorAuditFormPage() {
                 rows={4}
                 className="w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-blue-500"
                 placeholder="Enter your observations and findings..."
-                required
               />
             </div>
 
@@ -191,23 +314,56 @@ export function AuditorAuditFormPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting || !comment.trim()}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Evidence (photos, documents — optional)
+              </label>
+              {existingAuditQuery.data?.attachments?.length ? (
+                <p className="mb-2 text-xs text-slate-500">
+                  Already attached: {existingAuditQuery.data.attachments.map((a) => a.originalName).join(', ')}.
+                  Choosing new files below replaces these.
+                </p>
+              ) : null}
+              <input
+                type="file"
+                multiple
+                onChange={(e) => setAttachmentFiles(Array.from(e.target.files ?? []))}
+                className="text-sm"
+              />
+              {attachmentFiles.length ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  {attachmentFiles.length} file{attachmentFiles.length > 1 ? 's' : ''} selected
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => void handleSubmit(true)}
+                disabled={isBusy}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {pendingAction === 'draft' ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
+                ) : (
                   <Save className="h-4 w-4" />
-                  Submit Audit
-                </>
-              )}
-            </button>
+                )}
+                Save Draft
+              </button>
+              <button
+                type="submit"
+                disabled={isBusy || !comment.trim()}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {pendingAction === 'submit' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                Submit Audit
+              </button>
+            </div>
           </form>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, CheckCircle2, Eye, Plus, Trash2 } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ConfirmDrawer } from '../components/confirm-drawer';
@@ -13,6 +13,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { useAcademicYear } from '../contexts/academic-year-context';
 import {
   createAssessmentApi,
   deleteAssessmentApi,
@@ -48,11 +49,16 @@ export function AssessmentsPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const { academicYearId: globalAcademicYearId } = useAcademicYear();
 
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
-  const [yearFilter, setYearFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState(globalAcademicYearId ?? '');
   const [courseFilter, setCourseFilter] = useState('');
+
+  useEffect(() => {
+    setYearFilter(globalAcademicYearId ?? '');
+  }, [globalAcademicYearId]);
   const [page, setPage] = useState(1);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<{

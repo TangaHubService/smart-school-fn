@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Eye, ExternalLink, FilePlus2, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -10,10 +10,12 @@ import { EmptyState } from '../components/empty-state';
 import { AppDrawer } from '../components/drawer';
 import { RichContent } from '../components/rich-content';
 import { RichTextEditor } from '../components/rich-text-editor';
+import { SecurePdfViewer } from '../components/secure-pdf-viewer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { useAcademicYear } from '../contexts/academic-year-context';
 import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import {
@@ -132,13 +134,18 @@ function StatusPill({
 
 export function AssignmentsPage() {
   const auth = useAuth();
+  const { academicYearId: globalAcademicYearId } = useAcademicYear();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
-  const [yearFilter, setYearFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState(globalAcademicYearId ?? '');
   const [courseFilter, setCourseFilter] = useState('');
+
+  useEffect(() => {
+    setYearFilter(globalAcademicYearId ?? '');
+  }, [globalAcademicYearId]);
   const [page, setPage] = useState(1);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<AssignmentItem | null>(null);
@@ -494,11 +501,20 @@ export function AssignmentsPage() {
                           Lesson: {assignment.lesson.title}
                         </span>
                       ) : null}
-                      {assignment.attachmentAsset ? (
+                      {assignment.attachmentAsset?.secureUrl ? (
                         <AttachmentLink
                           label={`Open ${assignment.attachmentAsset.originalName}`}
                           url={assignment.attachmentAsset.secureUrl}
                         />
+                      ) : assignment.attachmentAsset ? (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAssignment(assignment)}
+                          className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-brand-100"
+                        >
+                          <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                          {assignment.attachmentAsset.originalName}
+                        </button>
                       ) : null}
                     </div>
                   </article>
@@ -632,6 +648,19 @@ export function AssignmentsPage() {
         description="Review and grade submissions for the selected assignment."
         onClose={() => setSelectedAssignment(null)}
       >
+        {selectedAssignment?.attachmentAsset && !selectedAssignment.attachmentAsset.secureUrl ? (
+          <div className="mb-4">
+            <p className="mb-2 text-sm font-semibold text-slate-700">
+              Attachment: {selectedAssignment.attachmentAsset.originalName}
+            </p>
+            <SecurePdfViewer
+              assetId={selectedAssignment.attachmentAsset.id}
+              accessToken={auth.accessToken ?? ''}
+              title={selectedAssignment.attachmentAsset.originalName}
+            />
+          </div>
+        ) : null}
+
         {submissionsQuery.isPending ? (
           <div className="grid gap-3">
             {Array.from({ length: 3 }).map((_, index) => (
@@ -705,7 +734,7 @@ export function AssignmentsPage() {
                     {submission.linkUrl ? (
                       <AttachmentLink label="Open submitted link" url={submission.linkUrl} />
                     ) : null}
-                    {submission.fileAsset ? (
+                    {submission.fileAsset?.secureUrl ? (
                       <AttachmentLink
                         label={`Open ${submission.fileAsset.originalName}`}
                         url={submission.fileAsset.secureUrl}

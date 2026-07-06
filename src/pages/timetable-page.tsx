@@ -7,6 +7,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { useAcademicYear } from '../contexts/academic-year-context';
 import {
   bulkUpsertTimetableSlotsApi,
   listTimetableSlotsApi,
@@ -35,12 +36,21 @@ export function TimetablePage() {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const [academicYearId, setAcademicYearId] = useState('');
-  const [termId, setTermId] = useState('');
+  const { academicYearId: globalAcademicYearId, termId: globalTermId } = useAcademicYear();
+  const [academicYearId, setAcademicYearId] = useState(globalAcademicYearId ?? '');
+  const [termId, setTermId] = useState(globalTermId ?? '');
   const [classRoomId, setClassRoomId] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [editGrid, setEditGrid] = useState<Record<string, string>>({});
   const [viewMode, setViewMode] = useState<'class' | 'teacher'>('class');
+
+  useEffect(() => {
+    setAcademicYearId(globalAcademicYearId ?? '');
+  }, [globalAcademicYearId]);
+
+  useEffect(() => {
+    setTermId(globalTermId ?? '');
+  }, [globalTermId]);
 
   const isTeacher = auth.me?.roles.includes('TEACHER') ?? false;
   const isAdmin =

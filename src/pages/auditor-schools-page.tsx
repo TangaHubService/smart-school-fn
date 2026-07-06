@@ -17,6 +17,7 @@ import { StateView } from '../components/state-view';
 import {
   ACADEMIC_AUDIT_MODULE_LABELS,
   AUDITOR_AUDIT_MODULES,
+  AUDITOR_FREEFORM_MODULES,
   getSchoolAttendanceApi,
   getSchoolCoursesApi,
   getSchoolLearningInsightsApi,
@@ -24,6 +25,7 @@ import {
   getSchoolMarksApi,
   getSchoolTimetableApi,
   isAuditorAuditModule,
+  isAuditorFreeformModule,
   listAuditorSchoolsApi,
   type AcademicAuditModule,
   type AcademicAuditModuleData,
@@ -36,14 +38,23 @@ const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   CONTINUOUS_ASSESSMENTS: ClipboardCheck,
   MARKS: FileBarChart2,
   TIMETABLE: CalendarDays,
+  FINANCE: ClipboardList,
+  TEACHERS: Users,
+  STUDENT_RECORDS: ClipboardList,
+  INFRASTRUCTURE: ClipboardList,
+  ICT: ClipboardList,
+  SAFETY: ClipboardList,
+  COMPLIANCE: ClipboardCheck,
 };
 
 export function AuditorSchoolsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const moduleParam = searchParams.get('module');
-  const selectedModule: AcademicAuditModule = isAuditorAuditModule(moduleParam)
-    ? moduleParam
-    : 'ATTENDANCE';
+  const selectedModule: AcademicAuditModule =
+    isAuditorAuditModule(moduleParam) || isAuditorFreeformModule(moduleParam)
+      ? moduleParam
+      : 'ATTENDANCE';
+  const isFreeform = isAuditorFreeformModule(selectedModule);
   const selectedSchoolId = searchParams.get('schoolId');
   const [search, setSearch] = useState('');
 
@@ -86,29 +97,64 @@ export function AuditorSchoolsPage() {
         <p className="text-sm text-slate-500 mt-1">Select a module and school to begin audit</p>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        {AUDITOR_AUDIT_MODULES.map((module) => {
-          const isActive = module === selectedModule;
-          return (
-            <button
-              key={module}
-              onClick={() => {
-                const nextParams: Record<string, string> = { module };
-                if (activeSchoolId) {
-                  nextParams.schoolId = activeSchoolId;
-                }
-                setSearchParams(nextParams);
-              }}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {ACADEMIC_AUDIT_MODULE_LABELS[module]}
-            </button>
-          );
-        })}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Data-backed audits
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          {AUDITOR_AUDIT_MODULES.map((module) => {
+            const isActive = module === selectedModule;
+            return (
+              <button
+                key={module}
+                onClick={() => {
+                  const nextParams: Record<string, string> = { module };
+                  if (activeSchoolId) {
+                    nextParams.schoolId = activeSchoolId;
+                  }
+                  setSearchParams(nextParams);
+                }}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {ACADEMIC_AUDIT_MODULE_LABELS[module]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Compliance &amp; operations audits
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          {AUDITOR_FREEFORM_MODULES.map((module) => {
+            const isActive = module === selectedModule;
+            return (
+              <button
+                key={module}
+                onClick={() => {
+                  const nextParams: Record<string, string> = { module };
+                  if (activeSchoolId) {
+                    nextParams.schoolId = activeSchoolId;
+                  }
+                  setSearchParams(nextParams);
+                }}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {ACADEMIC_AUDIT_MODULE_LABELS[module]}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -158,7 +204,15 @@ export function AuditorSchoolsPage() {
 
         <div className="lg:col-span-2">
           {activeSchoolId ? (
-            <ModuleDataView schoolId={activeSchoolId} module={selectedModule} />
+            isFreeform ? (
+              <FreeformModuleView
+                schoolId={activeSchoolId}
+                module={selectedModule}
+                schoolName={schools?.find((s) => s.id === activeSchoolId)?.displayName ?? ''}
+              />
+            ) : (
+              <ModuleDataView schoolId={activeSchoolId} module={selectedModule} />
+            )
           ) : (
             <div className="flex h-full items-center justify-center rounded-lg border bg-slate-50 p-8">
               <p className="text-slate-500">Select a school to view data</p>
@@ -166,6 +220,42 @@ export function AuditorSchoolsPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function FreeformModuleView({
+  schoolId,
+  module,
+  schoolName,
+}: {
+  schoolId: string;
+  module: AcademicAuditModule;
+  schoolName: string;
+}) {
+  const Icon = MODULE_ICONS[module];
+
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 rounded-lg border bg-white p-8 text-center">
+      <div className="rounded-lg bg-blue-50 p-3">
+        <Icon className="h-6 w-6 text-blue-600" />
+      </div>
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900">
+          {ACADEMIC_AUDIT_MODULE_LABELS[module]} audit
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">{schoolName}</p>
+        <p className="mt-2 max-w-sm text-sm text-slate-500">
+          This category has no auto-pulled summary. Record your findings, score, and evidence
+          directly on the audit form.
+        </p>
+      </div>
+      <Link
+        to={`/auditor/audit/${schoolId}/${module}`}
+        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+      >
+        Start Audit
+      </Link>
     </div>
   );
 }

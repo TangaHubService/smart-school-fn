@@ -23,7 +23,14 @@ function mapResourceType(resourceType: string): UploadedAssetPayload['resourceTy
 
 export async function uploadFileToCloudinary(
   accessToken: string,
-  purpose: 'lesson' | 'assignment' | 'submission' | 'logo' | 'assessment-question',
+  purpose:
+    | 'lesson'
+    | 'assignment'
+    | 'submission'
+    | 'logo'
+    | 'assessment-question'
+    | 'announcement'
+    | 'audit-evidence',
   file: File
 ): Promise<UploadedAssetPayload> {
   const signed = await signUploadApi(accessToken, {

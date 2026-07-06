@@ -16,10 +16,11 @@ import {
 } from '../components/dashboard/quick-actions-dropdown';
 import { ActiveStudentList, type ActiveStudent } from '../components/dashboard/active-student-list';
 import { RecommendationsWidget, type Recommendation } from '../components/dashboard/recommendations-widget';
-import { AnnouncementsWidget, type Announcement } from '../components/dashboard/announcements-widget';
+import { AnnouncementsWidget } from '../components/dashboard/announcements-widget';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import { getTeacherDashboardApi } from '../features/dashboard/dashboard.api';
+import { listMyAnnouncementsApi } from '../features/announcements/announcements.api';
 import { useQuery } from '@tanstack/react-query';
 
 function getTodayKigaliDate(): string {
@@ -75,6 +76,12 @@ export function TeacherDashboardPage() {
     queryKey: ['dashboard', 'teacher'],
     enabled: Boolean(auth.accessToken),
     queryFn: () => getTeacherDashboardApi(auth.accessToken!),
+  });
+
+  const announcementsQuery = useQuery({
+    queryKey: ['announcements', 'me', 'dashboard'],
+    enabled: Boolean(auth.accessToken),
+    queryFn: () => listMyAnnouncementsApi(auth.accessToken!, { page: 1, pageSize: 3 }),
   });
 
   if (isError) {
@@ -226,7 +233,15 @@ export function TeacherDashboardPage() {
       <div className="grid gap-5 lg:grid-cols-3">
         <ActiveStudentList students={[]} />
         <RecommendationsWidget items={[]} />
-        <AnnouncementsWidget items={[]} />
+        <AnnouncementsWidget
+          isLoading={announcementsQuery.isPending}
+          items={(announcementsQuery.data?.items ?? []).map((item) => ({
+            id: item.id,
+            title: item.title,
+            excerpt: item.body.length > 140 ? `${item.body.slice(0, 140)}…` : item.body,
+            publishedAt: item.publishedAt,
+          }))}
+        />
       </div>
     </section>
   );

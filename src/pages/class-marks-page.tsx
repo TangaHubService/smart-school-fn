@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FileDown, FileSpreadsheet } from 'lucide-react';
 
 import { EmptyState } from '../components/empty-state';
@@ -8,6 +8,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { useAcademicYear } from '../contexts/academic-year-context';
 import { hasPermission } from '../features/auth/auth-helpers';
 import { ConductDeductionForm } from '../components/conduct-deduction-form';
 import {
@@ -44,7 +45,7 @@ export function ClassMarksPage() {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const yearInitRef = useRef(false);
+  const { academicYearId: globalAcademicYearId } = useAcademicYear();
 
   const [tab, setTab] = useState<MarksTab>('overview');
 
@@ -318,14 +319,26 @@ export function ClassMarksPage() {
   const ledgerPagination = ledgerQuery.data?.pagination;
   const ledgerStudents = studentsForLedgerQuery.data?.items ?? [];
 
+  // Re-sync only when the *global* selection itself changes (e.g. the header selector),
+  // not on every unrelated refetch of the shared academic-years query — otherwise a
+  // background refetch elsewhere in the app would silently clobber a manual in-page choice.
   useEffect(() => {
-    if (yearInitRef.current || years.length === 0) {
+    if (globalAcademicYearId) {
+      setAcademicYearId(globalAcademicYearId);
+    }
+  }, [globalAcademicYearId]);
+
+  // One-time fallback default when the user has no saved global preference yet.
+  useEffect(() => {
+    if (globalAcademicYearId || years.length === 0) {
       return;
     }
-    yearInitRef.current = true;
-    const current = years.find((y: { isCurrent?: boolean }) => y.isCurrent);
-    setAcademicYearId(current?.id ?? years[0]?.id ?? '');
-  }, [years]);
+    setAcademicYearId((prev) => {
+      if (prev) return prev;
+      const current = years.find((y: { isCurrent?: boolean }) => y.isCurrent);
+      return current?.id ?? years[0]?.id ?? '';
+    });
+  }, [globalAcademicYearId, years]);
 
   useEffect(() => {
     setDraft({});

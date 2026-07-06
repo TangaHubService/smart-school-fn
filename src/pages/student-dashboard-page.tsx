@@ -25,8 +25,8 @@ import {
 import { ActiveCoursesHierarchy, type CourseHierarchyItem } from '../components/dashboard/active-courses-hierarchy';
 import { PaymentStatusWidget } from '../components/dashboard/payment-status-widget';
 import { StateView } from '../components/state-view';
-import { getStoredAcademicYearId } from './student-academic-year-select-page';
 import { useAuth } from '../features/auth/auth.context';
+import { useAcademicYear } from '../contexts/academic-year-context';
 import {
   getStudentDashboardApi,
   type StudentDashboardData,
@@ -70,9 +70,9 @@ const STUDENT_QUICK_ACTIONS: DashboardQuickActionItem[] = [
 
 export function StudentDashboardPage() {
   const auth = useAuth();
-  const academicYearId = getStoredAcademicYearId();
+  const { academicYearId, isLoading: isAcademicYearLoading } = useAcademicYear();
 
-  if (!academicYearId) {
+  if (!isAcademicYearLoading && !academicYearId) {
     return <Navigate to="/student/academic-year" replace />;
   }
 

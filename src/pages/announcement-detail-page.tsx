@@ -3,16 +3,27 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
 import { SectionCard } from '../components/section-card';
+import { SecurePdfViewer } from '../components/secure-pdf-viewer';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
   getAnnouncementApi,
+  markAnnouncementReadApi,
   updateAnnouncementApi,
   type AnnouncementAudience,
   type AnnouncementItem,
+  type AnnouncementPriority,
 } from '../features/announcements/announcements.api';
-import { listClassRoomsApi } from '../features/sprint1/sprint1.api';
+import { listClassRoomsApi, listSubjectsApi } from '../features/sprint1/sprint1.api';
+
+const PRIORITY_OPTIONS: AnnouncementPriority[] = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
+const PRIORITY_STYLES: Record<AnnouncementPriority, string> = {
+  LOW: 'bg-slate-100 text-slate-600',
+  NORMAL: 'bg-sky-50 text-sky-700',
+  HIGH: 'bg-amber-50 text-amber-700',
+  URGENT: 'bg-red-50 text-red-700',
+};
 
 export function AnnouncementDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,7 +36,10 @@ export function AnnouncementDetailPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<AnnouncementAudience>('ALL');
+  const [priority, setPriority] = useState<AnnouncementPriority>('NORMAL');
   const [targetClassRoomIds, setTargetClassRoomIds] = useState<string[]>([]);
+  const [targetGradeLevelIds, setTargetGradeLevelIds] = useState<string[]>([]);
+  const [targetSubjectIds, setTargetSubjectIds] = useState<string[]>([]);
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
@@ -42,15 +56,39 @@ export function AnnouncementDetailPage() {
       setTitle(item.title);
       setBody(item.body);
       setAudience(item.audience);
+      setPriority(item.priority);
       setTargetClassRoomIds(item.targetClassRoomIds ?? []);
+      setTargetGradeLevelIds(item.targetGradeLevelIds ?? []);
+      setTargetSubjectIds(item.targetSubjectIds ?? []);
       setPublishedAt(item.publishedAt);
       setExpiresAt(item.expiresAt);
     }
   }, [item]);
 
+  const markReadMutation = useMutation({
+    mutationFn: () => markAnnouncementReadApi(auth.accessToken!, id!),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['announcement', id] });
+      void queryClient.invalidateQueries({ queryKey: ['my-announcements'] });
+    },
+  });
+
+  useEffect(() => {
+    if (item && item.isRead === false) {
+      markReadMutation.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.id, item?.isRead]);
+
   const classesQuery = useQuery({
     queryKey: ['class-rooms'],
     queryFn: () => listClassRoomsApi(auth.accessToken!),
+  });
+
+  const subjectsQuery = useQuery({
+    queryKey: ['subjects'],
+    queryFn: () => listSubjectsApi(auth.accessToken!),
+    enabled: audience === 'SUBJECT',
   });
 
   const updateMutation = useMutation({
@@ -59,7 +97,10 @@ export function AnnouncementDetailPage() {
         title,
         body,
         audience,
+        priority,
         targetClassRoomIds: audience === 'CLASS_ROOM' ? targetClassRoomIds : [],
+        targetGradeLevelIds: audience === 'GRADE_LEVEL' ? targetGradeLevelIds : [],
+        targetSubjectIds: audience === 'SUBJECT' ? targetSubjectIds : [],
         publishedAt: publishedAt ? new Date(publishedAt).toISOString() : null,
         expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
       }),
@@ -80,10 +121,17 @@ export function AnnouncementDetailPage() {
 
   const canManage = auth.me?.permissions.includes('announcements.manage') ?? false;
   const classes = (classesQuery.data ?? []) as Array<{ id: string; code: string; name: string }>;
+  const subjects = (subjectsQuery.data ?? []) as Array<{ id: string; code: string; name: string }>;
 
   function toggleClass(classId: string) {
     setTargetClassRoomIds((prev) =>
       prev.includes(classId) ? prev.filter((x) => x !== classId) : [...prev, classId]
+    );
+  }
+
+  function toggleSubject(subjectId: string) {
+    setTargetSubjectIds((prev) =>
+      prev.includes(subjectId) ? prev.filter((x) => x !== subjectId) : [...prev, subjectId]
     );
   }
 
@@ -156,21 +204,40 @@ export function AnnouncementDetailPage() {
               maxLength={10000}
             />
           </label>
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Audience
-            <select
-              value={audience}
-              onChange={(e) => setAudience(e.target.value as AnnouncementAudience)}
-              className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-            >
-              <option value="ALL">All (school-wide)</option>
-              <option value="CLASS_ROOM">Specific classes</option>
-              <option value="GRADE_LEVEL">Grade level</option>
-            </select>
-          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
+              Audience
+              <select
+                value={audience}
+                onChange={(e) => setAudience(e.target.value as AnnouncementAudience)}
+                className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
+              >
+                <option value="ALL">Everyone</option>
+                <option value="CLASS_ROOM">Specific classes</option>
+                <option value="GRADE_LEVEL">Specific grade</option>
+                <option value="SUBJECT">Specific subject</option>
+                <option value="SPECIFIC_ROLES">Specific roles</option>
+                <option value="INDIVIDUAL_USERS">Individual users</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
+              Priority
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as AnnouncementPriority)}
+                className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
+              >
+                {PRIORITY_OPTIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           {audience === 'CLASS_ROOM' ? (
             <div className="flex flex-wrap gap-2">
-              {classes.map((c: { id: string; code: string; name: string }) => (
+              {classes.map((c) => (
                 <label
                   key={c.id}
                   className="flex items-center gap-2 rounded-lg border border-brand-100 px-3 py-2"
@@ -184,6 +251,24 @@ export function AnnouncementDetailPage() {
                   <span className="text-sm">
                     {c.code} - {c.name}
                   </span>
+                </label>
+              ))}
+            </div>
+          ) : null}
+          {audience === 'SUBJECT' ? (
+            <div className="flex flex-wrap gap-2">
+              {subjects.map((s) => (
+                <label
+                  key={s.id}
+                  className="flex items-center gap-2 rounded-lg border border-brand-100 px-3 py-2"
+                >
+                  <input
+                    type="checkbox"
+                    checked={targetSubjectIds.includes(s.id)}
+                    onChange={() => toggleSubject(s.id)}
+                    className="rounded border-brand-200"
+                  />
+                  <span className="text-sm">{s.name}</span>
                 </label>
               ))}
             </div>
@@ -221,7 +306,10 @@ export function AnnouncementDetailPage() {
                 setTitle(item.title);
                 setBody(item.body);
                 setAudience(item.audience);
+                setPriority(item.priority);
                 setTargetClassRoomIds(item.targetClassRoomIds ?? []);
+                setTargetGradeLevelIds(item.targetGradeLevelIds ?? []);
+                setTargetSubjectIds(item.targetSubjectIds ?? []);
                 setPublishedAt(item.publishedAt);
                 setExpiresAt(item.expiresAt);
               }}
@@ -233,7 +321,41 @@ export function AnnouncementDetailPage() {
         </form>
       ) : (
         <div>
-          <p className="whitespace-pre-wrap text-slate-600">{item.body}</p>
+          <span
+            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${PRIORITY_STYLES[item.priority]}`}
+          >
+            {item.priority}
+          </span>
+          <p className="mt-4 whitespace-pre-wrap text-slate-600">{item.body}</p>
+
+          {item.attachments.length ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm font-semibold text-slate-800">Attachments</p>
+              {item.attachments.map((att) =>
+                att.secureUrl ? (
+                  <a
+                    key={att.id}
+                    href={att.secureUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-brand-100"
+                  >
+                    {att.originalName}
+                  </a>
+                ) : (
+                  <div key={att.id}>
+                    <p className="mb-1 text-xs text-slate-500">{att.originalName}</p>
+                    <SecurePdfViewer
+                      assetId={att.id}
+                      accessToken={auth.accessToken ?? ''}
+                      title={att.originalName}
+                    />
+                  </div>
+                )
+              )}
+            </div>
+          ) : null}
+
           <div className="mt-4 text-sm text-slate-500">
             Audience: {item.audience} •{' '}
             {item.publishedAt

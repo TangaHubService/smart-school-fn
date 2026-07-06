@@ -158,11 +158,27 @@ export function AnnouncementsPage() {
   );
 }
 
+const PRIORITY_STYLES: Record<AnnouncementItem['priority'], string> = {
+  LOW: 'bg-slate-100 text-slate-600',
+  NORMAL: 'bg-sky-50 text-sky-700',
+  HIGH: 'bg-amber-50 text-amber-700',
+  URGENT: 'bg-red-50 text-red-700',
+};
+
 function AnnouncementCard({ item, canManage }: { item: AnnouncementItem; canManage: boolean }) {
+  const isScheduled = Boolean(item.publishedAt) && new Date(item.publishedAt!) > new Date();
+
   return (
     <article className="rounded-xl border border-brand-100 bg-white p-4 shadow-sm">
       <div className="mb-2 flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-slate-800">{item.title}</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-semibold text-slate-800">{item.title}</h3>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${PRIORITY_STYLES[item.priority]}`}
+          >
+            {item.priority}
+          </span>
+        </div>
         {canManage ? (
           <Link
             to={`/admin/announcements/${item.id}`}
@@ -178,10 +194,13 @@ function AnnouncementCard({ item, canManage }: { item: AnnouncementItem; canMana
           By {item.author.firstName} {item.author.lastName}
         </span>
         <span>Audience: {item.audience}</span>
-        {item.publishedAt ? (
-          <span>Published {formatDate(item.publishedAt)}</span>
-        ) : (
+        {item.attachments.length ? <span>📎 {item.attachments.length}</span> : null}
+        {!item.publishedAt ? (
           <span className="text-amber-600">Draft</span>
+        ) : isScheduled ? (
+          <span className="text-sky-600">Scheduled for {formatDate(item.publishedAt)}</span>
+        ) : (
+          <span>Published {formatDate(item.publishedAt)}</span>
         )}
         {item.expiresAt ? <span>Expires {formatDate(item.expiresAt)}</span> : null}
       </div>

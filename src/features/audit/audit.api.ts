@@ -1,4 +1,5 @@
-import { apiRequest } from '../../api/client';
+import { apiRequest, API_BASE_URL } from '../../api/client';
+import type { UploadedAssetPayload } from '../sprint4/lms.api';
 
 interface ActivityLog {
   id: string;
@@ -75,17 +76,43 @@ export type AcademicAuditModule =
   | 'LEARNING_INSIGHTS'
   | 'CONTINUOUS_ASSESSMENTS'
   | 'MARKS'
-  | 'TIMETABLE';
+  | 'TIMETABLE'
+  | 'FINANCE'
+  | 'TEACHERS'
+  | 'STUDENT_RECORDS'
+  | 'INFRASTRUCTURE'
+  | 'ICT'
+  | 'SAFETY'
+  | 'COMPLIANCE';
 
+/** Modules with an auto-fetched summary the auditor reviews before scoring. */
 export const AUDITOR_AUDIT_MODULES = [
   'ATTENDANCE',
   'COURSE_MANAGEMENT',
   'LEARNING_INSIGHTS',
   'CONTINUOUS_ASSESSMENTS',
   'MARKS',
+  'TIMETABLE',
 ] as const satisfies readonly AcademicAuditModule[];
 
 export type AuditorAuditModule = (typeof AUDITOR_AUDIT_MODULES)[number];
+
+/** Modules with no auto-fetched summary — the auditor enters findings directly. */
+export const AUDITOR_FREEFORM_MODULES = [
+  'FINANCE',
+  'TEACHERS',
+  'STUDENT_RECORDS',
+  'INFRASTRUCTURE',
+  'ICT',
+  'SAFETY',
+  'COMPLIANCE',
+] as const satisfies readonly AcademicAuditModule[];
+
+export type AuditorFreeformModule = (typeof AUDITOR_FREEFORM_MODULES)[number];
+
+export function isAuditorFreeformModule(value: string | null): value is AuditorFreeformModule {
+  return AUDITOR_FREEFORM_MODULES.some((module) => module === value);
+}
 
 export const ACADEMIC_AUDIT_MODULE_LABELS: Record<AcademicAuditModule, string> = {
   ATTENDANCE: 'Attendance',
@@ -94,6 +121,13 @@ export const ACADEMIC_AUDIT_MODULE_LABELS: Record<AcademicAuditModule, string> =
   CONTINUOUS_ASSESSMENTS: 'Continuous Assessment Test',
   MARKS: 'Marks',
   TIMETABLE: 'Timetable',
+  FINANCE: 'Finance',
+  TEACHERS: 'Teachers',
+  STUDENT_RECORDS: 'Student Records',
+  INFRASTRUCTURE: 'Infrastructure',
+  ICT: 'ICT',
+  SAFETY: 'Safety',
+  COMPLIANCE: 'Compliance',
 };
 
 export const ACADEMIC_AUDIT_STATUS_LABELS: Record<AcademicAuditStatus, string> = {
@@ -135,13 +169,17 @@ interface AuditorDashboard {
   stats: {
     totalSchoolsInScope: number;
     completedAudits: number;
+    draftAudits: number;
     pendingSchools: number;
+    pendingReview: number;
+    averageComplianceScore: number | null;
   };
   recentAudits: Array<{
     id: string;
     school: string;
     module: AcademicAuditModule;
     score: number;
+    status: AcademicAuditStatus;
     createdAt: string;
   }>;
 }
@@ -287,12 +325,23 @@ export type AcademicAuditStatus =
   | 'REJECTED'
   | 'NEEDS_REVISION';
 
+export interface AuditAttachment {
+  id: string;
+  originalName: string;
+  mimeType: string | null;
+  bytes: number | null;
+  // null for PDFs — fetch via the protected file stream endpoint instead.
+  secureUrl: string | null;
+}
+
 interface SubmitAuditInput {
   schoolId: string;
   module: AcademicAuditModule;
   score: number;
-  comment: string;
+  comment?: string;
   recommendation?: string;
+  attachments?: UploadedAssetPayload[];
+  asDraft?: boolean;
 }
 
 interface AcademicAudit {
@@ -303,8 +352,9 @@ interface AcademicAudit {
   subType: string;
   score: number;
   status: AcademicAuditStatus;
-  comment: string;
-  recommendation: string;
+  comment: string | null;
+  recommendation: string | null;
+  reviewNote?: string | null;
   submittedAt?: string;
   reviewedAt?: string;
   reviewedBy?: {
@@ -313,6 +363,7 @@ interface AcademicAudit {
     lastName: string;
     email: string;
   } | null;
+  attachments?: AuditAttachment[];
   createdAt: string;
 }
 
@@ -321,6 +372,50 @@ export async function submitAcademicAuditApi(input: SubmitAuditInput): Promise<A
     method: 'POST',
     body: input,
   });
+}
+
+export async function updateAcademicAuditApi(
+  auditId: string,
+  input: Partial<{
+    score: number;
+    comment: string;
+    recommendation: string | null;
+    attachments: UploadedAssetPayload[];
+  }>
+): Promise<AcademicAudit> {
+  return apiRequest(`/gov/audits/${auditId}`, {
+    method: 'PATCH',
+    body: input,
+  });
+}
+
+export async function submitDraftAuditApi(auditId: string): Promise<AcademicAudit> {
+  return apiRequest(`/gov/audits/${auditId}/submit`, { method: 'POST' });
+}
+
+export async function reviewAuditApi(
+  auditId: string,
+  input: { decision: 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION'; reviewNote?: string }
+): Promise<AcademicAudit> {
+  return apiRequest(`/gov/audits/${auditId}/review`, { method: 'POST', body: input });
+}
+
+export async function reopenAuditApi(
+  auditId: string,
+  input: { reviewNote?: string }
+): Promise<AcademicAudit> {
+  return apiRequest(`/gov/audits/${auditId}/reopen`, { method: 'POST', body: input });
+}
+
+export async function downloadAuditReportPdfApi(accessToken: string, auditId: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}/gov/audits/${auditId}/pdf`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    throw new Error('Could not load audit report PDF');
+  }
+  return response.blob();
 }
 
 interface AcademicAuditListItem {
@@ -335,8 +430,8 @@ interface AcademicAuditListItem {
   module: AcademicAuditModule;
   score: number;
   status: AcademicAuditStatus;
-  comment: string;
-  recommendation: string;
+  comment: string | null;
+  recommendation: string | null;
   createdAt: string;
 }
 

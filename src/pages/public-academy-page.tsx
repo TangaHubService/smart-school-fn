@@ -1,13 +1,13 @@
-import { BookOpen, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { BookOpen, CheckCircle2, Lock, Loader2, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   academyApi,
+  type AcademyCatalogClassRoom,
   type AcademyPlanId,
   type AcademySubscriptionSummary,
-  type Program,
 } from '../api/academy-api';
 import { AppDrawer } from '../components/drawer';
 import { useToast } from '../components/toast';
@@ -42,7 +42,7 @@ const ACADEMY_PLANS = [
     name: 'Quarterly',
     durationDays: 90,
     price: 10000,
-    description: 'Longer runway for deeper progress across your selected subjects.',
+    description: 'Longer runway for deeper progress across your selected classes.',
   },
   {
     id: 'yearly',
@@ -60,16 +60,6 @@ const ACADEMY_PLANS = [
 }>;
 
 type PurchasableAcademyPlan = (typeof ACADEMY_PLANS)[number];
-type AcademyCatalogSubject = {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
-  thumbnail: string | null;
-  courseCount: number;
-  courseTitles: string[];
-  programs: Program[];
-};
 
 function cardImage(item: { thumbnail?: string | null }) {
   const thumbnail = item.thumbnail?.trim();
@@ -98,59 +88,6 @@ function formatExpiry(value: string | null) {
   }).format(new Date(value));
 }
 
-function buildSubjectDescription(subject: AcademyCatalogSubject) {
-  return (
-    subject.description?.trim() ||
-    subject.programs.find((program) => program.description?.trim())?.description?.trim() ||
-    'Unlock every academy course currently available under this subject.'
-  );
-}
-
-function groupProgramsBySubject(programs: Program[]): AcademyCatalogSubject[] {
-  const groups = new Map<string, AcademyCatalogSubject>();
-
-  for (const program of programs) {
-    if (!program.subjectId || !program.subjectName || !program.subjectCode) {
-      continue;
-    }
-
-    const current = groups.get(program.subjectId) ?? {
-      id: program.subjectId,
-      name: program.subjectName,
-      code: program.subjectCode,
-      description: program.subjectDescription ?? null,
-      thumbnail: program.thumbnail ?? null,
-      courseCount: program.subjectCourseCount ?? (program.courseId ? 1 : 0),
-      courseTitles: [...(program.subjectCourseTitles ?? [])],
-      programs: [],
-    };
-
-    if (!current.thumbnail && program.thumbnail) {
-      current.thumbnail = program.thumbnail;
-    }
-    if (!current.description && program.subjectDescription) {
-      current.description = program.subjectDescription;
-    }
-    if (typeof program.subjectCourseCount === 'number' && program.subjectCourseCount > 0) {
-      current.courseCount = program.subjectCourseCount;
-    }
-    if (program.subjectCourseTitles?.length) {
-      current.courseTitles = [...program.subjectCourseTitles];
-    }
-
-    current.programs.push(program);
-    groups.set(program.subjectId, current);
-  }
-
-  return [...groups.values()]
-    .map((subject) => ({
-      ...subject,
-      programs: [...subject.programs].sort((a, b) => a.title.localeCompare(b.title)),
-      courseTitles: [...new Set(subject.courseTitles)].slice(0, 6),
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-
 export function PublicAcademyPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -164,7 +101,10 @@ export function PublicAcademyPage() {
   const [selectedPlan, setSelectedPlan] = useState<PurchasableAcademyPlan>(
     ACADEMY_PLANS.find((plan) => plan.id === requestedPlanId) ?? defaultPlan
   );
-  const [selectedSubject, setSelectedSubject] = useState<AcademyCatalogSubject | null>(null);
+  const [selectedYearId, setSelectedYearId] = useState<string | null>(null);
+  const [selectedClass, setSelectedClass] = useState<
+    (AcademyCatalogClassRoom & { gradeLevelName: string }) | null
+  >(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -173,9 +113,9 @@ export function PublicAcademyPage() {
   );
   const [paypackRef, setPaypackRef] = useState<string | null>(null);
 
-  const highlightProgramId = useMemo(() => {
-    const state = location.state as { highlightProgramId?: string } | null | undefined;
-    return state?.highlightProgramId;
+  const highlightClassRoomId = useMemo(() => {
+    const state = location.state as { highlightClassRoomId?: string } | null | undefined;
+    return state?.highlightClassRoomId;
   }, [location.state]);
 
   const isPublicLearner = auth.me?.roles.includes('PUBLIC_LEARNER') ?? false;
@@ -190,9 +130,9 @@ export function PublicAcademyPage() {
     }
   }, [requestedPlanId]);
 
-  const programsQuery = useQuery({
-    queryKey: ['academy-programs'],
-    queryFn: academyApi.getPrograms,
+  const catalogQuery = useQuery({
+    queryKey: ['academy-catalog-tree'],
+    queryFn: academyApi.getCatalogTree,
   });
 
   const subscriptionQuery = useQuery({
@@ -202,34 +142,34 @@ export function PublicAcademyPage() {
   });
 
   const selectMutation = useMutation({
-    mutationFn: (subjectId: string) => academyApi.selectSubject(subjectId),
+    mutationFn: (classRoomId: string) => academyApi.selectClass(classRoomId),
     onSuccess: (data) => {
       queryClient.setQueryData(['academy-subscription-summary'], data);
       void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
       showToast({
         type: 'success',
-        title: 'Subject added',
-        message: 'All courses under this subject are now part of your active plan.',
+        title: 'Class added',
+        message: 'Every subject and course in this class is now part of your active plan.',
       });
     },
     onError: (error: any) => {
-      showToast({ type: 'error', title: 'Could not add subject', message: error.message });
+      showToast({ type: 'error', title: 'Could not add class', message: error.message });
     },
   });
 
   const removeMutation = useMutation({
-    mutationFn: (subjectId: string) => academyApi.removeSubject(subjectId),
+    mutationFn: (classRoomId: string) => academyApi.removeClass(classRoomId),
     onSuccess: (data) => {
       queryClient.setQueryData(['academy-subscription-summary'], data);
       void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
       showToast({
         type: 'success',
-        title: 'Subject removed',
-        message: 'You now have a free slot to choose another subject.',
+        title: 'Class removed',
+        message: 'You now have a free slot to choose another class.',
       });
     },
     onError: (error: any) => {
-      showToast({ type: 'error', title: 'Could not remove subject', message: error.message });
+      showToast({ type: 'error', title: 'Could not remove class', message: error.message });
     },
   });
 
@@ -262,7 +202,7 @@ export function PublicAcademyPage() {
         showToast({
           type: 'success',
           title: 'Plan activated',
-          message: 'Your academy plan is active. Choose up to 3 subjects below.',
+          message: 'Your academy plan is active. Choose up to 3 classes below.',
         });
       } else if (data.status === 'FAILED' || data.status === 'CANCELLED') {
         setPaymentStatus('FAILED');
@@ -280,58 +220,50 @@ export function PublicAcademyPage() {
     };
   }, [paypackRef, queryClient, showToast]);
 
-  const catalogSubjects = useMemo(
-    () => groupProgramsBySubject(programsQuery.data ?? []),
-    [programsQuery.data]
-  );
-
-  const highlightSubjectId = useMemo(() => {
-    if (!highlightProgramId) {
-      return null;
-    }
-
-    return (
-      programsQuery.data?.find((program) => program.id === highlightProgramId)?.subjectId ?? null
-    );
-  }, [highlightProgramId, programsQuery.data]);
+  const academicYears = catalogQuery.data?.academicYears ?? [];
 
   useEffect(() => {
-    if (!highlightSubjectId || !catalogSubjects.length || programsQuery.isPending) {
+    if (!selectedYearId && academicYears.length) {
+      setSelectedYearId(academicYears[0].id);
+    }
+  }, [academicYears, selectedYearId]);
+
+  const activeYear = academicYears.find((year) => year.id === selectedYearId) ?? academicYears[0];
+
+  useEffect(() => {
+    if (!highlightClassRoomId || !activeYear || catalogQuery.isPending) {
       return;
     }
     const timer = window.setTimeout(() => {
-      document.getElementById(`academy-subject-${highlightSubjectId}`)?.scrollIntoView({
+      document.getElementById(`academy-class-${highlightClassRoomId}`)?.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
       });
     }, 100);
     return () => window.clearTimeout(timer);
-  }, [catalogSubjects.length, highlightSubjectId, programsQuery.isPending]);
+  }, [activeYear, catalogQuery.isPending, highlightClassRoomId]);
 
-  const selectedSubjectsById = useMemo(() => {
-    const map = new Map<string, AcademySubscriptionSummary['selectedSubjects'][number]>();
-    for (const item of subscriptionQuery.data?.selectedSubjects ?? []) {
-      map.set(item.subjectId, item);
+  const selectedClassesById = useMemo(() => {
+    const map = new Map<string, AcademySubscriptionSummary['selectedClasses'][number]>();
+    for (const item of subscriptionQuery.data?.selectedClasses ?? []) {
+      map.set(item.classRoomId, item);
     }
     return map;
-  }, [subscriptionQuery.data?.selectedSubjects]);
+  }, [subscriptionQuery.data?.selectedClasses]);
 
-  const accessibleSubjectsById = useMemo(() => {
-    const map = new Map<string, AcademySubscriptionSummary['accessibleSubjects'][number]>();
-    for (const item of subscriptionQuery.data?.accessibleSubjects ?? []) {
-      map.set(item.subjectId, item);
+  const accessibleClassesById = useMemo(() => {
+    const map = new Map<string, AcademySubscriptionSummary['accessibleClasses'][number]>();
+    for (const item of subscriptionQuery.data?.accessibleClasses ?? []) {
+      map.set(item.classRoomId, item);
     }
     return map;
-  }, [subscriptionQuery.data?.accessibleSubjects]);
+  }, [subscriptionQuery.data?.accessibleClasses]);
 
   const currentSubscription = subscriptionQuery.data?.subscription ?? null;
   const hasActivePlan =
     currentSubscription?.status === 'ACTIVE' || currentSubscription?.status === 'TRIAL';
-  const subjectLimit = currentSubscription?.subjectLimit ?? currentSubscription?.courseLimit ?? 3;
-  const remainingSubjectSlots =
-    currentSubscription?.remainingSubjectSlots ??
-    currentSubscription?.remainingSlots ??
-    subjectLimit;
+  const classLimit = currentSubscription?.classLimit ?? 3;
+  const remainingClassSlots = currentSubscription?.remainingClassSlots ?? classLimit;
 
   function navigateToLogin(planId: PurchasableAcademyPlan['id']) {
     const params = new URLSearchParams({
@@ -342,8 +274,8 @@ export function PublicAcademyPage() {
     navigate(`/login?${params.toString()}`);
   }
 
-  function openSubject(subjectId: string) {
-    navigate(`/student/courses?subjectId=${encodeURIComponent(subjectId)}`);
+  function openClass() {
+    navigate('/student/courses');
   }
 
   function handlePlanClick(plan: PurchasableAcademyPlan) {
@@ -366,10 +298,10 @@ export function PublicAcademyPage() {
     setShowCheckoutModal(true);
   }
 
-  function handleSubjectAction(subject: AcademyCatalogSubject) {
-    const access = accessibleSubjectsById.get(subject.id);
+  function handleClassAction(classRoom: AcademyCatalogClassRoom) {
+    const access = accessibleClassesById.get(classRoom.id);
     if (access) {
-      openSubject(subject.id);
+      openClass();
       return;
     }
 
@@ -382,7 +314,7 @@ export function PublicAcademyPage() {
       showToast({
         type: 'error',
         title: 'Learner account required',
-        message: 'Use a public academy learner account to choose academy subjects.',
+        message: 'Use a public academy learner account to choose academy classes.',
       });
       return;
     }
@@ -391,25 +323,25 @@ export function PublicAcademyPage() {
       showToast({
         type: 'info',
         title: 'Choose a plan first',
-        message: 'Activate or renew a plan before selecting your subjects.',
+        message: 'Activate or renew a plan before selecting your classes.',
       });
       return;
     }
 
-    if (currentSubscription && remainingSubjectSlots <= 0) {
+    if (currentSubscription && remainingClassSlots <= 0) {
       showToast({
         type: 'info',
         title: 'All slots in use',
-        message: 'Remove one selected subject to free a slot for another choice.',
+        message: 'Remove one selected class to free a slot for another choice.',
       });
       return;
     }
 
-    selectMutation.mutate(subject.id);
+    selectMutation.mutate(classRoom.id);
   }
 
   const slotUsage = currentSubscription
-    ? `${subjectLimit - remainingSubjectSlots}/${subjectLimit}`
+    ? `${classLimit - remainingClassSlots}/${classLimit}`
     : '0/3';
 
   return (
@@ -428,8 +360,8 @@ export function PublicAcademyPage() {
             Smart School <span className="text-brand-400">Academy</span>
           </h1>
           <p className="mx-auto mt-6 max-w-3xl text-lg font-medium text-gray-100">
-            Activate a plan, then choose up to 3 academy subjects and unlock every course under each
-            selected subject.
+            Activate a plan, then choose up to 3 classes and unlock every subject, course, and
+            lesson within each selected class.
           </p>
         </div>
       </section>
@@ -449,8 +381,8 @@ export function PublicAcademyPage() {
             },
             {
               step: 3,
-              title: 'Choose 3 subjects',
-              desc: 'Pick up to 3 academy subjects and access every course currently published under them.',
+              title: 'Choose 3 classes',
+              desc: 'Pick up to 3 classes and unlock every subject and course inside each one.',
             },
           ].map((item) => (
             <div
@@ -483,7 +415,7 @@ export function PublicAcademyPage() {
               </h2>
               <p className="mt-3 max-w-2xl text-slate-600">
                 All plans unlock the same academy catalog flow. The difference is how long your
-                chosen subject access stays active.
+                chosen class access stays active.
               </p>
             </div>
             {currentSubscription ? (
@@ -570,11 +502,12 @@ export function PublicAcademyPage() {
                 Step 2
               </p>
               <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">
-                Choose up to 3 subjects
+                Browse by academic year, grade, and class
               </h2>
               <p className="mt-3 max-w-2xl text-slate-600">
-                Your plan controls time. Your selected subjects unlock every course under them.
-                Remove one selected subject any time to free a slot.
+                Your plan controls time. Purchasing or selecting a class unlocks every subject,
+                course, lesson, and assessment inside it. Remove a selected class any time to free
+                a slot.
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-700 shadow-sm">
@@ -583,155 +516,212 @@ export function PublicAcademyPage() {
             </div>
           </div>
 
-          {programsQuery.isPending ? (
+          {catalogQuery.isPending ? (
             <div className="flex justify-center py-20">
               <Loader2 className="h-10 w-10 animate-spin text-brand-500" />
             </div>
-          ) : programsQuery.isError ? (
+          ) : catalogQuery.isError ? (
             <div className="rounded-3xl border border-rose-200 bg-rose-50 px-6 py-12 text-center text-rose-700 shadow-sm">
-              We could not load academy subjects right now. Please refresh the page and try again.
+              We could not load the academy catalog right now. Please refresh the page and try
+              again.
             </div>
-          ) : catalogSubjects.length === 0 ? (
+          ) : academicYears.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center text-slate-600 shadow-sm">
-              No academy subjects are ready yet. Link public academy programs to subject-based
-              courses to show them here.
+              No academy classes are ready yet. Link an academy program to a class in the admin
+              catalog to show it here.
             </div>
           ) : (
-            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {catalogSubjects.map((subject) => {
-                const selected = selectedSubjectsById.get(subject.id);
-                const accessible = accessibleSubjectsById.get(subject.id);
-                const canAdd =
-                  Boolean(auth.me && isPublicLearner && hasActivePlan) &&
-                  !selected &&
-                  !accessible &&
-                  Boolean(currentSubscription && remainingSubjectSlots > 0);
+            <>
+              {academicYears.length > 1 ? (
+                <div className="mb-8 flex flex-wrap gap-2">
+                  {academicYears.map((year) => (
+                    <button
+                      key={year.id}
+                      type="button"
+                      onClick={() => setSelectedYearId(year.id)}
+                      className={[
+                        'rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] transition',
+                        activeYear?.id === year.id
+                          ? 'bg-brand-500 text-white'
+                          : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50',
+                      ].join(' ')}
+                    >
+                      {year.name}
+                      {year.isCurrent ? ' · Current' : ''}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
-                return (
-                  <article
-                    key={subject.id}
-                    id={`academy-subject-${subject.id}`}
-                    className={[
-                      'group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition',
-                      highlightSubjectId === subject.id
-                        ? 'border-brand-500 ring-2 ring-brand-400/30'
-                        : 'border-slate-200 hover:border-brand-200',
-                    ].join(' ')}
-                  >
-                    <div className="relative h-56 overflow-hidden">
-                      <img
-                        src={cardImage(subject)}
-                        alt={subject.name}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                      <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-brand-700 shadow-sm">
-                        {subject.courseCount} {subject.courseCount === 1 ? 'course' : 'courses'}
-                      </div>
-                    </div>
-                    <div className="flex flex-1 flex-col p-7">
-                      <div className="mb-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em]">
-                        {accessible ? (
-                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
-                            {accessible.isLegacy ? 'Legacy access' : 'Accessible now'}
-                          </span>
-                        ) : null}
-                        {selected ? (
-                          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">
-                            Selected on plan
-                          </span>
-                        ) : null}
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                          {subject.code}
-                        </span>
-                      </div>
-                      <h3 className="text-2xl font-bold tracking-tight text-slate-900">
-                        {subject.name}
+              {(activeYear?.gradeLevels ?? []).length === 0 ? (
+                <div className="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center text-slate-600 shadow-sm">
+                  No classes published for this academic year yet.
+                </div>
+              ) : (
+                <div className="space-y-14">
+                  {activeYear!.gradeLevels.map((grade) => (
+                    <div key={grade.id}>
+                      <h3 className="mb-5 text-xl font-bold uppercase tracking-tight text-slate-900">
+                        {grade.name}
                       </h3>
-                      <p className="mt-4 flex-1 text-[15px] leading-relaxed text-slate-600">
-                        {buildSubjectDescription(subject)}
-                      </p>
+                      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+                        {grade.classRooms.map((classRoom) => {
+                          const selected = selectedClassesById.get(classRoom.id);
+                          const accessible = accessibleClassesById.get(classRoom.id);
+                          const isLocked = !accessible;
+                          const canAdd =
+                            Boolean(auth.me && isPublicLearner && hasActivePlan) &&
+                            !selected &&
+                            !accessible &&
+                            Boolean(currentSubscription && remainingClassSlots > 0);
+                          const courseCount = classRoom.subjects.reduce(
+                            (sum, subject) => sum + subject.courseCount,
+                            0
+                          );
 
-                      <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                        <p className="flex items-center gap-2 font-semibold text-slate-900">
-                          <BookOpen className="h-4 w-4 text-brand-600" />
-                          {subject.courseCount} course{subject.courseCount === 1 ? '' : 's'}{' '}
-                          available
-                        </p>
-                        <p className="mt-1">
-                          {subject.courseTitles.length > 0
-                            ? subject.courseTitles.slice(0, 3).join(' • ')
-                            : `${subject.programs.length} academy catalog item${subject.programs.length === 1 ? '' : 's'} linked to this subject.`}
-                        </p>
-                      </div>
+                          return (
+                            <article
+                              key={classRoom.id}
+                              id={`academy-class-${classRoom.id}`}
+                              className={[
+                                'group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition',
+                                highlightClassRoomId === classRoom.id
+                                  ? 'border-brand-500 ring-2 ring-brand-400/30'
+                                  : 'border-slate-200 hover:border-brand-200',
+                              ].join(' ')}
+                            >
+                              <div className="relative h-48 overflow-hidden">
+                                <img
+                                  src={cardImage(classRoom)}
+                                  alt={classRoom.name}
+                                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                                <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-brand-700 shadow-sm">
+                                  {classRoom.subjects.length}{' '}
+                                  {classRoom.subjects.length === 1 ? 'subject' : 'subjects'} ·{' '}
+                                  {courseCount} {courseCount === 1 ? 'course' : 'courses'}
+                                </div>
+                                {isLocked ? (
+                                  <div className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm">
+                                    <Lock className="h-4 w-4" />
+                                  </div>
+                                ) : null}
+                              </div>
+                              <div className="flex flex-1 flex-col p-7">
+                                <div className="mb-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em]">
+                                  {accessible ? (
+                                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                                      {accessible.isLegacy ? 'Legacy access' : 'Accessible now'}
+                                    </span>
+                                  ) : null}
+                                  {selected ? (
+                                    <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">
+                                      Selected on plan
+                                    </span>
+                                  ) : null}
+                                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                                    {grade.name}
+                                  </span>
+                                </div>
+                                <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+                                  {classRoom.name}
+                                </h3>
+                                <p className="mt-4 flex-1 text-[15px] leading-relaxed text-slate-600">
+                                  Unlock every subject, course, lesson, quiz, and assignment
+                                  published in {classRoom.name}.
+                                </p>
 
-                      {subject.courseTitles.length > 3 ? (
-                        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          +{subject.courseTitles.length - 3} more courses in this subject
-                        </p>
-                      ) : null}
+                                <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                  <p className="flex items-center gap-2 font-semibold text-slate-900">
+                                    <BookOpen className="h-4 w-4 text-brand-600" />
+                                    {classRoom.subjects.length}{' '}
+                                    {classRoom.subjects.length === 1 ? 'subject' : 'subjects'}{' '}
+                                    available
+                                  </p>
+                                  <p className="mt-1">
+                                    {classRoom.subjects
+                                      .slice(0, 3)
+                                      .map((s) => s.name)
+                                      .join(' • ') || 'Subjects coming soon.'}
+                                  </p>
+                                </div>
 
-                      <div className="mt-6 space-y-3">
-                        {accessible?.expiresAt ? (
-                          <p className="text-sm text-slate-500">
-                            Access ends {formatExpiry(accessible.expiresAt)}
-                          </p>
-                        ) : currentSubscription?.expiresAt ? (
-                          <p className="text-sm text-slate-500">
-                            Current plan ends {formatExpiry(currentSubscription.expiresAt)}
-                          </p>
-                        ) : null}
+                                {isLocked ? (
+                                  <p className="mt-3 text-sm font-semibold text-slate-700">
+                                    {classRoom.price.toLocaleString()} RWF one-time class value
+                                  </p>
+                                ) : null}
 
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedSubject(subject);
-                              setShowDetailsModal(true);
-                            }}
-                            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-700 transition hover:bg-slate-50"
-                          >
-                            Details
-                          </button>
-                          <button
-                            type="button"
-                            disabled={selectMutation.isPending || removeMutation.isPending}
-                            onClick={() => handleSubjectAction(subject)}
-                            className={[
-                              'flex-[1.35] rounded-2xl px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition',
-                              accessible || canAdd
-                                ? 'bg-brand-500 hover:bg-brand-600'
-                                : 'bg-slate-400',
-                            ].join(' ')}
-                          >
-                            {accessible
-                              ? 'View courses'
-                              : !auth.me
-                                ? 'Login first'
-                                : !hasActivePlan
-                                  ? 'Choose plan first'
-                                  : currentSubscription && remainingSubjectSlots <= 0 && !selected
-                                    ? `${subjectLimit}/${subjectLimit} selected`
-                                    : 'Add subject'}
-                          </button>
-                        </div>
+                                <div className="mt-6 space-y-3">
+                                  {accessible?.expiresAt ? (
+                                    <p className="text-sm text-slate-500">
+                                      Access ends {formatExpiry(accessible.expiresAt)}
+                                    </p>
+                                  ) : currentSubscription?.expiresAt ? (
+                                    <p className="text-sm text-slate-500">
+                                      Current plan ends {formatExpiry(currentSubscription.expiresAt)}
+                                    </p>
+                                  ) : null}
 
-                        {selected ? (
-                          <button
-                            type="button"
-                            onClick={() => removeMutation.mutate(subject.id)}
-                            disabled={removeMutation.isPending}
-                            className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-rose-700 transition hover:bg-rose-100"
-                          >
-                            Remove from plan
-                          </button>
-                        ) : null}
+                                  <div className="flex gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedClass({ ...classRoom, gradeLevelName: grade.name });
+                                        setShowDetailsModal(true);
+                                      }}
+                                      className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-700 transition hover:bg-slate-50"
+                                    >
+                                      Preview
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={selectMutation.isPending || removeMutation.isPending}
+                                      onClick={() => handleClassAction(classRoom)}
+                                      className={[
+                                        'flex-[1.35] inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition',
+                                        accessible || canAdd
+                                          ? 'bg-brand-500 hover:bg-brand-600'
+                                          : 'bg-slate-400',
+                                      ].join(' ')}
+                                    >
+                                      {!accessible ? <Lock className="h-3.5 w-3.5" /> : null}
+                                      {accessible
+                                        ? 'Enter class'
+                                        : !auth.me
+                                          ? 'Login first'
+                                          : !hasActivePlan
+                                            ? 'Choose plan first'
+                                            : currentSubscription &&
+                                                remainingClassSlots <= 0 &&
+                                                !selected
+                                              ? `${classLimit}/${classLimit} selected`
+                                              : 'Purchase class'}
+                                    </button>
+                                  </div>
+
+                                  {selected ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => removeMutation.mutate(classRoom.id)}
+                                      disabled={removeMutation.isPending}
+                                      className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-rose-700 transition hover:bg-rose-100"
+                                    >
+                                      Remove from plan
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </article>
+                          );
+                        })}
                       </div>
                     </div>
-                  </article>
-                );
-              })}
-            </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -744,7 +734,7 @@ export function PublicAcademyPage() {
           setPaypackRef(null);
         }}
         title={`${selectedPlan.name} plan`}
-        description="Activate your plan with MoMo. Your selected subjects stay under the same 3-slot limit."
+        description="Activate your plan with MoMo. Your selected classes stay under the same 3-slot limit."
       >
         {paymentStatus === 'IDLE' ? (
           <form
@@ -767,7 +757,7 @@ export function PublicAcademyPage() {
                 <span>{selectedPlan.price.toLocaleString()} RWF</span>
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                After payment, choose up to 3 academy subjects. Renewing extends the same selected
+                After payment, choose up to 3 academy classes. Renewing extends the same selected
                 set until you change it.
               </p>
             </div>
@@ -820,7 +810,7 @@ export function PublicAcademyPage() {
             </div>
             <h3 className="mt-8 text-2xl font-bold text-slate-900">Plan activated</h3>
             <p className="mt-4 text-slate-600">
-              Your academy plan is now active. Close this window and choose up to 3 subjects from
+              Your academy plan is now active. Close this window and choose up to 3 classes from
               the catalog below.
             </p>
             <button
@@ -853,56 +843,42 @@ export function PublicAcademyPage() {
       <AppDrawer
         open={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
-        title={selectedSubject?.name || 'Subject details'}
-        description="Review this academy subject before adding it to your plan."
+        title={selectedClass?.name || 'Class details'}
+        description="Review this academy class before adding it to your plan."
       >
         <div className="space-y-6">
           <div className="aspect-video w-full overflow-hidden rounded-2xl bg-slate-100">
             <img
-              src={selectedSubject ? cardImage(selectedSubject) : undefined}
-              alt={selectedSubject?.name}
+              src={selectedClass ? cardImage(selectedClass) : undefined}
+              alt={selectedClass?.name}
               className="h-full w-full object-cover"
             />
           </div>
           <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-            <p className="font-semibold text-slate-900">Subject code</p>
-            <p className="mt-1">{selectedSubject?.code}</p>
-            <p className="mt-4 font-semibold text-slate-900">Courses available</p>
-            <p className="mt-1">{selectedSubject?.courseCount ?? 0}</p>
-            <p className="mt-4 font-semibold text-slate-900">Description</p>
-            <p className="mt-1 whitespace-pre-wrap text-slate-600">
-              {selectedSubject
-                ? buildSubjectDescription(selectedSubject)
-                : 'Academy subject details.'}
-            </p>
-            {selectedSubject?.courseTitles.length ? (
-              <>
-                <p className="mt-4 font-semibold text-slate-900">Included courses</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedSubject.courseTitles.map((title) => (
-                    <span
-                      key={title}
-                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
-                    >
-                      {title}
-                    </span>
-                  ))}
-                </div>
-              </>
-            ) : null}
+            <p className="font-semibold text-slate-900">Grade</p>
+            <p className="mt-1">{selectedClass?.gradeLevelName}</p>
+            <p className="mt-4 font-semibold text-slate-900">Subjects included</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(selectedClass?.subjects ?? []).map((subject) => (
+                <span
+                  key={subject.id}
+                  className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+                >
+                  {subject.name} ({subject.courseCount})
+                </span>
+              ))}
+            </div>
           </div>
-          {selectedSubject ? (
+          {selectedClass ? (
             <button
               type="button"
               onClick={() => {
                 setShowDetailsModal(false);
-                handleSubjectAction(selectedSubject);
+                handleClassAction(selectedClass);
               }}
               className="w-full rounded-2xl bg-brand-500 py-4 text-sm font-black uppercase tracking-widest text-white transition hover:bg-brand-600"
             >
-              {accessibleSubjectsById.get(selectedSubject.id)
-                ? 'View subject courses'
-                : 'Use this subject'}
+              {accessibleClassesById.get(selectedClass.id) ? 'Enter class' : 'Use this class'}
             </button>
           ) : null}
         </div>

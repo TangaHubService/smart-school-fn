@@ -5,52 +5,18 @@ import { useNavigate } from 'react-router-dom';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import { hasRole } from '../features/auth/auth-helpers';
-import { listAcademicYearsApi } from '../features/sprint1/sprint1.api';
-import { useQuery } from '@tanstack/react-query';
-
-const ACADEMIC_YEAR_STORAGE_KEY = 'smart-school-selected-academic-year-id';
-
-interface AcademicYearItem {
-  endDate: string | number | Date;
-  startDate: string | number | Date;
-  id: string;
-  name: string;
-  isCurrent: boolean;
-}
-
-export function getStoredAcademicYearId(): string | null {
-  return sessionStorage.getItem(ACADEMIC_YEAR_STORAGE_KEY);
-}
-
-export function setStoredAcademicYearId(id: string): void {
-  sessionStorage.setItem(ACADEMIC_YEAR_STORAGE_KEY, id);
-}
-
-export function clearStoredAcademicYearId(): void {
-  sessionStorage.removeItem(ACADEMIC_YEAR_STORAGE_KEY);
-}
+import { useAcademicYear } from '../contexts/academic-year-context';
 
 export function StudentAcademicYearSelectPage() {
   const auth = useAuth();
   const navigate = useNavigate();
-
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ['academic-years', 'student'],
-    enabled: Boolean(auth.accessToken && hasRole(auth.me, 'STUDENT')),
-    queryFn: () => listAcademicYearsApi(auth.accessToken!),
-  });
-
-  const years: AcademicYearItem[] = Array.isArray(data) ? (data as AcademicYearItem[]) : [];
+  const { academicYearId, availableYears, isLoading, setAcademicYear } = useAcademicYear();
 
   useEffect(() => {
-    const stored = getStoredAcademicYearId();
-    if (stored && years.length) {
-      const exists = years.some((y) => y.id === stored);
-      if (exists) {
-        navigate('/student/dashboard', { replace: true });
-      }
+    if (academicYearId && availableYears.some((y) => y.id === academicYearId)) {
+      navigate('/student/dashboard', { replace: true });
     }
-  }, [years, navigate]);
+  }, [academicYearId, availableYears, navigate]);
 
   if (!hasRole(auth.me, 'STUDENT')) {
     return (
@@ -61,25 +27,7 @@ export function StudentAcademicYearSelectPage() {
     );
   }
 
-  if (isError) {
-    return (
-      <StateView
-        title="Could not load academic years"
-        message="Retry to load available academic years."
-        action={
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
-          >
-            Retry
-          </button>
-        }
-      />
-    );
-  }
-
-  if (isPending || data === undefined) {
+  if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-200 border-t-brand-500" />
@@ -87,7 +35,7 @@ export function StudentAcademicYearSelectPage() {
     );
   }
 
-  if (!years.length) {
+  if (!availableYears.length) {
     return (
       <StateView
         title="No academic years available"
@@ -96,8 +44,8 @@ export function StudentAcademicYearSelectPage() {
     );
   }
 
-  function handleSelect(id: string) {
-    setStoredAcademicYearId(id);
+  async function handleSelect(id: string) {
+    await setAcademicYear(id);
     navigate('/student/dashboard', { replace: true });
   }
 
@@ -117,11 +65,11 @@ export function StudentAcademicYearSelectPage() {
         </div>
 
         <div className="space-y-3">
-          {years.map((year) => (
+          {availableYears.map((year) => (
             <button
               key={year.id}
               type="button"
-              onClick={() => handleSelect(year.id)}
+              onClick={() => void handleSelect(year.id)}
               className="flex w-full items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-brand-300 hover:bg-brand-50/50"
             >
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-600">

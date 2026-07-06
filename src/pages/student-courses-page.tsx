@@ -22,6 +22,7 @@ import { DrawerForm } from '../components/drawer-form';
 import { EmptyState } from '../components/empty-state';
 import { AppDrawer } from '../components/drawer';
 import { RichContent } from '../components/rich-content';
+import { SecurePdfViewer } from '../components/secure-pdf-viewer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -125,6 +126,10 @@ function getYouTubeEmbedUrl(url: string | null | undefined) {
 function lessonHasInlineMedia(
   lesson: Pick<LessonItem, 'contentType' | 'externalUrl' | 'fileAsset'>
 ) {
+  if (lesson.contentType === 'PDF') {
+    return Boolean(lesson.fileAsset);
+  }
+
   const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
   if (!mediaUrl) {
     return false;
@@ -133,7 +138,6 @@ function lessonHasInlineMedia(
   return Boolean(
     getYouTubeEmbedUrl(mediaUrl) ||
     lesson.contentType === 'VIDEO' ||
-    lesson.contentType === 'PDF' ||
     lesson.fileAsset?.mimeType?.startsWith('video/') ||
     isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType)
   );
@@ -141,9 +145,25 @@ function lessonHasInlineMedia(
 
 function LessonMediaEmbed({
   lesson,
+  accessToken,
 }: {
   lesson: Pick<LessonItem, 'contentType' | 'externalUrl' | 'fileAsset'>;
+  accessToken: string;
 }) {
+  if (lesson.contentType === 'PDF') {
+    if (!lesson.fileAsset) {
+      return null;
+    }
+    return (
+      <SecurePdfViewer
+        assetId={lesson.fileAsset.id}
+        accessToken={accessToken}
+        title={lesson.fileAsset.originalName ?? 'Lesson PDF'}
+        className="lms-reader-pdf-frame"
+      />
+    );
+  }
+
   const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
 
   if (!mediaUrl) {
@@ -182,18 +202,6 @@ function LessonMediaEmbed({
         <audio controls className="w-full" src={mediaUrl}>
           Your browser does not support embedded audio playback.
         </audio>
-      </div>
-    );
-  }
-
-  if (lesson.contentType === 'PDF') {
-    return (
-      <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white">
-        <iframe
-          title={lesson.fileAsset?.originalName ?? 'Lesson PDF'}
-          src={mediaUrl}
-          className="lms-reader-pdf-frame"
-        />
       </div>
     );
   }
@@ -1104,11 +1112,13 @@ export function StudentCoursesPage() {
                       {selectedAssignment ? (
                         <AssignmentDetailCard
                           assignment={selectedAssignment}
+                          accessToken={auth.accessToken ?? ''}
                           onOpenSubmission={openSubmission}
                         />
                       ) : selectedLesson ? (
                         <LessonDetailCard
                           lesson={selectedLesson}
+                          accessToken={auth.accessToken ?? ''}
                           onMarkCompleteOnly={() =>
                             handleMarkLessonCompleteOnly(selectedCourse.id, selectedLesson.id)
                           }
@@ -1443,6 +1453,7 @@ function SubjectCourseGallery({
 
 function LessonDetailCard({
   lesson,
+  accessToken,
   onMarkCompleteOnly,
   onMarkCompleteAndContinue,
   onGoPrevious,
@@ -1452,6 +1463,7 @@ function LessonDetailCard({
   isCompleted,
 }: {
   lesson: LessonItem;
+  accessToken: string;
   onMarkCompleteOnly: () => void;
   onMarkCompleteAndContinue: () => void;
   onGoPrevious: () => void;
@@ -1483,7 +1495,7 @@ function LessonDetailCard({
           }
         >
           <div className="mt-3">
-            <LessonMediaEmbed lesson={lesson} />
+            <LessonMediaEmbed lesson={lesson} accessToken={accessToken} />
           </div>
 
           {lesson.body ? (
@@ -1494,7 +1506,7 @@ function LessonDetailCard({
             {lesson.externalUrl && !showInlineMedia ? (
               <AttachmentLink label="Open Lesson Source" url={lesson.externalUrl} />
             ) : null}
-            {lesson.fileAsset ? (
+            {lesson.fileAsset?.secureUrl ? (
               <AttachmentLink
                 label={`Resource: ${lesson.fileAsset.originalName}`}
                 url={lesson.fileAsset.secureUrl}
@@ -1552,9 +1564,11 @@ function LessonDetailCard({
 
 function AssignmentDetailCard({
   assignment,
+  accessToken,
   onOpenSubmission,
 }: {
   assignment: AssignmentItem;
+  accessToken: string;
   onOpenSubmission: (assignment: AssignmentItem) => void;
 }) {
   const status = getAssignmentStatus(assignment);
@@ -1581,8 +1595,18 @@ function AssignmentDetailCard({
           <RichContent html={assignment.instructions} className="lms-reader-content" />
         </div>
 
+        {assignment.attachmentAsset && !assignment.attachmentAsset.secureUrl ? (
+          <div className="mt-3">
+            <SecurePdfViewer
+              assetId={assignment.attachmentAsset.id}
+              accessToken={accessToken}
+              title={assignment.attachmentAsset.originalName}
+            />
+          </div>
+        ) : null}
+
         <div className="mt-3 flex flex-wrap gap-2">
-          {assignment.attachmentAsset && (
+          {assignment.attachmentAsset?.secureUrl && (
             <AttachmentLink
               label={`Test Attachment: ${assignment.attachmentAsset.originalName}`}
               url={assignment.attachmentAsset.secureUrl}
@@ -1633,7 +1657,7 @@ function AssignmentDetailCard({
                   />
                 </div>
               )}
-              {assignment.mySubmission.fileAsset && (
+              {assignment.mySubmission.fileAsset?.secureUrl && (
                 <div className="mt-4">
                   <AttachmentLink
                     label={`Attached: ${assignment.mySubmission.fileAsset.originalName}`}

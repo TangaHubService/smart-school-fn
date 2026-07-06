@@ -37,6 +37,13 @@ const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   CONTINUOUS_ASSESSMENTS: ClipboardCheck,
   MARKS: FileBarChart2,
   TIMETABLE: CalendarDays,
+  FINANCE: ClipboardList,
+  TEACHERS: ClipboardList,
+  STUDENT_RECORDS: ClipboardList,
+  INFRASTRUCTURE: ClipboardList,
+  ICT: ClipboardList,
+  SAFETY: ClipboardList,
+  COMPLIANCE: ClipboardCheck,
 };
 
 export function AuditorDashboardPage() {
@@ -147,7 +154,7 @@ export function AuditorDashboardPage() {
             />
           )}
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
             <div className="rounded-lg border bg-white p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="rounded-full bg-blue-100 p-3">
@@ -166,8 +173,20 @@ export function AuditorDashboardPage() {
                   <BadgeCheck className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-500">Completed Audits</p>
+                  <p className="text-sm font-medium text-slate-500">Submitted Reports</p>
                   <p className="text-2xl font-bold text-slate-900">{stats.completedAudits}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-slate-100 p-3">
+                  <FileBarChart2 className="h-5 w-5 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Drafts</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.draftAudits}</p>
                 </div>
               </div>
             </div>
@@ -180,6 +199,20 @@ export function AuditorDashboardPage() {
                 <div>
                   <p className="text-sm font-medium text-slate-500">Pending Schools</p>
                   <p className="text-2xl font-bold text-slate-900">{stats.pendingSchools}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-purple-100 p-3">
+                  <BadgeCheck className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Compliance Score</p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {stats.averageComplianceScore !== null ? `${stats.averageComplianceScore}%` : '—'}
+                  </p>
                 </div>
               </div>
             </div>

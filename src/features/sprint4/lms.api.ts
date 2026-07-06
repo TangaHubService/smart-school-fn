@@ -1,4 +1,4 @@
-import { apiRequest } from '../../api/client';
+import { API_BASE_URL, apiRequest } from '../../api/client';
 import type { MyAssessmentItem } from '../assessments/assessments.api';
 
 export type LessonContentType = 'TEXT' | 'PDF' | 'VIDEO' | 'LINK';
@@ -7,12 +7,33 @@ export type FileAssetResourceType = 'IMAGE' | 'VIDEO' | 'RAW';
 
 export interface FileAsset {
   id: string;
-  secureUrl: string;
+  // null for PDF assets — those are only ever fetched via getFileStreamUrl/streamFileApi
+  // so the underlying storage URL never reaches the browser.
+  secureUrl: string | null;
   originalName: string;
   format: string | null;
   mimeType: string | null;
   resourceType: FileAssetResourceType;
   bytes: number | null;
+}
+
+/**
+ * Fetches a protected file (currently PDFs) as a Blob through the authenticated
+ * streaming endpoint, so no shareable file URL is ever exposed to the page.
+ * Callers should revoke the returned object URL (URL.revokeObjectURL) once done.
+ */
+export async function fetchProtectedFileObjectUrl(
+  accessToken: string,
+  assetId: string
+): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/files/${assetId}/stream`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    throw new Error('Could not load the protected file');
+  }
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 }
 
 export interface CourseSummary {
@@ -653,7 +674,14 @@ export function listTeacherLearningInsightsApi(accessToken: string) {
 export function signUploadApi(
   accessToken: string,
   payload: {
-    purpose: 'lesson' | 'assignment' | 'submission' | 'logo' | 'assessment-question';
+    purpose:
+      | 'lesson'
+      | 'assignment'
+      | 'submission'
+      | 'logo'
+      | 'assessment-question'
+      | 'announcement'
+      | 'audit-evidence';
     fileName: string;
   }
 ) {
@@ -675,10 +703,10 @@ export interface AcademyProgram {
   durationDays: number;
   isActive: boolean;
   listedInPublicCatalog: boolean;
-  courseId: string | null;
+  classRoomId: string | null;
   createdAt: string;
   updatedAt: string;
-  linkedCourse: { id: string; title: string } | null;
+  linkedClassRoom: { id: string; name: string; gradeLevelName: string } | null;
 }
 
 export function listAcademyProgramsApi(accessToken: string) {
@@ -699,7 +727,7 @@ export function createAcademyProgramApi(
     durationDays?: number;
     isActive?: boolean;
     listedInPublicCatalog?: boolean;
-    courseId?: string | null;
+    classRoomId?: string | null;
   }
 ) {
   return apiRequest<AcademyProgram>('/academy-programs', {
@@ -721,7 +749,7 @@ export function updateAcademyProgramApi(
     durationDays?: number;
     isActive?: boolean;
     listedInPublicCatalog?: boolean;
-    courseId?: string | null;
+    classRoomId?: string | null;
   }
 ) {
   return apiRequest<AcademyProgram>(`/academy-programs/${programId}`, {

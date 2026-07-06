@@ -1,13 +1,49 @@
-import { useEffect, useRef, useCallback, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from 'react';
+
+import { fetchProtectedFileObjectUrl } from '../features/sprint4/lms.api';
 
 interface SecurePdfViewerProps {
-  secureUrl: string;
+  assetId: string;
+  accessToken: string;
   title?: string;
   className?: string;
 }
 
-export function SecurePdfViewer({ secureUrl, title, className = '' }: SecurePdfViewerProps) {
+/**
+ * Renders a PDF learning resource without ever exposing a shareable file URL:
+ * bytes are fetched through the authenticated /files/:id/stream endpoint and
+ * shown via a short-lived blob: URL, plus best-effort deterrents against the
+ * common copy/print/save/right-click/dev-tools shortcuts.
+ */
+export function SecurePdfViewer({ assetId, accessToken, title, className = '' }: SecurePdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let currentUrl: string | null = null;
+    setObjectUrl(null);
+    setError(false);
+
+    fetchProtectedFileObjectUrl(accessToken, assetId)
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        currentUrl = url;
+        setObjectUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
+
+    return () => {
+      cancelled = true;
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+    };
+  }, [assetId, accessToken]);
 
   const preventDefaults = useCallback((e: Event) => {
     e.preventDefault();
@@ -18,11 +54,7 @@ export function SecurePdfViewer({ secureUrl, title, className = '' }: SecurePdfV
     const container = containerRef.current;
     if (!container) return;
 
-    const events = [
-      'contextmenu', 'copy', 'cut', 'paste',
-      'dragstart', 'dragover', 'drop',
-      'selectstart',
-    ];
+    const events = ['contextmenu', 'copy', 'cut', 'paste', 'dragstart', 'dragover', 'drop', 'selectstart'];
 
     events.forEach((event) => {
       container.addEventListener(event, preventDefaults, true);
@@ -36,7 +68,6 @@ export function SecurePdfViewer({ secureUrl, title, className = '' }: SecurePdfV
   }, [preventDefaults]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>) => {
-    // Block Ctrl+S, Ctrl+P, Ctrl+C, Ctrl+Shift+I, F12
     if (
       (e.ctrlKey && ['s', 'p', 'c', 'u'].includes(e.key.toLowerCase())) ||
       (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') ||
@@ -47,6 +78,14 @@ export function SecurePdfViewer({ secureUrl, title, className = '' }: SecurePdfV
     }
   }, []);
 
+  if (error) {
+    return (
+      <div className={`rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700 ${className}`}>
+        Could not load this document. Please refresh and try again.
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
@@ -56,31 +95,27 @@ export function SecurePdfViewer({ secureUrl, title, className = '' }: SecurePdfV
       role="region"
       aria-label={title ?? 'PDF viewer'}
     >
-      {/* Print protection via CSS */}
       <style>{`
         @media print {
           .secure-pdf-container { display: none !important; }
           body * { visibility: hidden; }
         }
-        .secure-pdf-container embed::-webkit-scrollbar { display: none; }
       `}</style>
 
       <div className="secure-pdf-container">
-        <iframe
-          src={`${secureUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-          title={title ?? 'PDF document'}
-          className="h-full w-full min-h-[500px] border-0"
-          sandbox="allow-scripts allow-same-origin"
-          loading="lazy"
-        />
+        {objectUrl ? (
+          <iframe
+            src={`${objectUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+            title={title ?? 'PDF document'}
+            className="h-full w-full min-h-[500px] border-0"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        ) : (
+          <div className="flex min-h-[500px] items-center justify-center text-sm text-slate-500">
+            Loading document…
+          </div>
+        )}
       </div>
-
-      {/* Overlay to intercept click events on the iframe */}
-      <div
-        className="absolute inset-0 z-10"
-        style={{ pointerEvents: 'none' }}
-        aria-hidden="true"
-      />
     </div>
   );
 }

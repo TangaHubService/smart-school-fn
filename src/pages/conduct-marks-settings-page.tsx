@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ConductDeductionForm } from '../components/conduct-deduction-form';
 import { AppDrawer } from '../components/drawer';
@@ -8,6 +8,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { useAcademicYear } from '../contexts/academic-year-context';
 import { hasPermission } from '../features/auth/auth-helpers';
 import {
   listConductTermSettingsApi,
@@ -19,7 +20,7 @@ export function ConductMarksSettingsPage() {
   const auth = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const yearInitRef = useRef(false);
+  const { academicYearId: globalAcademicYearId } = useAcademicYear();
 
   const canConfigurePools =
     hasPermission(auth.me, 'term.manage') || hasPermission(auth.me, 'academic_year.manage');
@@ -37,14 +38,26 @@ export function ConductMarksSettingsPage() {
 
   const years = Array.isArray(yearsQuery.data) ? yearsQuery.data : [];
 
+  // Re-sync only when the *global* selection itself changes, not on every unrelated
+  // refetch of the shared academic-years query (which would otherwise clobber a manual
+  // in-page choice).
   useEffect(() => {
-    if (yearInitRef.current || years.length === 0 || !canConfigurePools) {
+    if (canConfigurePools && globalAcademicYearId) {
+      setAcademicYearId(globalAcademicYearId);
+    }
+  }, [globalAcademicYearId, canConfigurePools]);
+
+  // One-time fallback default when the user has no saved global preference yet.
+  useEffect(() => {
+    if (!canConfigurePools || globalAcademicYearId || years.length === 0) {
       return;
     }
-    yearInitRef.current = true;
-    const current = years.find((y: { isCurrent?: boolean }) => y.isCurrent);
-    setAcademicYearId(current?.id ?? years[0]?.id ?? '');
-  }, [years, canConfigurePools]);
+    setAcademicYearId((prev) => {
+      if (prev) return prev;
+      const current = years.find((y: { isCurrent?: boolean }) => y.isCurrent);
+      return current?.id ?? years[0]?.id ?? '';
+    });
+  }, [globalAcademicYearId, years, canConfigurePools]);
 
   const settingsQuery = useQuery({
     queryKey: ['conduct-term-settings', academicYearId],

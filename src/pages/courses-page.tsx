@@ -25,10 +25,12 @@ import { EmptyState } from '../components/empty-state';
 import { AppDrawer } from '../components/drawer';
 import { RichContent } from '../components/rich-content';
 import { RichTextEditor } from '../components/rich-text-editor';
+import { SecurePdfViewer } from '../components/secure-pdf-viewer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
+import { useAcademicYear } from '../contexts/academic-year-context';
 import { hasRole } from '../features/auth/auth-helpers';
 import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
@@ -147,7 +149,8 @@ type EditableLesson = {
   sequence: number;
   isPublished: boolean;
   fileAsset: {
-    secureUrl: string;
+    id: string;
+    secureUrl: string | null;
     mimeType: string | null;
     originalName: string;
   } | null;
@@ -233,11 +236,15 @@ function lessonHasInlineMedia(lesson: {
   contentType: LessonContentType;
   externalUrl: string | null;
   fileAsset: {
-    secureUrl: string;
+    secureUrl: string | null;
     mimeType: string | null;
     originalName: string;
   } | null;
 }) {
+  if (lesson.contentType === 'PDF') {
+    return Boolean(lesson.fileAsset);
+  }
+
   const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
   if (!mediaUrl) {
     return false;
@@ -246,7 +253,6 @@ function lessonHasInlineMedia(lesson: {
   return Boolean(
     getYouTubeEmbedUrl(mediaUrl) ||
     lesson.contentType === 'VIDEO' ||
-    lesson.contentType === 'PDF' ||
     lesson.fileAsset?.mimeType?.startsWith('video/') ||
     isAudioAsset(mediaUrl, lesson.fileAsset?.mimeType)
   );
@@ -254,17 +260,34 @@ function lessonHasInlineMedia(lesson: {
 
 function LessonMediaEmbed({
   lesson,
+  accessToken,
 }: {
   lesson: {
     contentType: LessonContentType;
     externalUrl: string | null;
     fileAsset: {
-      secureUrl: string;
+      id: string;
+      secureUrl: string | null;
       mimeType: string | null;
       originalName: string;
     } | null;
   };
+  accessToken: string;
 }) {
+  if (lesson.contentType === 'PDF') {
+    if (!lesson.fileAsset) {
+      return null;
+    }
+    return (
+      <SecurePdfViewer
+        assetId={lesson.fileAsset.id}
+        accessToken={accessToken}
+        title={lesson.fileAsset.originalName ?? 'Lesson PDF'}
+        className="lms-reader-pdf-frame"
+      />
+    );
+  }
+
   const mediaUrl = lesson.fileAsset?.secureUrl ?? lesson.externalUrl ?? null;
 
   if (!mediaUrl) {
@@ -307,18 +330,6 @@ function LessonMediaEmbed({
     );
   }
 
-  if (lesson.contentType === 'PDF') {
-    return (
-      <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white">
-        <iframe
-          title={lesson.fileAsset?.originalName ?? 'Lesson PDF'}
-          src={mediaUrl}
-          className="lms-reader-pdf-frame"
-        />
-      </div>
-    );
-  }
-
   return null;
 }
 
@@ -353,6 +364,7 @@ function StatusPill({ label, tone }: { label: string; tone: 'draft' | 'published
 
 export function CoursesPage() {
   const auth = useAuth();
+  const { academicYearId } = useAcademicYear();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const isTeacherOnly =
@@ -400,11 +412,12 @@ export function CoursesPage() {
   });
 
   const coursesQuery = useQuery({
-    queryKey: ['lms', 'courses', page],
+    queryKey: ['lms', 'courses', page, academicYearId],
     queryFn: () =>
       listCoursesApi(auth.accessToken!, {
         page,
         pageSize: 12,
+        academicYearId: academicYearId ?? undefined,
       }),
   });
 
@@ -1165,7 +1178,10 @@ export function CoursesPage() {
                             </div>
                           )}
 
-                          <LessonMediaEmbed lesson={selectedLesson} />
+                          <LessonMediaEmbed
+                            lesson={selectedLesson}
+                            accessToken={auth.accessToken ?? ''}
+                          />
 
                           <div className="flex flex-wrap gap-2">
                             {selectedLesson.externalUrl && !lessonHasInlineMedia(selectedLesson) ? (
@@ -1174,7 +1190,7 @@ export function CoursesPage() {
                                 url={selectedLesson.externalUrl}
                               />
                             ) : null}
-                            {selectedLesson.fileAsset ? (
+                            {selectedLesson.fileAsset?.secureUrl ? (
                               <AttachmentLink
                                 label={`Download ${selectedLesson.fileAsset.originalName}`}
                                 url={selectedLesson.fileAsset.secureUrl}
