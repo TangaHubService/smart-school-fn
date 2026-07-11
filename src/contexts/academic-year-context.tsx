@@ -46,7 +46,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
           listAcademicYearsApi(auth.accessToken!, { isActive: true }),
           getAcademicYearPreferenceApi(auth.accessToken!),
         ]);
-        setAvailableYears(yearsRes.items);
+        setAvailableYears(Array.isArray(yearsRes) ? yearsRes : []);
         setPref(prefRes);
       } catch {
         // Silently fail - context will just have no selection

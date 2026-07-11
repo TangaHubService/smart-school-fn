@@ -240,7 +240,7 @@ export interface AcademicYearPreference {
 
 export function listAcademicYearsApi(accessToken: string, params?: { isActive?: boolean }) {
   const query = params?.isActive !== undefined ? `?isActive=${params.isActive}` : '';
-  return apiRequest<{ items: AcademicYearSummary[] }>(`/academic-years${query}`, {
+  return apiRequest<AcademicYearSummary[]>(`/academic-years${query}`, {
     method: 'GET',
     accessToken,
   });
