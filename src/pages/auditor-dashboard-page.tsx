@@ -11,8 +11,6 @@ import {
   ClipboardList,
   Download,
   FileBarChart2,
-  FileSpreadsheet,
-  GraduationCap,
   MapPin,
   School,
   TrendingUp,
@@ -29,6 +27,7 @@ import {
   getAuditorReportApi,
   type AcademicAuditModule,
 } from '../features/audit/audit.api';
+import { Badge, Card, CardHeader, MetricCard } from '../components/dashboard/dashboard-ui';
 
 const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   ATTENDANCE: ClipboardList,
@@ -121,7 +120,7 @@ export function AuditorDashboardPage() {
           onClick={() => setActiveTab('overview')}
           className={`px-4 py-2 text-sm font-semibold ${
             activeTab === 'overview'
-              ? 'border-b-2 border-blue-600 text-blue-600'
+              ? 'border-b-2 border-brand-600 text-brand-600'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -135,7 +134,7 @@ export function AuditorDashboardPage() {
           }}
           className={`px-4 py-2 text-sm font-semibold ${
             activeTab === 'report'
-              ? 'border-b-2 border-blue-600 text-blue-600'
+              ? 'border-b-2 border-brand-600 text-brand-600'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -155,84 +154,56 @@ export function AuditorDashboardPage() {
           )}
 
           <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-            <div className="rounded-lg border bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-blue-100 p-3">
-                  <School className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Schools in Scope</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.totalSchoolsInScope}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-green-100 p-3">
-                  <BadgeCheck className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Submitted Reports</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.completedAudits}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-slate-100 p-3">
-                  <FileBarChart2 className="h-5 w-5 text-slate-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Drafts</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.draftAudits}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-amber-100 p-3">
-                  <FileBarChart2 className="h-5 w-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Pending Schools</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.pendingSchools}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-lg border bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-purple-100 p-3">
-                  <BadgeCheck className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Compliance Score</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {stats.averageComplianceScore !== null ? `${stats.averageComplianceScore}%` : '—'}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <MetricCard
+              icon={School}
+              label="Schools in Scope"
+              value={stats.totalSchoolsInScope}
+              tone="brand"
+            />
+            <MetricCard
+              icon={BadgeCheck}
+              label="Submitted Reports"
+              value={stats.completedAudits}
+              tone="success"
+            />
+            <MetricCard
+              icon={FileBarChart2}
+              label="Drafts"
+              value={stats.draftAudits}
+              tone="neutral"
+            />
+            <MetricCard
+              icon={FileBarChart2}
+              label="Pending Schools"
+              value={stats.pendingSchools}
+              tone="warning"
+            />
+            <MetricCard
+              icon={BadgeCheck}
+              label="Compliance Score"
+              value={stats.averageComplianceScore !== null ? `${stats.averageComplianceScore}%` : '—'}
+              tone="purple"
+            />
           </div>
 
-          <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Audit Modules</h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader
+              title="Audit Modules"
+              subtitle="Open a module to audit schools"
+              icon={ClipboardList}
+              tone="brand"
+            />
+            <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
               {AUDITOR_AUDIT_MODULES.map((module) => {
                 const Icon = MODULE_ICONS[module];
                 return (
                   <Link
                     key={module}
                     to={`/auditor/schools?module=${module}`}
-                    className="flex items-center gap-4 rounded-lg border border-slate-200 p-4 transition hover:border-blue-300 hover:shadow-md"
+                    className="flex items-center gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-brand-300 hover:shadow-md"
                   >
-                    <div className="rounded-lg bg-blue-50 p-2">
-                      <Icon className="h-5 w-5 text-blue-600" />
+                    <div className="rounded-lg bg-brand-50 p-2">
+                      <Icon className="h-5 w-5 text-brand-600" />
                     </div>
                     <span className="font-medium text-slate-900">
                       {ACADEMIC_AUDIT_MODULE_LABELS[module]}
@@ -241,23 +212,26 @@ export function AuditorDashboardPage() {
                 );
               })}
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Recent Audits</h2>
-            </div>
+          <Card>
+            <CardHeader
+              title="Recent Audits"
+              subtitle="Most recently submitted audit reports"
+              icon={FileBarChart2}
+              tone="success"
+            />
 
             {recentAudits.length === 0 ? (
-              <p className="text-sm text-slate-500">No audits submitted yet.</p>
+              <p className="px-5 pb-6 text-sm text-slate-500">No audits submitted yet.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 p-5">
                 {recentAudits.map((audit) => {
                   const Icon = MODULE_ICONS[audit.module] || FileBarChart2;
                   return (
                     <div
                       key={audit.id}
-                      className="flex items-center justify-between rounded-lg border border-slate-100 p-3"
+                      className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-4"
                     >
                       <div className="flex items-center gap-3">
                         <Icon className="h-4 w-4 text-slate-400" />
@@ -269,8 +243,10 @@ export function AuditorDashboardPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-slate-900">{audit.score}%</p>
-                        <p className="text-xs text-slate-500">
+                        <Badge tone={audit.score >= 75 ? 'success' : audit.score >= 50 ? 'warning' : 'danger'}>
+                          {audit.score}%
+                        </Badge>
+                        <p className="mt-1 text-xs text-slate-500">
                           {new Date(audit.createdAt).toLocaleDateString()}
                         </p>
                       </div>
@@ -279,7 +255,7 @@ export function AuditorDashboardPage() {
                 })}
               </div>
             )}
-          </div>
+          </Card>
         </>
       )}
 
@@ -316,7 +292,7 @@ export function AuditorDashboardPage() {
                     a.click();
                     URL.revokeObjectURL(url);
                   }}
-                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
                 >
                   <Download className="h-4 w-4" />
                   Export CSV
@@ -324,36 +300,38 @@ export function AuditorDashboardPage() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-4">
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
-                  <p className="text-xs font-medium text-slate-500">Schools in Scope</p>
-                  <p className="text-xl font-bold text-slate-900">
-                    {reportQuery.data.report.totalSchoolsInScope}
-                  </p>
-                </div>
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
-                  <p className="text-xs font-medium text-slate-500">Schools Audited</p>
-                  <p className="text-xl font-bold text-slate-900">
-                    {reportQuery.data.report.schoolsAudited}
-                  </p>
-                </div>
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
-                  <p className="text-xs font-medium text-slate-500">Total Audits</p>
-                  <p className="text-xl font-bold text-slate-900">
-                    {reportQuery.data.report.totalAudits}
-                  </p>
-                </div>
-                <div className="rounded-lg border bg-white p-4 shadow-sm">
-                  <p className="text-xs font-medium text-slate-500">Average Score</p>
-                  <p className="text-xl font-bold text-slate-900">
-                    {reportQuery.data.report.averageScore !== null
+                <MetricCard
+                  icon={School}
+                  label="Schools in Scope"
+                  value={reportQuery.data.report.totalSchoolsInScope}
+                  tone="brand"
+                />
+                <MetricCard
+                  icon={BadgeCheck}
+                  label="Schools Audited"
+                  value={reportQuery.data.report.schoolsAudited}
+                  tone="success"
+                />
+                <MetricCard
+                  icon={FileBarChart2}
+                  label="Total Audits"
+                  value={reportQuery.data.report.totalAudits}
+                  tone="neutral"
+                />
+                <MetricCard
+                  icon={TrendingUp}
+                  label="Average Score"
+                  value={
+                    reportQuery.data.report.averageScore !== null
                       ? `${reportQuery.data.report.averageScore}%`
-                      : '—'}
-                  </p>
-                </div>
+                      : '—'
+                  }
+                  tone={reportQuery.data.report.averageScore != null && reportQuery.data.report.averageScore >= 75 ? 'success' : 'warning'}
+                />
               </div>
 
               {Object.keys(reportQuery.data.report.moduleDistribution).length > 0 && (
-                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <div className="rounded-2xl border bg-white p-6 shadow-sm">
                   <h3 className="mb-3 text-sm font-semibold text-slate-900">
                     Audit Distribution by Module
                   </h3>
@@ -384,7 +362,7 @@ export function AuditorDashboardPage() {
                 </div>
               )}
 
-              <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border bg-white p-6 shadow-sm">
                 <h3 className="mb-3 text-sm font-semibold text-slate-900">
                   School Audit Summary
                 </h3>
@@ -432,7 +410,7 @@ export function AuditorDashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border bg-white p-6 shadow-sm">
                 <h3 className="mb-3 text-sm font-semibold text-slate-900">
                   Recent Audits
                 </h3>

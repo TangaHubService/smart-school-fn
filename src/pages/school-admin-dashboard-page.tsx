@@ -16,6 +16,7 @@ import {
   listTermsApi,
 } from '../features/sprint1/sprint1.api';
 import { listCoursesApi } from '../features/sprint4/lms.api';
+import { listLessonPlansApi } from '../features/sprint4/lesson-plans.api';
 import {
   getSchoolAdminDashboardApi,
   getDemographicsApi,
@@ -26,6 +27,7 @@ import {
 import { ActiveUsersWidget, CompletionRatesWidget, EnrollmentTrendsWidget, RevenueWidget } from '../components/dashboard/dashboard-widgets';
 import { DemographicsWidget } from '../components/dashboard/demographics-widget';
 import { LessonPlanAuditTable, type LessonPlanAuditItem } from '../components/dashboard/lesson-plan-audit-table';
+import { MetricCard } from '../components/dashboard/dashboard-ui';
 import { useQuery } from '@tanstack/react-query';
 
 function formatChange(change: number): string {
@@ -142,6 +144,35 @@ export function SchoolAdminDashboardPage() {
       title: String(c.title),
     }));
   }, [coursesQuery.data]);
+
+  const lessonPlansQuery = useQuery({
+    queryKey: ['lesson-plans', 'school-admin-dashboard', selectedAcademicYearId],
+    enabled: Boolean(auth.accessToken && selectedAcademicYearId),
+    queryFn: () =>
+      listLessonPlansApi(auth.accessToken!, {
+        academicYearId: selectedAcademicYearId!,
+        page: 1,
+        pageSize: 6,
+      }),
+  });
+
+  const lessonAuditItems = useMemo<LessonPlanAuditItem[]>(
+    () =>
+      ((lessonPlansQuery.data as any)?.items ?? []).map((plan: any) => ({
+        id: String(plan.id),
+        teacher: `${plan.teacher?.firstName ?? ''} ${plan.teacher?.lastName ?? ''}`.trim() || '—',
+        class: `${plan.classRoom?.code ?? ''}${plan.classRoom?.code && plan.classRoom?.name ? ' · ' : ''}${plan.classRoom?.name ?? ''}`.trim(),
+        subject: plan.subject?.name ?? '—',
+        submittedAt: plan.createdAt
+          ? new Date(plan.createdAt).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+            })
+          : null,
+        status: plan.status as LessonPlanAuditItem['status'],
+      })),
+    [lessonPlansQuery.data]
+  );
 
   useEffect(() => {
     if (!academicYearOptions.length) return;
@@ -277,32 +308,36 @@ export function SchoolAdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <SchoolMetricCard
+        <MetricCard
           icon={Users}
           label="Total Students"
-          value={data.metrics.totalStudents}
+          value={data.metrics.totalStudents.toLocaleString()}
           change={data.metrics.studentsChange}
-          color="green"
+          tone="success"
+          to="/admin/students"
         />
-        <SchoolMetricCard
+        <MetricCard
           icon={User}
           label="Teachers"
-          value={data.metrics.teachers}
+          value={data.metrics.teachers.toLocaleString()}
           change={data.metrics.teachersChange}
-          color="orange"
+          tone="warning"
+          to="/admin/staff"
         />
-        <SchoolMetricCard
+        <MetricCard
           icon={Building2}
           label="Classes"
-          value={data.metrics.classes}
+          value={data.metrics.classes.toLocaleString()}
           change={data.metrics.classesChange}
-          color="blue"
+          tone="brand"
+          to="/admin/my-classes"
         />
-        <SchoolMetricCard
+        <MetricCard
           icon={BookOpen}
           label="Subjects"
-          value={data.metrics.subjects}
-          color="blue"
+          value={data.metrics.subjects.toLocaleString()}
+          tone="purple"
+          to="/admin/courses"
         />
       </div>
 
@@ -347,48 +382,11 @@ export function SchoolAdminDashboardPage() {
         />
       )}
 
-      <LessonPlanAuditTable items={[]} />
+      <LessonPlanAuditTable
+        items={lessonAuditItems}
+        isLoading={lessonPlansQuery.isPending}
+      />
     </section>
-  );
-}
-
-function SchoolMetricCard({
-  icon: Icon,
-  label,
-  value,
-  change,
-  color,
-}: {
-  icon: typeof Users;
-  label: string;
-  value: number;
-  change?: number;
-  color: 'green' | 'orange' | 'blue';
-}) {
-  const colorClasses = {
-    green: 'bg-green-100 text-green-600',
-    orange: 'bg-orange-100 text-orange-600',
-    blue: 'bg-blue-100 text-blue-600',
-  };
-  const changeColor = change !== undefined && change >= 0 ? 'text-green-600' : 'text-slate-600';
-
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-4">
-        <span
-          className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${colorClasses[color]}`}
-        >
-          <Icon className="h-6 w-6" />
-        </span>
-        <div>
-          <p className="text-sm font-medium text-slate-600">{label}</p>
-          <p className="text-2xl font-bold text-slate-900">{value}</p>
-          {change !== undefined && (
-            <p className={`text-xs font-medium ${changeColor}`}>{formatChange(change)}</p>
-          )}
-        </div>
-      </div>
-    </article>
   );
 }
 

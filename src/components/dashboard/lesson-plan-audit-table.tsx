@@ -6,7 +6,7 @@ export interface LessonPlanAuditItem {
   class: string;
   subject: string;
   submittedAt: string | null;
-  status: 'submitted' | 'pending' | 'overdue';
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'ARCHIVED';
 }
 
 interface LessonPlanAuditTableProps {
@@ -15,15 +15,19 @@ interface LessonPlanAuditTableProps {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  submitted: 'bg-green-100 text-green-700',
-  pending: 'bg-amber-100 text-amber-700',
-  overdue: 'bg-red-100 text-red-700',
+  DRAFT: 'bg-slate-100 text-slate-700',
+  SUBMITTED: 'bg-blue-100 text-blue-700',
+  APPROVED: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-red-100 text-red-700',
+  ARCHIVED: 'bg-slate-100 text-slate-600',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  submitted: 'Submitted',
-  pending: 'Pending',
-  overdue: 'Overdue',
+  DRAFT: 'Draft',
+  SUBMITTED: 'Submitted',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  ARCHIVED: 'Archived',
 };
 
 export function LessonPlanAuditTable({ items, isLoading }: LessonPlanAuditTableProps) {

@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import {
   Award,
   BadgeCheck,
@@ -7,13 +6,16 @@ import {
   ClipboardCheck,
   ChevronRight,
   CircleDashed,
-  Clock,
   FileBarChart2,
   FileText,
   Home,
   Loader2,
+  Megaphone,
   MessageCircle,
   PlayCircle,
+  Sparkles,
+  Timer,
+  Users,
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
@@ -22,8 +24,10 @@ import {
   DashboardQuickActionsDropdown,
   type DashboardQuickActionItem,
 } from '../components/dashboard/quick-actions-dropdown';
-import { ActiveCoursesHierarchy, type CourseHierarchyItem } from '../components/dashboard/active-courses-hierarchy';
-import { PaymentStatusWidget } from '../components/dashboard/payment-status-widget';
+import {
+  ActiveCoursesHierarchy,
+  type CourseHierarchyItem,
+} from '../components/dashboard/active-courses-hierarchy';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import { useAcademicYear } from '../contexts/academic-year-context';
@@ -34,6 +38,17 @@ import {
 import { listMyCoursesApi, type MyCoursesResponse } from '../features/sprint4/lms.api';
 import { useQuery } from '@tanstack/react-query';
 import { courseEnrollmentState, getCourseProgressMetrics } from '../utils/course-progress';
+import {
+  Badge,
+  Card,
+  CardActionLink,
+  CardHeader,
+  EmptyInline,
+  LoadingCard,
+  LoadingMetrics,
+  MetricCard,
+  ProgressBar,
+} from '../components/dashboard/dashboard-ui';
 
 const STUDENT_QUICK_ACTIONS: DashboardQuickActionItem[] = [
   {
@@ -88,6 +103,19 @@ export function StudentDashboardPage() {
     queryFn: () => listMyCoursesApi(auth.accessToken!, { page: 1, pageSize: 50 }),
   });
 
+  const hierarchyItems = useMemo<CourseHierarchyItem[]>(
+    () =>
+      (coursesQuery.data?.items ?? []).map((c) => ({
+        id: c.id,
+        title: c.title,
+        grade: c.academicYear?.name ?? '',
+        class: `${c.classRoom?.code ?? ''}${c.classRoom?.code && c.classRoom?.name ? ' · ' : ''}${c.classRoom?.name ?? ''}`.trim(),
+        subject: c.subject?.name ?? 'Subject not set',
+        progress: Math.round(getCourseProgressMetrics(c, c.completedLessonIds ?? []).overallProgress),
+      })),
+    [coursesQuery.data]
+  );
+
   if (isError) {
     return (
       <StateView
@@ -108,25 +136,28 @@ export function StudentDashboardPage() {
 
   if (isPending || !data) {
     return (
-      <div className="space-y-4">
-        <div className="h-14 animate-pulse rounded-xl bg-slate-200" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-200" />
-          ))}
+      <div className="space-y-5">
+        <div className="h-28 animate-pulse rounded-2xl bg-slate-200" />
+        <LoadingMetrics count={4} />
+        <div className="grid gap-5 lg:grid-cols-3">
+          <LoadingCard rows={4} className="lg:col-span-2" />
+          <LoadingCard rows={3} />
         </div>
       </div>
     );
   }
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className="space-y-5">
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Student portal
+          </p>
+          <h1 className="mt-2 text-[1.75rem] font-bold tracking-tight text-slate-900">
             Hey, {auth.me?.firstName || 'Student'}
           </h1>
-          <p className="mt-0.5 text-sm text-slate-600">
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             See how your courses are moving below, then open any area of your portal.
           </p>
         </div>
@@ -146,103 +177,54 @@ export function StudentDashboardPage() {
         items={coursesQuery.data?.items}
       />
 
-      {data.learningStats ? (
-        <section className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-brand-600" aria-hidden />
-            <span className="font-medium text-slate-900">
-              {Math.round((data.learningStats.timeSpentSecondsTotal ?? 0) / 60)} min
-            </span>
-            <span className="text-slate-500">time on lessons</span>
-          </div>
-          {data.learningStats.lastLessonActivityAt ? (
-            <span className="text-slate-500">
-              Last activity{' '}
-              {new Date(data.learningStats.lastLessonActivityAt).toLocaleString(undefined, {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              })}
-            </span>
-          ) : (
-            <span className="text-slate-500">Open a lesson to start tracking time</span>
-          )}
-          {data.learningStats.avgAssessmentScorePercent != null ? (
-            <span className="text-slate-500">
-              Avg quiz score:{' '}
-              <span className="font-semibold text-slate-800">
-                {data.learningStats.avgAssessmentScorePercent}%
-              </span>
-            </span>
-          ) : null}
-        </section>
-      ) : null}
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StudentStatCard
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
           icon={BookOpen}
           label="My courses"
           value={data.metrics.myCourses}
+          tone="brand"
           to="/student/courses"
-          emphasize
         />
-        <StudentStatCard
+        <MetricCard
           icon={ClipboardCheck}
           label="Assignments submitted"
           value={data.metrics.assignmentsSubmitted}
+          tone="purple"
           to="/student/assignments"
         />
-        <StudentStatCard
+        <MetricCard
           icon={BadgeCheck}
           label="Tests taken"
           value={data.metrics.myAssessments}
+          tone="warning"
           to="/student/assessments"
         />
-        <StudentStatCard
+        <MetricCard
           icon={FileBarChart2}
           label="Report cards"
           value={data.metrics.reportCards}
+          tone="success"
           to="/student/report-cards"
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <ActiveCoursesHierarchy items={[]} />
+          <ActiveCoursesHierarchy
+            items={hierarchyItems}
+            isLoading={coursesQuery.isPending}
+          />
         </div>
-        <div className="flex flex-col gap-4">
-          <PaymentStatusWidget totalFees={0} paidFees={0} />
-
-          <Link
-            to="/student/courses"
-            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-brand-200 hover:shadow-md"
-          >
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-              <FileText className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Secure PDF Viewer</p>
-              <p className="text-xs text-slate-500">View course materials</p>
-            </div>
-            <ChevronRight className="ml-auto h-5 w-5 shrink-0 text-slate-300" />
-          </Link>
-
-          <Link
-            to="/student/chat"
-            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-brand-200 hover:shadow-md"
-          >
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <MessageCircle className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Student Group Chat</p>
-              <p className="text-xs text-slate-500">Discuss with classmates</p>
-            </div>
-            <ChevronRight className="ml-auto h-5 w-5 shrink-0 text-slate-300" />
-          </Link>
+        <div className="flex flex-col gap-5">
+          <PerformanceCard data={data} />
+          <AnnouncementsCard data={data} />
         </div>
       </div>
 
-      <StudentUpcomingExamsCard data={data} />
+      <div className="grid gap-5 lg:grid-cols-3">
+        <StudentUpcomingExamsCard data={data} className="lg:col-span-2" />
+        <QuickLinksCard />
+      </div>
     </section>
   );
 }
@@ -284,7 +266,7 @@ function StudentCourseProgressStrip({
   if (isPending) {
     return (
       <section
-        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600 shadow-sm"
+        className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600 shadow-sm"
         aria-busy="true"
         aria-label="Loading course progress"
       >
@@ -296,7 +278,7 @@ function StudentCourseProgressStrip({
 
   if (isError) {
     return (
-      <section className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-4 text-sm text-amber-950 shadow-sm">
+      <section className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-4 text-sm text-amber-950 shadow-sm">
         <p className="font-medium">Could not load course progress.</p>
         <button
           type="button"
@@ -311,7 +293,7 @@ function StudentCourseProgressStrip({
 
   if (breakdown.total === 0) {
     return (
-      <section className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center shadow-sm">
+      <section className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center shadow-sm">
         <p className="text-sm font-medium text-slate-800">No enrolled courses yet</p>
         <p className="mt-1 text-xs text-slate-600">
           When your school assigns classes, your progress will show here.
@@ -373,7 +355,7 @@ function StudentCourseProgressStrip({
         </Link>
       </div>
       {breakdown.inProgressCourses.length > 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-900">Continue learning</h3>
           <ul className="mt-3 grid gap-3 lg:grid-cols-3">
             {breakdown.inProgressCourses.map((c) => (
@@ -396,68 +378,176 @@ function StudentCourseProgressStrip({
   );
 }
 
-function StudentStatCard({
-  icon: Icon,
-  label,
-  value,
-  to,
-  emphasize,
-}: {
-  icon: typeof BookOpen;
-  label: string;
-  value: number;
-  to: string;
-  emphasize?: boolean;
-}) {
+function PerformanceCard({ data }: { data: StudentDashboardData }) {
+  const stats = data.learningStats;
+  const minutes = Math.round((stats?.timeSpentSecondsTotal ?? 0) / 60);
+  const avgScore = stats?.avgAssessmentScorePercent ?? null;
+
   return (
-    <Link
-      to={to}
-      className={clsx(
-        'flex items-center justify-between gap-3 rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md',
-        emphasize
-          ? 'border-2 border-brand-300 ring-1 ring-brand-100 hover:border-brand-400'
-          : 'border border-slate-200 hover:border-brand-200'
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-          <Icon className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-slate-500">{label}</p>
-          <p className="text-xl font-semibold text-slate-900">{value}</p>
+    <Card>
+      <CardHeader
+        title="My performance"
+        subtitle="Quiz scores and study activity"
+        icon={Sparkles}
+        tone="brand"
+        action={<CardActionLink to="/student/my-learning">Details</CardActionLink>}
+      />
+      <div className="p-5">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-slate-600">Average quiz score</p>
+          {avgScore !== null ? (
+            <Badge tone={avgScore >= 50 ? 'success' : 'warning'}>{avgScore}%</Badge>
+          ) : (
+            <Badge tone="neutral">No scores yet</Badge>
+          )}
+        </div>
+        {avgScore !== null && <ProgressBar value={avgScore} tone={avgScore >= 50 ? 'success' : 'warning'} className="mt-3" />}
+        <div className="mt-5 space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+              <Timer className="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">{minutes} min</p>
+              <p className="text-xs text-slate-500">Time spent on lessons</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+              <Users className="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                {data.conductOpen != null && data.conductOpen > 0
+                  ? `${data.conductOpen} open`
+                  : 'No open issues'}
+              </p>
+              <p className="text-xs text-slate-500">Conduct entries</p>
+            </div>
+          </div>
         </div>
       </div>
-      <ChevronRight className="h-5 w-5 shrink-0 text-slate-300" aria-hidden />
-    </Link>
+    </Card>
   );
 }
 
-function StudentUpcomingExamsCard({ data }: { data: StudentDashboardData }) {
+function AnnouncementsCard({ data }: { data: StudentDashboardData }) {
+  const items = data.recentAnnouncements ?? [];
+
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="text-base font-semibold text-slate-900">Upcoming exams</h2>
-      <div className="mt-3 space-y-2">
-        {data.upcomingExams.length ? (
-          data.upcomingExams.map((exam) => (
-            <div
-              key={exam.id}
-              className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5"
-            >
-              <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                <div>
-                  <p className="text-sm font-medium text-slate-900">{exam.title}</p>
-                  <p className="text-xs text-slate-500">{exam.relativeDate}</p>
-                </div>
-              </div>
-              <p className="text-xs font-medium text-slate-600">{exam.time}</p>
-            </div>
-          ))
+    <Card>
+      <CardHeader
+        title="Announcements"
+        subtitle="Latest updates from your school"
+        icon={Megaphone}
+        tone="warning"
+        action={<CardActionLink to="/student/announcements">View all</CardActionLink>}
+      />
+      <div className="p-5">
+        {items.length === 0 ? (
+          <EmptyInline icon={Megaphone} title="No announcements yet" />
         ) : (
-          <p className="py-6 text-center text-sm text-slate-500">No upcoming exams</p>
+          <div className="space-y-3">
+            {items.map((a) => (
+              <div key={a.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                <p className="text-sm font-semibold text-slate-900">{a.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">{a.excerpt}</p>
+                {a.publishedAt && (
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    {new Date(a.publishedAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
-    </section>
+    </Card>
+  );
+}
+
+function StudentUpcomingExamsCard({
+  data,
+  className,
+}: {
+  data: StudentDashboardData;
+  className?: string;
+}) {
+  return (
+    <Card className={className}>
+      <CardHeader
+        title="Upcoming exams"
+        subtitle="Tests and examinations scheduled for you"
+        icon={FileBarChart2}
+        tone="danger"
+        action={<CardActionLink to="/student/assessments">Assessments</CardActionLink>}
+      />
+      <div className="p-5">
+        {data.upcomingExams.length === 0 ? (
+          <EmptyInline
+            icon={FileBarChart2}
+            title="No upcoming exams"
+            message="Your school has not scheduled any exams yet. Relax and keep learning."
+          />
+        ) : (
+          <div className="space-y-3">
+            {data.upcomingExams.map((exam) => (
+              <div
+                key={exam.id}
+                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{exam.title}</p>
+                    <p className="text-xs text-slate-500">{exam.relativeDate}</p>
+                  </div>
+                </div>
+                <Badge tone="neutral">{exam.time}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function QuickLinksCard() {
+  return (
+    <Card>
+      <CardHeader title="Quick links" icon={BookMarked} tone="purple" />
+      <div className="space-y-3 p-5">
+        <Link
+          to="/student/courses"
+          className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-brand-200 hover:bg-brand-50/40"
+        >
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+            <FileText className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-900">Secure PDF Viewer</p>
+            <p className="text-xs text-slate-500">View course materials</p>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
+        </Link>
+        <Link
+          to="/student/chat"
+          className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40"
+        >
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+            <MessageCircle className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-900">Student Group Chat</p>
+            <p className="text-xs text-slate-500">Discuss with classmates</p>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
+        </Link>
+      </div>
+    </Card>
   );
 }

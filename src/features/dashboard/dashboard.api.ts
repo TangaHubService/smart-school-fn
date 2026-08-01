@@ -249,6 +249,14 @@ export interface TeacherDashboardData {
     pendingClasses: number;
     totalClasses: number;
   };
+  todayClasses: Array<{
+    classRoomId: string;
+    className: string;
+    subjectNames: string[];
+    totalStudents: number;
+    markedStudents: number;
+    status: 'COMPLETE' | 'PARTIAL' | 'UNMARKED';
+  }>;
   upcomingExams: Array<{
     id: string;
     title: string;

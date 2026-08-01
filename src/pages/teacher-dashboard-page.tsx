@@ -1,27 +1,40 @@
+import { useQuery } from '@tanstack/react-query';
 import {
+  ArrowUpRight,
   BarChart3,
   BookOpen,
+  CheckCircle2,
   ClipboardCheck,
+  Clock3,
   FileBarChart2,
-  Home,
+  Megaphone,
   School,
+  Sparkles,
   Users,
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import {
   DashboardQuickActionsDropdown,
   type DashboardQuickActionItem,
 } from '../components/dashboard/quick-actions-dropdown';
-import { ActiveStudentList, type ActiveStudent } from '../components/dashboard/active-student-list';
-import { RecommendationsWidget, type Recommendation } from '../components/dashboard/recommendations-widget';
-import { AnnouncementsWidget } from '../components/dashboard/announcements-widget';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
-import { getTeacherDashboardApi } from '../features/dashboard/dashboard.api';
+import { getTeacherDashboardApi, type TeacherDashboardData } from '../features/dashboard/dashboard.api';
 import { listMyAnnouncementsApi } from '../features/announcements/announcements.api';
-import { useQuery } from '@tanstack/react-query';
+import {
+  Badge,
+  Card,
+  CardActionLink,
+  CardHeader,
+  EmptyInline,
+  LoadingCard,
+  LoadingMetrics,
+  MetricCard,
+  ProgressBar,
+  type DashboardTone,
+} from '../components/dashboard/dashboard-ui';
 
 function getTodayKigaliDate(): string {
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -67,6 +80,77 @@ const TEACHER_QUICK_ACTIONS: DashboardQuickActionItem[] = [
   },
 ];
 
+const CLASS_STATUS_META: Record<
+  'COMPLETE' | 'PARTIAL' | 'UNMARKED',
+  { label: string; tone: DashboardTone; bar: DashboardTone }
+> = {
+  COMPLETE: { label: 'Complete', tone: 'success', bar: 'success' },
+  PARTIAL: { label: 'Partial', tone: 'warning', bar: 'warning' },
+  UNMARKED: { label: 'Unmarked', tone: 'neutral', bar: 'brand' },
+};
+
+function buildRecommendations(data: TeacherDashboardData) {
+  const items: Array<{
+    id: string;
+    title: string;
+    from: string;
+    priority: 'high' | 'medium' | 'low';
+    to: string;
+  }> = [];
+
+  if (data.todayAttendance.pendingClasses > 0) {
+    items.push({
+      id: 'attendance',
+      title: `Mark attendance for ${data.todayAttendance.pendingClasses} pending class${
+        data.todayAttendance.pendingClasses > 1 ? 'es' : ''
+      } today`,
+      from: 'Today attendance',
+      priority: 'high',
+      to: '/admin/attendance',
+    });
+  }
+  if (data.metrics.pendingSubmissions > 0) {
+    items.push({
+      id: 'grading',
+      title: `${data.metrics.pendingSubmissions} submission${
+        data.metrics.pendingSubmissions > 1 ? 's' : ''
+      } awaiting your review`,
+      from: 'Assignments',
+      priority: 'high',
+      to: '/admin/assignments',
+    });
+  }
+  if (data.todayClasses.some((c) => c.status === 'PARTIAL')) {
+    items.push({
+      id: 'partial',
+      title: 'Finish attendance for partially marked classes',
+      from: 'Today attendance',
+      priority: 'medium',
+      to: '/admin/attendance',
+    });
+  }
+  if (data.upcomingExams.length > 0) {
+    items.push({
+      id: 'exam',
+      title: `Prepare for "${data.upcomingExams[0].title}"`,
+      from: data.upcomingExams[0].relativeDate,
+      priority: 'medium',
+      to: '/admin/exams',
+    });
+  }
+  if (data.metrics.pendingSubmissions === 0 && data.todayAttendance.pendingClasses === 0) {
+    items.push({
+      id: 'next',
+      title: 'Plan your next lessons and activities',
+      from: 'Course workspace',
+      priority: 'low',
+      to: '/admin/courses',
+    });
+  }
+
+  return items.slice(0, 4);
+}
+
 export function TeacherDashboardPage() {
   const { t } = useTranslation('teacher');
   const auth = useAuth();
@@ -105,15 +189,19 @@ export function TeacherDashboardPage() {
   if (isPending || !data) {
     return (
       <div className="space-y-5">
-        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-2xl bg-slate-200" />
-          ))}
+        <div className="h-28 animate-pulse rounded-2xl bg-slate-200" />
+        <LoadingMetrics count={4} />
+        <div className="grid gap-5 lg:grid-cols-2">
+          <LoadingCard rows={4} />
+          <LoadingCard rows={4} />
         </div>
       </div>
     );
   }
+
+  const recommendations = buildRecommendations(data);
+  const classesStarted =
+    data.todayClasses.filter((c) => c.markedStudents > 0).length;
 
   return (
     <section className="space-y-5">
@@ -137,151 +225,319 @@ export function TeacherDashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <TeacherMetricCard
+        <MetricCard
           icon={BookOpen}
           label={t('dashboard.metrics.myCourses')}
           value={data.metrics.myCourses}
+          tone="brand"
           to="/admin/courses"
-          color="green"
         />
-        <TeacherMetricCard
+        <MetricCard
           icon={School}
           label={t('dashboard.metrics.myClasses')}
           value={data.metrics.myClasses}
+          tone="purple"
           to="/admin/my-classes"
-          color="blue"
         />
-        <TeacherMetricCard
+        <MetricCard
           icon={ClipboardCheck}
           label={t('dashboard.metrics.pendingToGrade')}
           value={data.metrics.pendingSubmissions}
+          tone="warning"
           to="/admin/assignments"
-          color="orange"
+          helper={data.metrics.pendingSubmissions > 0 ? 'Needs your review' : 'All caught up'}
         />
-        <TeacherMetricCard
+        <MetricCard
           icon={Users}
           label={t('dashboard.metrics.markedToday')}
-          value={data.todayAttendance.markedStudents}
+          value={`${data.todayAttendance.markedStudents} / ${data.todayClasses.reduce(
+            (sum, c) => sum + c.totalStudents,
+            0
+          )}`}
+          tone="success"
           to="/admin/attendance"
-          color="green"
+          helper={`${classesStarted} of ${data.todayClasses.length} classes started`}
         />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900">{t('dashboard.attendanceTitle')}</h2>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-              <span className="text-sm font-medium text-slate-700">
-                {t('dashboard.classesWithSessions')}
-              </span>
-              <span className="font-semibold text-slate-900">
-                {data.todayAttendance.totalClasses - data.todayAttendance.pendingClasses} /{' '}
-                {data.todayAttendance.totalClasses}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-              <span className="text-sm font-medium text-slate-700">
-                {t('dashboard.studentsMarked')}
-              </span>
-              <span className="font-semibold text-slate-900">
-                {data.todayAttendance.markedStudents}
-              </span>
-            </div>
-            {data.todayAttendance.pendingClasses > 0 && (
-              <Link
-                to="/admin/attendance"
-                className="block rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800"
-              >
-                {t('dashboard.pendingClasses', { count: data.todayAttendance.pendingClasses })} →
-              </Link>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">{t('dashboard.upcomingExams')}</h2>
-            <Link to="/admin/exams" className="text-sm font-semibold text-brand-500">
-              {t('dashboard.viewAll')} →
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {data.upcomingExams.length ? (
-              data.upcomingExams.map((exam) => (
-                <Link
-                  key={exam.id}
-                  to="/admin/exams"
-                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 transition hover:bg-slate-100"
-                >
-                  <div>
-                    <p className="font-semibold text-slate-900">{exam.title}</p>
-                    <p className="text-sm text-slate-500">{exam.relativeDate}</p>
-                  </div>
-                  <span className="text-sm font-medium text-slate-600">{exam.time}</span>
-                </Link>
-              ))
-            ) : (
-              <p className="py-6 text-center text-sm text-slate-500">
-                {t('dashboard.noUpcomingExams')}
-              </p>
-            )}
-          </div>
-        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <ActiveStudentList students={[]} />
-        <RecommendationsWidget items={[]} />
-        <AnnouncementsWidget
-          isLoading={announcementsQuery.isPending}
-          items={(announcementsQuery.data?.items ?? []).map((item) => ({
-            id: item.id,
-            title: item.title,
-            excerpt: item.body.length > 140 ? `${item.body.slice(0, 140)}…` : item.body,
-            publishedAt: item.publishedAt,
-          }))}
-        />
+        <TodayClassesCard data={data} className="lg:col-span-2" />
+        <RecommendationsCard items={recommendations} />
       </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <AttendanceSummaryCard data={data} />
+        <UpcomingExamsCard data={data} />
+      </div>
+
+      <AnnouncementsCard
+        isLoading={announcementsQuery.isPending}
+        items={(announcementsQuery.data?.items ?? []).map((item) => ({
+          id: item.id,
+          title: item.title,
+          excerpt: item.body.length > 140 ? `${item.body.slice(0, 140)}…` : item.body,
+          publishedAt: item.publishedAt,
+        }))}
+      />
     </section>
   );
 }
 
-function TeacherMetricCard({
-  icon: Icon,
-  label,
-  value,
-  to,
-  color,
+function TodayClassesCard({
+  data,
+  className,
 }: {
-  icon: typeof BookOpen;
-  label: string;
-  value: number;
-  to: string;
-  color: string;
+  data: TeacherDashboardData;
+  className?: string;
 }) {
-  const colorClasses: Record<string, string> = {
-    green: 'bg-green-100 text-green-600',
-    orange: 'bg-orange-100 text-orange-600',
-    blue: 'bg-blue-100 text-blue-600',
-  };
+  const started = data.todayClasses.filter((c) => c.markedStudents > 0).length;
 
   return (
-    <Link
-      to={to}
-      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-brand-200 hover:shadow-md"
-    >
-      <div className="flex items-center gap-4">
-        <span
-          className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${colorClasses[color] ?? 'bg-slate-100 text-slate-600'}`}
-        >
-          <Icon className="h-6 w-6" />
-        </span>
-        <div>
-          <p className="text-sm font-medium text-slate-600">{label}</p>
-          <p className="text-2xl font-bold text-slate-900">{value}</p>
+    <Card className={className}>
+      <CardHeader
+        title="Today's classes"
+        subtitle={`${started} of ${data.todayClasses.length} class${
+          data.todayClasses.length === 1 ? '' : 'es'
+        } have attendance records`}
+        icon={CheckCircle2}
+        tone="success"
+        action={<CardActionLink to="/admin/attendance">Mark attendance</CardActionLink>}
+      />
+      <div className="p-5">
+        {data.todayClasses.length === 0 ? (
+          <EmptyInline
+            icon={Clock3}
+            title="No classes scheduled today"
+            message="Once your classes are set up, attendance status will appear here."
+          />
+        ) : (
+          <div className="space-y-3">
+            {data.todayClasses.map((c) => {
+              const meta = CLASS_STATUS_META[c.status];
+              const pct =
+                c.totalStudents > 0
+                  ? Math.round((c.markedStudents / c.totalStudents) * 100)
+                  : 0;
+              return (
+                <Link
+                  key={c.classRoomId}
+                  to="/admin/attendance"
+                  className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 transition hover:border-brand-200 hover:bg-brand-50/40"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-slate-900">{c.className}</p>
+                      <Badge tone={meta.tone}>{meta.label}</Badge>
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {c.subjectNames.length > 0 ? c.subjectNames.join(' · ') : 'Subjects not set'}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <ProgressBar value={pct} tone={meta.bar} className="max-w-[160px]" />
+                      <span className="text-xs font-medium tabular-nums text-slate-600">
+                        {c.markedStudents}/{c.totalStudents} students
+                      </span>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-400" />
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+const RECOMMENDATION_META: Record<
+  'high' | 'medium' | 'low',
+  { label: string; tone: DashboardTone }
+> = {
+  high: { label: 'High', tone: 'danger' },
+  medium: { label: 'Medium', tone: 'warning' },
+  low: { label: 'Low', tone: 'brand' },
+};
+
+function RecommendationsCard({
+  items,
+}: {
+  items: Array<{
+    id: string;
+    title: string;
+    from: string;
+    priority: 'high' | 'medium' | 'low';
+    to: string;
+  }>;
+}) {
+  return (
+    <Card>
+      <CardHeader
+        title="Recommendations"
+        subtitle="Prioritised actions for today"
+        icon={Sparkles}
+        tone="purple"
+      />
+      <div className="space-y-3 p-5">
+        {items.length === 0 ? (
+          <EmptyInline
+            icon={Sparkles}
+            title="Nothing needs attention"
+            message="You are all caught up. New recommendations will appear here."
+          />
+        ) : (
+          items.map((r) => (
+            <Link
+              key={r.id}
+              to={r.to}
+              className="block rounded-xl border-l-2 border-slate-200 bg-slate-50/50 p-3 transition hover:border-l-purple-400 hover:bg-slate-50"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-semibold text-slate-900">{r.title}</p>
+                <Badge tone={RECOMMENDATION_META[r.priority].tone}>
+                  {RECOMMENDATION_META[r.priority].label}
+                </Badge>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">{r.from}</p>
+            </Link>
+          ))
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function AttendanceSummaryCard({ data }: { data: TeacherDashboardData }) {
+  const totalStudents = data.todayClasses.reduce((sum, c) => sum + c.totalStudents, 0);
+  const markedPct =
+    totalStudents > 0 ? Math.round((data.todayAttendance.markedStudents / totalStudents) * 100) : 0;
+  const sessionsStarted = data.todayAttendance.totalClasses - data.todayAttendance.pendingClasses;
+
+  return (
+    <Card>
+      <CardHeader
+        title="Today attendance"
+        subtitle="Coverage across your scheduled classes"
+        icon={ClipboardCheck}
+        tone="warning"
+        action={<CardActionLink to="/admin/attendance">Open</CardActionLink>}
+      />
+      <div className="p-5">
+        <div className="flex items-end justify-between">
+          <p className="text-sm font-medium text-slate-600">Students marked</p>
+          <p className="text-2xl font-bold tabular-nums text-slate-900">
+            {data.todayAttendance.markedStudents}
+            <span className="text-sm font-medium text-slate-400"> / {totalStudents}</span>
+          </p>
+        </div>
+        <ProgressBar value={markedPct} tone="success" className="mt-3" />
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-center">
+            <p className="text-lg font-bold tabular-nums text-slate-900">
+              {sessionsStarted}
+              <span className="text-sm font-medium text-slate-400">/{data.todayAttendance.totalClasses}</span>
+            </p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              Classes started
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-center">
+            <p className="text-lg font-bold tabular-nums text-amber-700">
+              {data.todayAttendance.pendingClasses}
+            </p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              Pending
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-center">
+            <p className="text-lg font-bold tabular-nums text-slate-900">{totalStudents}</p>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              Total students
+            </p>
+          </div>
         </div>
       </div>
-    </Link>
+    </Card>
+  );
+}
+
+function UpcomingExamsCard({ data }: { data: TeacherDashboardData }) {
+  return (
+    <Card>
+      <CardHeader
+        title="Upcoming exams"
+        subtitle="Exams you need to administer or mark"
+        icon={FileBarChart2}
+        tone="brand"
+        action={<CardActionLink to="/admin/exams">View all</CardActionLink>}
+      />
+      <div className="p-5">
+        {data.upcomingExams.length === 0 ? (
+          <EmptyInline icon={FileBarChart2} title="No upcoming exams" />
+        ) : (
+          <div className="space-y-3">
+            {data.upcomingExams.map((exam) => (
+              <Link
+                key={exam.id}
+                to="/admin/exams"
+                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 transition hover:border-brand-200 hover:bg-brand-50/40"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{exam.title}</p>
+                  <p className="text-xs text-slate-500">{exam.relativeDate}</p>
+                </div>
+                <Badge tone="brand">{exam.time}</Badge>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function AnnouncementsCard({
+  items,
+  isLoading,
+}: {
+  items: Array<{ id: string; title: string; excerpt: string; publishedAt: string | null }>;
+  isLoading: boolean;
+}) {
+  if (isLoading) return <LoadingCard rows={2} />;
+
+  return (
+    <Card>
+      <CardHeader
+        title="Announcements"
+        subtitle="Latest school updates"
+        icon={Megaphone}
+        tone="brand"
+        action={<CardActionLink to="/admin/announcements">View all</CardActionLink>}
+      />
+      <div className="p-5">
+        {items.length === 0 ? (
+          <EmptyInline icon={Megaphone} title="No announcements yet" />
+        ) : (
+          <div className="space-y-3">
+            {items.map((a) => (
+              <div key={a.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-900">{a.title}</p>
+                  {a.publishedAt && (
+                    <span className="shrink-0 text-[11px] text-slate-400">
+                      {new Date(a.publishedAt).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">{a.excerpt}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }
