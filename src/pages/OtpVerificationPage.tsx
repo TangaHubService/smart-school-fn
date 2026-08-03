@@ -143,11 +143,11 @@ export function OtpVerificationPage() {
                 <ShieldCheck className="h-6 w-6 text-white" />
               </div>
               <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-                {t('otp.title') || 'Two-Factor Authentication'}
+                {t('otp.title', { defaultValue: 'Two-Factor Authentication' })}
               </h1>
             </div>
             <p className="mt-3 text-slate-600 leading-relaxed">
-              {t('otp.subtitle') || 'Enter the 6-digit code sent to your email'}
+              {t('otp.subtitle', { defaultValue: 'Enter the 6-digit code sent to your email' })}
             </p>
           </header>
 
@@ -211,7 +211,7 @@ export function OtpVerificationPage() {
             <div className="flex items-center gap-3">
               <Mail className="h-5 w-5 text-brand-600" />
               <span className="text-sm font-black text-brand-700 uppercase tracking-[0.2em]">
-                {t('otp.infoLabel') || 'Verification Info'}
+                {t('otp.infoLabel', { defaultValue: 'Verification Info' })}
               </span>
             </div>
 
