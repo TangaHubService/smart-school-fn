@@ -27,6 +27,7 @@ import { RichContent } from '../components/rich-content';
 import { RichTextEditor } from '../components/rich-text-editor';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { PageSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
@@ -621,12 +622,7 @@ export function AssessmentDetailPage() {
   }, [selectedAttempt?.id, selectedAttempt?.manualFeedback]);
 
   if (assessmentDetailQuery.isPending) {
-    return (
-      <div className="grid gap-4">
-        <div className="h-16 animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
-        <div className="h-[640px] animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
-      </div>
-    );
+    return <PageSkeleton variant="detail" />;
   }
 
   if (assessmentDetailQuery.isError || !assessment) {

@@ -4,13 +4,19 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { EmptyState } from '../components/empty-state';
 import { DrawerForm } from '../components/drawer-form';
 import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
-import { StateView } from '../components/state-view';
+import { InlineSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { ConfirmDrawer } from '../components/confirm-drawer';
+import { Avatar } from '../components/ui/avatar';
+import { Badge } from '../components/ui/badge';
+import {
+  DataTable,
+  DataTableToolbar,
+  type DataTableColumn,
+} from '../components/ui/data-table';
 import { useAuth } from '../features/auth/auth.context';
 import { listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import {
@@ -20,8 +26,69 @@ import {
   listParentsApi,
   updateParentApi,
   deleteParentApi,
+  type ParentListItem,
 } from '../features/sprint2/sprint2.api';
 import { ApiClientError } from '../types/api';
+
+const parentColumns: DataTableColumn<ParentListItem>[] = [
+  {
+    key: 'name',
+    header: 'Parent',
+    mobile: 'primary',
+    render: (parent) => (
+      <span className="flex items-center gap-3">
+        <Avatar name={`${parent.firstName} ${parent.lastName}`} size="sm" />
+        <span className="min-w-0">
+          <span className="block font-semibold text-slate-900">
+            {parent.firstName} {parent.lastName}
+          </span>
+          {parent.parentCode ? (
+            <span className="block text-xs text-slate-500">{parent.parentCode}</span>
+          ) : null}
+        </span>
+      </span>
+    ),
+  },
+  {
+    key: 'contact',
+    header: 'Contact',
+    mobile: 'secondary',
+    render: (parent) => (
+      <span className="min-w-0">
+        <span className="block truncate text-slate-700">{parent.email ?? '—'}</span>
+        <span className="block text-xs text-slate-500">{parent.phone ?? '—'}</span>
+      </span>
+    ),
+  },
+  {
+    key: 'linkedStudents',
+    header: 'Linked Students',
+    render: (parent) => (
+      <span>
+        <span className="tabular-nums text-slate-800">{parent.linkedStudentsCount}</span>
+        {parent.linkedStudents.length ? (
+          <span className="block text-xs text-slate-500">
+            {parent.linkedStudents
+              .slice(0, 2)
+              .map((student) => student.studentCode)
+              .join(', ')}
+            {parent.linkedStudents.length > 2 ? ' …' : ''}
+          </span>
+        ) : null}
+      </span>
+    ),
+  },
+  {
+    key: 'hasLogin',
+    header: 'Portal',
+    render: (parent) =>
+      parent.hasLogin ? (
+        <Badge tone="success">Enabled</Badge>
+      ) : (
+        <Badge tone="neutral">No login</Badge>
+      ),
+  },
+];
 
 const createParentSchema = z.object({
   parentCode: z.string().optional(),
@@ -82,7 +149,7 @@ export function ParentsPage() {
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const [pageSize, setPageSize] = useState(20);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingParent, setEditingParent] = useState<any | null>(null);
@@ -302,172 +369,85 @@ export function ParentsPage() {
         </button>
       }
     >
-      <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto]">
-        <input
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value);
+      <div className="mb-4 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]">
+        <DataTableToolbar
+          search={search}
+          onSearchChange={(value) => {
+            setSearch(value);
             setPage(1);
           }}
-          placeholder="Search by name, email, phone"
-          className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-          aria-label="Search parents"
+          searchPlaceholder="Search by name, email, phone"
+          searchAriaLabel="Search parents"
+          onReset={() => {
+            setSearch('');
+            setPage(1);
+          }}
         />
 
-        <button
-          type="button"
-          onClick={() => void parentsQuery.refetch()}
-          className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-        >
-          Refresh
-        </button>
+        <div className="p-4">
+          <DataTable<ParentListItem>
+            ariaLabel="Parents"
+            columns={parentColumns}
+            data={parents}
+            rowKey={(parent) => parent.id}
+            showIndex
+            loading={parentsQuery.isPending}
+            skeletonRows={6}
+            error={
+              parentsQuery.isError
+                ? { title: 'Could not load parents', message: 'Please retry.' }
+                : null
+            }
+            onRetry={() => void parentsQuery.refetch()}
+            emptyTitle="No parents found"
+            emptyDescription="Add parent records and start linking students."
+            pagination={{
+              page: pagination.page,
+              pageSize: pagination.pageSize,
+              totalItems: pagination.totalItems,
+              totalPages: pagination.totalPages,
+              onPageChange: setPage,
+              onPageSizeChange: (size) => {
+                setPageSize(size);
+                setPage(1);
+              },
+              pageSizeOptions: [10, 25, 50, 100],
+            }}
+            rowActions={(parent) => (
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => openEditModal(parent)}
+                  className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-brand-100"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openLinkModal(parent)}
+                  className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-brand-100"
+                >
+                  Link student
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDeletingParent({
+                      id: parent.id,
+                      name: `${parent.firstName} ${parent.lastName}`,
+                    })
+                  }
+                  className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+            minWidth={820}
+            className="border-0 shadow-none"
+          />
+        </div>
       </div>
-
-      {parentsQuery.isPending ? (
-        <div className="grid gap-2" role="status" aria-live="polite">
-          <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-          <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-          <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-        </div>
-      ) : null}
-
-      {parentsQuery.isError ? (
-        <StateView
-          title="Could not load parents"
-          message="Please retry."
-          action={
-            <button
-              type="button"
-              onClick={() => void parentsQuery.refetch()}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-            >
-              Retry
-            </button>
-          }
-        />
-      ) : null}
-
-      {!parentsQuery.isPending && !parentsQuery.isError && parents.length === 0 ? (
-        <EmptyState message="No parents found. Add parent records and start linking students." />
-      ) : null}
-
-      {!parentsQuery.isPending && !parentsQuery.isError && parents.length > 0 ? (
-        <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
-          <table className="w-full min-w-full table-auto text-left text-sm">
-            <thead>
-              <tr className="border-b border-brand-100 text-slate-700">
-                <th className="px-2 py-2 font-semibold">#</th>
-                <th className="px-2 py-2 font-semibold">Parent</th>
-                <th className="px-2 py-2 font-semibold">Contact</th>
-                <th className="px-2 py-2 font-semibold">Linked Students</th>
-                <th className="px-2 py-2 font-semibold">Portal</th>
-                <th className="px-2 py-2 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {parents.map((parent, index) => (
-                <tr key={parent.id} className="border-b border-brand-50">
-                  <td className="px-2 py-2 align-middle text-slate-600">
-                    {(page - 1) * pageSize + index + 1}
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    <p className="font-semibold text-slate-800">
-                      {parent.firstName} {parent.lastName}
-                    </p>
-                    {parent.parentCode ? (
-                      <p className="text-xs text-slate-500">{parent.parentCode}</p>
-                    ) : null}
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    <p>{parent.email ?? '-'}</p>
-                    <p className="text-xs text-slate-600">{parent.phone ?? '-'}</p>
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    <p>{parent.linkedStudentsCount}</p>
-                    {parent.linkedStudents.length ? (
-                      <p className="text-xs text-slate-600">
-                        {parent.linkedStudents
-                          .slice(0, 2)
-                          .map((student) => `${student.studentCode}`)
-                          .join(', ')}
-                        {parent.linkedStudents.length > 2 ? ' ...' : ''}
-                      </p>
-                    ) : null}
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    {parent.hasLogin ? (
-                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                        Enabled
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-brand-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                        No login
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(parent)}
-                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openLinkModal(parent)}
-                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
-                      >
-                        Link student
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDeletingParent({
-                            id: parent.id,
-                            name: `${parent.firstName} ${parent.lastName}`,
-                          })
-                        }
-                        className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-
-      {!parentsQuery.isPending && !parentsQuery.isError ? (
-        <div className="mt-3 flex items-center justify-between text-sm text-slate-700">
-          <p>
-            Showing page {pagination.page} of {Math.max(1, pagination.totalPages)} (
-            {pagination.totalItems} parents)
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
-              disabled={page <= 1}
-              className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage((value) => Math.min(pagination.totalPages, value + 1))}
-              disabled={page >= pagination.totalPages}
-              className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      ) : null}
 
       <DrawerForm
         open={isCreateModalOpen}
@@ -603,7 +583,7 @@ export function ParentsPage() {
           </select>
         </div>
         {classesQuery.isPending ? (
-          <p className="text-xs text-slate-600">Loading classes...</p>
+          <InlineSkeleton className="py-1" label="Loading classes" />
         ) : null}
         {classesQuery.isError ? (
           <p className="text-xs text-red-700">
@@ -621,7 +601,7 @@ export function ParentsPage() {
           />
         </div>
         {studentsForLinkQuery.isPending ? (
-          <p className="text-xs text-slate-600">Loading students...</p>
+          <InlineSkeleton className="py-1" label="Loading students" />
         ) : null}
         {studentsForLinkQuery.isError ? (
           <p className="text-xs text-red-700">Could not load students. Try searching again.</p>

@@ -25,6 +25,7 @@ import { RichContent } from '../components/rich-content';
 import { SecurePdfViewer } from '../components/secure-pdf-viewer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { PageSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
@@ -838,12 +839,7 @@ export function StudentCoursesPage() {
         </SectionCard>
       ) : null}
 
-      {myCoursesQuery.isPending ? (
-        <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-          <div className="h-[680px] animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
-          <div className="h-[680px] animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
-        </div>
-      ) : null}
+      {myCoursesQuery.isPending ? <PageSkeleton variant="detail" /> : null}
 
       {myCoursesQuery.isError ? (
         <StateView

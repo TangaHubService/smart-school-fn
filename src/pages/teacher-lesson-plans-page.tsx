@@ -1,16 +1,31 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, History, Loader2, MessageSquarePlus, Pencil, Plus, Send, Trash2, XCircle } from 'lucide-react';
+import {
+  CheckCircle2,
+  History,
+  MessageSquarePlus,
+  Pencil,
+  Plus,
+  Send,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 
 import { AppDrawer } from '../components/drawer';
 import { DrawerForm } from '../components/drawer-form';
-import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { ListSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
+import { Avatar } from '../components/ui/avatar';
+import { Badge, type BadgeTone } from '../components/ui/badge';
+import {
+  DataTable,
+  type DataTableColumn,
+} from '../components/ui/data-table';
 import { useAuth } from '../features/auth/auth.context';
 import { useAcademicYear } from '../contexts/academic-year-context';
 import {
@@ -55,12 +70,12 @@ const defaultForm: PlanFormValues = {
 
 const EDITABLE_STATUSES: LessonPlan['status'][] = ['DRAFT', 'REJECTED'];
 
-const STATUS_STYLES: Record<LessonPlan['status'], string> = {
-  DRAFT: 'bg-accent-50 text-accent-600',
-  SUBMITTED: 'bg-sky-50 text-sky-700',
-  APPROVED: 'bg-success-50 text-success-700',
-  REJECTED: 'bg-red-50 text-red-700',
-  ARCHIVED: 'bg-slate-100 text-slate-600',
+const LESSON_PLAN_STATUS_TONES: Record<LessonPlan['status'], BadgeTone> = {
+  DRAFT: 'warning',
+  SUBMITTED: 'info',
+  APPROVED: 'success',
+  REJECTED: 'danger',
+  ARCHIVED: 'neutral',
 };
 
 function formatDate(d: string) {
@@ -68,7 +83,9 @@ function formatDate(d: string) {
 }
 
 function formatDateTime(d: string) {
-  return new Intl.DateTimeFormat('en-RW', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(d));
+  return new Intl.DateTimeFormat('en-RW', { dateStyle: 'medium', timeStyle: 'short' }).format(
+    new Date(d)
+  );
 }
 
 export function TeacherLessonPlansPage() {
@@ -92,7 +109,8 @@ export function TeacherLessonPlansPage() {
 
   const plansQuery = useQuery({
     queryKey: ['lesson-plans', page, academicYearId],
-    queryFn: () => listLessonPlansApi(auth.accessToken!, { page, academicYearId: academicYearId ?? undefined }),
+    queryFn: () =>
+      listLessonPlansApi(auth.accessToken!, { page, academicYearId: academicYearId ?? undefined }),
     enabled: Boolean(auth.accessToken),
   });
 
@@ -114,8 +132,14 @@ export function TeacherLessonPlansPage() {
     enabled: Boolean(historyPlan),
   });
 
-  const createForm = useForm<PlanFormValues>({ resolver: zodResolver(planFormSchema), defaultValues: defaultForm });
-  const editForm = useForm<PlanFormValues>({ resolver: zodResolver(planFormSchema), defaultValues: defaultForm });
+  const createForm = useForm<PlanFormValues>({
+    resolver: zodResolver(planFormSchema),
+    defaultValues: defaultForm,
+  });
+  const editForm = useForm<PlanFormValues>({
+    resolver: zodResolver(planFormSchema),
+    defaultValues: defaultForm,
+  });
 
   function invalidatePlans() {
     void queryClient.invalidateQueries({ queryKey: ['lesson-plan-revisions'] });
@@ -123,41 +147,95 @@ export function TeacherLessonPlansPage() {
   }
 
   const createMutation = useMutation({
-    mutationFn: (v: PlanFormValues) => createLessonPlanApi(auth.accessToken!, {
-      title: v.title, academicYearId: academicYearId!, classRoomId: v.classRoomId, subjectId: v.subjectId,
-      objectives: v.objectives || undefined, materials: v.materials || undefined,
-      activities: v.activities || undefined, assessment: v.assessment || undefined,
-      weekNumber: v.weekNumber || undefined, durationMinutes: v.durationMinutes || undefined,
-    }),
-    onSuccess: () => { invalidatePlans(); showToast({ type: 'success', title: 'Lesson plan created' }); setCreateOpen(false); createForm.reset(defaultForm); },
-    onError: (e) => showToast({ type: 'error', title: 'Could not create', message: (e as ApiClientError).message }),
+    mutationFn: (v: PlanFormValues) =>
+      createLessonPlanApi(auth.accessToken!, {
+        title: v.title,
+        academicYearId: academicYearId!,
+        classRoomId: v.classRoomId,
+        subjectId: v.subjectId,
+        objectives: v.objectives || undefined,
+        materials: v.materials || undefined,
+        activities: v.activities || undefined,
+        assessment: v.assessment || undefined,
+        weekNumber: v.weekNumber || undefined,
+        durationMinutes: v.durationMinutes || undefined,
+      }),
+    onSuccess: () => {
+      invalidatePlans();
+      showToast({ type: 'success', title: 'Lesson plan created' });
+      setCreateOpen(false);
+      createForm.reset(defaultForm);
+    },
+    onError: (e) =>
+      showToast({
+        type: 'error',
+        title: 'Could not create',
+        message: (e as ApiClientError).message,
+      }),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, v }: { id: string; v: PlanFormValues }) => updateLessonPlanApi(auth.accessToken!, id, {
-      title: v.title, objectives: v.objectives || null, materials: v.materials || null,
-      activities: v.activities || null, assessment: v.assessment || null,
-      weekNumber: v.weekNumber || null, durationMinutes: v.durationMinutes || null,
-    }),
-    onSuccess: () => { invalidatePlans(); showToast({ type: 'success', title: 'Lesson plan updated' }); setEditing(null); },
-    onError: (e) => showToast({ type: 'error', title: 'Could not update', message: (e as ApiClientError).message }),
+    mutationFn: ({ id, v }: { id: string; v: PlanFormValues }) =>
+      updateLessonPlanApi(auth.accessToken!, id, {
+        title: v.title,
+        objectives: v.objectives || null,
+        materials: v.materials || null,
+        activities: v.activities || null,
+        assessment: v.assessment || null,
+        weekNumber: v.weekNumber || null,
+        durationMinutes: v.durationMinutes || null,
+      }),
+    onSuccess: () => {
+      invalidatePlans();
+      showToast({ type: 'success', title: 'Lesson plan updated' });
+      setEditing(null);
+    },
+    onError: (e) =>
+      showToast({
+        type: 'error',
+        title: 'Could not update',
+        message: (e as ApiClientError).message,
+      }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteLessonPlanApi(auth.accessToken!, id),
-    onSuccess: () => { invalidatePlans(); showToast({ type: 'success', title: 'Lesson plan deleted' }); },
-    onError: (e) => showToast({ type: 'error', title: 'Could not delete', message: (e as ApiClientError).message }),
+    onSuccess: () => {
+      invalidatePlans();
+      showToast({ type: 'success', title: 'Lesson plan deleted' });
+    },
+    onError: (e) =>
+      showToast({
+        type: 'error',
+        title: 'Could not delete',
+        message: (e as ApiClientError).message,
+      }),
   });
 
   const submitMutation = useMutation({
     mutationFn: (id: string) => submitLessonPlanApi(auth.accessToken!, id),
-    onSuccess: () => { invalidatePlans(); showToast({ type: 'success', title: 'Submitted for review' }); },
-    onError: (e) => showToast({ type: 'error', title: 'Could not submit', message: (e as ApiClientError).message }),
+    onSuccess: () => {
+      invalidatePlans();
+      showToast({ type: 'success', title: 'Submitted for review' });
+    },
+    onError: (e) =>
+      showToast({
+        type: 'error',
+        title: 'Could not submit',
+        message: (e as ApiClientError).message,
+      }),
   });
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, decision, note }: { id: string; decision: 'APPROVED' | 'REJECTED'; note?: string }) =>
-      reviewLessonPlanApi(auth.accessToken!, id, { decision, note }),
+    mutationFn: ({
+      id,
+      decision,
+      note,
+    }: {
+      id: string;
+      decision: 'APPROVED' | 'REJECTED';
+      note?: string;
+    }) => reviewLessonPlanApi(auth.accessToken!, id, { decision, note }),
     onSuccess: (_, variables) => {
       invalidatePlans();
       showToast({
@@ -167,7 +245,12 @@ export function TeacherLessonPlansPage() {
       setRejecting(null);
       setRejectionNote('');
     },
-    onError: (e) => showToast({ type: 'error', title: 'Could not submit review', message: (e as ApiClientError).message }),
+    onError: (e) =>
+      showToast({
+        type: 'error',
+        title: 'Could not submit review',
+        message: (e as ApiClientError).message,
+      }),
   });
 
   const recommendMutation = useMutation({
@@ -179,12 +262,27 @@ export function TeacherLessonPlansPage() {
       setRecommending(null);
       setRecommendationText('');
     },
-    onError: (e) => showToast({ type: 'error', title: 'Could not add recommendation', message: (e as ApiClientError).message }),
+    onError: (e) =>
+      showToast({
+        type: 'error',
+        title: 'Could not add recommendation',
+        message: (e as ApiClientError).message,
+      }),
   });
 
   function openEdit(plan: LessonPlan) {
     setEditing(plan);
-    editForm.reset({ title: plan.title, classRoomId: plan.classRoom.id, subjectId: plan.subject.id, objectives: plan.objectives ?? '', materials: plan.materials ?? '', activities: plan.activities ?? '', assessment: plan.assessment ?? '', weekNumber: plan.weekNumber ?? undefined as any, durationMinutes: plan.durationMinutes ?? undefined as any });
+    editForm.reset({
+      title: plan.title,
+      classRoomId: plan.classRoom.id,
+      subjectId: plan.subject.id,
+      objectives: plan.objectives ?? '',
+      materials: plan.materials ?? '',
+      activities: plan.activities ?? '',
+      assessment: plan.assessment ?? '',
+      weekNumber: plan.weekNumber ?? (undefined as any),
+      durationMinutes: plan.durationMinutes ?? (undefined as any),
+    });
   }
 
   function openRecommend(plan: LessonPlan) {
@@ -197,6 +295,61 @@ export function TeacherLessonPlansPage() {
     setRejectionNote('');
   }
 
+  const planColumns: DataTableColumn<LessonPlan>[] = [
+    {
+      key: 'title',
+      header: 'Title',
+      mobile: 'primary',
+      render: (plan) => <span className="font-medium text-slate-900">{plan.title}</span>,
+    },
+    ...(isReviewer
+      ? [
+          {
+            key: 'teacher',
+            header: 'Teacher',
+            mobile: 'secondary' as const,
+            render: (plan: LessonPlan) => (
+              <span className="flex items-center gap-2">
+                <Avatar name={`${plan.teacher.firstName} ${plan.teacher.lastName}`} size="sm" />
+                <span className="text-slate-600">
+                  {plan.teacher.firstName} {plan.teacher.lastName}
+                </span>
+              </span>
+            ),
+          } satisfies DataTableColumn<LessonPlan>,
+        ]
+      : []),
+    {
+      key: 'classRoom',
+      header: 'Class',
+      render: (plan) => <span className="text-slate-600">{plan.classRoom.code}</span>,
+    },
+    {
+      key: 'subject',
+      header: 'Subject',
+      render: (plan) => <span className="text-slate-600">{plan.subject.name}</span>,
+    },
+    {
+      key: 'weekNumber',
+      header: 'Week',
+      align: 'center',
+      render: (plan) => <span className="tabular-nums text-slate-600">{plan.weekNumber ?? '—'}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      mobile: 'secondary',
+      render: (plan) => <Badge tone={LESSON_PLAN_STATUS_TONES[plan.status]}>{plan.status}</Badge>,
+    },
+    {
+      key: 'updatedAt',
+      header: 'Updated',
+      render: (plan) => (
+        <span className="text-xs text-slate-500">{formatDate(plan.updatedAt)}</span>
+      ),
+    },
+  ];
+
   const error = plansQuery.error as ApiClientError | null;
   const classes = (classesQuery.data ?? []) as Array<{ id: string; code: string; name: string }>;
   const subjects = (subjectsQuery.data ?? []) as Array<{ id: string; code: string; name: string }>;
@@ -204,133 +357,163 @@ export function TeacherLessonPlansPage() {
   return (
     <SectionCard
       title="Teacher Lesson Plans"
-      subtitle={canWrite ? 'Create, submit, and manage your lesson plans' : 'Review lesson plans, leave recommendations, and approve or reject submissions'}
-      action={canWrite ? (
-        <button type="button" onClick={() => { createForm.reset(defaultForm); setCreateOpen(true); }} className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white">
-          <Plus className="h-4 w-4" /> New Plan
-        </button>
-      ) : null}
+      subtitle={
+        canWrite
+          ? 'Create, submit, and manage your lesson plans'
+          : 'Review lesson plans, leave recommendations, and approve or reject submissions'
+      }
+      action={
+        canWrite ? (
+          <button
+            type="button"
+            onClick={() => {
+              createForm.reset(defaultForm);
+              setCreateOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+          >
+            <Plus className="h-4 w-4" /> New Plan
+          </button>
+        ) : null
+      }
     >
-      {plansQuery.isPending ? (
-        <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-brand-500" /></div>
-      ) : error ? (
+      {error ? (
         <StateView title="Could not load lesson plans" message={error.message} />
-      ) : !plansQuery.data?.items.length ? (
-        <EmptyState title="No lesson plans yet" message={canWrite ? 'Create your first lesson plan to get started.' : 'No lesson plans available for review.'} />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="bg-slate-50 text-slate-700">
-              <tr>
-                <th className="px-3 py-2 font-semibold">Title</th>
-                {isReviewer && <th className="px-3 py-2 font-semibold">Teacher</th>}
-                <th className="px-3 py-2 font-semibold">Class</th>
-                <th className="px-3 py-2 font-semibold">Subject</th>
-                <th className="px-3 py-2 font-semibold">Week</th>
-                <th className="px-3 py-2 font-semibold">Status</th>
-                <th className="px-3 py-2 font-semibold">Updated</th>
-                <th className="px-3 py-2 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {plansQuery.data.items.map((plan) => {
-                const isEditable = EDITABLE_STATUSES.includes(plan.status);
-                return (
-                  <tr key={plan.id} className="border-t border-slate-100">
-                    <td className="px-3 py-2 font-medium text-slate-900">{plan.title}</td>
-                    {isReviewer && (
-                      <td className="px-3 py-2 text-slate-600">
-                        {plan.teacher.firstName} {plan.teacher.lastName}
-                      </td>
-                    )}
-                    <td className="px-3 py-2 text-slate-600">{plan.classRoom.code}</td>
-                    <td className="px-3 py-2 text-slate-600">{plan.subject.name}</td>
-                    <td className="px-3 py-2 text-slate-600">{plan.weekNumber ?? '—'}</td>
-                    <td className="px-3 py-2">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[plan.status]}`}>
-                        {plan.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-xs text-slate-500">{formatDate(plan.updatedAt)}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        {canWrite && isEditable && (
-                          <button type="button" onClick={() => openEdit(plan)} className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-2 py-1 text-xs font-semibold text-slate-700">
-                            <Pencil className="h-3.5 w-3.5" /> Edit
-                          </button>
-                        )}
-                        {canWrite && isEditable && (
-                          <button
-                            type="button"
-                            onClick={() => submitMutation.mutate(plan.id)}
-                            disabled={submitMutation.isPending}
-                            className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-700"
-                          >
-                            <Send className="h-3.5 w-3.5" /> Submit
-                          </button>
-                        )}
-                        {canWrite && plan.status === 'DRAFT' && (
-                          <button type="button" onClick={() => { if (window.confirm('Delete this lesson plan?')) deleteMutation.mutate(plan.id); }} disabled={deleteMutation.isPending} className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600">
-                            <Trash2 className="h-3.5 w-3.5" /> Delete
-                          </button>
-                        )}
-                        {isReviewer && plan.status === 'SUBMITTED' && (
-                          <button
-                            type="button"
-                            onClick={() => reviewMutation.mutate({ id: plan.id, decision: 'APPROVED' })}
-                            disabled={reviewMutation.isPending}
-                            className="inline-flex items-center gap-1 rounded-lg border border-success-200 bg-success-50 px-2 py-1 text-xs font-semibold text-success-700"
-                          >
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Approve
-                          </button>
-                        )}
-                        {isReviewer && plan.status === 'SUBMITTED' && (
-                          <button
-                            type="button"
-                            onClick={() => openReject(plan)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600"
-                          >
-                            <XCircle className="h-3.5 w-3.5" /> Reject
-                          </button>
-                        )}
-                        {isReviewer && (
-                          <button
-                            type="button"
-                            onClick={() => openRecommend(plan)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700"
-                          >
-                            <MessageSquarePlus className="h-3.5 w-3.5" /> Recommend
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setHistoryPlan(plan)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600"
-                        >
-                          <History className="h-3.5 w-3.5" /> History
-                        </button>
-                        {plan.feedback && (
-                          <span className="text-xs text-amber-600" title={plan.feedback}>Feedback ✓</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DataTable<LessonPlan>
+          ariaLabel="Lesson plans"
+          columns={planColumns}
+          data={plansQuery.data?.items ?? []}
+          rowKey={(plan) => plan.id}
+          showIndex
+          loading={plansQuery.isPending}
+          skeletonRows={6}
+          emptyTitle="No lesson plans yet"
+          emptyDescription={
+            canWrite
+              ? 'Create your first lesson plan to get started.'
+              : 'No lesson plans available for review.'
+          }
+          pagination={
+            plansQuery.data?.pagination
+              ? {
+                  page: plansQuery.data.pagination.page,
+                  pageSize: plansQuery.data.pagination.pageSize,
+                  totalItems: plansQuery.data.pagination.totalItems,
+                  totalPages: plansQuery.data.pagination.totalPages,
+                  onPageChange: setPage,
+                  onPageSizeChange: () => undefined,
+                }
+              : undefined
+          }
+          minWidth={940}
+          rowActions={(plan) => {
+            const isEditable = EDITABLE_STATUSES.includes(plan.status);
+            return (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {canWrite && isEditable && (
+                  <button
+                    type="button"
+                    onClick={() => openEdit(plan)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-brand-50"
+                  >
+                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Edit
+                  </button>
+                )}
+                {canWrite && isEditable && (
+                  <button
+                    type="button"
+                    onClick={() => submitMutation.mutate(plan.id)}
+                    disabled={submitMutation.isPending}
+                    className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 disabled:opacity-50"
+                  >
+                    <Send className="h-3.5 w-3.5" aria-hidden="true" /> Submit
+                  </button>
+                )}
+                {canWrite && plan.status === 'DRAFT' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Delete this lesson plan?'))
+                        deleteMutation.mutate(plan.id);
+                    }}
+                    disabled={deleteMutation.isPending}
+                    className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Delete
+                  </button>
+                )}
+                {isReviewer && plan.status === 'SUBMITTED' && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      reviewMutation.mutate({ id: plan.id, decision: 'APPROVED' })
+                    }
+                    disabled={reviewMutation.isPending}
+                    className="inline-flex items-center gap-1 rounded-lg border border-success-100 bg-success-50 px-2 py-1 text-xs font-semibold text-success-700 transition hover:bg-success-100 disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Approve
+                  </button>
+                )}
+                {isReviewer && plan.status === 'SUBMITTED' && (
+                  <button
+                    type="button"
+                    onClick={() => openReject(plan)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <XCircle className="h-3.5 w-3.5" aria-hidden="true" /> Reject
+                  </button>
+                )}
+                {isReviewer && (
+                  <button
+                    type="button"
+                    onClick={() => openRecommend(plan)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-accent-100 bg-accent-50 px-2 py-1 text-xs font-semibold text-accent-600 transition hover:bg-accent-100"
+                  >
+                    <MessageSquarePlus className="h-3.5 w-3.5" aria-hidden="true" /> Recommend
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setHistoryPlan(plan)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                >
+                  <History className="h-3.5 w-3.5" aria-hidden="true" /> History
+                </button>
+                {plan.feedback && (
+                  <span className="text-xs text-accent-600" title={plan.feedback}>
+                    Feedback ✓
+                  </span>
+                )}
+              </div>
+            );
+          }}
+        />
       )}
 
-      <DrawerForm open={createOpen} onCancel={() => setCreateOpen(false)} title="New Lesson Plan"
-        onSubmit={createForm.handleSubmit(v => createMutation.mutate(v))}
-        isLoading={createMutation.isPending} submitLabel="Create" formId="create-lesson-plan-form">
+      <DrawerForm
+        open={createOpen}
+        onCancel={() => setCreateOpen(false)}
+        title="New Lesson Plan"
+        onSubmit={createForm.handleSubmit((v) => createMutation.mutate(v))}
+        isLoading={createMutation.isPending}
+        submitLabel="Create"
+        formId="create-lesson-plan-form"
+      >
         <PlanFormFields form={createForm} classes={classes} subjects={subjects} />
       </DrawerForm>
 
-      <DrawerForm open={Boolean(editing)} onCancel={() => setEditing(null)} title="Edit Lesson Plan"
-        onSubmit={editForm.handleSubmit(v => { if (editing) updateMutation.mutate({ id: editing.id, v }); })}
-        isLoading={updateMutation.isPending} submitLabel="Save" formId="edit-lesson-plan-form">
+      <DrawerForm
+        open={Boolean(editing)}
+        onCancel={() => setEditing(null)}
+        title="Edit Lesson Plan"
+        onSubmit={editForm.handleSubmit((v) => {
+          if (editing) updateMutation.mutate({ id: editing.id, v });
+        })}
+        isLoading={updateMutation.isPending}
+        submitLabel="Save"
+        formId="edit-lesson-plan-form"
+      >
         {editing && <p className="text-sm text-slate-600">{editing.title}</p>}
         <PlanFormFields form={editForm} classes={classes} subjects={subjects} />
       </DrawerForm>
@@ -339,7 +522,9 @@ export function TeacherLessonPlansPage() {
         open={Boolean(recommending)}
         onClose={() => setRecommending(null)}
         title="Add recommendation"
-        description={recommending ? `Leave a recommendation for "${recommending.title}"` : undefined}
+        description={
+          recommending ? `Leave a recommendation for "${recommending.title}"` : undefined
+        }
       >
         <div className="space-y-4">
           <textarea
@@ -352,7 +537,10 @@ export function TeacherLessonPlansPage() {
           <button
             type="button"
             disabled={!recommendationText.trim() || recommendMutation.isPending}
-            onClick={() => recommending && recommendMutation.mutate({ id: recommending.id, feedback: recommendationText.trim() })}
+            onClick={() =>
+              recommending &&
+              recommendMutation.mutate({ id: recommending.id, feedback: recommendationText.trim() })
+            }
             className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white disabled:opacity-50"
           >
             {recommendMutation.isPending ? 'Saving…' : 'Save recommendation'}
@@ -377,7 +565,14 @@ export function TeacherLessonPlansPage() {
           <button
             type="button"
             disabled={reviewMutation.isPending}
-            onClick={() => rejecting && reviewMutation.mutate({ id: rejecting.id, decision: 'REJECTED', note: rejectionNote.trim() || undefined })}
+            onClick={() =>
+              rejecting &&
+              reviewMutation.mutate({
+                id: rejecting.id,
+                decision: 'REJECTED',
+                note: rejectionNote.trim() || undefined,
+              })
+            }
             className="w-full rounded-xl bg-red-600 py-3 text-sm font-semibold text-white disabled:opacity-50"
           >
             {reviewMutation.isPending ? 'Saving…' : 'Reject with feedback'}
@@ -392,7 +587,7 @@ export function TeacherLessonPlansPage() {
         description={historyPlan ? historyPlan.title : undefined}
       >
         {revisionsQuery.isPending ? (
-          <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-brand-500" /></div>
+          <ListSkeleton rows={5} showAvatar={false} />
         ) : !revisionsQuery.data?.length ? (
           <p className="py-8 text-center text-sm text-slate-500">No history yet.</p>
         ) : (
@@ -400,7 +595,9 @@ export function TeacherLessonPlansPage() {
             {revisionsQuery.data.map((rev) => (
               <li key={rev.id} className="rounded-xl border border-slate-200 p-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wide text-brand-700">{rev.action}</span>
+                  <span className="text-xs font-bold uppercase tracking-wide text-brand-700">
+                    {rev.action}
+                  </span>
                   <span className="text-xs text-slate-500">{formatDateTime(rev.createdAt)}</span>
                 </div>
                 <p className="mt-1 text-sm text-slate-700">
@@ -416,19 +613,105 @@ export function TeacherLessonPlansPage() {
   );
 }
 
-function PlanFormFields({ form, classes, subjects }: { form: UseFormReturn<PlanFormValues>; classes: Array<{ id: string; code: string; name: string }>; subjects: Array<{ id: string; code: string; name: string }> }) {
+function PlanFormFields({
+  form,
+  classes,
+  subjects,
+}: {
+  form: UseFormReturn<PlanFormValues>;
+  classes: Array<{ id: string; code: string; name: string }>;
+  subjects: Array<{ id: string; code: string; name: string }>;
+}) {
   return (
     <>
-      <label className="grid gap-1 text-sm font-semibold text-slate-800">Title<input className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('title')} /></label>
-      <label className="grid gap-1 text-sm font-semibold text-slate-800">Class<select className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('classRoomId')}><option value="">Select class</option>{classes.map(c => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}</select></label>
-      <label className="grid gap-1 text-sm font-semibold text-slate-800">Subject<select className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('subjectId')}><option value="">Select subject</option>{subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-      <label className="grid gap-1 text-sm font-semibold text-slate-800">Objectives<textarea rows={3} className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('objectives')} /></label>
-      <label className="grid gap-1 text-sm font-semibold text-slate-800">Materials<textarea rows={3} className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('materials')} /></label>
-      <label className="grid gap-1 text-sm font-semibold text-slate-800">Activities<textarea rows={4} className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('activities')} /></label>
-      <label className="grid gap-1 text-sm font-semibold text-slate-800">Assessment<textarea rows={3} className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('assessment')} /></label>
+      <label className="grid gap-1 text-sm font-semibold text-slate-800">
+        Title
+        <input
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('title')}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-semibold text-slate-800">
+        Class
+        <select
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('classRoomId')}
+        >
+          <option value="">Select class</option>
+          {classes.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.code} - {c.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1 text-sm font-semibold text-slate-800">
+        Subject
+        <select
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('subjectId')}
+        >
+          <option value="">Select subject</option>
+          {subjects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1 text-sm font-semibold text-slate-800">
+        Objectives
+        <textarea
+          rows={3}
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('objectives')}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-semibold text-slate-800">
+        Materials
+        <textarea
+          rows={3}
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('materials')}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-semibold text-slate-800">
+        Activities
+        <textarea
+          rows={4}
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('activities')}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-semibold text-slate-800">
+        Assessment
+        <textarea
+          rows={3}
+          className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+          {...form.register('assessment')}
+        />
+      </label>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-1 text-sm font-semibold text-slate-800">Week #<input type="number" min="1" max="52" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('weekNumber')} /></label>
-        <label className="grid gap-1 text-sm font-semibold text-slate-800">Duration (min)<input type="number" min="1" max="600" className="rounded-lg border border-brand-200 px-3 py-2 text-sm" {...form.register('durationMinutes')} /></label>
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Week #
+          <input
+            type="number"
+            min="1"
+            max="52"
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...form.register('weekNumber')}
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Duration (min)
+          <input
+            type="number"
+            min="1"
+            max="600"
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            {...form.register('durationMinutes')}
+          />
+        </label>
       </div>
     </>
   );

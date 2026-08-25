@@ -9,7 +9,6 @@ import {
   FileBarChart2,
   FileText,
   Home,
-  Loader2,
   Megaphone,
   MessageCircle,
   PlayCircle,
@@ -29,6 +28,7 @@ import {
   type CourseHierarchyItem,
 } from '../components/dashboard/active-courses-hierarchy';
 import { StateView } from '../components/state-view';
+import { InlineSkeleton } from '../components/skeleton-loader';
 import { useAuth } from '../features/auth/auth.context';
 import { useAcademicYear } from '../contexts/academic-year-context';
 import {
@@ -109,9 +109,12 @@ export function StudentDashboardPage() {
         id: c.id,
         title: c.title,
         grade: c.academicYear?.name ?? '',
-        class: `${c.classRoom?.code ?? ''}${c.classRoom?.code && c.classRoom?.name ? ' · ' : ''}${c.classRoom?.name ?? ''}`.trim(),
+        class:
+          `${c.classRoom?.code ?? ''}${c.classRoom?.code && c.classRoom?.name ? ' · ' : ''}${c.classRoom?.name ?? ''}`.trim(),
         subject: c.subject?.name ?? 'Subject not set',
-        progress: Math.round(getCourseProgressMetrics(c, c.completedLessonIds ?? []).overallProgress),
+        progress: Math.round(
+          getCourseProgressMetrics(c, c.completedLessonIds ?? []).overallProgress
+        ),
       })),
     [coursesQuery.data]
   );
@@ -210,10 +213,7 @@ export function StudentDashboardPage() {
 
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <ActiveCoursesHierarchy
-            items={hierarchyItems}
-            isLoading={coursesQuery.isPending}
-          />
+          <ActiveCoursesHierarchy items={hierarchyItems} isLoading={coursesQuery.isPending} />
         </div>
         <div className="flex flex-col gap-5">
           <PerformanceCard data={data} />
@@ -265,13 +265,8 @@ function StudentCourseProgressStrip({
 
   if (isPending) {
     return (
-      <section
-        className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600 shadow-sm"
-        aria-busy="true"
-        aria-label="Loading course progress"
-      >
-        <Loader2 className="h-5 w-5 shrink-0 animate-spin text-brand-500" aria-hidden />
-        Loading your course progress…
+      <section className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+        <InlineSkeleton label="Loading course progress" />
       </section>
     );
   }
@@ -401,7 +396,13 @@ function PerformanceCard({ data }: { data: StudentDashboardData }) {
             <Badge tone="neutral">No scores yet</Badge>
           )}
         </div>
-        {avgScore !== null && <ProgressBar value={avgScore} tone={avgScore >= 50 ? 'success' : 'warning'} className="mt-3" />}
+        {avgScore !== null && (
+          <ProgressBar
+            value={avgScore}
+            tone={avgScore >= 50 ? 'success' : 'warning'}
+            className="mt-3"
+          />
+        )}
         <div className="mt-5 space-y-3">
           <div className="flex items-center gap-3">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600">

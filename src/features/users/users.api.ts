@@ -45,6 +45,8 @@ export async function listUsersApi(
     status?: 'active' | 'inactive' | 'all';
     page?: number;
     pageSize?: number;
+    sortBy?: 'name' | 'email' | 'status' | 'createdAt';
+    sortOrder?: 'asc' | 'desc';
   }
 ): Promise<ListUsersResponse> {
   const query = new URLSearchParams();
@@ -54,6 +56,8 @@ export async function listUsersApi(
   if (params?.status && params.status !== 'all') query.set('status', params.status);
   if (params?.page) query.set('page', String(params.page));
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params?.sortBy) query.set('sortBy', params.sortBy);
+  if (params?.sortOrder) query.set('sortOrder', params.sortOrder);
 
   const queryString = query.toString();
   const path = queryString ? `/users?${queryString}` : '/users';
@@ -61,6 +65,18 @@ export async function listUsersApi(
   return apiRequest<ListUsersResponse>(path, {
     method: 'GET',
     accessToken,
+  });
+}
+
+export async function updateUserStatusApi(
+  accessToken: string,
+  userId: string,
+  status: 'ACTIVE' | 'INACTIVE'
+): Promise<{ id: string; status: string }> {
+  return apiRequest<{ id: string; status: string }>(`/users/${userId}/status`, {
+    method: 'PATCH',
+    accessToken,
+    body: { status },
   });
 }
 

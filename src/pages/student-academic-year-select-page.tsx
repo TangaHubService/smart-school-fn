@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { StateView } from '../components/state-view';
+import { PageSkeleton } from '../components/skeleton-loader';
 import { useAuth } from '../features/auth/auth.context';
 import { hasRole } from '../features/auth/auth-helpers';
 import { useAcademicYear } from '../contexts/academic-year-context';
@@ -28,11 +29,7 @@ export function StudentAcademicYearSelectPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-brand-200 border-t-brand-500" />
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
 
   if (!availableYears.length) {

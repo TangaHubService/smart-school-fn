@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { ClipboardList, FileBarChart2, Home, Loader2, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ClipboardList, FileBarChart2, Home, Users } from 'lucide-react';
+import { useMemo } from 'react';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import { listMyChildrenApi } from '../features/sprint2/sprint2.api';
 import { getParentReportCardsApi } from '../features/sprint5/exams.api';
 import {
-  Badge,
   Card,
   CardActionLink,
   CardHeader,
@@ -14,6 +13,130 @@ import {
   LoadingMetrics,
   MetricCard,
 } from '../components/dashboard/dashboard-ui';
+import { Avatar } from '../components/ui/avatar';
+import { Badge } from '../components/ui/badge';
+import { DataTable, type DataTableColumn } from '../components/ui/data-table';
+
+interface ChildRow {
+  id: string;
+  firstName: string;
+  lastName: string;
+  className: string;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+  total: number;
+}
+
+const childColumns: DataTableColumn<ChildRow>[] = [
+  {
+    key: 'name',
+    header: 'Student',
+    sortable: true,
+    mobile: 'primary',
+    render: (child) => (
+      <span className="flex items-center gap-2">
+        <Avatar size="sm" name={`${child.firstName} ${child.lastName}`} />
+        <span className="text-sm font-medium text-slate-900">
+          {child.firstName} {child.lastName}
+        </span>
+      </span>
+    ),
+  },
+  {
+    key: 'className',
+    header: 'Class',
+    mobile: 'secondary',
+    render: (child) => <span className="text-slate-600">{child.className}</span>,
+  },
+  {
+    key: 'present',
+    header: 'Present',
+    align: 'center',
+    render: (child) => <Badge tone="success">{child.present}</Badge>,
+  },
+  {
+    key: 'absent',
+    header: 'Absent',
+    align: 'center',
+    render: (child) => <Badge tone="danger">{child.absent}</Badge>,
+  },
+  {
+    key: 'late',
+    header: 'Late',
+    align: 'center',
+    render: (child) => <Badge tone="warning">{child.late}</Badge>,
+  },
+  {
+    key: 'excused',
+    header: 'Excused',
+    align: 'center',
+    render: (child) => <Badge tone="neutral">{child.excused}</Badge>,
+  },
+  {
+    key: 'attendancePct',
+    header: 'Attendance %',
+    align: 'center',
+    mobile: 'secondary',
+    render: (child) => {
+      const percentage = child.total > 0 ? Math.round((child.present / child.total) * 100) : 0;
+      return (
+        <Badge tone={percentage >= 90 ? 'success' : percentage >= 75 ? 'warning' : 'danger'}>
+          {percentage}%
+        </Badge>
+      );
+    },
+  },
+];
+
+interface ReportCardRow {
+  id: string;
+  studentName: string;
+  termName: string;
+  averagePercentage: number;
+  grade: string;
+  position: number;
+  classSize: number;
+}
+
+const reportCardColumns: DataTableColumn<ReportCardRow>[] = [
+  {
+    key: 'studentName',
+    header: 'Student',
+    sortable: true,
+    mobile: 'primary',
+  },
+  {
+    key: 'termName',
+    header: 'Term',
+    mobile: 'secondary',
+  },
+  {
+    key: 'averagePercentage',
+    header: 'Average',
+    align: 'center',
+    render: (row) => (
+      <span className="font-medium text-slate-800">{row.averagePercentage.toFixed(1)}%</span>
+    ),
+  },
+  {
+    key: 'grade',
+    header: 'Grade',
+    align: 'center',
+    render: (row) => <Badge tone="brand">{row.grade}</Badge>,
+  },
+  {
+    key: 'position',
+    header: 'Rank',
+    align: 'center',
+    render: (row) => (
+      <span className="text-slate-600">
+        {row.position}/{row.classSize}
+      </span>
+    ),
+  },
+];
 
 export function ParentDashboardPage() {
   const auth = useAuth();
@@ -36,6 +159,36 @@ export function ParentDashboardPage() {
   const children = childrenQuery.data?.students ?? [];
   const parent = childrenQuery.data?.parent;
   const reportCards = reportCardsQuery.data?.items ?? [];
+
+  const childRows = useMemo<ChildRow[]>(
+    () =>
+      children.map((child) => ({
+        id: child.id,
+        firstName: child.firstName,
+        lastName: child.lastName,
+        className: child.currentEnrollment?.classRoom.name ?? '-',
+        present: child.attendanceLast30Days.present,
+        absent: child.attendanceLast30Days.absent,
+        late: child.attendanceLast30Days.late,
+        excused: child.attendanceLast30Days.excused,
+        total: child.attendanceLast30Days.total,
+      })),
+    [children]
+  );
+
+  const reportCardRows = useMemo<ReportCardRow[]>(
+    () =>
+      reportCards.slice(0, 5).map((rc) => ({
+        id: rc.id,
+        studentName: `${rc.student.firstName} ${rc.student.lastName}`,
+        termName: rc.term.name,
+        averagePercentage: rc.totals.averagePercentage,
+        grade: rc.totals.grade,
+        position: rc.totals.position,
+        classSize: rc.totals.classSize,
+      })),
+    [reportCards]
+  );
 
   const totalPresent = children.reduce((acc, child) => acc + child.attendanceLast30Days.present, 0);
   const totalAbsent = children.reduce((acc, child) => acc + child.attendanceLast30Days.absent, 0);
@@ -102,7 +255,7 @@ export function ParentDashboardPage() {
         <MetricCard icon={ClipboardList} label="Late (30d)" value={totalLate} tone="warning" helper={attendancePct > 0 ? `${attendancePct}% attendance` : undefined} />
       </div>
 
-      {children.length > 0 && (
+      {childRows.length > 0 && (
         <Card>
           <CardHeader
             title="Children Performance"
@@ -110,69 +263,18 @@ export function ParentDashboardPage() {
             icon={Users}
             tone="brand"
           />
-          <div className="w-full overflow-x-auto p-5">
-            <table className="w-full min-w-[600px] table-auto text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs font-medium text-slate-500">
-                  <th className="px-4 py-3 font-semibold">Student</th>
-                  <th className="px-4 py-3 font-semibold">Class</th>
-                  <th className="px-4 py-3 font-semibold text-center">Present</th>
-                  <th className="px-4 py-3 font-semibold text-center">Absent</th>
-                  <th className="px-4 py-3 font-semibold text-center">Late</th>
-                  <th className="px-4 py-3 font-semibold text-center">Excused</th>
-                  <th className="px-4 py-3 font-semibold text-center">Attendance %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {children.map((child) => {
-                  const total = child.attendanceLast30Days.total;
-                  const present = child.attendanceLast30Days.present;
-                  const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-                  return (
-                    <tr key={child.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-brand-600 text-xs font-bold">
-                            {child.firstName[0]}{child.lastName[0]}
-                          </div>
-                          <span className="font-medium text-slate-900">
-                            {child.firstName} {child.lastName}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {child.currentEnrollment?.classRoom.name ?? '-'}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Badge tone="success">{child.attendanceLast30Days.present}</Badge>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Badge tone="danger">{child.attendanceLast30Days.absent}</Badge>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Badge tone="warning">{child.attendanceLast30Days.late}</Badge>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Badge tone="neutral">{child.attendanceLast30Days.excused}</Badge>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={`font-semibold ${
-                            percentage >= 90
-                              ? 'text-emerald-700'
-                              : percentage >= 75
-                                ? 'text-amber-700'
-                                : 'text-red-700'
-                          }`}
-                        >
-                          {percentage}%
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="p-4">
+            <DataTable
+              ariaLabel="Children attendance"
+              columns={childColumns}
+              data={childRows}
+              rowKey={(child) => child.id}
+              emptyTitle="No children linked yet"
+              emptyDescription="Contact your school administrator to link your children's accounts."
+              minWidth={640}
+              className="border-0 shadow-none"
+              sort={null}
+            />
           </div>
         </Card>
       )}
@@ -190,42 +292,18 @@ export function ParentDashboardPage() {
               ) : undefined
             }
           />
-          {reportCards.length === 0 ? (
-            <p className="px-5 pb-6 text-sm text-slate-500">No report cards available yet.</p>
-          ) : (
-            <div className="w-full overflow-x-auto p-5 pt-4">
-              <table className="w-full min-w-[400px] table-auto text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-xs font-medium text-slate-500">
-                    <th className="px-4 py-3 font-semibold">Student</th>
-                    <th className="px-4 py-3 font-semibold">Term</th>
-                    <th className="px-4 py-3 font-semibold text-center">Average</th>
-                    <th className="px-4 py-3 font-semibold text-center">Grade</th>
-                    <th className="px-4 py-3 font-semibold text-center">Rank</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportCards.slice(0, 5).map((rc) => (
-                    <tr key={rc.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">
-                        {rc.student.firstName} {rc.student.lastName}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">{rc.term.name}</td>
-                      <td className="px-4 py-3 text-center font-medium text-slate-800">
-                        {rc.totals.averagePercentage.toFixed(1)}%
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Badge tone="brand">{rc.totals.grade}</Badge>
-                      </td>
-                      <td className="px-4 py-3 text-center text-slate-600">
-                        {rc.totals.position}/{rc.totals.classSize}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div className="p-4">
+            <DataTable
+              ariaLabel="Recent report cards"
+              columns={reportCardColumns}
+              data={reportCardRows}
+              rowKey={(row) => row.id}
+              emptyTitle="No report cards available yet"
+              minWidth={420}
+              className="border-0 shadow-none"
+              sort={null}
+            />
+          </div>
         </Card>
 
         <Card>
@@ -235,57 +313,18 @@ export function ParentDashboardPage() {
             icon={Home}
             tone="success"
           />
-          {children.length === 0 && reportCards.length === 0 ? (
-            <p className="px-5 pb-6 text-sm text-slate-500">No recent activity.</p>
-          ) : (
-            <div className="w-full overflow-x-auto p-5 pt-4">
-              <table className="w-full min-w-[400px] table-auto text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-xs font-medium text-slate-500">
-                    <th className="px-4 py-3 font-semibold">Student</th>
-                    <th className="px-4 py-3 font-semibold">Activity</th>
-                    <th className="px-4 py-3 font-semibold">Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {children.slice(0, 5).map((child) => (
-                    <tr key={child.id} className="border-b border-slate-100">
-                      <td className="px-4 py-3 font-medium text-slate-900">
-                        {child.firstName} {child.lastName}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
-                          <ClipboardList className="h-3 w-3" />
-                          Attendance
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 text-xs">
-                        {child.attendanceLast30Days.lastMarkedDate
-                          ? `Last marked: ${child.attendanceLast30Days.lastMarkedDate}`
-                          : 'No records'}
-                      </td>
-                    </tr>
-                  ))}
-                  {reportCards.slice(0, 3).map((rc) => (
-                    <tr key={`rc-${rc.id}`} className="border-b border-slate-100">
-                      <td className="px-4 py-3 font-medium text-slate-900">
-                        {rc.student.firstName}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
-                          <FileBarChart2 className="h-3 w-3" />
-                          Report Card
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 text-xs">
-                        {rc.term.name} - {rc.totals.grade}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div className="p-4">
+            <DataTable
+              ariaLabel="Recent activity"
+              columns={activityColumns}
+              data={activityRows(childRows, reportCardRows)}
+              rowKey={(row) => row.id}
+              emptyTitle="No recent activity"
+              minWidth={420}
+              className="border-0 shadow-none"
+              sort={null}
+            />
+          </div>
         </Card>
       </div>
 
@@ -299,4 +338,44 @@ export function ParentDashboardPage() {
       )}
     </div>
   );
+}
+
+interface ActivityRowData {
+  id: string;
+  student: string;
+  activity: string;
+  details: string;
+}
+
+const activityColumns: DataTableColumn<ActivityRowData>[] = [
+  { key: 'student', header: 'Student', mobile: 'primary' },
+  { key: 'activity', header: 'Activity', mobile: 'secondary' },
+  { key: 'details', header: 'Details' },
+];
+
+function activityRows(
+  childRows: ChildRow[],
+  reportCardRows: ReportCardRow[]
+): ActivityRowData[] {
+  const rows: ActivityRowData[] = [];
+
+  childRows.slice(0, 5).forEach((child) => {
+    rows.push({
+      id: `attendance-${child.id}`,
+      student: `${child.firstName} ${child.lastName}`,
+      activity: 'Attendance',
+      details: `Last 30 days: ${child.present}/${child.total} present`,
+    });
+  });
+
+  reportCardRows.slice(0, 3).forEach((rc) => {
+    rows.push({
+      id: `report-${rc.id}`,
+      student: rc.studentName,
+      activity: 'Report card',
+      details: `${rc.termName} - ${rc.grade}`,
+    });
+  });
+
+  return rows;
 }

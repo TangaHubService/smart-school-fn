@@ -25,7 +25,10 @@
     "notifications": "Notifications",
     "messages": "Messages",
     "loggedInAs": "Connecté en tant que {{name}}, cliquez pour ouvrir le menu profil",
-    "actionRequired": "Action requise: complétez le profil de l'école et l'assistant de configuration pour débloquer les modules académiques, classes, élèves, matières et personnel."
+    "actionRequired": "Action requise: complétez le profil de l'école et l'assistant de configuration pour débloquer les modules académiques, classes, élèves, matières et personnel.",
+    "checkingSubscription": "Vérification de l'abonnement…",
+    "activeSubscription": "Abonnement actif",
+    "paymentDue": "Paiement dû"
   },
 "headerTitle": {
     "superAdmin": "Super Admin Dashboard",

@@ -7,6 +7,7 @@ import { hasRole } from '../features/auth/auth-helpers';
 import { useAcademicYear } from '../contexts/academic-year-context';
 import { listMyCoursesApi } from '../features/sprint4/lms.api';
 import { StateView } from '../components/state-view';
+import { CardGridSkeleton } from '../components/skeleton-loader';
 import { ProgressRing } from '../components/progress-ring';
 import { SectionCard } from '../components/section-card';
 import { getCourseProgressMetrics, getResumeLessonId } from '../utils/course-progress';
@@ -45,19 +46,7 @@ export function MyLearningPage() {
   }
 
   if (isPending) {
-    return (
-      <div className="space-y-6">
-        <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-200" />
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-64 animate-pulse rounded-2xl bg-slate-100 placeholder-shimmer"
-            />
-          ))}
-        </div>
-      </div>
-    );
+    return <CardGridSkeleton count={6} />;
   }
 
   const courses = data?.items ?? [];

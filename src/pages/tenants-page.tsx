@@ -5,13 +5,18 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useSearchParams } from 'react-router-dom';
 
-import { EmptyState } from '../components/empty-state';
 import { ConfirmDrawer } from '../components/confirm-drawer';
 import { DrawerForm } from '../components/drawer-form';
 import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
+import {
+  DataTable,
+  DataTableToolbar,
+  type DataTableColumn,
+} from '../components/ui/data-table';
+import { Badge } from '../components/ui/badge';
 import { useAuth } from '../features/auth/auth.context';
 import {
   createTenantApi,
@@ -58,6 +63,68 @@ const editSchoolSchema = z.object({
 
 type CreateSchoolValues = z.infer<typeof createSchoolSchema>;
 type InviteAdminValues = z.infer<typeof inviteAdminSchema>;
+
+const tenantColumns: DataTableColumn<TenantListItem>[] = [
+  {
+    key: 'code',
+    header: 'Code',
+    mobile: 'secondary',
+    render: (tenant) => (
+      <span className="font-mono text-xs text-slate-700">{tenant.code}</span>
+    ),
+  },
+  {
+    key: 'name',
+    header: 'School',
+    mobile: 'primary',
+    render: (tenant) => (
+      <span className="min-w-0">
+        <span className="block font-semibold text-slate-900">
+          {tenant.school?.displayName ?? tenant.name}
+        </span>
+        <span className="block text-xs text-slate-500">{tenant.name}</span>
+      </span>
+    ),
+  },
+  {
+    key: 'domain',
+    header: 'Domain',
+    render: (tenant) => <span className="text-slate-700">{tenant.domain ?? '—'}</span>,
+  },
+  {
+    key: 'isAcademyCatalog',
+    header: 'Academy',
+    align: 'center',
+    render: (tenant) =>
+      tenant.isAcademyCatalog ? (
+        <Badge tone="purple">Catalog</Badge>
+      ) : (
+        <span className="text-xs text-slate-400">—</span>
+      ),
+  },
+  {
+    key: 'setup',
+    header: 'Setup',
+    render: (tenant) => (
+      <Badge tone={tenant.school?.setupCompletedAt ? 'success' : 'warning'}>
+        {tenant.school?.setupCompletedAt ? 'Completed' : 'Action required'}
+      </Badge>
+    ),
+  },
+  {
+    key: 'activeUsers',
+    header: 'Users',
+    align: 'center',
+    render: (tenant) => <span className="tabular-nums text-slate-700">{tenant.activeUsers}</span>,
+  },
+  {
+    key: 'createdAt',
+    header: 'Created',
+    render: (tenant) => (
+      <span className="text-slate-700">{tenant.createdAt.slice(0, 10)}</span>
+    ),
+  },
+];
 type EditSchoolValues = z.infer<typeof editSchoolSchema>;
 
 interface CreatedSchoolState {
@@ -314,167 +381,84 @@ export function TenantsPage() {
         </button>
       }
     >
-      <div className="mb-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-        <input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
-          placeholder="Search by code, school name, or domain"
-          aria-label="Search schools"
+      <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]">
+        <DataTableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search by code, school name, or domain"
+          searchAriaLabel="Search schools"
+          onReset={() => {
+            setSearch('');
+          }}
         />
-        <button
-          type="button"
-          onClick={() => void tenantsQuery.refetch()}
-          className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-        >
-          Refresh
-        </button>
+
+        <div className="p-4">
+          <DataTable<TenantListItem>
+            ariaLabel="Schools"
+            columns={tenantColumns}
+            data={tenants}
+            rowKey={(tenant) => tenant.id}
+            showIndex
+            loading={tenantsQuery.isPending}
+            skeletonRows={6}
+            error={
+              tenantsQuery.isError
+                ? {
+                    title: 'Could not load schools',
+                    message: 'Please retry. If the problem continues, check backend logs.',
+                  }
+                : null
+            }
+            onRetry={() => void tenantsQuery.refetch()}
+            emptyTitle="No schools yet"
+            emptyDescription="Create your first school to start onboarding administrators and setup."
+            minWidth={980}
+            className="border-0 shadow-none"
+            rowActions={(tenant) => (
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditSchoolId(null);
+                    setViewSchoolId(tenant.id);
+                  }}
+                  className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewSchoolId(null);
+                    setEditSchoolId(tenant.id);
+                    updateSchoolMutation.reset();
+                  }}
+                  className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setStatusTargetSchool({
+                      id: tenant.id,
+                      name: tenant.school?.displayName ?? tenant.name,
+                      isActive: tenant.isActive,
+                    })
+                  }
+                  className={
+                    tenant.isActive
+                      ? 'rounded-lg border border-danger-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-danger-500 transition hover:bg-danger-50'
+                      : 'rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50'
+                  }
+                >
+                  {tenant.isActive ? 'Deactivate' : 'Reactivate'}
+                </button>
+              </div>
+            )}
+          />
+        </div>
       </div>
-
-      {tenantsQuery.isPending ? (
-        <div className="grid gap-2" role="status" aria-live="polite">
-          <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-          <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-          <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-        </div>
-      ) : null}
-
-      {tenantsQuery.isError ? (
-        <StateView
-          title="Could not load schools"
-          message="Please retry. If the problem continues, check backend logs."
-          action={
-            <button
-              type="button"
-              onClick={() => void tenantsQuery.refetch()}
-              className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-            >
-              Retry
-            </button>
-          }
-        />
-      ) : null}
-
-      {!tenantsQuery.isPending && !tenantsQuery.isError && !tenants.length ? (
-        <EmptyState
-          title="No schools yet"
-          message="Create your first school to start onboarding administrators and setup."
-          action={
-            <button
-              type="button"
-              onClick={openCreateModal}
-              className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-            >
-              Create first school
-            </button>
-          }
-        />
-      ) : null}
-
-      {!tenantsQuery.isPending && !tenantsQuery.isError && tenants.length ? (
-        <div className="w-full overflow-x-auto rounded-xl border border-brand-100 bg-white">
-          <table className="w-full min-w-full table-auto text-left text-sm">
-            <thead className="bg-brand-50 text-slate-700">
-              <tr>
-                <th className="px-3 py-2 font-semibold">#</th>
-                <th className="px-3 py-2 font-semibold">Code</th>
-                <th className="px-3 py-2 font-semibold">School</th>
-                <th className="px-3 py-2 font-semibold">Domain</th>
-                <th className="px-3 py-2 font-semibold">Academy</th>
-                <th className="px-3 py-2 font-semibold">Setup</th>
-                <th className="px-3 py-2 font-semibold">Users</th>
-                <th className="px-3 py-2 font-semibold">Created</th>
-                <th className="px-3 py-2 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tenants.map((tenant, index) => (
-                <tr key={tenant.id} className="border-t border-brand-100">
-                  <td className="px-3 py-2 align-middle text-slate-600">{index + 1}</td>
-                  <td className="px-3 py-2 align-middle font-mono text-xs text-slate-700">
-                    {tenant.code}
-                  </td>
-                  <td className="px-3 py-2 align-middle">
-                    <p className="font-semibold text-slate-900">
-                      {tenant.school?.displayName ?? tenant.name}
-                    </p>
-                    <p className="text-xs text-slate-500">{tenant.name}</p>
-                  </td>
-                  <td className="px-3 py-2 align-middle text-slate-700">{tenant.domain ?? '-'}</td>
-                  <td className="px-3 py-2 align-middle">
-                    {tenant.isAcademyCatalog ? (
-                      <span className="inline-flex rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800">
-                        Catalog
-                      </span>
-                    ) : (
-                      <span className="text-xs text-slate-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 align-middle">
-                    <span
-                      className={[
-                        'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold',
-                        tenant.school?.setupCompletedAt
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-amber-100 text-amber-700',
-                      ].join(' ')}
-                    >
-                      {tenant.school?.setupCompletedAt ? 'Completed' : 'Action required'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 align-middle text-slate-700">{tenant.activeUsers}</td>
-                  <td className="px-3 py-2 align-middle text-slate-700">
-                    {tenant.createdAt.slice(0, 10)}
-                  </td>
-                  <td className="px-3 py-2 align-middle">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditSchoolId(null);
-                          setViewSchoolId(tenant.id);
-                        }}
-                        className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
-                      >
-                        View
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setViewSchoolId(null);
-                          setEditSchoolId(tenant.id);
-                          updateSchoolMutation.reset();
-                        }}
-                        className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setStatusTargetSchool({
-                            id: tenant.id,
-                            name: tenant.school?.displayName ?? tenant.name,
-                            isActive: tenant.isActive,
-                          })
-                        }
-                        className={
-                          tenant.isActive
-                            ? 'rounded-lg border border-danger-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-danger-500'
-                            : 'rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700'
-                        }
-                      >
-                        {tenant.isActive ? 'Deactivate' : 'Reactivate'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
 
       <DrawerForm
         open={isCreateModalOpen}

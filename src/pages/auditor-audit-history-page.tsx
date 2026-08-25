@@ -82,7 +82,7 @@ export function AuditorAuditHistoryPage() {
   });
 
   if (isLoading) {
-    return <StateView title="Loading..." loading />;
+    return <StateView title="Loading..." loading skeletonVariant="table" />;
   }
 
   if (error) {

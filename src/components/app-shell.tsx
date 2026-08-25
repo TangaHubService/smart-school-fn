@@ -17,6 +17,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../features/auth/auth.context';
 import {
   hasPermission,
@@ -24,6 +25,7 @@ import {
   isSchoolSetupComplete,
   isSuperAdmin,
 } from '../features/auth/auth-helpers';
+import { getMySubscriptionInvoiceApi } from '../features/billing/billing.api';
 import { SetStudentHeaderActionsContext } from '../contexts/student-header-actions.context';
 import { AcademicYearSelector } from './academic-year-selector';
 import { ConnectionStatusBanner } from './connection-status-banner';
@@ -44,6 +46,16 @@ export function AppShell() {
   const setupComplete = isSchoolSetupComplete(auth.me);
   const schoolAdmin = hasPermission(auth.me, 'school.setup.manage') && !isSuperAdmin(auth.me);
   const superAdmin = isSuperAdmin(auth.me);
+
+  // Real subscription status for the sidebar school card (school admins only).
+  const canReadBilling = hasPermission(auth.me, 'billing.read');
+  const subscriptionQuery = useQuery({
+    queryKey: ['billing', 'invoice', 'sidebar'],
+    enabled: Boolean(auth.accessToken && schoolAdmin && canReadBilling),
+    queryFn: () => getMySubscriptionInvoiceApi(auth.accessToken!),
+    staleTime: 5 * 60_000,
+  });
+  const invoiceStatus = schoolAdmin ? subscriptionQuery.data?.invoice.status : undefined;
 
   const isStudent = hasRole(auth.me, 'STUDENT') || hasRole(auth.me, 'PUBLIC_LEARNER');
   const isParent = hasRole(auth.me, 'PARENT');
@@ -117,7 +129,10 @@ export function AppShell() {
         {isStudent ? null : (
           <aside
             className={clsx(
-              'fixed inset-y-0 left-0 z-40 flex w-max max-w-[100vw] flex-col overflow-x-hidden overflow-y-hidden bg-[#173C7F] text-white md:sticky md:top-0 md:h-screen md:shrink-0 md:rounded-none',
+              'fixed inset-y-0 left-0 z-40 flex w-max max-w-[100vw] flex-col overflow-x-hidden overflow-y-hidden text-white md:sticky md:top-0 md:h-screen md:shrink-0 md:rounded-none',
+              schoolAdmin
+                ? 'bg-gradient-to-b from-[#06245a] via-[#073a7c] to-[#052f68]'
+                : 'bg-[#173C7F]',
               isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
               isDesktopSidebarVisible ? 'md:translate-x-0' : 'md:hidden'
             )}
@@ -156,6 +171,48 @@ export function AppShell() {
                   </p>
                 </div>
               </div>
+              {schoolAdmin && auth.me?.school ? (
+                <div className="mt-5 rounded-xl border border-white/10 bg-white/10 p-3 shadow-inner">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white text-[#173C7F]">
+                      <Building2 className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="max-w-40 truncate text-xs font-semibold text-white">
+                        {auth.me.school.displayName}
+                      </p>
+                      <p className="mt-0.5 max-w-40 truncate text-[10px] text-white/65">
+                        {auth.me.tenant.code}
+                      </p>
+                    </div>
+                  </div>
+                  {canReadBilling ? (
+                    <p
+                      className={clsx(
+                        'mt-3 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                        invoiceStatus === undefined
+                          ? 'bg-white/10 text-white/70'
+                          : invoiceStatus === 'PAID'
+                            ? 'bg-emerald-400/20 text-emerald-200'
+                            : 'bg-amber-400/20 text-amber-200'
+                      )}
+                    >
+                      <span
+                        className={clsx(
+                          'h-1.5 w-1.5 rounded-full',
+                          invoiceStatus === 'PAID' ? 'bg-emerald-300' : 'bg-amber-300'
+                        )}
+                        aria-hidden="true"
+                      />
+                      {invoiceStatus === undefined
+                        ? t('shell.checkingSubscription')
+                        : invoiceStatus === 'PAID'
+                          ? t('shell.activeSubscription')
+                          : t('shell.paymentDue')}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-6 py-6">
@@ -166,7 +223,12 @@ export function AppShell() {
               <button
                 type="button"
                 onClick={() => void auth.logout()}
-                className="inline-flex w-full items-center gap-2 whitespace-nowrap rounded-lg bg-white px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-white/95"
+                className={clsx(
+                  'inline-flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-left text-sm font-semibold transition',
+                  schoolAdmin
+                    ? 'border border-white/15 bg-white/5 text-red-300 hover:bg-white/10 hover:text-red-200'
+                    : 'bg-white text-red-600 hover:bg-white/95'
+                )}
               >
                 <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {t('shell.logout')}
@@ -179,7 +241,10 @@ export function AppShell() {
           <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-white md:h-screen">
             <header
               className={clsx(
-                'sticky top-0 z-30 shrink-0 bg-[#173C7F] px-5 transition-[padding] duration-200',
+                'sticky top-0 z-30 shrink-0 px-5 transition-[padding] duration-200',
+                schoolAdmin
+                  ? 'border-b border-slate-200 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)]'
+                  : 'bg-[#173C7F]',
                 'py-3',
                 isStudent && 'shadow-[0_6px_18px_rgba(15,23,42,0.14)]'
               )}
@@ -190,7 +255,12 @@ export function AppShell() {
                     <button
                       type="button"
                       onClick={() => setIsMobileNavOpen(true)}
-                      className="grid h-10 w-10 place-items-center rounded-lg border border-white/20 bg-white/10 text-white md:hidden"
+                      className={clsx(
+                        'grid h-10 w-10 place-items-center rounded-lg border md:hidden',
+                        schoolAdmin
+                          ? 'border-slate-200 bg-slate-50 text-slate-700'
+                          : 'border-white/20 bg-white/10 text-white'
+                      )}
                       aria-label={t('shell.openSidebar')}
                     >
                       <Menu className="h-5 w-5" aria-hidden="true" />
@@ -199,7 +269,12 @@ export function AppShell() {
                     <button
                       type="button"
                       onClick={() => setIsDesktopSidebarVisible((current) => !current)}
-                      className="hidden h-10 min-w-10 place-items-center rounded-lg border border-white/20 bg-white/10 text-white md:grid"
+                      className={clsx(
+                        'hidden h-10 min-w-10 place-items-center rounded-lg border md:grid',
+                        schoolAdmin
+                          ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                          : 'border-white/20 bg-white/10 text-white'
+                      )}
                       aria-label={
                         isDesktopSidebarVisible ? t('shell.hideSidebar') : t('shell.showSidebar')
                       }
@@ -221,14 +296,30 @@ export function AppShell() {
                   </a>
                 )}
 
-                <Home className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
-                <span className="text-sm font-bold text-white">{headerTitle}</span>
+                <Home
+                  className={clsx('h-4 w-4 shrink-0', schoolAdmin ? 'text-blue-600' : 'text-white')}
+                  aria-hidden="true"
+                />
+                <span
+                  className={clsx(
+                    'text-sm font-bold',
+                    schoolAdmin ? 'text-slate-900' : 'text-white'
+                  )}
+                >
+                  {headerTitle}
+                </span>
 
                 <div className="ml-auto flex items-center gap-2">
                   <AcademicYearSelector />
                   <div className="hidden items-center gap-2 lg:flex">
                     <LowBandwidthToggle />
-                    <LanguageSwitcher className="[&_span]:text-white/85 [&_select]:border-white/25 [&_select]:bg-white/10 [&_select]:text-white" />
+                    <LanguageSwitcher
+                      className={
+                        schoolAdmin
+                          ? '[&_span]:text-slate-600 [&_select]:border-slate-200 [&_select]:bg-white [&_select]:text-slate-700'
+                          : '[&_span]:text-white/85 [&_select]:border-white/25 [&_select]:bg-white/10 [&_select]:text-white'
+                      }
+                    />
                   </div>
 
                   <div className="relative">
@@ -237,18 +328,36 @@ export function AppShell() {
                       onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                       className="hidden min-w-[220px] items-center gap-2 rounded-lg   text-left transition sm:flex"
                     >
-                      <div className="grid h-8 w-8 place-items-center rounded-full bg-white text-brand-600">
+                      <div
+                        className={clsx(
+                          'grid h-8 w-8 place-items-center rounded-full',
+                          schoolAdmin ? 'bg-amber-400 text-white' : 'bg-white text-brand-600'
+                        )}
+                      >
                         <User className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-xs font-semibold text-white">
+                        <p
+                          className={clsx(
+                            'truncate text-xs font-semibold',
+                            schoolAdmin ? 'text-slate-900' : 'text-white'
+                          )}
+                        >
                           {userDisplayName}
                         </p>
-                        <p className="truncate text-[11px] text-white/75">{userDisplayEmail}</p>
+                        <p
+                          className={clsx(
+                            'truncate text-[11px]',
+                            schoolAdmin ? 'text-slate-500' : 'text-white/75'
+                          )}
+                        >
+                          {userDisplayEmail}
+                        </p>
                       </div>
                       <ChevronDown
                         className={clsx(
-                          'h-4 w-4 text-white transition-transform duration-200',
+                          'h-4 w-4 transition-transform duration-200',
+                          schoolAdmin ? 'text-slate-500' : 'text-white',
                           isProfileMenuOpen && 'rotate-180'
                         )}
                         aria-hidden="true"
@@ -258,7 +367,12 @@ export function AppShell() {
                     <button
                       type="button"
                       onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                      className="grid h-10 w-10 place-items-center rounded-lg bg-white text-brand-600 transition hover:bg-white/90 sm:hidden"
+                      className={clsx(
+                        'grid h-10 w-10 place-items-center rounded-lg transition sm:hidden',
+                        schoolAdmin
+                          ? 'bg-amber-400 text-white hover:bg-amber-500'
+                          : 'bg-white text-brand-600 hover:bg-white/90'
+                      )}
                       title={userDisplayName}
                       aria-label={t('shell.loggedInAs', { name: userDisplayName })}
                       aria-pressed={isProfileMenuOpen}

@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  AlertCircle,
   ArrowRight,
   BookOpen,
   CalendarDays,
-  CheckCircle2,
   ClipboardList,
   Clock3,
   Dot,
@@ -13,8 +11,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
@@ -23,11 +20,14 @@ import {
   type DashboardQuickActionItem,
 } from '../components/dashboard/quick-actions-dropdown';
 import { StateView } from '../components/state-view';
+import { QuickActions } from '../components/ui/quick-actions';
+import { StatCard } from '../components/ui/stat-card';
 import { SchoolAdminDashboardPage } from './school-admin-dashboard-page';
 import { SuperAdminDashboardPage } from './super-admin-dashboard-page';
 import { TeacherDashboardPage } from './teacher-dashboard-page';
 import { useAuth } from '../features/auth/auth.context';
-import { hasPermission, hasRole, isSchoolSetupComplete } from '../features/auth/auth-helpers';
+import { hasPermission, isSchoolSetupComplete } from '../features/auth/auth-helpers';
+import { resolveDashboardId } from '../features/dashboard/dashboard-registry';
 import {
   listAssessmentsApi,
   type AssessmentSummary,
@@ -35,6 +35,27 @@ import {
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
 import { getAttendanceDashboardSummaryApi } from '../features/sprint3/attendance.api';
 import { listCoursesApi } from '../features/sprint4/lms.api';
+
+/**
+ * Role-aware dashboard entry point. The active dashboard is selected through
+ * the registry (see features/dashboard/dashboard-registry.ts); accounts that
+ * do not match a dedicated dashboard get the generic workspace below.
+ */
+export function DashboardPage() {
+  const auth = useAuth();
+  const dashboardId = resolveDashboardId(auth.me);
+
+  if (dashboardId === 'super-admin') {
+    return <SuperAdminDashboardPage />;
+  }
+  if (dashboardId === 'teacher') {
+    return <TeacherDashboardPage />;
+  }
+  if (dashboardId === 'school-admin') {
+    return <SchoolAdminDashboardPage />;
+  }
+  return <GenericRoleDashboard />;
+}
 
 function getTodayKigaliDate(): string {
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -90,11 +111,9 @@ function formatAssessmentDate(value: string | null): string {
   }).format(date);
 }
 
-type MetricTone = 'primary' | 'success' | 'accent' | 'danger';
-
 type ActionTone = 'primary' | 'secondary' | 'accent';
 
-interface QuickAction {
+interface GenericQuickAction {
   label: string;
   description: string;
   to: string;
@@ -108,14 +127,6 @@ interface AlertItem {
   message: string;
   to?: string;
   severity: 'success' | 'warning' | 'danger' | 'info';
-}
-
-interface MetricCardItem {
-  label: string;
-  value: string;
-  helper: string;
-  icon: LucideIcon;
-  tone: MetricTone;
 }
 
 interface BreakdownItem {
@@ -133,33 +144,14 @@ interface ActivityItem {
   meta: string;
   to?: string;
   icon: LucideIcon;
-  tone: MetricTone;
+  tone: 'brand' | 'success' | 'accent' | 'danger';
 }
 
-export function DashboardPage() {
+/** Shared workspace for roles without a dedicated dashboard above. */
+function GenericRoleDashboard() {
   const auth = useAuth();
   const [summaryDate, setSummaryDate] = useState(getTodayKigaliDate());
 
-  const superAdmin = hasRole(auth.me, 'SUPER_ADMIN');
-  const canSchoolDashboard =
-    hasPermission(auth.me, 'school.setup.manage') ||
-    hasPermission(auth.me, 'students.read') ||
-    hasPermission(auth.me, 'attendance.read');
-
-  const isTeacherOnly =
-    hasRole(auth.me, 'TEACHER') &&
-    !hasRole(auth.me, 'SCHOOL_ADMIN') &&
-    !hasRole(auth.me, 'SUPER_ADMIN');
-
-  if (superAdmin) {
-    return <SuperAdminDashboardPage />;
-  }
-  if (isTeacherOnly) {
-    return <TeacherDashboardPage />;
-  }
-  if (canSchoolDashboard && !superAdmin) {
-    return <SchoolAdminDashboardPage />;
-  }
   const canSetup = hasPermission(auth.me, 'school.setup.manage');
   const canAttendance = hasPermission(auth.me, 'attendance.read');
   const canCourses = hasPermission(auth.me, 'courses.read');
@@ -168,35 +160,23 @@ export function DashboardPage() {
 
   const attendanceSummaryQuery = useQuery({
     queryKey: ['attendance', 'dashboard-summary', summaryDate],
-    enabled: Boolean(auth.accessToken && canAttendance && !superAdmin),
+    enabled: Boolean(auth.accessToken && canAttendance),
     queryFn: () => getAttendanceDashboardSummaryApi(auth.accessToken!, summaryDate),
   });
 
   const coursesCountQuery = useQuery({
     queryKey: ['dashboard', 'courses-count'],
-    enabled: Boolean(auth.accessToken && canCourses && !superAdmin),
+    enabled: Boolean(auth.accessToken && canCourses),
     queryFn: () => listCoursesApi(auth.accessToken!, { page: 1, pageSize: 1 }),
   });
 
   const assessmentsQuery = useQuery({
     queryKey: ['dashboard', 'assessments-preview'],
-    enabled: Boolean(auth.accessToken && canAssessments && !superAdmin),
+    enabled: Boolean(auth.accessToken && canAssessments),
     queryFn: () => listAssessmentsApi(auth.accessToken!, { page: 1, pageSize: 4 }),
   });
 
-  const quickActions = useMemo<QuickAction[]>(() => {
-    if (superAdmin) {
-      return [
-        {
-          label: 'Open tenants',
-          description: 'Manage schools and platform access.',
-          to: '/super-admin/tenants',
-          icon: School,
-          tone: 'primary',
-        },
-      ];
-    }
-
+  const quickActions = useMemo<GenericQuickAction[]>(() => {
     if (canSetup && !setupComplete) {
       return [
         {
@@ -209,7 +189,7 @@ export function DashboardPage() {
       ];
     }
 
-    const items: QuickAction[] = [];
+    const items: GenericQuickAction[] = [];
 
     if (canCourses) {
       items.push({
@@ -252,27 +232,18 @@ export function DashboardPage() {
     }
 
     return items;
-  }, [canAssessments, canAttendance, canCourses, canSetup, setupComplete, superAdmin]);
+  }, [canAssessments, canAttendance, canCourses, canSetup, setupComplete]);
 
-  const headerQuickActions = useMemo<DashboardQuickActionItem[]>(() => {
-    const items = quickActions.map((action) => ({
-      label: action.label,
-      description: action.description,
-      icon: action.icon,
-      to: action.to,
-    }));
-
-    if (canAttendance && !superAdmin) {
-      items.unshift({
-        label: 'Open attendance',
-        description: 'Review attendance and pending class sessions.',
-        icon: ClipboardList,
-        to: '/admin/attendance',
-      });
-    }
-
-    return items;
-  }, [canAttendance, quickActions, superAdmin]);
+  const headerQuickActions = useMemo<DashboardQuickActionItem[]>(
+    () =>
+      quickActions.map((action) => ({
+        label: action.label,
+        description: action.description,
+        icon: action.icon,
+        to: action.to,
+      })),
+    [quickActions]
+  );
 
   const upcomingAssessments = useMemo(() => {
     const items = assessmentsQuery.data?.items ?? [];
@@ -330,7 +301,7 @@ export function DashboardPage() {
   const alertItems = useMemo<AlertItem[]>(() => {
     const items: AlertItem[] = [];
 
-    if (!superAdmin && canSetup && !setupComplete) {
+    if (canSetup && !setupComplete) {
       items.push({
         id: 'setup',
         title: 'School setup still incomplete',
@@ -382,91 +353,56 @@ export function DashboardPage() {
     }
 
     return items;
-  }, [attendanceSummaryQuery.data, canSetup, setupComplete, superAdmin]);
+  }, [attendanceSummaryQuery.data, canSetup, setupComplete]);
 
-  const metricCards = useMemo<MetricCardItem[]>(() => {
-    if (superAdmin) {
+  const metricCards = useMemo(
+    () => {
+      const pendingTasks =
+        (attendanceSummaryQuery.data?.pendingClasses ?? 0) + (setupComplete ? 0 : 1);
+      const alertCount =
+        (attendanceSummaryQuery.data?.summary.absent ?? 0) +
+        (attendanceSummaryQuery.data?.summary.late ?? 0);
+
       return [
         {
-          label: 'Tenant Context',
-          value: auth.me?.tenant.name ?? '-',
-          helper: auth.me?.tenant.code ?? 'Platform tenant',
-          icon: School,
-          tone: 'primary',
-        },
-        {
-          label: 'Account Role',
-          value: auth.me?.roles[0] ?? 'SUPER_ADMIN',
-          helper: 'Platform administration',
+          label: 'Marked Students',
+          value: String(attendanceSummaryQuery.data?.markedStudents ?? 0),
+          description: attendanceSummaryQuery.data
+            ? 'Attendance captured today'
+            : 'Waiting for attendance data',
           icon: Users,
-          tone: 'success',
+          tone: 'brand' as const,
         },
         {
-          label: 'School Setup',
-          value: setupComplete ? 'Ready' : 'Pending',
-          helper: setupComplete ? 'School is configured' : 'Configuration still needed',
-          icon: ClipboardList,
-          tone: 'accent',
+          label: 'Active Courses',
+          value: String(coursesCountQuery.data?.pagination.totalItems ?? 0),
+          description: canCourses ? 'Courses available this term' : 'Course access not enabled',
+          icon: BookOpen,
+          tone: 'success' as const,
         },
         {
-          label: 'Quick Actions',
-          value: String(quickActions.length),
-          helper: 'Available platform shortcuts',
-          icon: AlertCircle,
-          tone: 'danger',
+          label: 'Pending Tasks',
+          value: String(pendingTasks),
+          description: pendingTasks > 0 ? 'Needs follow-up today' : 'No pending workflow items',
+          icon: Clock3,
+          tone: 'orange' as const,
+        },
+        {
+          label: 'Alerts',
+          value: String(alertCount),
+          description: alertCount > 0 ? 'Absent or late students' : 'No attendance alerts today',
+          icon: TriangleAlert,
+          tone: 'danger' as const,
         },
       ];
-    }
-
-    const pendingTasks =
-      (attendanceSummaryQuery.data?.pendingClasses ?? 0) + (setupComplete ? 0 : 1);
-    const alertCount =
-      (attendanceSummaryQuery.data?.summary.absent ?? 0) +
-      (attendanceSummaryQuery.data?.summary.late ?? 0);
-
-    return [
-      {
-        label: 'Marked Students',
-        value: String(attendanceSummaryQuery.data?.markedStudents ?? 0),
-        helper: attendanceSummaryQuery.data
-          ? 'Attendance captured today'
-          : 'Waiting for attendance data',
-        icon: Users,
-        tone: 'primary',
-      },
-      {
-        label: 'Active Courses',
-        value: String(coursesCountQuery.data?.pagination.totalItems ?? 0),
-        helper: canCourses ? 'Courses available this term' : 'Course access not enabled',
-        icon: BookOpen,
-        tone: 'success',
-      },
-      {
-        label: 'Pending Tasks',
-        value: String(pendingTasks),
-        helper: pendingTasks > 0 ? 'Needs follow-up today' : 'No pending workflow items',
-        icon: Clock3,
-        tone: 'accent',
-      },
-      {
-        label: 'Alerts',
-        value: String(alertCount),
-        helper: alertCount > 0 ? 'Absent or late students' : 'No attendance alerts today',
-        icon: TriangleAlert,
-        tone: 'danger',
-      },
-    ];
-  }, [
-    auth.me?.roles,
-    auth.me?.tenant.code,
-    auth.me?.tenant.name,
-    attendanceSummaryQuery.data,
-    canCourses,
-    coursesCountQuery.data?.pagination.totalItems,
-    quickActions.length,
-    setupComplete,
-    superAdmin,
-  ]);
+    },
+    [
+      attendanceSummaryQuery.data,
+      canCourses,
+      coursesCountQuery.data?.pagination.totalItems,
+      setupComplete,
+    ]
+  );
 
   const recentActivity = useMemo<ActivityItem[]>(() => {
     const items: ActivityItem[] = [];
@@ -479,7 +415,7 @@ export function DashboardPage() {
         meta: formatDashboardDate(attendanceSummaryQuery.data.date),
         to: '/admin/attendance',
         icon: ClipboardList,
-        tone: 'primary',
+        tone: 'brand',
       });
     }
 
@@ -533,7 +469,7 @@ export function DashboardPage() {
     };
   }, [attendanceBreakdown, attendanceTotal]);
 
-  const hasLiveAttendance = Boolean(!superAdmin && canAttendance && attendanceSummaryQuery.data);
+  const hasLiveAttendance = Boolean(canAttendance && attendanceSummaryQuery.data);
 
   return (
     <section className="space-y-5">
@@ -568,15 +504,15 @@ export function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metricCards.map((card) => (
-          <MetricCard key={card.label} {...card} />
+          <StatCard key={card.label} {...card} loading={false} />
         ))}
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[0.95fr_1.35fr]">
         <DashboardPanel
-          title={canAssessments && !superAdmin ? 'Upcoming Assessments' : 'Action Center'}
+          title={canAssessments ? 'Upcoming Assessments' : 'Action Center'}
           action={
-            canAssessments && !superAdmin ? (
+            canAssessments ? (
               <Link
                 to="/admin/assessments"
                 className="inline-flex items-center gap-1 text-sm font-semibold text-brand-500"
@@ -587,7 +523,7 @@ export function DashboardPage() {
             ) : null
           }
         >
-          {canAssessments && !superAdmin ? (
+          {canAssessments ? (
             assessmentsQuery.isPending ? (
               <div className="grid gap-3" role="status" aria-live="polite">
                 {Array.from({ length: 3 }).map((_, index) => (
@@ -621,11 +557,15 @@ export function DashboardPage() {
               />
             )
           ) : quickActions.length ? (
-            <div className="space-y-3">
-              {quickActions.map((item) => (
-                <QuickActionRow key={item.to} item={item} />
-              ))}
-            </div>
+            <QuickActions
+              actions={quickActions.map((action) => ({
+                label: action.label,
+                description: action.description,
+                icon: action.icon,
+                to: action.to,
+              }))}
+              columnsClassName="sm:grid-cols-2"
+            />
           ) : (
             <EmptyState
               title="No quick actions"
@@ -635,7 +575,7 @@ export function DashboardPage() {
         </DashboardPanel>
 
         <DashboardPanel title="Attendance Snapshot">
-          {attendanceSummaryQuery.isPending && !superAdmin && canAttendance ? (
+          {attendanceSummaryQuery.isPending && canAttendance ? (
             <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-center">
               <div className="mx-auto h-60 w-60 animate-pulse rounded-full bg-brand-50" />
               <div className="grid gap-3">
@@ -644,7 +584,7 @@ export function DashboardPage() {
                 ))}
               </div>
             </div>
-          ) : attendanceSummaryQuery.isError && !superAdmin && canAttendance ? (
+          ) : attendanceSummaryQuery.isError && canAttendance ? (
             <StateView
               title="Could not load attendance snapshot"
               message="Retry to refresh the daily dashboard data."
@@ -700,11 +640,7 @@ export function DashboardPage() {
           ) : (
             <EmptyState
               title="No attendance data yet"
-              message={
-                superAdmin
-                  ? 'Platform accounts do not load school attendance metrics in this dashboard.'
-                  : 'Attendance data will appear here after classes are marked for the selected date.'
-              }
+              message="Attendance data will appear here after classes are marked for the selected date."
             />
           )}
         </DashboardPanel>
@@ -763,7 +699,7 @@ export function DashboardPage() {
         <DashboardPanel
           title="Recent Activity"
           action={
-            canAssessments && !superAdmin ? (
+            canAssessments ? (
               <Link
                 to="/admin/assessments"
                 className="inline-flex items-center gap-1 text-sm font-semibold text-brand-500"
@@ -788,7 +724,43 @@ export function DashboardPage() {
           )}
         </DashboardPanel>
       </div>
+
+      <AlertsPanel items={alertItems} />
     </section>
+  );
+}
+
+function AlertsPanel({ items }: { items: AlertItem[] }) {
+  const toneClasses: Record<AlertItem['severity'], string> = {
+    success: 'border-success-100 bg-success-50/60 text-success-700',
+    warning: 'border-accent-100 bg-accent-50/60 text-accent-600',
+    danger: 'border-danger-100 bg-danger-50/60 text-danger-700',
+    info: 'border-brand-100 bg-brand-50/60 text-brand-700',
+  };
+
+  return (
+    <DashboardPanel title="Alerts & Follow-ups">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {items.map((alert) => (
+          <div
+            key={alert.id}
+            className={`rounded-xl border px-4 py-3 ${toneClasses[alert.severity]}`}
+          >
+            <p className="text-sm font-semibold">{alert.title}</p>
+            <p className="mt-1 text-xs opacity-80">{alert.message}</p>
+            {alert.to ? (
+              <Link
+                to={alert.to}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-bold underline-offset-2 hover:underline"
+              >
+                Review
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+              </Link>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </DashboardPanel>
   );
 }
 
@@ -809,36 +781,6 @@ function DashboardPanel({
       </div>
       <div className="p-5">{children}</div>
     </section>
-  );
-}
-
-function MetricCard({ label, value, helper, icon: Icon, tone }: MetricCardItem) {
-  const toneClassName =
-    tone === 'primary'
-      ? 'bg-brand-50 text-brand-600'
-      : tone === 'success'
-        ? 'bg-success-50 text-success-700'
-        : tone === 'accent'
-          ? 'bg-accent-50 text-accent-600'
-          : 'bg-danger-50 text-danger-700';
-
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-soft">
-      <div className="flex items-center gap-4">
-        <span
-          className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${toneClassName}`}
-        >
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-600">{label}</p>
-          <div className="mt-1 flex items-end gap-2">
-            <p className="text-3xl font-bold tracking-tight text-slate-900">{value}</p>
-          </div>
-          <p className="mt-1 line-clamp-1 text-sm text-slate-500">{helper}</p>
-        </div>
-      </div>
-    </article>
   );
 }
 
@@ -877,28 +819,6 @@ function AssessmentDashboardRow({ assessment }: { assessment: AssessmentSummary 
   );
 }
 
-function QuickActionRow({ item }: { item: QuickAction }) {
-  const Icon = item.icon;
-
-  return (
-    <Link
-      to={item.to}
-      className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4 transition hover:border-brand-200 hover:bg-brand-50/30"
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-base font-semibold text-slate-900">{item.label}</p>
-          <p className="mt-1 text-sm text-slate-600">{item.description}</p>
-        </div>
-      </div>
-      <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-    </Link>
-  );
-}
-
 function ProgressRow({ item }: { item: BreakdownItem }) {
   return (
     <div className="space-y-2">
@@ -931,7 +851,7 @@ function MiniStat({
 }: {
   label: string;
   value: number | string;
-  tone: MetricTone;
+  tone: 'primary' | 'success' | 'accent' | 'danger';
 }) {
   const toneClassName =
     tone === 'primary'
@@ -974,7 +894,7 @@ function CompactBreakdownCard({ item }: { item: BreakdownItem }) {
 function RecentActivityRow({ item }: { item: ActivityItem }) {
   const Icon = item.icon;
   const toneClassName =
-    item.tone === 'primary'
+    item.tone === 'brand'
       ? 'bg-brand-50 text-brand-600'
       : item.tone === 'success'
         ? 'bg-success-50 text-success-700'

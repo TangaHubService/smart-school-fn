@@ -8,6 +8,7 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
+  CreditCard,
   FileBarChart2,
   GraduationCap,
   HelpCircle,
@@ -104,6 +105,15 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Settings,
     roles: ['SUPER_ADMIN'],
     requiredPermissions: ['tenants.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'subscription',
+    label: 'Subscription',
+    to: '/admin/subscription',
+    icon: CreditCard,
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['billing.read'],
     setupState: 'ANY',
   },
   {
@@ -357,7 +367,7 @@ export const NAV_ITEMS: NavItem[] = [
     requiredPermissions: ['report_cards.my_read'],
     setupState: 'ANY',
   },
-  
+
   {
     key: 'student-dashboard',
     label: 'Dashboard',
@@ -630,7 +640,9 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
                 return clsx(
                   'group flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition duration-150',
                   itemIsActive
-                    ? 'bg-white text-[#173C7F] shadow-sm ring-1 ring-brand-200'
+                    ? schoolAdmin
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-950/20 ring-1 ring-blue-400/50'
+                      : 'bg-white text-[#173C7F] shadow-sm ring-1 ring-brand-200'
                     : 'text-white/90 hover:bg-white/20 hover:text-white'
                 );
               }}

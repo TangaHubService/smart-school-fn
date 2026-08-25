@@ -24,6 +24,8 @@ import StarterKit from '@tiptap/starter-kit';
 import clsx from 'clsx';
 import { useEffect } from 'react';
 
+import { Skeleton } from './skeleton-loader';
+
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -86,8 +88,14 @@ export function RichTextEditor({
   if (!editor) {
     return (
       <div className="rounded-2xl border border-brand-200 bg-white">
-        <div className={clsx('px-4 py-3 text-sm text-brand-400', minHeightClassName)}>
-          Loading editor...
+        <div className={clsx('space-y-4 p-4', minHeightClassName)}>
+          <div className="flex gap-2">
+            {Array.from({ length: 7 }, (_, index) => (
+              <Skeleton key={index} className="h-8 w-8 rounded-lg" />
+            ))}
+          </div>
+          <Skeleton className="h-3 w-5/6 rounded-full" />
+          <Skeleton className="h-3 w-2/3 rounded-full" />
         </div>
       </div>
     );

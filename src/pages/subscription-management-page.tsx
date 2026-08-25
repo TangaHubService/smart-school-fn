@@ -5,7 +5,13 @@ import { useMemo, useState } from 'react';
 import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { Skeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
+import {
+  DataTable,
+  type DataTableColumn,
+} from '../components/ui/data-table';
+import { Badge } from '../components/ui/badge';
 import { useAuth } from '../features/auth/auth.context';
 import {
   grantAcademyAccessApi,
@@ -15,8 +21,110 @@ import {
   listSubscriptionPlansApi,
   updateSchoolSubscriptionApi,
   type SchoolSubscriptionRow,
+  type AcademyEnrollmentAdminRow,
 } from '../features/subscriptions/subscriptions.api';
 import { ApiClientError } from '../types/api';
+
+type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED';
+
+const SUBSCRIPTION_STATUS_TONES: Record<SubscriptionStatus, 'brand' | 'success' | 'warning' | 'danger'> = {
+  TRIALING: 'brand',
+  ACTIVE: 'success',
+  PAST_DUE: 'warning',
+  CANCELLED: 'danger',
+};
+
+const schoolSubColumns: DataTableColumn<SchoolSubscriptionRow>[] = [
+  {
+    key: 'schoolName',
+    header: 'School',
+    mobile: 'primary',
+    render: (row) => (
+      <span className="min-w-0">
+        <span className="block font-medium text-slate-900">{row.schoolName}</span>
+        <span className="block text-xs text-slate-500">{row.tenantCode}</span>
+      </span>
+    ),
+  },
+  {
+    key: 'plan',
+    header: 'Plan',
+    mobile: 'secondary',
+    render: (row) => <span className="text-slate-700">{row.plan.name}</span>,
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (row) => (
+      <Badge tone={SUBSCRIPTION_STATUS_TONES[row.status as SubscriptionStatus] ?? 'neutral'}>
+        {row.status}
+      </Badge>
+    ),
+  },
+  {
+    key: 'currentPeriodEnd',
+    header: 'Period end',
+    render: (row) => (
+      <span className="text-slate-600">
+        {row.currentPeriodEnd ? new Date(row.currentPeriodEnd).toLocaleDateString() : '—'}
+      </span>
+    ),
+  },
+];
+
+const enrollmentColumns: DataTableColumn<AcademyEnrollmentAdminRow>[] = [
+  {
+    key: 'learner',
+    header: 'Learner',
+    mobile: 'primary',
+    render: (row) => (
+      <span className="min-w-0">
+        <span className="block font-medium text-slate-900">{row.userName || row.userEmail}</span>
+        <span className="block text-xs text-slate-500">{row.userEmail}</span>
+      </span>
+    ),
+  },
+  {
+    key: 'programTitle',
+    header: 'Program',
+    mobile: 'secondary',
+    render: (row) => <span className="text-slate-700">{row.programTitle}</span>,
+  },
+  {
+    key: 'access',
+    header: 'Access',
+    render: (row) => (
+      <Badge tone={row.isActive ? 'success' : 'neutral'}>
+        {row.isActive ? 'Active' : 'Inactive'}
+        {row.isTrial ? ' · Trial' : ''}
+      </Badge>
+    ),
+  },
+  {
+    key: 'lastPayment',
+    header: 'Payment',
+    render: (row) => (
+      <span className="text-xs text-slate-600">
+        {row.lastPayment
+          ? `${row.lastPayment.status}${
+              row.lastPayment.status === 'COMPLETED'
+                ? ''
+                : ` · ${row.lastPayment.amount} ${row.lastPayment.currency}`
+            }`
+          : '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'expiresAt',
+    header: 'Expires',
+    render: (row) => (
+      <span className="text-slate-600">
+        {row.expiresAt ? new Date(row.expiresAt).toLocaleString() : 'Open-ended'}
+      </span>
+    ),
+  },
+];
 
 export function SubscriptionManagementPage() {
   const auth = useAuth();
@@ -155,66 +263,38 @@ export function SubscriptionManagementPage() {
           </div>
         ) : (
           <>
-            <div className="mb-8 overflow-x-auto rounded-xl border border-slate-200">
+            <section className="mb-8 overflow-hidden rounded-xl border border-slate-200">
               <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
                 <School className="h-4 w-4 text-brand-600" aria-hidden />
                 <h3 className="text-sm font-semibold text-slate-900">
                   School subscriptions (SaaS)
                 </h3>
               </div>
-              <table className="min-w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-2 font-medium">School</th>
-                    <th className="px-4 py-2 font-medium">Plan</th>
-                    <th className="px-4 py-2 font-medium">Status</th>
-                    <th className="px-4 py-2 font-medium">Period end</th>
-                    <th className="px-4 py-2 font-medium" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {schoolSubsQuery.data?.items.length ? (
-                    schoolSubsQuery.data.items.map((row) => (
-                      <tr key={row.tenantId} className="border-b border-slate-50">
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-slate-900">{row.schoolName}</p>
-                          <p className="text-xs text-slate-500">{row.tenantCode}</p>
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">{row.plan.name}</td>
-                        <td className="px-4 py-3">
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800">
-                            {row.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
-                          {row.currentPeriodEnd
-                            ? new Date(row.currentPeriodEnd).toLocaleDateString()
-                            : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setEditSub(row)}
-                            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
-                          >
-                            Adjust
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">
-                        No school subscription rows yet. Run migrations / seed or assign plans from
-                        here after creating tenants.
-                      </td>
-                    </tr>
+              <div className="p-4">
+                <DataTable<SchoolSubscriptionRow>
+                  ariaLabel="School subscriptions"
+                  columns={schoolSubColumns}
+                  data={schoolSubsQuery.data?.items ?? []}
+                  rowKey={(row) => row.tenantId}
+                  emptyTitle="No school subscription rows yet"
+                  emptyDescription="Assign plans to schools from here after creating tenants."
+                  minWidth={620}
+                  className="border-0 shadow-none"
+                  rowActions={(row) => (
+                    <button
+                      type="button"
+                      onClick={() => setEditSub(row)}
+                      aria-label={`Adjust subscription for ${row.schoolName}`}
+                      className="text-xs font-semibold text-brand-600 transition hover:text-brand-700"
+                    >
+                      Adjust
+                    </button>
                   )}
-                </tbody>
-              </table>
-            </div>
+                />
+              </div>
+            </section>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <section className="overflow-hidden rounded-xl border border-slate-200">
               <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
                 <CreditCard className="h-4 w-4 text-brand-600" aria-hidden />
                 <h3 className="text-sm font-semibold text-slate-900">
@@ -229,66 +309,18 @@ export function SubscriptionManagementPage() {
                   Refresh
                 </button>
               </div>
-              <table className="min-w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-2 font-medium">Learner</th>
-                    <th className="px-4 py-2 font-medium">Program</th>
-                    <th className="px-4 py-2 font-medium">Access</th>
-                    <th className="px-4 py-2 font-medium">Payment</th>
-                    <th className="px-4 py-2 font-medium">Expires</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {enrollmentsQuery.data?.items.length ? (
-                    enrollmentsQuery.data.items.map((row) => (
-                      <tr key={row.id} className="border-b border-slate-50">
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-slate-900">
-                            {row.userName || row.userEmail}
-                          </p>
-                          <p className="text-xs text-slate-500">{row.userEmail}</p>
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">{row.programTitle}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={
-                              row.isActive
-                                ? 'rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800'
-                                : 'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600'
-                            }
-                          >
-                            {row.isActive ? 'Active' : 'Inactive'}
-                            {row.isTrial ? ' · Trial' : ''}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-slate-600">
-                          {row.lastPayment ? (
-                            <>
-                              {row.lastPayment.status}
-                              {row.lastPayment.status === 'COMPLETED'
-                                ? ''
-                                : ` · ${row.lastPayment.amount} ${row.lastPayment.currency}`}
-                            </>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
-                          {row.expiresAt ? new Date(row.expiresAt).toLocaleString() : 'Open-ended'}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">
-                        No enrollments yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+              <div className="p-4">
+                <DataTable<AcademyEnrollmentAdminRow>
+                  ariaLabel="Academy learner enrollments"
+                  columns={enrollmentColumns}
+                  data={enrollmentsQuery.data?.items ?? []}
+                  rowKey={(row) => row.id}
+                  emptyTitle="No enrollments yet"
+                  minWidth={640}
+                  className="border-0 shadow-none"
+                />
+              </div>
+            </section>
           </>
         )}
       </SectionCard>
@@ -332,9 +364,7 @@ export function SubscriptionManagementPage() {
           <label className="grid gap-1">
             <span className="font-medium text-slate-700">Program</span>
             {catalogProgramsQuery.isPending ? (
-              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600">
-                Loading…
-              </p>
+              <Skeleton className="h-10 rounded-lg" label="Loading programs" />
             ) : catalogProgramsQuery.isError ? (
               <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 Could not load programs.

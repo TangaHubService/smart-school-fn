@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from 'react';
 
 import { fetchProtectedFileObjectUrl } from '../features/sprint4/lms.api';
+import { Skeleton } from './skeleton-loader';
 
 interface SecurePdfViewerProps {
   assetId: string;
@@ -15,7 +16,12 @@ interface SecurePdfViewerProps {
  * shown via a short-lived blob: URL, plus best-effort deterrents against the
  * common copy/print/save/right-click/dev-tools shortcuts.
  */
-export function SecurePdfViewer({ assetId, accessToken, title, className = '' }: SecurePdfViewerProps) {
+export function SecurePdfViewer({
+  assetId,
+  accessToken,
+  title,
+  className = '',
+}: SecurePdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
@@ -54,7 +60,16 @@ export function SecurePdfViewer({ assetId, accessToken, title, className = '' }:
     const container = containerRef.current;
     if (!container) return;
 
-    const events = ['contextmenu', 'copy', 'cut', 'paste', 'dragstart', 'dragover', 'drop', 'selectstart'];
+    const events = [
+      'contextmenu',
+      'copy',
+      'cut',
+      'paste',
+      'dragstart',
+      'dragover',
+      'drop',
+      'selectstart',
+    ];
 
     events.forEach((event) => {
       container.addEventListener(event, preventDefaults, true);
@@ -80,7 +95,9 @@ export function SecurePdfViewer({ assetId, accessToken, title, className = '' }:
 
   if (error) {
     return (
-      <div className={`rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700 ${className}`}>
+      <div
+        className={`rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700 ${className}`}
+      >
         Could not load this document. Please refresh and try again.
       </div>
     );
@@ -111,8 +128,9 @@ export function SecurePdfViewer({ assetId, accessToken, title, className = '' }:
             sandbox="allow-scripts allow-same-origin"
           />
         ) : (
-          <div className="flex min-h-[500px] items-center justify-center text-sm text-slate-500">
-            Loading document…
+          <div className="space-y-4 bg-slate-50 p-5" aria-label="Loading document">
+            <Skeleton className="mx-auto h-5 w-40 rounded-lg" />
+            <Skeleton className="min-h-[450px] w-full rounded-xl" />
           </div>
         )}
       </div>

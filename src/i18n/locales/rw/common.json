@@ -25,7 +25,10 @@
     "notifications": "Amakuru",
     "messages": "Ubutumwa",
     "loggedInAs": "Winjiye nka {{name}}, kanda ufungure menu ya profile",
-    "actionRequired": "Igikorwa gisabwa: zuzuza umwirondoro w'ishuri na setup wizard kugira ngo ufungure amasomo, ibyumba, abanyeshuri, amasomo n'abakozi."
+    "actionRequired": "Igikorwa gisabwa: zuzuza umwirondoro w'ishuri na setup wizard kugira ngo ufungure amasomo, ibyumba, abanyeshuri, amasomo n'abakozi.",
+    "checkingSubscription": "Genzura ubwisubizo…",
+    "activeSubscription": "Ubwisubizo bwemewe",
+    "paymentDue": "Kwishyura bisabwa"
   },
   "headerTitle": {
     "superAdmin": "Ikibaho cya Super Admin",

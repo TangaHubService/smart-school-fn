@@ -1,9 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
-import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import {
+  DataTable,
+  type DataTableColumn,
+} from '../components/ui/data-table';
+import { Badge } from '../components/ui/badge';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
@@ -156,6 +160,57 @@ export function ReportCardsPage() {
   const noResults =
     !catalogQuery.isPending && !catalogQuery.isError && (pagination?.totalItems ?? 0) === 0;
 
+  const catalogColumns: DataTableColumn<ReportCardCatalogRow>[] = [
+    {
+      key: 'studentCode',
+      header: 'Student ID',
+      mobile: 'secondary',
+      render: (row) => (
+        <span className="font-mono text-xs text-slate-800">{row.student.studentCode}</span>
+      ),
+    },
+    {
+      key: 'studentName',
+      header: 'Student name',
+      mobile: 'primary',
+      render: (row) => (
+        <span className="font-medium text-slate-900">
+          {row.student.firstName} {row.student.lastName}
+        </span>
+      ),
+    },
+    {
+      key: 'classRoom',
+      header: 'Class',
+      render: (row) => (
+        <span className="text-slate-700">
+          {row.classRoom.code}
+          <span className="text-slate-500"> · {row.classRoom.name}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'academicYear',
+      header: 'Academic year',
+      render: (row) => <span className="text-slate-700">{row.academicYear.name}</span>,
+    },
+    {
+      key: 'term',
+      header: 'Term',
+      mobile: 'secondary',
+      render: (row) => <span className="text-slate-700">{row.term.name}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Report status',
+      render: (row) => (
+        <Badge tone={row.status === 'PUBLISHED' ? 'success' : 'neutral'}>
+          {row.status === 'PUBLISHED' ? 'Published' : 'Locked'}
+        </Badge>
+      ),
+    },
+  ];
+
   return (
     <SectionCard
       title="Report cards"
@@ -239,12 +294,7 @@ export function ReportCardsPage() {
         </label>
       </div>
 
-      {catalogQuery.isPending ? (
-        <div className="flex items-center gap-2 text-slate-600">
-          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-brand-400 border-t-transparent" />
-          Loading report cards…
-        </div>
-      ) : catalogQuery.isError ? (
+      {catalogQuery.isError ? (
         <StateView
           title="Could not load report cards"
           message={
@@ -260,118 +310,56 @@ export function ReportCardsPage() {
             </button>
           }
         />
-      ) : noResults ? (
-        <EmptyState message="No report cards match these filters. Publish results from the Examination Portal after locking a class term to create report cards here." />
       ) : (
-        <>
-          <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
-            <table className="w-full min-w-full table-auto text-left text-sm">
-              <thead>
-                <tr className="border-b border-brand-200 bg-brand-50">
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
-                    Student ID
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
-                    Student name
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
-                    Class
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
-                    Academic year
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">Term</th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
-                    Report status
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-semibold text-slate-800">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => {
-                  const busyView = loadingPdf === `${row.id}-view`;
-                  const busyDl = loadingPdf === `${row.id}-download`;
-                  return (
-                    <tr key={row.id} className="border-b border-brand-50">
-                      <td className="px-3 py-2.5 font-mono text-xs text-slate-800">
-                        {row.student.studentCode}
-                      </td>
-                      <td className="px-3 py-2.5 font-medium text-slate-900">
-                        {row.student.firstName} {row.student.lastName}
-                      </td>
-                      <td className="px-3 py-2.5 text-slate-700">
-                        {row.classRoom.code}
-                        <span className="text-slate-500"> · {row.classRoom.name}</span>
-                      </td>
-                      <td className="px-3 py-2.5 text-slate-700">{row.academicYear.name}</td>
-                      <td className="px-3 py-2.5 text-slate-700">{row.term.name}</td>
-                      <td className="px-3 py-2.5">
-                        <span
-                          className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${
-                            row.status === 'PUBLISHED'
-                              ? 'bg-emerald-100 text-emerald-900'
-                              : 'bg-slate-200 text-slate-800'
-                          }`}
-                        >
-                          {row.status === 'PUBLISHED' ? 'Published' : 'Locked'}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void runPdf(row, 'view')}
-                            disabled={busyView || busyDl}
-                            className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
-                          >
-                            {busyView ? 'Opening…' : 'View'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void runPdf(row, 'download')}
-                            disabled={busyView || busyDl}
-                            className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-brand-50 disabled:opacity-50"
-                          >
-                            {busyDl ? 'Preparing…' : 'Download'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {pagination && pagination.totalPages > 1 ? (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-700">
-              <span>
-                Page {pagination.page} of {pagination.totalPages} ({pagination.totalItems} report
-                cards)
-              </span>
-              <div className="flex gap-2">
+        <DataTable<ReportCardCatalogRow>
+          ariaLabel="Report card catalog"
+          columns={catalogColumns}
+          data={rows}
+          rowKey={(row) => row.id}
+          loading={catalogQuery.isPending}
+          skeletonRows={7}
+          emptyTitle="No report cards match these filters"
+          emptyDescription="Publish results from the Examination Portal after locking a class term to create report cards here."
+          pagination={
+            pagination
+              ? {
+                  page: pagination.page,
+                  pageSize: PAGE_SIZE,
+                  totalItems: pagination.totalItems,
+                  totalPages: pagination.totalPages,
+                  onPageChange: setPage,
+                  onPageSizeChange: () => undefined,
+                }
+              : undefined
+          }
+          rowActions={(row) => {
+            const busyView = loadingPdf === `${row.id}-view`;
+            const busyDl = loadingPdf === `${row.id}-download`;
+            return (
+              <div className="flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-50"
+                  onClick={() => void runPdf(row, 'view')}
+                  disabled={busyView || busyDl}
+                  aria-label={`View report card for ${row.student.firstName} ${row.student.lastName}`}
+                  className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50"
                 >
-                  Previous
+                  {busyView ? 'Opening…' : 'View'}
                 </button>
                 <button
                   type="button"
-                  disabled={page >= pagination.totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-50"
+                  onClick={() => void runPdf(row, 'download')}
+                  disabled={busyView || busyDl}
+                  aria-label={`Download report card for ${row.student.firstName} ${row.student.lastName}`}
+                  className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-brand-50 disabled:opacity-50"
                 >
-                  Next
+                  {busyDl ? 'Preparing…' : 'Download'}
                 </button>
               </div>
-            </div>
-          ) : null}
-        </>
+            );
+          }}
+          minWidth={880}
+        />
       )}
     </SectionCard>
   );

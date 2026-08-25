@@ -17,6 +17,7 @@ import { EmptyState } from '../components/empty-state';
 import { RichContent } from '../components/rich-content';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { PageSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
@@ -407,12 +408,7 @@ export function StudentAssessmentAttemptPage() {
   }
 
   if (attemptQuery.isPending) {
-    return (
-      <div className="grid gap-4">
-        <div className="h-16 animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
-        <div className="h-[560px] animate-pulse rounded-2xl border border-brand-100 bg-white/70" />
-      </div>
-    );
+    return <PageSkeleton variant="detail" />;
   }
 
   if (attemptQuery.isError || !attempt) {

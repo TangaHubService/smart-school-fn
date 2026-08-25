@@ -69,7 +69,7 @@ export function AuditorDashboardPage() {
   });
 
   if (isLoading) {
-    return <StateView title="Loading..." loading />;
+    return <StateView title="Loading..." loading skeletonVariant="dashboard" />;
   }
 
   if (error) {
@@ -181,7 +181,9 @@ export function AuditorDashboardPage() {
             <MetricCard
               icon={BadgeCheck}
               label="Compliance Score"
-              value={stats.averageComplianceScore !== null ? `${stats.averageComplianceScore}%` : '—'}
+              value={
+                stats.averageComplianceScore !== null ? `${stats.averageComplianceScore}%` : '—'
+              }
               tone="purple"
             />
           </div>
@@ -243,7 +245,11 @@ export function AuditorDashboardPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <Badge tone={audit.score >= 75 ? 'success' : audit.score >= 50 ? 'warning' : 'danger'}>
+                        <Badge
+                          tone={
+                            audit.score >= 75 ? 'success' : audit.score >= 50 ? 'warning' : 'danger'
+                          }
+                        >
                           {audit.score}%
                         </Badge>
                         <p className="mt-1 text-xs text-slate-500">
@@ -262,9 +268,7 @@ export function AuditorDashboardPage() {
       {activeTab === 'report' && (
         <div className="space-y-6">
           {reportQuery.isLoading && <StateView title="Generating report..." loading />}
-          {reportQuery.isError && (
-            <StateView title="Could not load report" variant="error" />
-          )}
+          {reportQuery.isError && <StateView title="Could not load report" variant="error" />}
           {reportQuery.data && (
             <>
               <div className="flex items-center justify-between">
@@ -274,7 +278,7 @@ export function AuditorDashboardPage() {
                   onClick={() => {
                     const rows = [
                       ['School', 'Province', 'District', 'Sector', 'Audits', 'Latest Score'],
-                      ...reportQuery.data.report.schools.map(s => [
+                      ...reportQuery.data.report.schools.map((s) => [
                         s.name,
                         s.province || '',
                         s.district || '',
@@ -283,7 +287,7 @@ export function AuditorDashboardPage() {
                         s.latestScore !== null ? `${s.latestScore}%` : '—',
                       ]),
                     ];
-                    const csv = rows.map(r => r.join(',')).join('\n');
+                    const csv = rows.map((r) => r.join(',')).join('\n');
                     const blob = new Blob([csv], { type: 'text/csv' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -326,7 +330,12 @@ export function AuditorDashboardPage() {
                       ? `${reportQuery.data.report.averageScore}%`
                       : '—'
                   }
-                  tone={reportQuery.data.report.averageScore != null && reportQuery.data.report.averageScore >= 75 ? 'success' : 'warning'}
+                  tone={
+                    reportQuery.data.report.averageScore != null &&
+                    reportQuery.data.report.averageScore >= 75
+                      ? 'success'
+                      : 'warning'
+                  }
                 />
               </div>
 
@@ -343,7 +352,8 @@ export function AuditorDashboardPage() {
                         return (
                           <div key={module} className="flex items-center gap-3">
                             <span className="w-40 text-sm text-slate-700">
-                              {ACADEMIC_AUDIT_MODULE_LABELS[module as AcademicAuditModule] || module}
+                              {ACADEMIC_AUDIT_MODULE_LABELS[module as AcademicAuditModule] ||
+                                module}
                             </span>
                             <div className="flex-1 rounded-full bg-slate-100 h-2">
                               <div
@@ -363,9 +373,7 @@ export function AuditorDashboardPage() {
               )}
 
               <div className="rounded-2xl border bg-white p-6 shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                  School Audit Summary
-                </h3>
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">School Audit Summary</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead>
@@ -377,7 +385,7 @@ export function AuditorDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {reportQuery.data.report.schools.map(school => (
+                      {reportQuery.data.report.schools.map((school) => (
                         <tr key={school.id} className="border-b border-slate-100">
                           <td className="py-2 pr-4 font-medium text-slate-900">{school.name}</td>
                           <td className="py-2 pr-4 text-slate-600">
@@ -411,14 +419,12 @@ export function AuditorDashboardPage() {
               </div>
 
               <div className="rounded-2xl border bg-white p-6 shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                  Recent Audits
-                </h3>
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">Recent Audits</h3>
                 {reportQuery.data.report.recentAudits.length === 0 ? (
                   <p className="text-sm text-slate-500">No audits found.</p>
                 ) : (
                   <div className="space-y-2">
-                    {reportQuery.data.report.recentAudits.map(audit => {
+                    {reportQuery.data.report.recentAudits.map((audit) => {
                       const Icon = MODULE_ICONS[audit.module] || FileBarChart2;
                       return (
                         <div

@@ -657,6 +657,8 @@ export function recordLessonActivityApi(
 export type TeacherLearningInsightRow = {
   courseId: string;
   courseTitle: string;
+  classRoomId: string | null;
+  classRoomName: string | null;
   enrolledStudents: number;
   publishedLessons: number;
   avgCompletionPercent: number | null;

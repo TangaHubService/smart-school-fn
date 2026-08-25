@@ -1,3 +1,5 @@
+import { PageSkeleton, type PageSkeletonVariant } from './skeleton-loader';
+
 interface StateViewProps {
   title: string;
   message?: string;
@@ -5,6 +7,7 @@ interface StateViewProps {
   action?: React.ReactNode;
   centered?: boolean;
   loading?: boolean;
+  skeletonVariant?: PageSkeletonVariant;
   variant?: 'empty' | 'error' | 'info' | string;
 }
 
@@ -15,7 +18,12 @@ export function StateView({
   action,
   centered = true,
   loading = false,
+  skeletonVariant = 'detail',
 }: StateViewProps) {
+  if (loading) {
+    return <PageSkeleton variant={skeletonVariant} />;
+  }
+
   const containerClass = centered
     ? 'flex min-h-[60vh] items-center justify-center px-4 py-8 sm:px-6'
     : '';
@@ -29,11 +37,7 @@ export function StateView({
         aria-live="polite"
       >
         <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-        {resolvedMessage || loading ? (
-          <p className="mt-2 text-sm text-slate-700">
-            {loading ? (resolvedMessage ?? 'Please wait...') : resolvedMessage}
-          </p>
-        ) : null}
+        {resolvedMessage ? <p className="mt-2 text-sm text-slate-700">{resolvedMessage}</p> : null}
         {action ? <div className="mt-4">{action}</div> : null}
       </section>
     </div>

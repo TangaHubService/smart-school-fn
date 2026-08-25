@@ -1,16 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 
 import { DrawerForm } from '../components/drawer-form';
-import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
+import {
+  DataTable,
+  type DataTableColumn,
+} from '../components/ui/data-table';
+import { Badge } from '../components/ui/badge';
 import { useAuth } from '../features/auth/auth.context';
 import {
   AcademyProgram,
@@ -21,6 +25,60 @@ import {
 } from '../features/sprint4/lms.api';
 import { listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { ApiClientError } from '../types/api';
+
+const programColumns: DataTableColumn<AcademyProgram>[] = [
+  {
+    key: 'title',
+    header: 'Title',
+    mobile: 'primary',
+    render: (row) => (
+      <span className="min-w-0">
+        <span className="block font-medium text-slate-900">{row.title}</span>
+        <span className="block text-xs text-slate-500">{row.isActive ? 'Active' : 'Inactive'}</span>
+      </span>
+    ),
+  },
+  {
+    key: 'section',
+    header: 'Section',
+    mobile: 'secondary',
+    render: (row) => <span className="text-xs text-slate-600">{row.section ?? '—'}</span>,
+  },
+  {
+    key: 'price',
+    header: 'Legacy price (RWF)',
+    render: (row) => (
+      <span className="font-mono text-xs tabular-nums">{Number(row.price).toLocaleString()}</span>
+    ),
+  },
+  {
+    key: 'durationDays',
+    header: 'Days',
+    align: 'center',
+    render: (row) => <span className="tabular-nums text-slate-700">{row.durationDays}</span>,
+  },
+  {
+    key: 'listedInPublicCatalog',
+    header: 'Public',
+    align: 'center',
+    render: (row) => (
+      <Badge tone={row.listedInPublicCatalog ? 'success' : 'neutral'}>
+        {row.listedInPublicCatalog ? 'Yes' : 'No'}
+      </Badge>
+    ),
+  },
+  {
+    key: 'linkedClassRoom',
+    header: 'Linked class',
+    render: (row) => (
+      <span className="text-xs text-slate-600">
+        {row.linkedClassRoom
+          ? `${row.linkedClassRoom.name} (${row.linkedClassRoom.gradeLevelName})`
+          : '—'}
+      </span>
+    ),
+  },
+];
 
 const programFormSchema = z.object({
   title: z.string().trim().min(2).max(120),
@@ -145,8 +203,7 @@ export function AcademyProgramsAdminPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (programId: string) =>
-      deleteAcademyProgramApi(auth.accessToken!, programId),
+    mutationFn: (programId: string) => deleteAcademyProgramApi(auth.accessToken!, programId),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['admin-academy-programs'] }),
@@ -215,95 +272,51 @@ export function AcademyProgramsAdminPage() {
         </Link>
       </div>
 
-      {programsQuery.isPending ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
-        </div>
-      ) : listError ? (
+      {listError ? (
         <StateView title="Could not load programs" message={listError.message} />
-      ) : !programsQuery.data?.length ? (
-        <EmptyState
-          title="No academy programs yet"
-          message="Create a catalog program and link it to a class so learners unlock every subject, course, and lesson in that class after purchasing."
-          action={
-            canManage ? (
-              <button
-                type="button"
-                onClick={() => {
-                  createForm.reset(defaultProgramForm);
-                  setCreateOpen(true);
-                }}
-                className="rounded-lg border border-brand-300 bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-              >
-                Create first program
-              </button>
-            ) : undefined
+      ) : (
+        <DataTable<AcademyProgram>
+          ariaLabel="Academy programs"
+          columns={programColumns}
+          data={programsQuery.data ?? []}
+          rowKey={(row) => row.id}
+          loading={programsQuery.isPending}
+          skeletonRows={6}
+          emptyTitle="No academy programs yet"
+          emptyDescription="Create a catalog program and link it to a class so learners unlock every subject, course, and lesson in that class after purchasing."
+          minWidth={760}
+          rowActions={
+            canManage
+              ? (row) => (
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(row)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-brand-50"
+                    >
+                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          window.confirm(`Delete "${row.title}"? This action cannot be undone.`)
+                        ) {
+                          deleteMutation.mutate(row.id);
+                        }
+                      }}
+                      disabled={deleteMutation.isPending}
+                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      Delete
+                    </button>
+                  </div>
+                )
+              : undefined
           }
         />
-      ) : (
-        <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
-          <table className="w-full min-w-[max(100%,720px)] text-left text-sm">
-            <thead className="bg-brand-50 text-slate-700">
-              <tr>
-                <th className="px-3 py-2 font-semibold">Title</th>
-                <th className="px-3 py-2 font-semibold">Section</th>
-                <th className="px-3 py-2 font-semibold">Legacy price (RWF)</th>
-                <th className="px-3 py-2 font-semibold">Days</th>
-                <th className="px-3 py-2 font-semibold">Public</th>
-                <th className="px-3 py-2 font-semibold">Linked class</th>
-                <th className="px-3 py-2 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {programsQuery.data.map((row) => (
-                <tr key={row.id} className="border-t border-brand-100">
-                  <td className="px-3 py-2">
-                    <p className="font-medium text-slate-900">{row.title}</p>
-                    <p className="text-xs text-slate-500">{row.isActive ? 'Active' : 'Inactive'}</p>
-                  </td>
-                  <td className="px-3 py-2 text-xs text-slate-600">{row.section ?? '—'}</td>
-                  <td className="px-3 py-2 font-mono text-xs">
-                    {Number(row.price).toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2">{row.durationDays}</td>
-                  <td className="px-3 py-2">{row.listedInPublicCatalog ? 'Yes' : 'No'}</td>
-                  <td className="px-3 py-2 text-xs text-slate-600">
-                    {row.linkedClassRoom
-                      ? `${row.linkedClassRoom.name} (${row.linkedClassRoom.gradeLevelName})`
-                      : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {canManage ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => openEdit(row)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-2 py-1 text-xs font-semibold text-slate-700"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm(`Delete "${row.title}"? This action cannot be undone.`)) {
-                              deleteMutation.mutate(row.id);
-                            }
-                          }}
-                          disabled={deleteMutation.isPending}
-                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 ml-2"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Delete
-                        </button>
-                      </>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
 
       <DrawerForm

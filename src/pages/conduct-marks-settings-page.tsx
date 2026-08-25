@@ -6,6 +6,7 @@ import { AppDrawer } from '../components/drawer';
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { PageSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import { useAcademicYear } from '../contexts/academic-year-context';
@@ -101,7 +102,7 @@ export function ConductMarksSettingsPage() {
   }
 
   if (yearsQuery.isPending) {
-    return <div className="h-40 animate-pulse rounded-xl bg-brand-100" />;
+    return <PageSkeleton variant="form" />;
   }
 
   if (yearsQuery.isError) {

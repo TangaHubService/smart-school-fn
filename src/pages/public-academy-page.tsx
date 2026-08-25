@@ -10,6 +10,7 @@ import {
   type AcademySubscriptionSummary,
 } from '../api/academy-api';
 import { AppDrawer } from '../components/drawer';
+import { CardGridSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import backgroundImage from '../asset/background.jpg';
@@ -506,8 +507,8 @@ export function PublicAcademyPage() {
               </h2>
               <p className="mt-3 max-w-2xl text-slate-600">
                 Your plan controls time. Purchasing or selecting a class unlocks every subject,
-                course, lesson, and assessment inside it. Remove a selected class any time to free
-                a slot.
+                course, lesson, and assessment inside it. Remove a selected class any time to free a
+                slot.
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-700 shadow-sm">
@@ -517,9 +518,7 @@ export function PublicAcademyPage() {
           </div>
 
           {catalogQuery.isPending ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-10 w-10 animate-spin text-brand-500" />
-            </div>
+            <CardGridSkeleton count={6} className="lg:grid-cols-3" />
           ) : catalogQuery.isError ? (
             <div className="rounded-3xl border border-rose-200 bg-rose-50 px-6 py-12 text-center text-rose-700 shadow-sm">
               We could not load the academy catalog right now. Please refresh the page and try
@@ -660,7 +659,8 @@ export function PublicAcademyPage() {
                                     </p>
                                   ) : currentSubscription?.expiresAt ? (
                                     <p className="text-sm text-slate-500">
-                                      Current plan ends {formatExpiry(currentSubscription.expiresAt)}
+                                      Current plan ends{' '}
+                                      {formatExpiry(currentSubscription.expiresAt)}
                                     </p>
                                   ) : null}
 
@@ -668,7 +668,10 @@ export function PublicAcademyPage() {
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        setSelectedClass({ ...classRoom, gradeLevelName: grade.name });
+                                        setSelectedClass({
+                                          ...classRoom,
+                                          gradeLevelName: grade.name,
+                                        });
                                         setShowDetailsModal(true);
                                       }}
                                       className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-700 transition hover:bg-slate-50"
@@ -677,7 +680,9 @@ export function PublicAcademyPage() {
                                     </button>
                                     <button
                                       type="button"
-                                      disabled={selectMutation.isPending || removeMutation.isPending}
+                                      disabled={
+                                        selectMutation.isPending || removeMutation.isPending
+                                      }
                                       onClick={() => handleClassAction(classRoom)}
                                       className={[
                                         'flex-[1.35] inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition',
@@ -810,8 +815,8 @@ export function PublicAcademyPage() {
             </div>
             <h3 className="mt-8 text-2xl font-bold text-slate-900">Plan activated</h3>
             <p className="mt-4 text-slate-600">
-              Your academy plan is now active. Close this window and choose up to 3 classes from
-              the catalog below.
+              Your academy plan is now active. Close this window and choose up to 3 classes from the
+              catalog below.
             </p>
             <button
               type="button"

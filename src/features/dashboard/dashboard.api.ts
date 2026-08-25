@@ -79,6 +79,7 @@ export interface SchoolAdminDashboardData {
   school: {
     displayName: string;
     city: string | null;
+    logoUrl: string | null;
   };
   metrics: {
     totalStudents: number;
@@ -88,6 +89,8 @@ export interface SchoolAdminDashboardData {
     classes: number;
     classesChange: number;
     subjects: number;
+    attendanceToday: number | null;
+    examsConducted: number;
   };
   userOverview: {
     students: number;
@@ -133,6 +136,25 @@ export interface SchoolAdminDashboardData {
   activeUsers: {
     weeklyActive: number;
     monthlyActive: number;
+  };
+  overviewAnalytics: Array<{
+    label: string;
+    enrollments: number;
+    attendance: number | null;
+    assessments: number | null;
+  }>;
+  topClasses: Array<{
+    id: string;
+    name: string;
+    averageScore: number;
+    students: number;
+  }>;
+  quickInsights: {
+    averageScore: number | null;
+    passRate: number | null;
+    attendanceRate: number | null;
+    behaviorIndex: number | null;
+    engagementScore: number | null;
   };
 }
 

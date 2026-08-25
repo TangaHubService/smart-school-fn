@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 import { academyApi, Program } from '../../api/academy-api';
 import heroBackdrop from '../../asset/background.jpg';
+import { CardGridSkeleton } from '../skeleton-loader';
 
 function programImage(program: Program) {
   const t = program.thumbnail?.trim();
@@ -140,9 +141,7 @@ export function PublicAcademyProgramsShowcase({
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-10 w-10 animate-spin text-brand-500" />
-          </div>
+          <CardGridSkeleton count={3} className="lg:grid-cols-3" />
         ) : isError ? (
           <p className="py-10 text-center text-sm text-slate-600">
             Could not load programs. Try again later.

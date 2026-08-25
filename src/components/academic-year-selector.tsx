@@ -1,5 +1,5 @@
-import { Loader2 } from 'lucide-react';
 import { useAcademicYear } from '../contexts/academic-year-context';
+import { Skeleton } from './skeleton-loader';
 
 export function AcademicYearSelector() {
   const {
@@ -13,11 +13,7 @@ export function AcademicYearSelector() {
   } = useAcademicYear();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-slate-500">
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </div>
-    );
+    return <Skeleton className="h-8 w-36 rounded-lg" label="Loading academic years" />;
   }
 
   if (!availableYears.length) return null;

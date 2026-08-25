@@ -7,13 +7,13 @@ import {
   ClipboardCheck,
   ClipboardList,
   FileBarChart2,
-  Loader2,
   Search,
   TrendingUp,
   Users,
 } from 'lucide-react';
 
 import { StateView } from '../components/state-view';
+import { ListSkeleton, PageSkeleton } from '../components/skeleton-loader';
 import {
   ACADEMIC_AUDIT_MODULE_LABELS,
   AUDITOR_AUDIT_MODULES,
@@ -174,9 +174,7 @@ export function AuditorSchoolsPage() {
 
           <div className="max-h-[500px] overflow-y-auto p-2">
             {loadingSchools ? (
-              <div className="flex items-center justify-center p-4">
-                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-              </div>
+              <ListSkeleton rows={6} showAvatar={false} className="p-2" />
             ) : filteredSchools?.length === 0 ? (
               <p className="p-4 text-center text-sm text-slate-500">No schools found</p>
             ) : (
@@ -286,11 +284,7 @@ function ModuleDataView({ schoolId, module }: { schoolId: string; module: Academ
   });
 
   if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-lg border bg-white p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-      </div>
-    );
+    return <PageSkeleton variant="table" />;
   }
 
   if (error) {

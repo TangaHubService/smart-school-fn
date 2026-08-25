@@ -6,12 +6,18 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { ConfirmDrawer } from '../components/confirm-drawer';
-import { EmptyState } from '../components/empty-state';
 import { AppDrawer } from '../components/drawer';
 import { DrawerForm } from '../components/drawer-form';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
+import { Avatar } from '../components/ui/avatar';
+import { StatusBadge } from '../components/ui/badge';
+import {
+  DataTable,
+  DataTableToolbar,
+  type DataTableColumn,
+} from '../components/ui/data-table';
 import { useAuth } from '../features/auth/auth.context';
 import { hasPermission } from '../features/auth/auth-helpers';
 import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
@@ -22,8 +28,61 @@ import {
   importStudentsApi,
   listStudentsApi,
   updateStudentApi,
+  type StudentListItem,
 } from '../features/sprint2/sprint2.api';
 import { ApiClientError } from '../types/api';
+
+const studentColumns: DataTableColumn<StudentListItem>[] = [
+  {
+    key: 'studentCode',
+    header: 'Code',
+    mobile: 'secondary',
+    render: (student) => (
+      <span className="text-xs font-bold tracking-wide text-slate-700">{student.studentCode}</span>
+    ),
+  },
+  {
+    key: 'name',
+    header: 'Student',
+    sortable: false,
+    mobile: 'primary',
+    render: (student) => (
+      <span className="flex items-center gap-3">
+        <Avatar name={`${student.firstName} ${student.lastName}`} size="sm" />
+        <span className="font-semibold text-slate-900">
+          {student.firstName} {student.lastName}
+        </span>
+      </span>
+    ),
+  },
+  {
+    key: 'class',
+    header: 'Class',
+    render: (student) => (
+      <span className="text-slate-700">{student.currentEnrollment?.classRoom.name ?? '—'}</span>
+    ),
+  },
+  {
+    key: 'year',
+    header: 'Year',
+    render: (student) => (
+      <span className="text-slate-600">{student.currentEnrollment?.academicYear.name ?? '—'}</span>
+    ),
+  },
+  {
+    key: 'parents',
+    header: 'Parents',
+    align: 'center',
+    render: (student) => (
+      <span className="tabular-nums text-slate-600">{(student.parents ?? []).length}</span>
+    ),
+  },
+  {
+    key: 'isActive',
+    header: 'Status',
+    render: (student) => <StatusBadge status={student.isActive ? 'ACTIVE' : 'INACTIVE'} />,
+  },
+];
 
 const studentSchema = z.object({
   studentCode: z.string().trim().min(1, 'Student code is required').max(40),
@@ -85,7 +144,7 @@ export function StudentsPage() {
   const [classFilter, setClassFilter] = useState('');
   const [yearFilter, setYearFilter] = useState('');
   const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const [pageSize, setPageSize] = useState(20);
 
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
@@ -537,187 +596,120 @@ export function StudentsPage() {
         </div>
       }
     >
-      <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_200px_200px_auto]">
-        <input
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value);
-            setPage(1);
-          }}
-          placeholder="Search by code or student name"
-          className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-          aria-label="Search students"
-        />
+      <div className="mb-4 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]">
+          <DataTableToolbar
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            searchPlaceholder="Search by code or student name"
+            searchAriaLabel="Search students"
+            filters={[
+              {
+                id: 'year',
+                label: 'Filter by academic year',
+                value: yearFilter,
+                options: [
+                  { label: 'All years', value: '' },
+                  ...years.map((year) => ({ label: year.name, value: year.id })),
+                ],
+                onChange: (value) => {
+                  setYearFilter(value);
+                  setPage(1);
+                },
+              },
+              {
+                id: 'class',
+                label: 'Filter by class',
+                value: classFilter,
+                options: [
+                  { label: 'All classes', value: '' },
+                  ...classRooms.map((room) => ({
+                    label: `${room.code} - ${room.name}`,
+                    value: room.id,
+                  })),
+                ],
+                onChange: (value) => {
+                  setClassFilter(value);
+                  setPage(1);
+                },
+              },
+            ]}
+            onReset={() => {
+              setSearch('');
+              setYearFilter('');
+              setClassFilter('');
+              setPage(1);
+            }}
+          />
 
-        <select
-          value={yearFilter}
-          onChange={(event) => {
-            setYearFilter(event.target.value);
-            setPage(1);
-          }}
-          className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-          aria-label="Filter by academic year"
-        >
-          <option value="">All years</option>
-          {years.map((year) => (
-            <option key={year.id} value={year.id}>
-              {year.name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={classFilter}
-          onChange={(event) => {
-            setClassFilter(event.target.value);
-            setPage(1);
-          }}
-          className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-          aria-label="Filter by class"
-        >
-          <option value="">All classes</option>
-          {classRooms.map((room) => (
-            <option key={room.id} value={room.id}>
-              {room.code} - {room.name}
-            </option>
-          ))}
-        </select>
-
-        <button
-          type="button"
-          onClick={() => void studentsQuery.refetch()}
-          className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {studentsQuery.isPending ? (
-        <div className="grid gap-2" role="status" aria-live="polite">
-          <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-          <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-          <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-        </div>
-      ) : null}
-
-      {studentsQuery.isError ? (
-        <StateView
-          title="Could not load students"
-          message="Please retry."
-          action={
-            <button
-              type="button"
-              onClick={() => void studentsQuery.refetch()}
-              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-            >
-              Retry
-            </button>
+          <div className="p-4">
+        <DataTable
+          ariaLabel="Students"
+          columns={studentColumns}
+          data={students}
+          rowKey={(student) => student.id}
+          showIndex
+          loading={studentsQuery.isPending}
+          skeletonRows={5}
+          error={
+            studentsQuery.isError
+              ? { title: 'Could not load students', message: 'Please retry.' }
+              : null
           }
+          onRetry={() => void studentsQuery.refetch()}
+          emptyTitle="No students found"
+          emptyDescription="Add one manually or import Excel."
+          pagination={{
+            page: pagination.page,
+            pageSize: pagination.pageSize,
+            totalItems: pagination.totalItems,
+            totalPages: pagination.totalPages,
+            onPageChange: setPage,
+            onPageSizeChange: (size) => {
+              setPageSize(size);
+              setPage(1);
+            },
+            pageSizeOptions: [10, 20, 50, 100],
+          }}
+          rowActions={(student) => (
+            <div className="flex flex-wrap justify-end gap-2">
+              {hasPermission(auth.me, 'conduct.read') ||
+              hasPermission(auth.me, 'conduct.manage') ? (
+                <Link
+                  to={`/admin/students/${student.id}/conduct`}
+                  className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Conduct
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => openEditStudent(student)}
+                className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-brand-100"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setStudentToDelete({
+                    id: student.id,
+                    name: `${student.firstName} ${student.lastName}`,
+                  })
+                }
+                className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+              >
+                Delete
+              </button>
+            </div>
+          )}
+          minWidth={860}
+          className="border-0 shadow-none"
         />
-      ) : null}
-
-      {!studentsQuery.isPending && !studentsQuery.isError && students.length === 0 ? (
-        <EmptyState message="No students found. Add one manually or import Excel." />
-      ) : null}
-
-      {!studentsQuery.isPending && !studentsQuery.isError && students.length > 0 ? (
-        <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
-          <table className="w-full min-w-full table-auto text-left text-sm">
-            <thead>
-              <tr className="border-b border-brand-100 text-slate-700">
-                <th className="px-2 py-2 font-semibold">#</th>
-                <th className="px-2 py-2 font-semibold">Code</th>
-                <th className="px-2 py-2 font-semibold">Student</th>
-                <th className="px-2 py-2 font-semibold">Class</th>
-                <th className="px-2 py-2 font-semibold">Year</th>
-                <th className="px-2 py-2 font-semibold">Parents</th>
-                <th className="px-2 py-2 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student, index) => (
-                <tr key={student.id} className="border-b border-brand-50">
-                  <td className="px-2 py-2 align-middle text-slate-600">
-                    {(page - 1) * pageSize + index + 1}
-                  </td>
-                  <td className="px-2 py-2 align-middle font-semibold text-slate-800">
-                    {student.studentCode}
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    {student.firstName} {student.lastName}
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    {student.currentEnrollment?.classRoom.name ?? '-'}
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    {student.currentEnrollment?.academicYear.name ?? '-'}
-                  </td>
-                  <td className="px-2 py-2 align-middle">{(student.parents ?? []).length}</td>
-                  <td className="px-2 py-2 align-middle">
-                    <div className="flex flex-wrap gap-2">
-                      {hasPermission(auth.me, 'conduct.read') ||
-                      hasPermission(auth.me, 'conduct.manage') ? (
-                        <Link
-                          to={`/admin/students/${student.id}/conduct`}
-                          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
-                        >
-                          Conduct
-                        </Link>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => openEditStudent(student)}
-                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setStudentToDelete({
-                            id: student.id,
-                            name: `${student.firstName} ${student.lastName}`,
-                          })
-                        }
-                        className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-
-      {!studentsQuery.isPending && !studentsQuery.isError ? (
-        <div className="mt-3 flex items-center justify-between text-sm text-slate-700">
-          <p>
-            Showing page {pagination.page} of {Math.max(1, pagination.totalPages)} (
-            {pagination.totalItems} students)
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
-              disabled={page <= 1}
-              className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage((value) => Math.min(pagination.totalPages, value + 1))}
-              disabled={page >= pagination.totalPages}
-              className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 font-semibold disabled:opacity-50"
-            >
-              Next
-            </button>
           </div>
         </div>
-      ) : null}
 
       <DrawerForm
         open={isStudentModalOpen}

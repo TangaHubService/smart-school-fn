@@ -5,6 +5,7 @@ import { ClipboardCheck, Loader2 } from 'lucide-react';
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { ListSkeleton } from '../components/skeleton-loader';
 import { useAuth } from '../features/auth/auth.context';
 import { type AssignmentItem, listMyCoursesApi } from '../features/sprint4/lms.api';
 
@@ -97,16 +98,7 @@ export function StudentAssignmentsPage() {
   });
 
   if (coursesQuery.isPending && !coursesQuery.data) {
-    return (
-      <div className="grid gap-4">
-        <div className="h-36 animate-pulse rounded-xl bg-slate-200" />
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-200" />
-          ))}
-        </div>
-      </div>
-    );
+    return <ListSkeleton rows={6} />;
   }
 
   if (coursesQuery.isError) {

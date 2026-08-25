@@ -1,7 +1,10 @@
 import clsx from 'clsx';
-import { ArrowRight, Loader2, type LucideIcon } from 'lucide-react';
+import { ArrowRight, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+
+import { InlineSkeleton, Skeleton } from '../skeleton-loader';
+import { StatCard } from '../ui/stat-card';
 
 export type DashboardTone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral' | 'purple';
 
@@ -32,20 +35,9 @@ export const TONE_BAR: Record<DashboardTone, string> = {
   purple: 'bg-violet-500',
 };
 
-export function Card({
-  className,
-  children,
-}: {
-  className?: string;
-  children: ReactNode;
-}) {
+export function Card({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <section
-      className={clsx(
-        'rounded-2xl border border-slate-200 bg-white shadow-sm',
-        className
-      )}
-    >
+    <section className={clsx('rounded-2xl border border-slate-200 bg-white shadow-sm', className)}>
       {children}
     </section>
   );
@@ -123,51 +115,21 @@ export function MetricCard({
   tone?: DashboardTone;
   to?: string;
 }) {
-  const body = (
-    <>
-      <div className="flex items-start justify-between gap-3">
-        <span
-          className={clsx(
-            'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
-            TONE_TILE[tone]
-          )}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
-        {change !== undefined && change !== 0 ? (
-          <span
-            className={clsx(
-              'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold',
-              change > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-            )}
-          >
-            {change > 0 ? '+' : ''}
-            {change}
-          </span>
-        ) : null}
-      </div>
-      <div className="mt-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-        <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-slate-900">
-          {value}
-        </p>
-        {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
-      </div>
-    </>
+  // Delegates to the canonical StatCard so every dashboard shares one design.
+  const statTone: 'brand' | 'success' | 'orange' | 'danger' | 'neutral' | 'purple' =
+    tone === 'warning' ? 'orange' : tone;
+
+  return (
+    <StatCard
+      icon={Icon}
+      label={label}
+      value={value}
+      description={helper}
+      change={change ?? undefined}
+      tone={statTone}
+      to={to}
+    />
   );
-
-  if (to) {
-    return (
-      <Link
-        to={to}
-        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
-      >
-        {body}
-      </Link>
-    );
-  }
-
-  return <Card className="p-4">{body}</Card>;
 }
 
 export function ProgressBar({
@@ -216,9 +178,9 @@ export function LoadingCard({ rows = 3, className }: { rows?: number; className?
   return (
     <Card className={className}>
       <div className="space-y-3 p-5">
-        <div className="h-4 w-1/3 animate-pulse rounded bg-slate-200" />
+        <Skeleton className="h-4 w-1/3 rounded" />
         {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="h-12 animate-pulse rounded-xl bg-slate-100" />
+          <Skeleton key={i} className="h-12 rounded-xl" />
         ))}
       </div>
     </Card>
@@ -229,7 +191,7 @@ export function LoadingMetrics({ count = 4 }: { count?: number }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="h-28 animate-pulse rounded-2xl bg-slate-200" />
+        <Skeleton key={i} className="h-28 rounded-2xl" />
       ))}
     </div>
   );
@@ -259,12 +221,7 @@ export function EmptyInline({
 }
 
 export function InlineLoader({ label }: { label?: string }) {
-  return (
-    <div className="flex items-center gap-2 py-6 text-sm text-slate-500">
-      <Loader2 className="h-4 w-4 animate-spin text-brand-500" />
-      {label ?? 'Loading…'}
-    </div>
-  );
+  return <InlineSkeleton className="py-3" label={label ?? 'Loading'} />;
 }
 
 export function StatPill({

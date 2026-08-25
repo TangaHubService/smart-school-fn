@@ -14,12 +14,16 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { ConfirmDrawer } from '../components/confirm-drawer';
-import { EmptyState } from '../components/empty-state';
 import { DrawerForm } from '../components/drawer-form';
 import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
+import { Badge } from '../components/ui/badge';
+import {
+  DataTable,
+  type DataTableColumn,
+} from '../components/ui/data-table';
 import { useAuth } from '../features/auth/auth.context';
 import { hasRole } from '../features/auth/auth-helpers';
 import { listCourseSubjectOptionsApi } from '../features/sprint4/lms.api';
@@ -86,6 +90,64 @@ const secondaryButtonClassName =
   'inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60';
 const primaryButtonClassName =
   'inline-flex items-center gap-2 rounded-lg border border-brand-500 bg-brand-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60';
+
+const RESULT_STATUS_TONES: Record<string, 'brand' | 'success' | 'warning' | 'neutral'> = {
+  UNLOCKED: 'brand',
+  LOCKED: 'neutral',
+  PUBLISHED: 'success',
+};
+
+const examColumns: DataTableColumn<ExamSummary>[] = [
+  {
+    key: 'name',
+    header: 'Exam',
+    mobile: 'primary',
+    render: (exam) => (
+      <span className="min-w-0">
+        <span className="block font-semibold text-slate-900">{exam.name}</span>
+        <span className="mt-1 block text-xs text-slate-600">
+          <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">
+            {exam.examType ?? 'EXAM'}
+          </span>
+          {' · '}
+          {exam.totalMarks} total · weight {exam.weight}
+        </span>
+      </span>
+    ),
+  },
+  {
+    key: 'term',
+    header: 'Term',
+    render: (exam) => <span className="text-slate-700">{exam.term.name}</span>,
+  },
+  {
+    key: 'classRoom',
+    header: 'Class',
+    mobile: 'secondary',
+    render: (exam) => <span className="text-slate-700">{exam.classRoom.name}</span>,
+  },
+  {
+    key: 'subject',
+    header: 'Subject',
+    render: (exam) => <span className="text-slate-700">{exam.subject.name}</span>,
+  },
+  {
+    key: 'marksEnteredCount',
+    header: 'Marks',
+    align: 'center',
+    render: (exam) => <span className="tabular-nums text-slate-700">{exam.marksEnteredCount}</span>,
+  },
+  {
+    key: 'resultStatus',
+    header: 'Status',
+    mobile: 'secondary',
+    render: (exam) => (
+      <Badge tone={RESULT_STATUS_TONES[exam.resultStatus] ?? 'neutral'}>
+        {exam.resultStatus}
+      </Badge>
+    ),
+  },
+];
 
 function toDateTimeLocalValue(value: string | null | undefined) {
   if (!value) {
@@ -700,10 +762,6 @@ export function ExamsPage() {
             </div>
           </div>
 
-          {examsQuery.isPending ? (
-            <div className="h-64 animate-pulse rounded-xl bg-brand-50" />
-          ) : null}
-
           {examsQuery.isError ? (
             <StateView
               title="Could not load exams"
@@ -718,108 +776,71 @@ export function ExamsPage() {
                 </button>
               }
             />
-          ) : null}
-
-          {!examsQuery.isPending && !examsQuery.isError ? (
-            exams.length ? (
-              <div className="w-full overflow-x-auto rounded-xl bg-white/88">
-                <table className="w-full min-w-full border-separate border-spacing-0 text-left text-sm text-slate-800">
-                  <thead>
-                    <tr className="bg-brand-50/80 text-xs uppercase tracking-[0.14em] text-slate-500">
-                      <th className="border-b border-brand-100 px-3 py-3">#</th>
-                      <th className="border-b border-brand-100 px-3 py-3">Exam</th>
-                      <th className="border-b border-brand-100 px-3 py-3">Term</th>
-                      <th className="border-b border-brand-100 px-3 py-3">Class</th>
-                      <th className="border-b border-brand-100 px-3 py-3">Subject</th>
-                      <th className="border-b border-brand-100 px-3 py-3">Marks</th>
-                      <th className="border-b border-brand-100 px-3 py-3">Status</th>
-                      <th className="border-b border-brand-100 px-3 py-3 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {exams.map((exam, index) => (
-                      <tr key={exam.id}>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">
-                          {(pagination?.pageSize ?? 20) * ((pagination?.page ?? 1) - 1) + index + 1}
-                        </td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">
-                          <p className="font-semibold text-slate-900">{exam.name}</p>
-                          <p className="text-xs text-slate-600">
-                            <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">
-                              {exam.examType ?? 'EXAM'}
-                            </span>
-                            {' · '}
-                            {exam.totalMarks} total · weight {exam.weight}
-                          </p>
-                        </td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">
-                          {exam.term.name}
-                        </td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">
-                          {exam.classRoom.name}
-                        </td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">
-                          {exam.subject.name}
-                        </td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">
-                          {exam.marksEnteredCount}
-                        </td>
-                        <td className="border-b border-brand-100 px-3 py-3 align-top">
-                          <span className="rounded-md bg-brand-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                            {exam.resultStatus}
-                          </span>
-                        </td>
-                        <td className="border-b border-brand-100 px-3 py-3 text-right align-top">
-                          <div className="flex flex-wrap justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setMarksExamId(exam.id)}
-                              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-slate-700"
-                            >
-                              {exam.resultStatus === 'UNLOCKED' ? 'Enter marks' : 'View marks'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openEditExamModal(exam)}
-                              disabled={exam.resultStatus !== 'UNLOCKED'}
-                              title={
-                                exam.resultStatus !== 'UNLOCKED'
-                                  ? 'Unlock results for this class and term before editing the exam.'
-                                  : 'Edit this exam'
-                              }
-                              className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPendingDeleteExam(exam)}
-                              disabled={exam.resultStatus !== 'UNLOCKED'}
-                              title={
-                                exam.resultStatus !== 'UNLOCKED'
-                                  ? 'Unlock results for this class and term before deleting the exam.'
-                                  : 'Delete this exam'
-                              }
-                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <EmptyState
-                title="No exams yet"
-                message="Create the first test or exam for the selected term, class, and subject."
-              />
-            )
-          ) : null}
+          ) : (
+            <DataTable<ExamSummary>
+              ariaLabel="Exams"
+              columns={examColumns}
+              data={exams}
+              rowKey={(exam) => exam.id}
+              showIndex
+              loading={examsQuery.isPending}
+              skeletonRows={6}
+              emptyTitle="No exams yet"
+              emptyDescription="Create the first test or exam for the selected term, class, and subject."
+              pagination={
+                pagination
+                  ? {
+                      page: pagination.page,
+                      pageSize: pagination.pageSize,
+                      totalItems: pagination.totalItems,
+                      totalPages: pagination.totalPages,
+                      onPageChange: setPage,
+                      onPageSizeChange: () => undefined,
+                    }
+                  : undefined
+              }
+              minWidth={940}
+              rowActions={(exam) => (
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMarksExamId(exam.id)}
+                    className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-brand-100"
+                  >
+                    {exam.resultStatus === 'UNLOCKED' ? 'Enter marks' : 'View marks'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEditExamModal(exam)}
+                    disabled={exam.resultStatus !== 'UNLOCKED'}
+                    title={
+                      exam.resultStatus !== 'UNLOCKED'
+                        ? 'Unlock results for this class and term before editing the exam.'
+                        : 'Edit this exam'
+                    }
+                    className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingDeleteExam(exam)}
+                    disabled={exam.resultStatus !== 'UNLOCKED'}
+                    title={
+                      exam.resultStatus !== 'UNLOCKED'
+                        ? 'Unlock results for this class and term before deleting the exam.'
+                        : 'Delete this exam'
+                    }
+                    className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    Delete
+                  </button>
+                </div>
+              )}
+            />
+          )}
         </div>
       </SectionCard>
 

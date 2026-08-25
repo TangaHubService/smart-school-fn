@@ -7,6 +7,7 @@ import { AppDrawer } from '../components/drawer';
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { PageSkeleton } from '../components/skeleton-loader';
 import { useAuth } from '../features/auth/auth.context';
 import { hasPermission } from '../features/auth/auth-helpers';
 import {
@@ -89,12 +90,7 @@ export function StudentConductProfilePage() {
   }
 
   if (studentQuery.isPending) {
-    return (
-      <div className="grid gap-4">
-        <div className="h-36 animate-pulse rounded-xl bg-brand-100" />
-        <div className="h-48 animate-pulse rounded-xl bg-brand-100" />
-      </div>
-    );
+    return <PageSkeleton variant="detail" />;
   }
 
   if (studentQuery.isError || !studentQuery.data) {
@@ -252,7 +248,9 @@ export function StudentConductProfilePage() {
       )}
 
       <AppDrawer
-        open={conductModalOpen && Boolean(auth.accessToken && enrollment && canRecordConductDeduction)}
+        open={
+          conductModalOpen && Boolean(auth.accessToken && enrollment && canRecordConductDeduction)
+        }
         title="Record conduct deduction"
         onClose={closeConductModal}
         size="compact"

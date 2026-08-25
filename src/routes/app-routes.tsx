@@ -50,6 +50,7 @@ import { AuditLogsPage } from '../pages/audit-logs-page';
 import { NotificationsPage } from '../pages/notifications-page';
 import { ReportsAnalyticsPage } from '../pages/reports-analytics-page';
 import { SubscriptionManagementPage } from '../pages/subscription-management-page';
+import { SubscriptionInvoicePage } from '../pages/subscription-invoice-page';
 import { SupportCenterPage } from '../pages/support-center-page';
 import { SystemSettingsPage } from '../pages/system-settings-page';
 import { UsersPage } from '../pages/users-page';
@@ -104,7 +105,7 @@ export function AppRoutes() {
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-       <Route path="/otp" element={<OtpVerificationPage />} />
+      <Route path="/otp" element={<OtpVerificationPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route path="/verify/report-cards/:snapshotId" element={<ReportCardVerificationPage />} />
@@ -248,11 +249,14 @@ export function AppRoutes() {
             <Route path="/admin/parents" element={<ParentsPage />} />
           </Route>
 
+          <Route element={<RequirePermission permission="billing.read" />}>
+            <Route path="/admin/subscription" element={<SubscriptionInvoicePage />} />
+          </Route>
+
           <Route element={<RequirePermission permission="parents.my_children.read" />}>
             <Route path="/parent" element={<Navigate to="/parent/dashboard" replace />} />
             <Route path="/parent/dashboard" element={<ParentDashboardPage />} />
             <Route path="/parent/my-children" element={<ParentMyChildrenPage />} />
-            
           </Route>
           <Route element={<RequirePermission permission="report_cards.my_read" />}>
             <Route path="/parent/report-cards" element={<ParentReportCardsPage />} />
@@ -305,8 +309,8 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="users.read" />}>
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/roles" element={<UsersPage />} />
           </Route>
-          <Route path="/roles" element={<UsersPage />} />
 
           <Route path="/setup" element={<Navigate to="/admin/setup" replace />} />
           <Route path="/academics" element={<Navigate to="/admin/academic-years" replace />} />

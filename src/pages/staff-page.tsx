@@ -12,6 +12,13 @@ import { DrawerForm } from '../components/drawer-form';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
+import { Avatar } from '../components/ui/avatar';
+import { RoleBadge, StatusBadge } from '../components/ui/badge';
+import {
+  DataTable,
+  DataTableToolbar,
+  type DataTableColumn,
+} from '../components/ui/data-table';
 import { useAuth } from '../features/auth/auth.context';
 import {
   deleteStaffMemberApi,
@@ -94,6 +101,60 @@ type DeleteTarget =
       id: string;
       label: string;
     };
+
+const staffColumns: DataTableColumn<StaffTableRow>[] = [
+  {
+    key: 'name',
+    header: 'Name',
+    mobile: 'primary',
+    render: (row) => (
+      <span className="flex items-center gap-3">
+        {row.kind === 'MEMBER' ? (
+          <Avatar name={row.name} size="sm" />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="inline-grid h-8 w-8 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-bold text-amber-700"
+          >
+            ✉
+          </span>
+        )}
+        <span className="font-medium text-slate-900">{row.name}</span>
+      </span>
+    ),
+  },
+  {
+    key: 'email',
+    header: 'Email',
+    mobile: 'secondary',
+    render: (row) => <span className="text-slate-600">{row.email}</span>,
+  },
+  {
+    key: 'roleLabel',
+    header: 'Role',
+    render: (row) => (
+      <span className="flex flex-wrap gap-1">
+        {row.roleLabel
+          .split(',')
+          .map((role) => role.trim())
+          .filter(Boolean)
+          .map((role) => (
+            <RoleBadge key={role} role={role} />
+          ))}
+      </span>
+    ),
+  },
+  {
+    key: 'statusLabel',
+    header: 'Status',
+    render: (row) => <StatusBadge status={row.statusLabel} />,
+  },
+  {
+    key: 'typeLabel',
+    header: 'Type',
+    render: (row) => <span className="text-xs text-slate-500">{row.typeLabel}</span>,
+  },
+];
 
 const inviteSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -650,210 +711,154 @@ export function StaffPage() {
           </button>
         }
       >
-        <div className="mb-3 grid gap-2 sm:grid-cols-[1fr_220px_auto]">
-          <input
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Search by name, email, or role"
-            className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-            aria-label="Search staff"
-          />
-
-          <select
-            value={roleFilter}
-            onChange={(event) => setRoleFilter(event.target.value)}
-            className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-            aria-label="Filter role"
-          >
-            <option value="ALL">All roles</option>
-            {roleOptions.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="button"
-            onClick={() => {
-              void membersQuery.refetch();
-              void invitesQuery.refetch();
+        <div className="mb-3 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]">
+          <DataTableToolbar
+            search={searchText}
+            onSearchChange={setSearchText}
+            searchPlaceholder="Search by name, email, or role"
+            searchAriaLabel="Search staff"
+            filters={[
+              {
+                id: 'role',
+                label: 'Filter role',
+                value: roleFilter,
+                options: [
+                  { label: 'All roles', value: 'ALL' },
+                  ...roleOptions.map((role) => ({ label: role, value: role })),
+                ],
+                onChange: setRoleFilter,
+              },
+            ]}
+            onReset={() => {
+              setSearchText('');
+              setRoleFilter('ALL');
             }}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-          >
-            Refresh
-          </button>
-        </div>
-
-        {membersQuery.isPending || invitesQuery.isPending ? (
-          <div className="grid gap-2" role="status" aria-live="polite">
-            <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-            <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-            <div className="h-10 animate-pulse rounded-lg bg-brand-100" />
-          </div>
-        ) : null}
-
-        {membersQuery.isError || invitesQuery.isError ? (
-          <StateView
-            title="Could not load staff data"
-            message="Retry loading staff members and invites."
-            action={
-              <button
-                type="button"
-                onClick={() => {
-                  void membersQuery.refetch();
-                  void invitesQuery.refetch();
-                }}
-                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-              >
-                Retry
-              </button>
-            }
           />
-        ) : null}
 
-        {!membersQuery.isPending &&
-        !invitesQuery.isPending &&
-        !membersQuery.isError &&
-        !invitesQuery.isError &&
-        !rows.length ? (
-          <EmptyState
-            title="No staff records found"
-            message="Invite staff to create their accounts and manage them here."
-          />
-        ) : null}
+          <div className="p-4">
+            <DataTable<StaffTableRow>
+              ariaLabel="Staff members and invites"
+              columns={staffColumns}
+              data={rows}
+              rowKey={(row) => row.id}
+              showIndex
+              loading={membersQuery.isPending || invitesQuery.isPending}
+              skeletonRows={5}
+              error={
+                membersQuery.isError || invitesQuery.isError
+                  ? {
+                      title: 'Could not load staff data',
+                      message: 'Retry loading staff members and invites.',
+                    }
+                  : null
+              }
+              onRetry={() => {
+                void membersQuery.refetch();
+                void invitesQuery.refetch();
+              }}
+              emptyTitle="No staff records found"
+              emptyDescription="Invite staff to create their accounts and manage them here."
+              minWidth={860}
+              className="border-0 shadow-none"
+              rowActions={(row) =>
+                row.kind === 'MEMBER' ? (
+                  (() => {
+                    const isSelfMember = row.member.id === auth.me?.id;
+                    const nextStatus: 'ACTIVE' | 'INACTIVE' =
+                      row.member.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+                    const statusActionLabel =
+                      nextStatus === 'ACTIVE' ? 'Activate' : 'Deactivate';
+                    const disableStatusAction =
+                      toggleMemberStatusMutation.isPending ||
+                      (isSelfMember && nextStatus === 'INACTIVE');
+                    const isUpdatingThisMember =
+                      toggleMemberStatusMutation.isPending &&
+                      toggleMemberStatusMutation.variables?.member.id === row.member.id;
 
-        {!membersQuery.isPending &&
-        !invitesQuery.isPending &&
-        !membersQuery.isError &&
-        !invitesQuery.isError &&
-        rows.length ? (
-          <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
-            <table className="w-full min-w-full table-auto text-left text-sm">
-              <thead>
-                <tr className="border-b border-brand-100 text-slate-700">
-                  <th className="px-2 py-2 font-semibold">#</th>
-                  <th className="px-2 py-2 font-semibold">Name</th>
-                  <th className="px-2 py-2 font-semibold">Email</th>
-                  <th className="px-2 py-2 font-semibold">Role</th>
-                  <th className="px-2 py-2 font-semibold">Status</th>
-                  <th className="px-2 py-2 font-semibold">Type</th>
-                  <th className="px-2 py-2 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, index) => (
-                  <tr key={row.id} className="border-b border-brand-50">
-                    <td className="px-2 py-2 align-middle text-slate-600">{index + 1}</td>
-                    <td className="px-2 py-2 align-middle font-medium text-slate-900">
-                      {row.name}
-                    </td>
-                    <td className="px-2 py-2 align-middle">{row.email}</td>
-                    <td className="px-2 py-2 align-middle">{row.roleLabel}</td>
-                    <td className="px-2 py-2 align-middle">{row.statusLabel}</td>
-                    <td className="px-2 py-2 align-middle">{row.typeLabel}</td>
-                    <td className="px-2 py-2 align-middle">
-                      <div className="flex flex-wrap gap-2">
-                        {row.kind === 'MEMBER' ? (
-                          (() => {
-                            const isSelfMember = row.member.id === auth.me?.id;
-                            const nextStatus: 'ACTIVE' | 'INACTIVE' =
-                              row.member.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-                            const statusActionLabel =
-                              nextStatus === 'ACTIVE' ? 'Activate' : 'Deactivate';
-                            const disableStatusAction =
-                              toggleMemberStatusMutation.isPending ||
-                              (isSelfMember && nextStatus === 'INACTIVE');
-                            const isUpdatingThisMember =
-                              toggleMemberStatusMutation.isPending &&
-                              toggleMemberStatusMutation.variables?.member.id === row.member.id;
-
-                            return (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedMemberForView(row.member)}
-                                  className="rounded-md border border-brand-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
-                                >
-                                  View
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedMemberForEdit(row.member)}
-                                  className="rounded-md border border-brand-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={disableStatusAction}
-                                  title={
-                                    isSelfMember && nextStatus === 'INACTIVE'
-                                      ? 'You cannot deactivate your own account'
-                                      : undefined
-                                  }
-                                  onClick={() =>
-                                    toggleMemberStatusMutation.mutate({
-                                      member: row.member,
-                                      status: nextStatus,
-                                    })
-                                  }
-                                  className={
-                                    nextStatus === 'ACTIVE'
-                                      ? 'rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-60'
-                                      : 'rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 disabled:cursor-not-allowed disabled:opacity-60'
-                                  }
-                                >
-                                  {isUpdatingThisMember ? 'Updating...' : statusActionLabel}
-                                </button>
-                                {isTeacher(row.member) ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => openAssignCourses(row.member)}
-                                    className="rounded-md bg-brand-500 px-2 py-1 text-xs font-semibold text-white"
-                                  >
-                                    Assign subject
-                                  </button>
-                                ) : null}
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setDeleteTarget({
-                                      kind: 'MEMBER',
-                                      id: row.member.id,
-                                      label: formatMemberName(row.member),
-                                    })
-                                  }
-                                  className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
-                                >
-                                  Delete
-                                </button>
-                              </>
-                            );
-                          })()
-                        ) : (
+                    return (
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMemberForView(row.member)}
+                          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMemberForEdit(row.member)}
+                          className="rounded-md border border-brand-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={disableStatusAction}
+                          title={
+                            isSelfMember && nextStatus === 'INACTIVE'
+                              ? 'You cannot deactivate your own account'
+                              : undefined
+                          }
+                          onClick={() =>
+                            toggleMemberStatusMutation.mutate({
+                              member: row.member,
+                              status: nextStatus,
+                            })
+                          }
+                          className={
+                            nextStatus === 'ACTIVE'
+                              ? 'rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60'
+                              : 'rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60'
+                          }
+                        >
+                          {isUpdatingThisMember ? 'Updating...' : statusActionLabel}
+                        </button>
+                        {isTeacher(row.member) ? (
                           <button
                             type="button"
-                            onClick={() =>
-                              setDeleteTarget({
-                                kind: 'INVITE',
-                                id: row.invite.id,
-                                label: row.invite.email,
-                              })
-                            }
-                            className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
+                            onClick={() => openAssignCourses(row.member)}
+                            className="rounded-md bg-brand-500 px-2 py-1 text-xs font-semibold text-white transition hover:bg-brand-600"
                           >
-                            Delete
+                            Assign subject
                           </button>
-                        )}
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteTarget({
+                              kind: 'MEMBER',
+                              id: row.member.id,
+                              label: formatMemberName(row.member),
+                            })
+                          }
+                          className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    );
+                  })()
+                ) : (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDeleteTarget({
+                          kind: 'INVITE',
+                          id: row.invite.id,
+                          label: row.invite.email,
+                        })
+                      }
+                      className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )
+              }
+            />
           </div>
-        ) : null}
+        </div>
       </SectionCard>
 
       <DrawerForm

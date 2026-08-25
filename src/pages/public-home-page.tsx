@@ -5,6 +5,7 @@ import backgroundImage from '../asset/background.jpg';
 import { useAuth } from '../features/auth/auth.context';
 import { getDefaultLandingPath } from '../features/auth/auth-helpers';
 import { PublicCommunityCTA } from '../components/public/public-community-cta';
+import { PageSkeleton } from '../components/skeleton-loader';
 
 const reasons = [
   {
@@ -47,11 +48,7 @@ export function PublicHomePage() {
   }
 
   if (auth.isLoadingSession) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
-      </div>
-    );
+    return <PageSkeleton variant="public" fullScreen />;
   }
 
   return (

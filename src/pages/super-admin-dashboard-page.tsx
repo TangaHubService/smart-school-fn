@@ -25,6 +25,8 @@ import {
   type DashboardQuickActionItem,
 } from '../components/dashboard/quick-actions-dropdown';
 import { StateView } from '../components/state-view';
+import { ChartCard, PeriodTabs } from '../components/ui/chart-card';
+import { WelcomeBanner } from '../components/ui/welcome-banner';
 import { useAuth } from '../features/auth/auth.context';
 import {
   getSuperAdminDashboardApi,
@@ -155,15 +157,12 @@ export function SuperAdminDashboardPage() {
   return (
     <section className="space-y-5">
       <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-900">
-            Super Administrator Dashboard
-          </h1>
-          <DashboardQuickActionsDropdown actions={SUPER_ADMIN_QUICK_ACTIONS} />
-        </div>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Monitor schools, users, exams, and platform support activity from one place.
-        </p>
+        <WelcomeBanner
+          eyebrow="Platform administration"
+          title="Super Administrator Dashboard"
+          subtitle="Monitor schools, users, exams, and platform support activity from one place."
+          actions={<DashboardQuickActionsDropdown actions={SUPER_ADMIN_QUICK_ACTIONS} />}
+        />
         <div className="mt-4 min-w-0">
           <DashboardFilter
             variant="super-admin"
@@ -458,42 +457,22 @@ function SystemAnalyticsCard({
   ];
 
   return (
-    <Card>
-      <CardHeader
-        title="System Analytics"
-        subtitle="Platform activity over time"
-        icon={Activity}
-        tone="purple"
-        action={<CardActionLink to="/super-admin/schools">View all</CardActionLink>}
-      />
-      <div className="p-5">
-        <div className="mb-3 flex gap-2">
-          <button
-            type="button"
-            onClick={() => onTabChange('weekly')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-              tab === 'weekly'
-                ? 'bg-brand-500 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Weekly
-          </button>
-          <button
-            type="button"
-            onClick={() => onTabChange('monthly')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-              tab === 'monthly'
-                ? 'bg-brand-500 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            Monthly
-          </button>
-        </div>
-        <LineChart data={chartData} lines={lines} height={160} />
-      </div>
-    </Card>
+    <ChartCard
+      title="System Analytics"
+      subtitle="Platform activity over time"
+      action={
+        <PeriodTabs
+          value={tab}
+          onChange={onTabChange}
+          options={[
+            { value: 'weekly', label: 'Weekly' },
+            { value: 'monthly', label: 'Monthly' },
+          ]}
+        />
+      }
+    >
+      <LineChart data={chartData} lines={lines} height={160} />
+    </ChartCard>
   );
 }
 

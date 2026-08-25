@@ -5,6 +5,7 @@ import { BookOpen, ChevronRight, School } from 'lucide-react';
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { CardGridSkeleton } from '../components/skeleton-loader';
 import { useAuth } from '../features/auth/auth.context';
 import { listCoursesApi, type CourseListResponse } from '../features/sprint4/lms.api';
 
@@ -32,16 +33,7 @@ export function TeacherMyClassesPage() {
   }));
 
   if (coursesQuery.isPending) {
-    return (
-      <div className="space-y-4">
-        <div className="h-24 animate-pulse rounded-xl bg-slate-200" />
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-xl bg-slate-200" />
-          ))}
-        </div>
-      </div>
-    );
+    return <CardGridSkeleton count={4} className="lg:grid-cols-2" />;
   }
 
   if (coursesQuery.isError) {

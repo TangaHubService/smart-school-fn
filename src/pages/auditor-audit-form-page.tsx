@@ -172,7 +172,9 @@ export function AuditorAuditFormPage() {
       // without touching the file input doesn't wipe out previously uploaded evidence.
       const attachments = attachmentFiles.length
         ? await Promise.all(
-            attachmentFiles.map((file) => uploadFileToCloudinary(auth.accessToken!, 'audit-evidence', file))
+            attachmentFiles.map((file) =>
+              uploadFileToCloudinary(auth.accessToken!, 'audit-evidence', file)
+            )
           )
         : undefined;
 
@@ -208,7 +210,7 @@ export function AuditorAuditFormPage() {
   };
 
   if (!isFreeform && isLoading) {
-    return <StateView title="Loading data..." loading />;
+    return <StateView title="Loading data..." loading skeletonVariant="form" />;
   }
 
   if (!isFreeform && error) {
@@ -243,7 +245,9 @@ export function AuditorAuditFormPage() {
               <h2 className="text-lg font-semibold text-slate-900">
                 {ACADEMIC_AUDIT_MODULE_LABELS[moduleEnum]}
               </h2>
-              <p className="text-sm text-slate-500">{isFreeform ? schoolName : data!.school.displayName}</p>
+              <p className="text-sm text-slate-500">
+                {isFreeform ? schoolName : data!.school.displayName}
+              </p>
             </div>
           </div>
 
@@ -320,7 +324,8 @@ export function AuditorAuditFormPage() {
               </label>
               {existingAuditQuery.data?.attachments?.length ? (
                 <p className="mb-2 text-xs text-slate-500">
-                  Already attached: {existingAuditQuery.data.attachments.map((a) => a.originalName).join(', ')}.
+                  Already attached:{' '}
+                  {existingAuditQuery.data.attachments.map((a) => a.originalName).join(', ')}.
                   Choosing new files below replaces these.
                 </p>
               ) : null}

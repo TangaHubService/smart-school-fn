@@ -25,7 +25,10 @@
     "notifications": "Notifications",
     "messages": "Messages",
     "loggedInAs": "Logged in as {{name}}, click for profile menu",
-    "actionRequired": "Action required: complete the school profile and setup wizard to unlock academics, classes, students, subjects, and staff pages."
+    "actionRequired": "Action required: complete the school profile and setup wizard to unlock academics, classes, students, subjects, and staff pages.",
+    "checkingSubscription": "Checking subscription…",
+    "activeSubscription": "Active subscription",
+    "paymentDue": "Payment due"
   },
   "headerTitle": {
     "superAdmin": "Super Admin Dashboard",

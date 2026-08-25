@@ -56,16 +56,25 @@ export function AdminAuditReportsPage() {
   const [moduleFilter, setModuleFilter] = useState<AcademicAuditModule | ''>('');
   const [statusFilter, setStatusFilter] = useState<AcademicAuditStatus | ''>('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [reviewTarget, setReviewTarget] = useState<{ id: string; decision: 'REJECTED' | 'NEEDS_REVISION' } | null>(
-    null
-  );
+  const [reviewTarget, setReviewTarget] = useState<{
+    id: string;
+    decision: 'REJECTED' | 'NEEDS_REVISION';
+  } | null>(null);
   const [reviewNote, setReviewNote] = useState('');
 
-  const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['school-audit-reports'] });
+  const invalidate = () =>
+    void queryClient.invalidateQueries({ queryKey: ['school-audit-reports'] });
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, decision, reviewNote: note }: { id: string; decision: 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION'; reviewNote?: string }) =>
-      reviewAuditApi(id, { decision, reviewNote: note }),
+    mutationFn: ({
+      id,
+      decision,
+      reviewNote: note,
+    }: {
+      id: string;
+      decision: 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION';
+      reviewNote?: string;
+    }) => reviewAuditApi(id, { decision, reviewNote: note }),
     onSuccess: () => {
       showToast({ type: 'success', title: 'Review recorded' });
       invalidate();
@@ -81,7 +90,8 @@ export function AdminAuditReportsPage() {
   });
 
   const reopenMutation = useMutation({
-    mutationFn: ({ id, note }: { id: string; note?: string }) => reopenAuditApi(id, { reviewNote: note }),
+    mutationFn: ({ id, note }: { id: string; note?: string }) =>
+      reopenAuditApi(id, { reviewNote: note }),
     onSuccess: () => {
       showToast({ type: 'success', title: 'Audit reopened for revision' });
       invalidate();
@@ -124,7 +134,7 @@ export function AdminAuditReportsPage() {
   });
 
   if (isLoading) {
-    return <StateView title="Loading..." loading />;
+    return <StateView title="Loading..." loading skeletonVariant="table" />;
   }
 
   if (error) {
@@ -289,11 +299,14 @@ export function AdminAuditReportsPage() {
                       {downloadingId === audit.id ? 'Preparing…' : 'Download report'}
                     </button>
 
-                    {canReview && (audit.status === 'SUBMITTED' || audit.status === 'UNDER_REVIEW') ? (
+                    {canReview &&
+                    (audit.status === 'SUBMITTED' || audit.status === 'UNDER_REVIEW') ? (
                       <>
                         <button
                           type="button"
-                          onClick={() => reviewMutation.mutate({ id: audit.id, decision: 'APPROVED' })}
+                          onClick={() =>
+                            reviewMutation.mutate({ id: audit.id, decision: 'APPROVED' })
+                          }
                           disabled={reviewMutation.isPending}
                           className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 transition hover:bg-green-100 disabled:opacity-50"
                         >

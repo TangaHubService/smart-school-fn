@@ -2,20 +2,29 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { EmptyState } from '../components/empty-state';
 import { AppDrawer } from '../components/drawer';
+import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { Avatar } from '../components/ui/avatar';
+import {
+  DataTable,
+  type DataTableColumn,
+} from '../components/ui/data-table';
+import { Badge } from '../components/ui/badge';
 import { useAuth } from '../features/auth/auth.context';
 import {
   getMyChildLearningApi,
   listMyChildrenApi,
+  type MyChildrenResponse,
 } from '../features/sprint2/sprint2.api';
 
 interface SelectedStudent {
   id: string;
   fullName: string;
 }
+
+type ChildRow = MyChildrenResponse['students'][number];
 
 export function ParentMyChildrenPage() {
   const { t } = useTranslation('parent');
@@ -39,6 +48,44 @@ export function ParentMyChildrenPage() {
   const selectedStudentData = detailsStudent
     ? students.find((s) => s.id === detailsStudent.id)
     : null;
+
+  const childColumns: DataTableColumn<ChildRow>[] = [
+    {
+      key: 'name',
+      header: t('children.table.student'),
+      mobile: 'primary',
+      render: (student) => (
+        <span className="flex items-center gap-3">
+          <Avatar name={`${student.firstName} ${student.lastName}`} size="sm" />
+          <span className="font-semibold text-slate-800">
+            {student.firstName} {student.lastName}
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: 'studentCode',
+      header: t('children.table.code'),
+      mobile: 'secondary',
+    },
+    {
+      key: 'relationship',
+      header: t('children.table.relationship'),
+      render: (student) => (
+        <span className="text-slate-700">
+          {student.relationship}
+          {student.isPrimary ? ` (${t('children.primary')})` : ''}
+        </span>
+      ),
+    },
+    {
+      key: 'classRoom',
+      header: t('children.table.class'),
+      render: (student) => (
+        <span className="text-slate-700">{student.currentEnrollment?.classRoom.name ?? '—'}</span>
+      ),
+    },
+  ];
 
   return (
     <SectionCard title={t('children.title')} subtitle={t('children.subtitle')}>
@@ -72,70 +119,50 @@ export function ParentMyChildrenPage() {
         </div>
       ) : null}
 
-      {!childrenQuery.isPending && !childrenQuery.isError && students.length === 0 ? (
-        <EmptyState message={t('children.emptyMessage')} />
-      ) : null}
-
-      {!childrenQuery.isPending && !childrenQuery.isError && students.length > 0 ? (
-        <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
-          <table className="w-full min-w-full table-auto text-left text-sm">
-            <thead>
-              <tr className="border-b border-brand-100 text-slate-700">
-                <th className="px-2 py-2 font-semibold">{t('children.table.student')}</th>
-                <th className="px-2 py-2 font-semibold">{t('children.table.code')}</th>
-                <th className="px-2 py-2 font-semibold">{t('children.table.relationship')}</th>
-                <th className="px-2 py-2 font-semibold">{t('children.table.class')}</th>
-                <th className="px-2 py-2 font-semibold">{t('children.table.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student) => (
-                <tr key={student.id} className="border-b border-brand-50">
-                  <td className="px-2 py-2 align-middle font-semibold text-slate-800">
-                    {student.firstName} {student.lastName}
-                  </td>
-                  <td className="px-2 py-2 align-middle">{student.studentCode}</td>
-                  <td className="px-2 py-2 align-middle">
-                    {student.relationship}
-                    {student.isPrimary ? ` (${t('children.primary')})` : ''}
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    {student.currentEnrollment?.classRoom.name ?? '-'}
-                  </td>
-                  <td className="px-2 py-2 align-middle">
-                    <div className="flex flex-wrap gap-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDetailsStudent({
-                            id: student.id,
-                            fullName: `${student.firstName} ${student.lastName}`,
-                          })
-                        }
-                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
-                      >
-                        Details
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setLearningStudent({
-                            id: student.id,
-                            fullName: `${student.firstName} ${student.lastName}`,
-                          })
-                        }
-                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700"
-                      >
-                        {t('children.learningAction')}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
+      <DataTable<ChildRow>
+        ariaLabel={t('children.title') ?? 'My children'}
+        columns={childColumns}
+        data={students}
+        rowKey={(student) => student.id}
+        loading={childrenQuery.isPending}
+        skeletonRows={4}
+        error={
+          childrenQuery.isError
+            ? { title: t('children.errorTitle'), message: t('children.errorMessage') }
+            : null
+        }
+        onRetry={() => void childrenQuery.refetch()}
+        emptyTitle={t('children.emptyMessage')}
+        minWidth={640}
+        rowActions={(student) => (
+          <div className="flex flex-wrap justify-end gap-1">
+            <button
+              type="button"
+              onClick={() =>
+                setDetailsStudent({
+                  id: student.id,
+                  fullName: `${student.firstName} ${student.lastName}`,
+                })
+              }
+              className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-brand-100"
+            >
+              Details
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setLearningStudent({
+                  id: student.id,
+                  fullName: `${student.firstName} ${student.lastName}`,
+                })
+              }
+              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              {t('children.learningAction')}
+            </button>
+          </div>
+        )}
+      />
 
       <AppDrawer
         open={Boolean(learningStudent)}

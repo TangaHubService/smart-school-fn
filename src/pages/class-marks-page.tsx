@@ -6,6 +6,7 @@ import { EmptyState } from '../components/empty-state';
 import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { TableSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import { useAcademicYear } from '../contexts/academic-year-context';
@@ -94,7 +95,7 @@ export function ClassMarksPage() {
 
   const handleExportExcel = () => {
     const ledgerSubjects = ledgerQuery.data?.subjects ?? [];
-    
+
     const baseColumns = [
       { header: 'Rank', key: 'rank' },
       { header: 'Student Name', key: 'studentName' },
@@ -104,11 +105,13 @@ export function ClassMarksPage() {
       { header: 'Academic Year', key: 'academicYearName' },
     ];
 
-    const subjectColumns = ledgerSubjects.flatMap((sub: { id: string; name: string; code: string }) => [
-      { header: `${sub.code} CAT %`, key: `${sub.id}_cat` },
-      { header: `${sub.code} Exam %`, key: `${sub.id}_exam` },
-      { header: `${sub.code} Total`, key: `${sub.id}_total` },
-    ]);
+    const subjectColumns = ledgerSubjects.flatMap(
+      (sub: { id: string; name: string; code: string }) => [
+        { header: `${sub.code} CAT %`, key: `${sub.id}_cat` },
+        { header: `${sub.code} Exam %`, key: `${sub.id}_exam` },
+        { header: `${sub.code} Total`, key: `${sub.id}_total` },
+      ]
+    );
 
     const totalColumns = [
       { header: 'Term Total', key: 'total' },
@@ -137,7 +140,8 @@ export function ClassMarksPage() {
         const score = row.scores[sub.id];
         if (score) {
           rowData[`${sub.id}_cat`] = score.testPercent != null ? score.testPercent.toFixed(1) : '—';
-          rowData[`${sub.id}_exam`] = score.examPercent != null ? score.examPercent.toFixed(1) : '—';
+          rowData[`${sub.id}_exam`] =
+            score.examPercent != null ? score.examPercent.toFixed(1) : '—';
           rowData[`${sub.id}_total`] = score.subjectScore.toFixed(1);
         } else {
           rowData[`${sub.id}_cat`] = '—';
@@ -160,7 +164,7 @@ export function ClassMarksPage() {
 
   const handleExportPDF = () => {
     const ledgerSubjects = ledgerQuery.data?.subjects ?? [];
-    
+
     const baseColumns = [
       { header: 'Rank', key: 'rank' },
       { header: 'Student', key: 'studentName' },
@@ -169,11 +173,13 @@ export function ClassMarksPage() {
       { header: 'Term', key: 'termName' },
     ];
 
-    const subjectColumns = ledgerSubjects.flatMap((sub: { id: string; name: string; code: string }) => [
-      { header: `${sub.code} CAT`, key: `${sub.id}_cat` },
-      { header: `${sub.code} Exam`, key: `${sub.id}_exam` },
-      { header: `${sub.code} Tot`, key: `${sub.id}_total` },
-    ]);
+    const subjectColumns = ledgerSubjects.flatMap(
+      (sub: { id: string; name: string; code: string }) => [
+        { header: `${sub.code} CAT`, key: `${sub.id}_cat` },
+        { header: `${sub.code} Exam`, key: `${sub.id}_exam` },
+        { header: `${sub.code} Tot`, key: `${sub.id}_total` },
+      ]
+    );
 
     const totalColumns = [
       { header: 'Total', key: 'total' },
@@ -199,7 +205,8 @@ export function ClassMarksPage() {
         const score = row.scores[sub.id];
         if (score) {
           rowData[`${sub.id}_cat`] = score.testPercent != null ? score.testPercent.toFixed(1) : '—';
-          rowData[`${sub.id}_exam`] = score.examPercent != null ? score.examPercent.toFixed(1) : '—';
+          rowData[`${sub.id}_exam`] =
+            score.examPercent != null ? score.examPercent.toFixed(1) : '—';
           rowData[`${sub.id}_total`] = score.subjectScore.toFixed(1);
         } else {
           rowData[`${sub.id}_cat`] = '—';
@@ -623,12 +630,7 @@ export function ClassMarksPage() {
               the sum of subject scores (same rules as the class grid).
             </p>
 
-            {ledgerQuery.isPending ? (
-              <div className="flex items-center gap-2 text-slate-600">
-                <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-brand-400 border-t-transparent" />
-                Loading marks…
-              </div>
-            ) : null}
+            {ledgerQuery.isPending ? <TableSkeleton rows={6} columns={7} /> : null}
 
             {ledgerQuery.isError ? (
               <StateView
@@ -966,10 +968,7 @@ export function ClassMarksPage() {
               ) : null}
 
               {gridQuery.isPending && termId && classRoomId ? (
-                <div className="flex items-center gap-2 text-slate-600">
-                  <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-brand-400 border-t-transparent" />
-                  Loading marks grid…
-                </div>
+                <TableSkeleton rows={7} columns={8} />
               ) : null}
 
               {gridQuery.isError ? (

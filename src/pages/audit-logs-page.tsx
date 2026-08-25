@@ -1,10 +1,16 @@
-import { Download, Filter, Search, Eye, X } from 'lucide-react';
+import { Download, Eye } from 'lucide-react';
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { listActivityLogsApi } from '../features/audit/audit.api';
 import { SectionCard } from '../components/section-card';
 import { AppDrawer } from '../components/drawer';
+import {
+  DataTable,
+  DataTableToolbar,
+  type DataTableColumn,
+} from '../components/ui/data-table';
+import { Badge } from '../components/ui/badge';
 
 interface ActivityLog {
   id: string;
@@ -46,6 +52,55 @@ function formatAction(event: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+const logColumns: DataTableColumn<ActivityLog>[] = [
+  {
+    key: 'action',
+    header: 'Action',
+    mobile: 'primary',
+    render: (log) => (
+      <span className="font-medium text-slate-900">
+        {formatAction(log.actionType || log.event)}
+      </span>
+    ),
+  },
+  {
+    key: 'module',
+    header: 'Module',
+    mobile: 'secondary',
+    render: (log) => <span className="text-slate-600">{log.module || '-'}</span>,
+  },
+  {
+    key: 'actor',
+    header: 'User',
+    render: (log) => (
+      <span className="text-slate-600">
+        {log.actor?.name || log.actor?.email || 'System'}
+        {log.actor?.role ? (
+          <span className="block text-xs text-slate-500">{log.actor.role}</span>
+        ) : null}
+      </span>
+    ),
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (log) => (
+      <Badge tone={log.status === 'FAILED' ? 'danger' : 'success'}>
+        {log.status || 'SUCCESS'}
+      </Badge>
+    ),
+  },
+  {
+    key: 'timestamp',
+    header: 'Date',
+    render: (log) => (
+      <span className="text-xs text-slate-600">
+        {new Date(log.timestamp || log.createdAt).toLocaleString()}
+      </span>
+    ),
+  },
+];
+
 export function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -54,7 +109,7 @@ export function AuditLogsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['activity-logs', page, search, actionFilter, moduleFilter, statusFilter],
     queryFn: () =>
       listActivityLogsApi({
@@ -85,157 +140,124 @@ export function AuditLogsPage() {
             type="button"
             className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-50"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4" aria-hidden="true" />
             Export
           </button>
         }
       >
-        <div className="mb-4 flex flex-wrap gap-3">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search logs..."
-              className="h-10 w-full rounded-lg border border-brand-200 pl-9 pr-3 text-sm"
+        <div className="mb-4 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]">
+          <DataTableToolbar
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            searchPlaceholder="Search logs..."
+            searchAriaLabel="Search activity logs"
+            filters={[
+              {
+                id: 'action',
+                label: 'Filter by action',
+                value: actionFilter,
+                options: [
+                  { label: 'All actions', value: '' },
+                  { label: 'Login', value: 'LOGIN' },
+                  { label: 'Logout', value: 'LOGOUT' },
+                  { label: 'Create', value: 'CREATE' },
+                  { label: 'Update', value: 'UPDATE' },
+                  { label: 'Delete', value: 'DELETE' },
+                ],
+                onChange: (value) => {
+                  setActionFilter(value);
+                  setPage(1);
+                },
+              },
+              {
+                id: 'module',
+                label: 'Filter by module',
+                value: moduleFilter,
+                options: [
+                  { label: 'All modules', value: '' },
+                  { label: 'Authentication', value: 'Authentication' },
+                  { label: 'Students', value: 'Students' },
+                  { label: 'Attendance', value: 'Attendance' },
+                  { label: 'Assessments', value: 'Assessments' },
+                  { label: 'Exams', value: 'Exams' },
+                  { label: 'Learning', value: 'Learning' },
+                  { label: 'Timetable', value: 'Timetable' },
+                  { label: 'Announcements', value: 'Announcements' },
+                  { label: 'Finance', value: 'Finance' },
+                  { label: 'Government', value: 'Government' },
+                ],
+                onChange: (value) => {
+                  setModuleFilter(value);
+                  setPage(1);
+                },
+              },
+              {
+                id: 'status',
+                label: 'Filter by status',
+                value: statusFilter,
+                options: [
+                  { label: 'All statuses', value: '' },
+                  { label: 'Success', value: 'SUCCESS' },
+                  { label: 'Failed', value: 'FAILED' },
+                ],
+                onChange: (value) => {
+                  setStatusFilter(value);
+                  setPage(1);
+                },
+              },
+            ]}
+            onReset={() => {
+              setSearch('');
+              setActionFilter('');
+              setModuleFilter('');
+              setStatusFilter('');
+              setPage(1);
+            }}
+          />
+
+          <div className="p-4">
+            <DataTable<ActivityLog>
+              ariaLabel="Activity log"
+              columns={logColumns}
+              data={logs}
+              rowKey={(log) => log.id}
+              loading={isLoading}
+              skeletonRows={6}
+              error={isError ? { title: 'Could not load activity logs', message: 'Please try again later.' } : null}
+              onRetry={() => void refetch()}
+              emptyTitle="No activity logs found"
+              emptyDescription="System actions will appear here as they happen."
+              pagination={
+                pagination
+                  ? {
+                      page: pagination.page,
+                      pageSize: pagination.pageSize,
+                      totalItems: pagination.totalItems,
+                      totalPages: pagination.totalPages,
+                      onPageChange: setPage,
+                      onPageSizeChange: () => undefined,
+                    }
+                  : undefined
+              }
+              rowActions={(log) => (
+                <button
+                  type="button"
+                  onClick={() => setSelectedLog(log)}
+                  aria-label={`View details for ${formatAction(log.actionType || log.event)}`}
+                  className="inline-flex items-center gap-1 rounded-md border border-brand-200 px-2 py-1 text-xs font-semibold text-brand-700 transition hover:bg-brand-50"
+                >
+                  <Eye className="h-3 w-3" aria-hidden="true" />
+                  View
+                </button>
+              )}
+              minWidth={820}
+              className="border-0 shadow-none"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-slate-500" />
-            <select
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value)}
-              className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
-            >
-              <option value="">All actions</option>
-              <option value="LOGIN">Login</option>
-              <option value="LOGOUT">Logout</option>
-              <option value="CREATE">Create</option>
-              <option value="UPDATE">Update</option>
-              <option value="DELETE">Delete</option>
-            </select>
-            <select
-              value={moduleFilter}
-              onChange={(e) => setModuleFilter(e.target.value)}
-              className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
-            >
-              <option value="">All modules</option>
-              <option value="Authentication">Authentication</option>
-              <option value="Students">Students</option>
-              <option value="Attendance">Attendance</option>
-              <option value="Assessments">Assessments</option>
-              <option value="Exams">Exams</option>
-              <option value="Learning">Learning</option>
-              <option value="Timetable">Timetable</option>
-              <option value="Announcements">Announcements</option>
-              <option value="Finance">Finance</option>
-              <option value="Government">Government</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
-            >
-              <option value="">All statuses</option>
-              <option value="SUCCESS">Success</option>
-              <option value="FAILED">Failed</option>
-            </select>
-          </div>
         </div>
-
-        <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-full text-sm">
-            <thead>
-              <tr className="border-b border-brand-100">
-                <th className="pb-3 text-left font-semibold text-slate-700">Action</th>
-                <th className="pb-3 text-left font-semibold text-slate-700">Module</th>
-                <th className="pb-3 text-left font-semibold text-slate-700">User</th>
-                <th className="pb-3 text-left font-semibold text-slate-700">Status</th>
-                <th className="pb-3 text-left font-semibold text-slate-700">Date</th>
-                <th className="pb-3 text-left font-semibold text-slate-700">Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500">
-                    Loading...
-                  </td>
-                </tr>
-              ) : logs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500">
-                    No activity logs found
-                  </td>
-                </tr>
-              ) : (
-                logs.map((log: ActivityLog) => (
-                  <tr key={log.id} className="border-b border-brand-50">
-                    <td className="py-3 font-medium text-slate-900">
-                      {formatAction(log.actionType || log.event)}
-                    </td>
-                    <td className="py-3 text-slate-600">{log.module || '-'}</td>
-                    <td className="py-3 text-slate-600">
-                      {log.actor?.name || log.actor?.email || 'System'}
-                      {log.actor?.role && (
-                        <p className="text-xs text-slate-500">{log.actor.role}</p>
-                      )}
-                    </td>
-                    <td className="py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                          log.status === 'FAILED'
-                            ? 'bg-rose-100 text-rose-700'
-                            : 'bg-emerald-100 text-emerald-700'
-                        }`}
-                      >
-                        {log.status || 'SUCCESS'}
-                      </span>
-                    </td>
-                    <td className="py-3 text-slate-600">
-                      {new Date(log.timestamp || log.createdAt).toLocaleString()}
-                    </td>
-                    <td className="py-3">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLog(log)}
-                        className="inline-flex items-center gap-1 rounded border border-brand-200 px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
-                      >
-                        <Eye className="h-3 w-3" />
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {pagination && pagination.totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded border border-brand-200 px-3 py-1 text-sm disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="text-sm text-slate-600">
-              Page {pagination.page} of {pagination.totalPages}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= pagination.totalPages}
-              className="rounded border border-brand-200 px-3 py-1 text-sm disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        )}
       </SectionCard>
 
       <AppDrawer open={!!selectedLog} onClose={() => setSelectedLog(null)} title="Activity Details">

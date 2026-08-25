@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
+import { TableSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import { useAcademicYear } from '../contexts/academic-year-context';
@@ -331,10 +332,7 @@ export function TimetablePage() {
       </div>
 
       {slotsQuery.isPending && academicYearId && (viewMode === 'teacher' || classRoomId) ? (
-        <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
-          <Calendar className="h-6 w-6 animate-pulse" />
-          <span>Loading timetable...</span>
-        </div>
+        <TableSkeleton rows={5} columns={6} />
       ) : null}
 
       {slotsQuery.isError ? (

@@ -51,6 +51,7 @@ export function TeacherLearningInsightsPage() {
             <thead>
               <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
                 <th className="px-4 py-2 font-medium">Course</th>
+                <th className="px-4 py-2 font-medium">Class</th>
                 <th className="px-4 py-2 font-medium">Students</th>
                 <th className="px-4 py-2 font-medium">Lessons</th>
                 <th className="px-4 py-2 font-medium">Avg completion</th>
@@ -63,6 +64,7 @@ export function TeacherLearningInsightsPage() {
                 q.data.items.map((row) => (
                   <tr key={row.courseId} className="border-b border-slate-50">
                     <td className="px-4 py-3 font-medium text-slate-900">{row.courseTitle}</td>
+                    <td className="px-4 py-3 text-slate-700">{row.classRoomName ?? '—'}</td>
                     <td className="px-4 py-3 text-slate-700">{row.enrolledStudents}</td>
                     <td className="px-4 py-3 text-slate-700">{row.publishedLessons}</td>
                     <td className="px-4 py-3 text-slate-700">
@@ -76,7 +78,7 @@ export function TeacherLearningInsightsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                     No courses assigned to you yet, or no enrollments to analyze.
                   </td>
                 </tr>

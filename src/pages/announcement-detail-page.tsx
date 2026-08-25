@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { SectionCard } from '../components/section-card';
 import { SecurePdfViewer } from '../components/secure-pdf-viewer';
 import { StateView } from '../components/state-view';
+import { PageSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
@@ -158,11 +159,7 @@ export function AnnouncementDetailPage() {
   }
 
   if (announcementQuery.isPending) {
-    return (
-      <SectionCard title="Loading..." subtitle="">
-        <div className="h-20 animate-pulse rounded-lg bg-brand-100" />
-      </SectionCard>
-    );
+    return <PageSkeleton variant="detail" />;
   }
 
   if (!item) return null;
