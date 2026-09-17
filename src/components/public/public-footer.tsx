@@ -12,8 +12,8 @@ export function PublicFooter() {
   const { t } = useTranslation('public');
   return (
     <footer className="border-t border-white/5 bg-slate-950 py-16 text-slate-300">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5">
+      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8 xl:px-10">
+        <div className="grid items-start gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr_auto] lg:gap-8 xl:gap-10">
           <div className="space-y-6">
             <Link to="/" onClick={scrollToTop} className="flex items-center gap-3">
               <img src={logo} alt="SmartSchool logo" className="h-10 w-10 rounded-lg shadow-lg" />
@@ -98,17 +98,20 @@ export function PublicFooter() {
             </h4>
             <ul className="space-y-4 text-[13px]">
               <li className="flex items-start gap-3">
-                <MapPin className="mt-0.5 h-4 w-4 text-brand-300" />
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" />
                 <span>JQX4+W7R Nyanza, Rwanda</span>
               </li>
               <li className="flex items-center gap-3">
-                <Mail className="h-4 w-4 text-brand-300" />
-                <a href="mailto:smartschoolrwanda@gmail.com" className="transition-colors hover:text-brand-300">
+                <Mail className="h-4 w-4 shrink-0 text-brand-300" />
+                <a
+                  href="mailto:smartschoolrwanda@gmail.com"
+                  className="break-all transition-colors hover:text-brand-300"
+                >
                   smartschoolrwanda@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-brand-300" />
+                <Phone className="h-4 w-4 shrink-0 text-brand-300" />
                 <a href="tel:+250781212252" className="transition-colors hover:text-brand-300">
                   +250 781 212 252
                 </a>
@@ -116,21 +119,21 @@ export function PublicFooter() {
             </ul>
           </div>
 
-          <div className="flex items-start justify-start lg:justify-end">
+          <div className="flex items-center md:col-span-2 lg:col-span-1 lg:justify-end lg:self-center lg:pl-4">
             <a
               href="https://certification.dbi.rw/public?name=Smart%20School%20Rwanda"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-opacity hover:opacity-90"
+              className="shrink-0 transition-opacity hover:opacity-90"
               aria-label="Verify EdTech Trust Seal certification"
               title="Verify EdTech Trust Seal"
             >
               <img
                 src="/edtech-trust-seal.png"
                 alt="DBI EdTech Trust Seal — Reliable and Secure"
-                className="h-28 w-auto sm:h-32"
-                width={180}
-                height={128}
+                className="h-32 w-auto sm:h-36 lg:h-40 xl:h-44"
+                width={250}
+                height={176}
                 loading="lazy"
               />
             </a>
