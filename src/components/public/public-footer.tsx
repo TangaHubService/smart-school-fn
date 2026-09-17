@@ -13,7 +13,7 @@ export function PublicFooter() {
   return (
     <footer className="border-t border-white/5 bg-slate-950 py-16 text-slate-300">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5">
           <div className="space-y-6">
             <Link to="/" onClick={scrollToTop} className="flex items-center gap-3">
               <img src={logo} alt="SmartSchool logo" className="h-10 w-10 rounded-lg shadow-lg" />
@@ -115,41 +115,42 @@ export function PublicFooter() {
               </li>
             </ul>
           </div>
-        </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-6 border-t border-white/5 pt-8 md:flex-row">
-          <p className="text-[11px] uppercase tracking-wider text-slate-500">
-            © {new Date().getFullYear()} {t('footer.rights')}
-          </p>
-          <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
+          <div className="flex items-start justify-start lg:justify-end">
             <a
               href="https://certification.dbi.rw/public?name=Smart%20School%20Rwanda"
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 transition-opacity hover:opacity-90"
+              className="transition-opacity hover:opacity-90"
               aria-label="Verify EdTech Trust Seal certification"
               title="Verify EdTech Trust Seal"
             >
               <img
                 src="/edtech-trust-seal.png"
                 alt="DBI EdTech Trust Seal — Reliable and Secure"
-                className="h-20 w-auto sm:h-24"
-                width={136}
-                height={96}
+                className="h-28 w-auto sm:h-32"
+                width={180}
+                height={128}
                 loading="lazy"
               />
             </a>
-            <div className="flex gap-6 text-[11px] uppercase tracking-wider text-slate-500">
-              <Link to="/privacy" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
-                {t('footer.privacy')}
-              </Link>
-              <Link to="/terms" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
-                {t('footer.terms')}
-              </Link>
-              <Link to="/cookies" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
-                {t('footer.cookies')}
-              </Link>
-            </div>
+          </div>
+        </div>
+
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 md:flex-row">
+          <p className="text-[11px] uppercase tracking-wider text-slate-500">
+            © {new Date().getFullYear()} {t('footer.rights')}
+          </p>
+          <div className="flex gap-6 text-[11px] uppercase tracking-wider text-slate-500">
+            <Link to="/privacy" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
+              {t('footer.privacy')}
+            </Link>
+            <Link to="/terms" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
+              {t('footer.terms')}
+            </Link>
+            <Link to="/cookies" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
+              {t('footer.cookies')}
+            </Link>
           </div>
         </div>
       </div>
