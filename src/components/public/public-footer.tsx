@@ -117,20 +117,39 @@ export function PublicFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 md:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-6 border-t border-white/5 pt-8 md:flex-row">
           <p className="text-[11px] uppercase tracking-wider text-slate-500">
             © {new Date().getFullYear()} {t('footer.rights')}
           </p>
-          <div className="flex gap-6 text-[11px] uppercase tracking-wider text-slate-500">
-            <Link to="/privacy" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
-              {t('footer.privacy')}
-            </Link>
-            <Link to="/terms" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
-              {t('footer.terms')}
-            </Link>
-            <Link to="/cookies" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
-              {t('footer.cookies')}
-            </Link>
+          <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
+            <a
+              href="https://certification.dbi.rw/public?name=Smart%20School%20Rwanda"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 transition-opacity hover:opacity-90"
+              aria-label="Verify EdTech Trust Seal certification"
+              title="Verify EdTech Trust Seal"
+            >
+              <img
+                src="/edtech-trust-seal.png"
+                alt="DBI EdTech Trust Seal — Reliable and Secure"
+                className="h-20 w-auto sm:h-24"
+                width={136}
+                height={96}
+                loading="lazy"
+              />
+            </a>
+            <div className="flex gap-6 text-[11px] uppercase tracking-wider text-slate-500">
+              <Link to="/privacy" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
+                {t('footer.privacy')}
+              </Link>
+              <Link to="/terms" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
+                {t('footer.terms')}
+              </Link>
+              <Link to="/cookies" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
+                {t('footer.cookies')}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
