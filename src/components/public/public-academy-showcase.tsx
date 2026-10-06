@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import { academyApi, Program } from '../../api/academy-api';
 import heroBackdrop from '../../asset/background.jpg';
@@ -43,7 +44,7 @@ function ProgramAdvertCard({ program }: { program: Program }) {
 
 type PublicAcademyProgramsShowcaseProps = {
   eyebrow?: string;
-  title: string;
+  title?: string;
   subtitle?: string;
   /** Omit or pass a number to cap. Pass `null` to show every program from the API. */
   limit?: number | null;
@@ -54,6 +55,10 @@ type PublicAcademyProgramsShowcaseProps = {
   programs?: Program[];
   programsLoading?: boolean;
   programsError?: boolean;
+  /** When set, rendered in place of the eyebrow/title/subtitle/CTA header block. */
+  filterBar?: ReactNode;
+  /** Message shown when the (possibly filtered) list is empty. */
+  emptyMessage?: string;
 };
 
 export function PublicAcademyProgramsShowcase({
@@ -67,6 +72,8 @@ export function PublicAcademyProgramsShowcase({
   programs: programsProp,
   programsLoading: programsLoadingProp,
   programsError: programsErrorProp,
+  filterBar,
+  emptyMessage,
 }: PublicAcademyProgramsShowcaseProps) {
   const internalQuery = useQuery({
     queryKey: ['academy-programs'],
@@ -91,7 +98,7 @@ export function PublicAcademyProgramsShowcase({
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-10 text-center backdrop-blur-sm">
             <p className="text-sm text-white/80">
-              Programs from your academy catalog will appear here for visitors.
+              {emptyMessage ?? 'Programs from your academy catalog will appear here for visitors.'}
             </p>
             <Link
               to={ctaHref}
@@ -114,27 +121,33 @@ export function PublicAcademyProgramsShowcase({
       <div className="pointer-events-none absolute -left-24 bottom-0 h-48 w-48 rounded-full bg-brand-600/10 blur-3xl" />
 
       <div className="relative mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-12 flex flex-col gap-4 text-center sm:mb-14 sm:text-left md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-brand-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-brand-700 ring-1 ring-brand-500/20">
-              <Sparkles className="h-3.5 w-3.5" />
-              {eyebrow}
+        {filterBar ? (
+          <div className="mb-12">{filterBar}</div>
+        ) : (
+          <div className="mb-12 flex flex-col gap-4 text-center sm:mb-14 sm:text-left md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-brand-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-brand-700 ring-1 ring-brand-500/20">
+                <Sparkles className="h-3.5 w-3.5" />
+                {eyebrow}
+              </div>
+              {title ? (
+                <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">
+                  {title}
+                </h2>
+              ) : null}
+              {subtitle ? (
+                <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600 md:mx-0">{subtitle}</p>
+              ) : null}
             </div>
-            <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 sm:text-4xl">
-              {title}
-            </h2>
-            {subtitle ? (
-              <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600 md:mx-0">{subtitle}</p>
-            ) : null}
+            <Link
+              to={ctaHref}
+              className="inline-flex shrink-0 items-center justify-center gap-2 self-center rounded-2xl border border-brand-200 bg-white px-6 py-3.5 text-xs font-black uppercase tracking-widest text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50 md:self-auto"
+            >
+              {ctaLabel}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
-          <Link
-            to={ctaHref}
-            className="inline-flex shrink-0 items-center justify-center gap-2 self-center rounded-2xl border border-brand-200 bg-white px-6 py-3.5 text-xs font-black uppercase tracking-widest text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50 md:self-auto"
-          >
-            {ctaLabel}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
+        )}
 
         {isLoading ? (
           <CardGridSkeleton count={3} className="lg:grid-cols-3" />

@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
@@ -9,64 +9,116 @@ import { PublicAcademyProgramsShowcase } from '../components/public/public-acade
 import backgroundImage from '../asset/background.jpg';
 import { getLowBandwidthPreferred } from '../utils/low-bandwidth-preference';
 
-const CATALOG_FILTERS = [
-  { id: 'all', label: 'All', keywords: [] as readonly string[] },
-  {
-    id: 'governance',
-    label: 'Governance & admin',
-    keywords: ['governance', 'administration', 'policy', 'accounting', 'hr', 'procurement'],
-  },
-  {
-    id: 'education',
-    label: 'Education',
-    keywords: ['education', 'research', 'training', 'teaching', 'curriculum'],
-  },
-  {
-    id: 'health',
-    label: 'Health & social',
-    keywords: ['health', 'social', 'welfare', 'care'],
-  },
-  {
-    id: 'ict',
-    label: 'ICT & technology',
-    keywords: ['ict', 'technology', 'innovation', 'software', 'digital'],
-  },
-  {
-    id: 'infrastructure',
-    label: 'Infrastructure',
-    keywords: ['infrastructure', 'manufacturing', 'construction', 'production'],
-  },
-  {
-    id: 'business',
-    label: 'Business & finance',
-    keywords: ['business', 'finance', 'trade', 'hospitality', 'sales'],
-  },
-] as const;
-
-function matchesCatalogFilter(program: Program, filterId: string): boolean {
-  if (filterId === 'all') {
-    return true;
-  }
-  const entry = CATALOG_FILTERS.find((item) => item.id === filterId);
-  if (!entry || entry.keywords.length === 0) {
-    return true;
-  }
-  const haystack = `${program.title} ${program.description ?? ''}`.toLowerCase();
-  return entry.keywords.some((keyword) => haystack.includes(keyword));
-}
-
 export function PublicCoursesPage() {
   const lowBandwidth = getLowBandwidthPreferred();
+  const [classFilter, setClassFilter] = useState('');
+  const [subjectFilter, setSubjectFilter] = useState('');
+
   const programsQuery = useQuery({
     queryKey: ['academy-programs', 'public-catalog'],
     queryFn: academyApi.getPrograms,
     staleTime: 60_000,
   });
 
+  // Live Level → Class → Subjects tree: drives the Class and Subject dropdowns.
+  const treeQuery = useQuery({
+    queryKey: ['academy-catalog-tree'],
+    queryFn: academyApi.getCatalogTree,
+    staleTime: 60_000,
+  });
+
+  const classOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const year of treeQuery.data?.academicYears ?? []) {
+      for (const grade of year.gradeLevels) {
+        for (const room of grade.classRooms) {
+          if (!map.has(room.id)) {
+            map.set(room.id, `${grade.name} — ${room.name}`);
+          }
+        }
+      }
+    }
+    // Fallback to the flat program list when the tree is unavailable.
+    if (map.size === 0) {
+      for (const program of programsQuery.data ?? []) {
+        if (program.classRoomId && program.className && !map.has(program.classRoomId)) {
+          map.set(
+            program.classRoomId,
+            program.gradeLevelName
+              ? `${program.gradeLevelName} — ${program.className}`
+              : program.className
+          );
+        }
+      }
+    }
+    return [...map.entries()]
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [treeQuery.data, programsQuery.data]);
+
+  const classSubjects = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const year of treeQuery.data?.academicYears ?? []) {
+      for (const grade of year.gradeLevels) {
+        for (const room of grade.classRooms) {
+          const set = map.get(room.id) ?? new Set<string>();
+          for (const subject of room.subjects) {
+            set.add(subject.name);
+          }
+          map.set(room.id, set);
+        }
+      }
+    }
+    return map;
+  }, [treeQuery.data]);
+
+  const subjectOptions = useMemo(() => {
+    if (classFilter) {
+      return [...(classSubjects.get(classFilter) ?? [])].sort((a, b) => a.localeCompare(b));
+    }
+    const all = new Set<string>();
+    for (const set of classSubjects.values()) {
+      for (const name of set) {
+        all.add(name);
+      }
+    }
+    return [...all].sort((a, b) => a.localeCompare(b));
+  }, [classSubjects, classFilter]);
+
   const filteredPrograms = useMemo(
-    () => (programsQuery.data ?? []).filter((program) => matchesCatalogFilter(program, 'all')),
-    [programsQuery.data]
+    () =>
+      (programsQuery.data ?? []).filter((program: Program) => {
+        if (classFilter && program.classRoomId !== classFilter) {
+          return false;
+        }
+        if (
+          subjectFilter &&
+          !(program.classRoomId && classSubjects.get(program.classRoomId)?.has(subjectFilter))
+        ) {
+          return false;
+        }
+        return true;
+      }),
+    [programsQuery.data, classFilter, subjectFilter, classSubjects]
   );
+
+  const hasActiveFilters = Boolean(classFilter || subjectFilter);
+
+  function handleClassChange(value: string) {
+    setClassFilter(value);
+    // Drop the subject if the newly selected class does not offer it.
+    if (value && subjectFilter) {
+      const offered = classSubjects.get(value);
+      if (offered && !offered.has(subjectFilter)) {
+        setSubjectFilter('');
+      }
+    }
+  }
+
+  function resetFilters() {
+    setClassFilter('');
+    setSubjectFilter('');
+  }
 
   return (
     <main className="bg-white">
@@ -85,8 +137,8 @@ export function PublicCoursesPage() {
             Welcome to Smart School Rwanda After Class Programs
           </h1>
           <p className="mx-auto mt-6 hidden max-w-3xl text-lg font-medium text-gray-100 md:block">
-            Explore the live academy catalog, compare program themes, then activate a plan on the
-            academy page and choose the 3 subjects you want to access.
+            Explore academy programs by class or subject, then activate a plan on the academy page
+            and choose the 3 subjects you want to access.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
@@ -106,42 +158,68 @@ export function PublicCoursesPage() {
         </div>
       </section>
 
-      <section className="border-b border-slate-100 bg-slate-50 py-8">
-        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
-            Live catalog
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-900">Academy programs from the API</h2>
-          <p className="mt-3 max-w-3xl text-sm text-slate-600">
-            {programsQuery.isPending
-              ? 'Loading programs…'
-              : programsQuery.isError
-                ? 'Program list unavailable right now.'
-                : `${filteredPrograms.length} program${filteredPrograms.length === 1 ? '' : 's'} available for plan-based access.`}
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {CATALOG_FILTERS.map((filter) => (
-              <span
-                key={filter.id}
-                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
-              >
-                {filter.label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <PublicAcademyProgramsShowcase
-        eyebrow="Live academy catalog"
-        title="Browse available programs"
-        subtitle="Choose a plan on the academy page, then add up to 3 academy subjects from the live catalog."
         limit={null}
         programs={filteredPrograms}
         programsLoading={programsQuery.isPending}
         programsError={programsQuery.isError}
-        ctaHref="/academy"
-        ctaLabel="Open academy plans"
+        emptyMessage={
+          hasActiveFilters ? 'No programs match the selected class or subject filters.' : undefined
+        }
+        filterBar={
+          <div className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[1fr_1fr_auto]">
+            <label className="grid gap-1 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+              Class
+              <select
+                value={classFilter}
+                onChange={(e) => handleClassChange(e.target.value)}
+                className="h-11 rounded-xl border border-slate-300 px-3 text-sm font-medium normal-case text-slate-900"
+                aria-label="Filter programs by class"
+              >
+                <option value="">All classes</option>
+                {classOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+              Subject
+              <select
+                value={subjectFilter}
+                onChange={(e) => setSubjectFilter(e.target.value)}
+                className="h-11 rounded-xl border border-slate-300 px-3 text-sm font-medium normal-case text-slate-900 disabled:opacity-60"
+                aria-label="Filter programs by subject"
+                disabled={subjectOptions.length === 0}
+              >
+                <option value="">All subjects</option>
+                {subjectOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-end gap-2">
+              <button
+                type="button"
+                onClick={resetFilters}
+                disabled={!hasActiveFilters}
+                className="h-11 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+              >
+                Reset
+              </button>
+            </div>
+            <p className="text-sm text-slate-500 sm:col-span-3" aria-live="polite">
+              {programsQuery.isPending
+                ? 'Loading programs…'
+                : programsQuery.isError
+                  ? 'Program list unavailable right now.'
+                  : `${filteredPrograms.length} program${filteredPrograms.length === 1 ? '' : 's'} shown.`}
+            </p>
+          </div>
+        }
       />
 
       <PublicCommunityCTA />
