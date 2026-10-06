@@ -40,6 +40,8 @@ const ROLE_FILTER_OPTIONS = [
   { label: 'All Roles', value: 'ALL' },
   { label: 'Parent', value: 'PARENT' },
   { label: 'Student', value: 'STUDENT' },
+  { label: 'Learner', value: 'LEARNER' },
+  { label: 'Public Learner', value: 'PUBLIC_LEARNER' },
   { label: 'Teacher', value: 'TEACHER' },
   { label: 'School Admin', value: 'SCHOOL_ADMIN' },
   { label: 'Super Admin', value: 'SUPER_ADMIN' },

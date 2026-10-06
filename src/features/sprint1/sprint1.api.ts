@@ -20,6 +20,11 @@ export interface CreateTenantPayload {
     village?: string;
     country?: string;
     timezone?: string;
+    adminCountryCode?: string;
+    adminLevel1?: string;
+    adminLevel2?: string;
+    adminLevel3?: string;
+    adminLevel4?: string;
   };
   schoolAdmin?: {
     email: string;
@@ -74,6 +79,11 @@ export interface SchoolDetail {
     village: string | null;
     country: string;
     timezone: string;
+    adminCountryCode?: string | null;
+    adminLevel1?: string | null;
+    adminLevel2?: string | null;
+    adminLevel3?: string | null;
+    adminLevel4?: string | null;
     setupCompletedAt: string | null;
   } | null;
   pendingInvites: Array<{
@@ -106,6 +116,11 @@ export interface CompleteSetupPayload {
     village?: string;
     country?: string;
     timezone?: string;
+    adminCountryCode?: string;
+    adminLevel1?: string;
+    adminLevel2?: string;
+    adminLevel3?: string;
+    adminLevel4?: string;
     logoUrl?: string;
   };
   academicYear?: {
@@ -209,7 +224,17 @@ export function updateTenantStatusApi(
 
 export function listTenantsApi(
   accessToken: string,
-  params?: { page?: number; pageSize?: number; search?: string }
+  params?: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    country?: string;
+    province?: string;
+    district?: string;
+    sector?: string;
+    cell?: string;
+    village?: string;
+  }
 ) {
   const query = new URLSearchParams();
 
@@ -223,6 +248,9 @@ export function listTenantsApi(
 
   if (params?.search?.trim()) {
     query.set('search', params.search.trim());
+  }
+  for (const key of ['country', 'province', 'district', 'sector', 'cell', 'village'] as const) {
+    if (params?.[key]?.trim()) query.set(key, params[key]!.trim());
   }
 
   return apiRequest<TenantListItem[]>(`/tenants${query.toString() ? `?${query.toString()}` : ''}`, {

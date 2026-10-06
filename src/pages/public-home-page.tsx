@@ -1,11 +1,32 @@
 import { ArrowRight, Award, Clock, Play, Star, Users } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate } from 'react-router-dom';
 
 import backgroundImage from '../asset/background.jpg';
+import { API_BASE_URL } from '../api/client';
 import { useAuth } from '../features/auth/auth.context';
 import { getDefaultLandingPath } from '../features/auth/auth-helpers';
 import { PublicCommunityCTA } from '../components/public/public-community-cta';
 import { PageSkeleton } from '../components/skeleton-loader';
+
+interface PublicStats {
+  studentSuccessRate: { rate: number; passed: number; eligible: number } | null;
+  activeUsers: number;
+  schools: number;
+  courseModules: number;
+}
+
+async function fetchPublicStats(): Promise<PublicStats> {
+  const response = await fetch(`${API_BASE_URL}/public-academy/stats`);
+  if (!response.ok) throw new Error('Could not load platform stats');
+  const envelope = (await response.json()) as { data: PublicStats };
+  return envelope.data;
+}
+
+function formatCompact(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '')}K+`;
+  return String(n);
+}
 
 const reasons = [
   {
@@ -127,36 +148,7 @@ export function PublicHomePage() {
       </section>
 
       <section className="bg-brand-300 py-20">
-        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
-          <div className="mx-auto inline-block rounded-[36px] border border-white/35 bg-white/15 p-2 backdrop-blur-sm">
-            <div className="rounded-[32px] border border-white/35 bg-white/15 px-10 py-12">
-              <p className="text-7xl font-black italic leading-none text-white sm:text-8xl">98%</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.26em] text-white">
-                Student Success Rate
-              </p>
-            </div>
-          </div>
-          <div className="mx-auto mt-10 grid max-w-4xl gap-8 text-white md:grid-cols-3">
-            <div>
-              <p className="text-3xl font-bold tracking-tight">25K+</p>
-              <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-white/70">
-                Active Users
-              </p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold tracking-tight">85+</p>
-              <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-white/70">
-                Global Partners
-              </p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold tracking-tight">450+</p>
-              <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-white/70">
-                Course Modules
-              </p>
-            </div>
-          </div>
-        </div>
+        <PublicStatsSection />
       </section>
 
       <PublicCommunityCTA />
@@ -192,5 +184,74 @@ export function PublicHomePage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function PublicStatsSection() {
+  const statsQuery = useQuery({ queryKey: ['public-stats'], queryFn: fetchPublicStats, retry: 1 });
+
+  const rate = statsQuery.data?.studentSuccessRate?.rate ?? null;
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+      <div className="mx-auto inline-block rounded-[36px] border border-white/35 bg-white/15 p-2 backdrop-blur-sm">
+        <div className="rounded-[32px] border border-white/35 bg-white/15 px-10 py-12">
+          {statsQuery.isPending ? (
+            <p className="text-4xl font-black italic text-white">…</p>
+          ) : rate != null ? (
+            <p className="text-7xl font-black italic leading-none text-white sm:text-8xl">
+              {rate}%
+            </p>
+          ) : (
+            <p className="text-2xl font-bold text-white">No result data yet</p>
+          )}
+          <p className="mt-2 text-xs font-black uppercase tracking-[0.26em] text-white">
+            Student Success Rate
+          </p>
+          {statsQuery.data && (
+            <p className="mt-1 text-[11px] text-white/70">
+              {statsQuery.data.studentSuccessRate
+                ? `${statsQuery.data.studentSuccessRate.passed} of ${statsQuery.data.studentSuccessRate.eligible} results ≥ 50%`
+                : 'Updates automatically as results are published'}
+            </p>
+          )}
+          {statsQuery.isError && (
+            <button
+              type="button"
+              onClick={() => void statsQuery.refetch()}
+              className="mt-2 text-xs text-white underline"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="mx-auto mt-10 grid max-w-4xl gap-8 text-white md:grid-cols-3">
+        <div>
+          <p className="text-3xl font-bold tracking-tight">
+            {statsQuery.data ? formatCompact(statsQuery.data.activeUsers) : '—'}
+          </p>
+          <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-white/70">
+            Active Users
+          </p>
+        </div>
+        <div>
+          <p className="text-3xl font-bold tracking-tight">
+            {statsQuery.data ? formatCompact(statsQuery.data.schools) : '—'}
+          </p>
+          <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-white/70">
+            Schools
+          </p>
+        </div>
+        <div>
+          <p className="text-3xl font-bold tracking-tight">
+            {statsQuery.data ? formatCompact(statsQuery.data.courseModules) : '—'}
+          </p>
+          <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-white/70">
+            Course Modules
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

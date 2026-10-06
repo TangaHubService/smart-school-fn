@@ -143,3 +143,84 @@ export async function grantAcademyAccessApi(
     body,
   });
 }
+
+export const BILLING_CURRENCIES = ['RWF', 'USD', 'EUR', 'KES', 'UGX', 'TZS'] as const;
+export const BILLING_PAYMENT_METHODS = ['CASH', 'BANK', 'MOBILE_MONEY', 'CARD', 'OTHER'] as const;
+
+export interface ManualInvoiceInput {
+  tenantId: string;
+  title: string;
+  description: string;
+  amountDue: number;
+  currency: string;
+  paymentMethod?: string;
+  paymentDate?: string;
+  periodStart: string;
+  periodEnd: string;
+  dueDate?: string;
+  status: 'PENDING' | 'PAID' | 'VOID';
+  reference?: string;
+  notes?: string;
+}
+
+export function createManualInvoiceApi(accessToken: string, body: ManualInvoiceInput) {
+  return apiRequest('/billing/invoices/manual', { method: 'POST', accessToken, body });
+}
+
+export function recordManualPaymentApi(
+  accessToken: string,
+  invoiceId: string,
+  body: { amount: number; currency: string; paymentMethod: string; reference?: string; paymentDate?: string }
+) {
+  return apiRequest(`/billing/invoices/${invoiceId}/payments/manual`, {
+    method: 'POST',
+    accessToken,
+    body,
+  });
+}
+
+export interface SchoolInvoiceRow {
+  id: string;
+  invoiceNumber: string;
+  yearLabel: string;
+  title: string;
+  description: string;
+  amountDue: number;
+  currency: string;
+  status: 'PENDING' | 'PAID' | 'VOID';
+  periodStart: string;
+  periodEnd: string;
+  dueDate: string;
+  issuedAt: string;
+  paidAt: string | null;
+  paymentMethod: string | null;
+  paymentDate: string | null;
+  reference: string | null;
+  notes: string | null;
+  tenant: { id: string; code: string; name: string };
+  payments: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    status: string;
+    provider: string;
+    completedAt: string | null;
+    createdAt: string;
+  }>;
+}
+
+export function listSchoolInvoicesApi(
+  accessToken: string,
+  params: { tenantId?: string; status?: string; page?: number; pageSize?: number } = {}
+) {
+  const q = new URLSearchParams();
+  if (params.tenantId) q.set('tenantId', params.tenantId);
+  if (params.status) q.set('status', params.status);
+  if (params.page) q.set('page', String(params.page));
+  if (params.pageSize) q.set('pageSize', String(params.pageSize));
+  const suffix = q.toString() ? `?${q.toString()}` : '';
+  return apiRequest<{
+    items: SchoolInvoiceRow[];
+    pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
+  }>(`/billing/invoices${suffix}`, { method: 'GET', accessToken });
+}

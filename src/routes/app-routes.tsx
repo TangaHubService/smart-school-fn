@@ -48,6 +48,7 @@ import { UnauthorizedPage } from '../pages/unauthorized-page';
 import { AccessControlPage } from '../pages/access-control-page';
 import { AuditLogsPage } from '../pages/audit-logs-page';
 import { NotificationsPage } from '../pages/notifications-page';
+import { ProfilePage } from '../pages/profile-page';
 import { ReportsAnalyticsPage } from '../pages/reports-analytics-page';
 import { SubscriptionManagementPage } from '../pages/subscription-management-page';
 import { SubscriptionInvoicePage } from '../pages/subscription-invoice-page';
@@ -114,6 +115,8 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/admin" element={<DashboardPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/me" element={<ProfilePage />} />
           <Route element={<RequirePermission permission="students.my_courses.read" />}>
             <Route path="/student/academic-year" element={<StudentAcademicYearSelectPage />} />
             <Route path="/student/dashboard" element={<StudentDashboardPage />} />

@@ -666,8 +666,15 @@ export type TeacherLearningInsightRow = {
   avgQuizScorePercent: number | null;
 };
 
-export function listTeacherLearningInsightsApi(accessToken: string) {
-  return apiRequest<{ items: TeacherLearningInsightRow[] }>('/teacher/learning-insights', {
+export function listTeacherLearningInsightsApi(
+  accessToken: string,
+  params: { classId?: string; courseId?: string } = {}
+) {
+  const query = new URLSearchParams();
+  if (params.classId) query.set('classId', params.classId);
+  if (params.courseId) query.set('courseId', params.courseId);
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<{ items: TeacherLearningInsightRow[] }>(`/teacher/learning-insights${qs}`, {
     method: 'GET',
     accessToken,
   });
@@ -684,7 +691,8 @@ export function signUploadApi(
       | 'assessment-question'
       | 'announcement'
       | 'audit-evidence'
-      | 'chat';
+      | 'chat'
+      | 'support';
     fileName: string;
   }
 ) {

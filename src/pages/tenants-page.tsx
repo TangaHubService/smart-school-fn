@@ -18,8 +18,10 @@ import {
 } from '../components/ui/data-table';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../features/auth/auth.context';
+import { LocationPicker, type LocationPickerValue } from '../features/location/location-picker';
 import {
   createTenantApi,
+  deleteTenantApi,
   getTenantDetailApi,
   inviteTenantAdminApi,
   listTenantsApi,
@@ -147,8 +149,22 @@ export function TenantsPage() {
     name: string;
     isActive: boolean;
   } | null>(null);
+  const [deleteTargetSchool, setDeleteTargetSchool] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [countryFilter, setCountryFilter] = useState('');
+  const [provinceFilter, setProvinceFilter] = useState('');
+  const [districtFilter, setDistrictFilter] = useState('');
+  const [sectorFilter, setSectorFilter] = useState('');
+  const [cellFilter, setCellFilter] = useState('');
+  const [villageFilter, setVillageFilter] = useState('');
 
   const isCreateModalOpen = searchParams.get('create') === '1';
+
+  const [createLocation, setCreateLocation] = useState<LocationPickerValue>({
+    adminCountryCode: '',
+  });
 
   const createForm = useForm<CreateSchoolValues>({
     resolver: zodResolver(createSchoolSchema),
@@ -181,12 +197,27 @@ export function TenantsPage() {
   });
 
   const tenantsQuery = useQuery({
-    queryKey: ['super-admin-tenants', search],
+    queryKey: [
+      'super-admin-tenants',
+      search,
+      countryFilter,
+      provinceFilter,
+      districtFilter,
+      sectorFilter,
+      cellFilter,
+      villageFilter,
+    ],
     queryFn: () =>
       listTenantsApi(auth.accessToken!, {
         page: 1,
         pageSize: 50,
         search: search.trim() || undefined,
+        country: countryFilter.trim() || undefined,
+        province: provinceFilter.trim() || undefined,
+        district: districtFilter.trim() || undefined,
+        sector: sectorFilter.trim() || undefined,
+        cell: cellFilter.trim() || undefined,
+        village: villageFilter.trim() || undefined,
       }),
   });
 
@@ -207,8 +238,11 @@ export function TenantsPage() {
         ...(values.isAcademyCatalog ? { isAcademyCatalog: true } : {}),
         school: {
           displayName: values.name,
-          country: 'Rwanda',
-          timezone: 'Africa/Kigali',
+          adminCountryCode: createLocation.adminCountryCode || undefined,
+          adminLevel1: createLocation.adminLevel1,
+          adminLevel2: createLocation.adminLevel2,
+          adminLevel3: createLocation.adminLevel3,
+          adminLevel4: createLocation.adminLevel4,
         },
       }),
     onSuccess: async (result) => {
@@ -296,6 +330,35 @@ export function TenantsPage() {
       });
       setStatusTargetSchool(null);
     },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Status update failed',
+        message: error instanceof Error ? error.message : 'Could not update school status.',
+      });
+    },
+  });
+
+  // Delete (archive) uses the same safe soft-delete as deactivation:
+  // sessions revoked, invites cancelled, academic/financial history preserved.
+  const deleteSchoolMutation = useMutation({
+    mutationFn: (tenantId: string) => deleteTenantApi(auth.accessToken!, tenantId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['super-admin-tenants'] });
+      showToast({
+        type: 'success',
+        title: 'School deleted',
+        message: 'The school was archived. Historical academic and financial records were preserved.',
+      });
+      setDeleteTargetSchool(null);
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Delete failed',
+        message: error instanceof Error ? error.message : 'Could not delete the school.',
+      });
+    },
   });
 
   const tenants = useMemo(
@@ -317,6 +380,7 @@ export function TenantsPage() {
       inviteForm.reset({
         email: '',
       });
+      setCreateLocation({ adminCountryCode: '' });
     }
   }, [isCreateModalOpen]);
 
@@ -349,6 +413,15 @@ export function TenantsPage() {
   function closeDeleteModal() {
     setStatusTargetSchool(null);
     updateSchoolStatusMutation.reset();
+  }
+
+  function resetAddressFilters() {
+    setCountryFilter('');
+    setProvinceFilter('');
+    setDistrictFilter('');
+    setSectorFilter('');
+    setCellFilter('');
+    setVillageFilter('');
   }
 
   function openCreateModal() {
@@ -389,8 +462,30 @@ export function TenantsPage() {
           searchAriaLabel="Search schools"
           onReset={() => {
             setSearch('');
+            resetAddressFilters();
           }}
         />
+
+        <div className="grid gap-2 border-b border-slate-200/80 px-4 py-3 sm:grid-cols-2 lg:grid-cols-6">
+          {[
+            { label: 'Country', value: countryFilter, set: setCountryFilter },
+            { label: 'Province', value: provinceFilter, set: setProvinceFilter },
+            { label: 'District', value: districtFilter, set: setDistrictFilter },
+            { label: 'Sector', value: sectorFilter, set: setSectorFilter },
+            { label: 'Cell', value: cellFilter, set: setCellFilter },
+            { label: 'Village', value: villageFilter, set: setVillageFilter },
+          ].map((f) => (
+            <label key={f.label} className="grid gap-1 text-xs font-medium text-slate-600">
+              {f.label}
+              <input
+                value={f.value}
+                onChange={(e) => f.set(e.target.value)}
+                placeholder={`Filter by ${f.label.toLowerCase()}`}
+                className="h-9 rounded-lg border border-slate-300 px-2 text-sm"
+              />
+            </label>
+          ))}
+        </div>
 
         <div className="p-4">
           <DataTable<TenantListItem>
@@ -453,6 +548,18 @@ export function TenantsPage() {
                   }
                 >
                   {tenant.isActive ? 'Deactivate' : 'Reactivate'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDeleteTargetSchool({
+                      id: tenant.id,
+                      name: tenant.school?.displayName ?? tenant.name,
+                    })
+                  }
+                  className="rounded-lg border border-red-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                >
+                  Delete
                 </button>
               </div>
             )}
@@ -531,6 +638,8 @@ export function TenantsPage() {
                 {...createForm.register('domain')}
               />
             </label>
+
+            <LocationPicker key={isCreateModalOpen ? 'open' : 'closed'} onChange={setCreateLocation} />
 
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-brand-100 bg-white px-3 py-3 text-sm text-slate-700">
               <input
@@ -708,6 +817,18 @@ export function TenantsPage() {
             tenantId: statusTargetSchool.id,
             isActive: !statusTargetSchool.isActive,
           });
+        }}
+      />
+      <ConfirmDrawer
+        open={Boolean(deleteTargetSchool)}
+        onCancel={() => setDeleteTargetSchool(null)}
+        title="Delete School"
+        message={`Delete (archive) ${deleteTargetSchool?.name ?? 'this school'}? Active sessions will be revoked and pending invites cancelled. Academic, financial and audit history is preserved and the school can be reactivated by an administrator.`}
+        confirmLabel="Delete school"
+        isDestructive
+        isLoading={deleteSchoolMutation.isPending}
+        onConfirm={() => {
+          if (deleteTargetSchool?.id) deleteSchoolMutation.mutate(deleteTargetSchool.id);
         }}
       />
     </SectionCard>

@@ -62,6 +62,24 @@ const ACADEMY_PLANS = [
 
 type PurchasableAcademyPlan = (typeof ACADEMY_PLANS)[number];
 
+/** Widened plan shape for backend-driven rates (ids match the plan union). */
+export interface AcademyPlanOption {
+  id: Exclude<AcademyPlanId, 'trial'>;
+  name: string;
+  durationDays: number;
+  price: number;
+  description: string;
+}
+
+/** Display copy only — prices and durations always come from GET /public-academy/plans. */
+const PLAN_DESCRIPTIONS: Record<string, string> = {
+  test: 'Quick verification plan for checkout and payment flow testing.',
+  weekly: 'Short sprint for focused revision and fast starts.',
+  monthly: 'The balanced option for consistent learning and practice.',
+  quarterly: 'Longer runway for deeper progress across your selected classes.',
+  yearly: 'Best value for extended access and uninterrupted momentum.',
+};
+
 function cardImage(item: { thumbnail?: string | null }) {
   const thumbnail = item.thumbnail?.trim();
   return thumbnail ? thumbnail : backgroundImage;
@@ -98,11 +116,14 @@ export function PublicAcademyPage() {
   const auth = useAuth();
 
   const requestedPlanId = searchParams.get('plan');
-  const defaultPlan = ACADEMY_PLANS.find((plan) => plan.id === 'monthly') ?? ACADEMY_PLANS[0];
-  const [selectedPlan, setSelectedPlan] = useState<PurchasableAcademyPlan>(
+  const defaultPlan: AcademyPlanOption =
+    ACADEMY_PLANS.find((plan) => plan.id === 'monthly') ?? ACADEMY_PLANS[0];
+  const [selectedPlan, setSelectedPlan] = useState<AcademyPlanOption>(
     ACADEMY_PLANS.find((plan) => plan.id === requestedPlanId) ?? defaultPlan
   );
   const [selectedYearId, setSelectedYearId] = useState<string | null>(null);
+  const [levelFilter, setLevelFilter] = useState('ALL');
+  const [classFilter, setClassFilter] = useState('');
   const [selectedClass, setSelectedClass] = useState<
     (AcademyCatalogClassRoom & { gradeLevelName: string }) | null
   >(null);
@@ -119,22 +140,63 @@ export function PublicAcademyPage() {
     return state?.highlightClassRoomId;
   }, [location.state]);
 
-  const isPublicLearner = auth.me?.roles.includes('PUBLIC_LEARNER') ?? false;
-
-  useEffect(() => {
-    if (!isPurchasablePlanId(requestedPlanId)) {
-      return;
-    }
-    const match = ACADEMY_PLANS.find((plan) => plan.id === requestedPlanId);
-    if (match) {
-      setSelectedPlan(match);
-    }
-  }, [requestedPlanId]);
+  const isPublicLearner =
+    auth.me?.roles.includes('PUBLIC_LEARNER') || auth.me?.roles.includes('LEARNER') || false;
 
   const catalogQuery = useQuery({
     queryKey: ['academy-catalog-tree'],
     queryFn: academyApi.getCatalogTree,
   });
+
+  // Plan rates are backend-driven (GET /public-academy/plans); the local
+  // ACADEMY_PLANS constant is only a fallback for offline/API errors.
+  const plansQuery = useQuery({
+    queryKey: ['academy-plans'],
+    queryFn: academyApi.getPlans,
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+
+  const plans: AcademyPlanOption[] = useMemo(() => {
+    const remote = plansQuery.data?.plans;
+    if (remote?.length) {
+      return remote
+        .filter((p): p is typeof p & { id: AcademyPlanOption['id'] } =>
+          isPurchasablePlanId(p.id)
+        )
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          durationDays: p.durationDays,
+          price: p.amount,
+          description: PLAN_DESCRIPTIONS[p.id] ?? '',
+        }));
+    }
+    return [...ACADEMY_PLANS];
+  }, [plansQuery.data]);
+
+  useEffect(() => {
+    if (!isPurchasablePlanId(requestedPlanId)) {
+      return;
+    }
+    const match = plans.find((plan) => plan.id === requestedPlanId);
+    if (match) {
+      setSelectedPlan(match);
+    }
+  }, [requestedPlanId, plans]);
+
+  // Keep the selected plan's price/duration in sync with backend rates.
+  useEffect(() => {
+    setSelectedPlan((prev) => {
+      const match = plans.find((plan) => plan.id === prev.id);
+      return match &&
+        (match.price !== prev.price ||
+          match.durationDays !== prev.durationDays ||
+          match.name !== prev.name)
+        ? match
+        : prev;
+    });
+  }, [plans]);
 
   const subscriptionQuery = useQuery({
     queryKey: ['academy-subscription-summary'],
@@ -279,7 +341,7 @@ export function PublicAcademyPage() {
     navigate('/student/courses');
   }
 
-  function handlePlanClick(plan: PurchasableAcademyPlan) {
+  function handlePlanClick(plan: AcademyPlanOption) {
     setSelectedPlan(plan);
 
     if (!auth.me) {
@@ -441,7 +503,10 @@ export function PublicAcademyPage() {
           ) : null}
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
-            {ACADEMY_PLANS.map((plan) => {
+            {plansQuery.isPending ? (
+              <p className="text-sm text-slate-500">Loading plans…</p>
+            ) : (
+              plans.map((plan) => {
               const isSelected = selectedPlan.id === plan.id;
               const isCurrentPlan = currentSubscription?.planCode === plan.id && hasActivePlan;
               return (
@@ -479,8 +544,9 @@ export function PublicAcademyPage() {
                       : `Continue with ${plan.name}`}
                   </button>
                 </article>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           {subscriptionQuery.data?.pendingPayment ? (
@@ -531,6 +597,52 @@ export function PublicAcademyPage() {
             </div>
           ) : (
             <>
+              <div className="mb-6 grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[220px_1fr_auto]">
+                <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Level
+                  <select
+                    value={levelFilter}
+                    onChange={(e) => setLevelFilter(e.target.value)}
+                    className="h-10 rounded-xl border border-slate-300 px-3 text-sm normal-case"
+                  >
+                    <option value="ALL">All levels</option>
+                    {(activeYear?.gradeLevels ?? []).map((grade) => (
+                      <option key={grade.id} value={grade.id}>
+                        {grade.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Class
+                  <select
+                    value={classFilter}
+                    onChange={(e) => setClassFilter(e.target.value)}
+                    className="h-10 rounded-xl border border-slate-300 px-3 text-sm normal-case"
+                  >
+                    <option value="">All classes</option>
+                    {(activeYear?.gradeLevels ?? [])
+                      .filter((g) => levelFilter === 'ALL' || g.id === levelFilter)
+                      .flatMap((g) => g.classRooms)
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLevelFilter('ALL');
+                    setClassFilter('');
+                  }}
+                  className="mt-auto h-10 rounded-xl border border-slate-300 px-4 text-sm font-semibold"
+                >
+                  Reset
+                </button>
+              </div>
               {academicYears.length > 1 ? (
                 <div className="mb-8 flex flex-wrap gap-2">
                   {academicYears.map((year) => (
@@ -558,13 +670,19 @@ export function PublicAcademyPage() {
                 </div>
               ) : (
                 <div className="space-y-14">
-                  {activeYear!.gradeLevels.map((grade) => (
+                  {(activeYear?.gradeLevels ?? [])
+                    .filter((grade) => levelFilter === 'ALL' || grade.id === levelFilter)
+                    .map((grade) => {
+                      const rooms = grade.classRooms.filter(
+                        (c) => !classFilter || c.id === classFilter
+                      );
+                      if (!rooms.length) return null;
                     <div key={grade.id}>
                       <h3 className="mb-5 text-xl font-bold uppercase tracking-tight text-slate-900">
                         {grade.name}
                       </h3>
                       <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-                        {grade.classRooms.map((classRoom) => {
+                        {rooms.map((classRoom) => {
                           const selected = selectedClassesById.get(classRoom.id);
                           const accessible = accessibleClassesById.get(classRoom.id);
                           const isLocked = !accessible;
@@ -723,7 +841,7 @@ export function PublicAcademyPage() {
                         })}
                       </div>
                     </div>
-                  ))}
+                    })}
                 </div>
               )}
             </>

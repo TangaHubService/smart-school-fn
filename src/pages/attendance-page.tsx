@@ -11,7 +11,9 @@ import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
   AttendanceStatus,
+  downloadAttendanceReportPdfApi,
   getAttendanceClassReportApi,
+  getAttendanceReportApi,
   getStudentAttendanceHistoryApi,
   listAttendanceClassesApi,
   saveAttendanceBulkApi,
@@ -96,6 +98,50 @@ export function AttendancePage() {
     return today.toISOString().slice(0, 10);
   });
   const [historyTo, setHistoryTo] = useState(getTodayKigaliDate());
+  // Report range filter (Rev #20): works with class + status filters.
+  const [reportFrom, setReportFrom] = useState('');
+  const [reportTo, setReportTo] = useState('');
+  const [reportStatus, setReportStatus] = useState<'' | AttendanceStatus>('');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const attendanceReportQuery = useQuery({
+    queryKey: ['attendance', 'report', selectedClassId, reportFrom, reportTo, reportStatus],
+    enabled: Boolean(selectedClassId && (reportFrom || reportTo || reportStatus)),
+    queryFn: () =>
+      getAttendanceReportApi(auth.accessToken!, {
+        classRoomId: selectedClassId || undefined,
+        status: reportStatus || undefined,
+        from: reportFrom || undefined,
+        to: reportTo || undefined,
+      }),
+  });
+
+  const handleDownloadServerPdf = async () => {
+    if (!selectedClassId) {
+      showToast({ type: 'error', title: 'Select a class first' });
+      return;
+    }
+    setDownloadingPdf(true);
+    try {
+      const blob = await downloadAttendanceReportPdfApi(auth.accessToken!, {
+        classRoomId: selectedClassId,
+        status: reportStatus || undefined,
+        from: reportFrom || undefined,
+        to: reportTo || undefined,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance-report-${selectedClassId.slice(0, 8)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast({ type: 'success', title: 'Attendance PDF downloaded' });
+    } catch {
+      showToast({ type: 'error', title: 'PDF download failed' });
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const isTeacherOnly =
     auth.me?.roles?.includes('TEACHER') &&
@@ -570,6 +616,77 @@ export function AttendancePage() {
           Refresh
         </button>
       </div>
+
+      <div className="mb-4 grid gap-2 rounded-xl border border-slate-200/90 bg-slate-50/60 p-3 sm:grid-cols-[160px_160px_180px_auto_auto]">
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          From date
+          <input
+            type="date"
+            value={reportFrom}
+            onChange={(e) => setReportFrom(e.target.value)}
+            className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
+            aria-label="Report from date"
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          To date
+          <input
+            type="date"
+            value={reportTo}
+            onChange={(e) => setReportTo(e.target.value)}
+            className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
+            aria-label="Report to date"
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-semibold text-slate-800">
+          Status
+          <select
+            value={reportStatus}
+            onChange={(e) => setReportStatus(e.target.value as '' | AttendanceStatus)}
+            className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
+            aria-label="Report status filter"
+          >
+            <option value="">All statuses</option>
+            <option value="PRESENT">Present</option>
+            <option value="ABSENT">Absent</option>
+            <option value="LATE">Late</option>
+            <option value="EXCUSED">Excused</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            setReportFrom('');
+            setReportTo('');
+            setReportStatus('');
+          }}
+          className="mt-auto h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-semibold text-slate-700"
+        >
+          Reset range
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleDownloadServerPdf()}
+          disabled={downloadingPdf || !selectedClassId}
+          className="mt-auto h-10 rounded-lg bg-brand-500 px-3 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {downloadingPdf ? 'Preparing…' : 'Official PDF'}
+        </button>
+      </div>
+
+      {reportFrom && reportTo && reportFrom > reportTo && (
+        <p className="mb-3 text-sm text-red-600">From date must be before To date.</p>
+      )}
+
+      {attendanceReportQuery.data && (
+        <div className="mb-4 flex flex-wrap gap-2 text-sm">
+          {(['total', 'present', 'absent', 'late', 'excused'] as const).map((k) => (
+            <span key={k} className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 font-semibold uppercase text-slate-700">
+              {k}: {attendanceReportQuery.data!.summary[k]}
+            </span>
+          ))}
+        </div>
+      )}
 
       {hasUnsavedChanges ? (
         <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">

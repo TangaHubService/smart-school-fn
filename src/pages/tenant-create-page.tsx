@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
@@ -7,8 +8,11 @@ import { z } from 'zod';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
+import { LocationPicker, type LocationPickerValue } from '../features/location/location-picker';
 import { createTenantApi } from '../features/sprint1/sprint1.api';
 import { ApiClientError } from '../types/api';
+
+const emptyLocation: LocationPickerValue = { adminCountryCode: '' };
 
 const createTenantFormSchema = z.object({
   code: z
@@ -30,6 +34,7 @@ type CreateTenantFormValues = z.infer<typeof createTenantFormSchema>;
 
 export function TenantCreatePage() {
   const auth = useAuth();
+  const [location, setLocation] = useState<LocationPickerValue>(emptyLocation);
 
   const form = useForm<CreateTenantFormValues>({
     resolver: zodResolver(createTenantFormSchema),
@@ -53,8 +58,11 @@ export function TenantCreatePage() {
         domain: values.domain || undefined,
         school: {
           displayName: values.schoolDisplayName,
-          country: 'Rwanda',
-          timezone: 'Africa/Kigali',
+          adminCountryCode: location.adminCountryCode || undefined,
+          adminLevel1: location.adminLevel1,
+          adminLevel2: location.adminLevel2,
+          adminLevel3: location.adminLevel3,
+          adminLevel4: location.adminLevel4,
         },
         schoolAdmin: {
           email: values.adminEmail,
@@ -114,6 +122,8 @@ export function TenantCreatePage() {
           />
         </label>
         <FieldError message={form.formState.errors.schoolDisplayName?.message} />
+
+        <LocationPicker onChange={setLocation} />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm font-semibold text-slate-800">

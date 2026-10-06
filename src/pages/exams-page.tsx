@@ -43,7 +43,7 @@ import {
   updateExamApi,
   type ExamSummary,
 } from '../features/sprint5/exams.api';
-import { listClassRoomsApi, listTermsApi } from '../features/sprint1/sprint1.api';
+import { listAcademicYearsApi, listClassRoomsApi, listTermsApi } from '../features/sprint1/sprint1.api';
 
 const examSchema = z.object({
   termId: z.string().min(1, 'Term is required'),
@@ -171,6 +171,7 @@ export function ExamsPage() {
   const [termFilter, setTermFilter] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('');
+  const [academicYearFilter, setAcademicYearFilter] = useState('');
   const [page, setPage] = useState(1);
 
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
@@ -199,6 +200,14 @@ export function ExamsPage() {
     queryKey: ['terms'],
     queryFn: () => listTermsApi(auth.accessToken!),
   });
+  const yearsQuery = useQuery({
+    queryKey: ['academic-years'],
+    queryFn: () => listAcademicYearsApi(auth.accessToken!),
+  });
+  const academicYears = useMemo(
+    () => ((yearsQuery.data as Array<{ id: string; name: string }> | undefined) ?? []),
+    [yearsQuery.data]
+  );
   const classesQuery = useQuery({
     queryKey: ['class-rooms'],
     queryFn: () => listClassRoomsApi(auth.accessToken!),
@@ -213,13 +222,14 @@ export function ExamsPage() {
   });
 
   const examsQuery = useQuery({
-    queryKey: ['exams', search, termFilter, classFilter, subjectFilter, page],
+    queryKey: ['exams', search, termFilter, classFilter, subjectFilter, academicYearFilter, page],
     queryFn: () =>
       listExamsApi(auth.accessToken!, {
         q: search || undefined,
         termId: termFilter || undefined,
         classId: classFilter || undefined,
         subjectId: subjectFilter || undefined,
+        academicYearId: academicYearFilter || undefined,
         page,
         pageSize: 20,
       }),
@@ -636,7 +646,7 @@ export function ExamsPage() {
         }
       >
         <div className="grid gap-4">
-          <div className="grid gap-3 rounded-xl bg-brand-50/75 p-4 xl:grid-cols-[minmax(0,1fr)_220px_220px_220px] xl:items-end">
+          <div className="grid gap-3 rounded-xl bg-brand-50/75 p-4 xl:grid-cols-[minmax(0,1fr)_200px_200px_200px_200px] xl:items-end">
             <label className="grid gap-1 text-sm font-medium text-slate-700">
               <span>Search exams</span>
               <input
@@ -703,6 +713,25 @@ export function ExamsPage() {
                 {subjects.map((subject) => (
                   <option key={subject.id} value={subject.id}>
                     {subject.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <span>Academic year</span>
+              <select
+                value={academicYearFilter}
+                onChange={(event) => {
+                  setPage(1);
+                  setAcademicYearFilter(event.target.value);
+                }}
+                className={inputClassName}
+              >
+                <option value="">All years</option>
+                {academicYears.map((year) => (
+                  <option key={year.id} value={year.id}>
+                    {year.name}
                   </option>
                 ))}
               </select>

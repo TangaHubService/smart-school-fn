@@ -2,6 +2,13 @@ import { Mail, MapPin, Phone, Send } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 
 import { useToast } from '../toast';
+import { useAuth } from '../../features/auth/auth.context';
+import { uploadFileToCloudinary } from '../../features/sprint4/cloudinary-upload';
+import {
+  createPublicTicketApi,
+  uploadTicketFiles,
+  validateTicketFiles,
+} from '../../features/support/support.api';
 
 interface FormData {
   name: string;
@@ -15,17 +22,21 @@ interface FormErrors {
   email?: string;
   subject?: string;
   message?: string;
+  files?: string;
 }
 
 export function ContactForm() {
   const { showToast } = useToast();
+  const auth = useAuth();
   const [loading, setLoading] = useState(false);
+  const [ticketNumber, setTicketNumber] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     subject: '',
     message: '',
   });
+  const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const validateEmail = (email: string): boolean => {
@@ -50,9 +61,12 @@ export function ContactForm() {
       newErrors.subject = 'Subject is required';
     }
 
-    if (!formData.message.trim()) {
-      newErrors.message = 'Message is required';
+    if (!formData.message.trim() || formData.message.trim().length < 10) {
+      newErrors.message = 'Message must be at least 10 characters';
     }
+
+    const fileError = validateTicketFiles(files);
+    if (fileError) newErrors.files = fileError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -66,25 +80,50 @@ export function ContactForm() {
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (loading || !validateForm()) {
       return;
     }
 
-    const form = event.currentTarget;
     setLoading(true);
-
-    window.setTimeout(() => {
-      setLoading(false);
+    try {
+      // Authenticated users get secure Cloudinary uploads (purpose 'support')
+      // linked as file URLs. Anonymous messages carry file metadata so the
+      // help desk can request the files when following up.
+      const attachments = files.length
+        ? auth.accessToken
+          ? await uploadTicketFiles(auth.accessToken, files, uploadFileToCloudinary)
+          : files.map((f) => ({
+              originalName: f.name,
+              mimeType: f.type || undefined,
+              sizeBytes: f.size,
+            }))
+        : undefined;
+      const ticket = await createPublicTicketApi({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        subject: formData.subject.trim(),
+        message: formData.message.trim(),
+        attachments,
+      });
+      setTicketNumber(ticket.ticketNumber);
       setFormData({ name: '', email: '', subject: '', message: '' });
-      form.reset();
+      setFiles([]);
       showToast({
         type: 'success',
         title: 'Message sent',
-        message: 'Your message has been received. We will get back to you soon.',
+        message: `Ticket ${ticket.ticketNumber} created. We will respond within 24 hours.`,
       });
-    }, 1000);
+    } catch (err) {
+      showToast({
+        type: 'error',
+        title: 'Send failed',
+        message: err instanceof Error ? err.message : 'Could not send your message. Please try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -93,6 +132,13 @@ export function ContactForm() {
       <p className="mt-1 text-sm text-slate-500">
         Fill out the form below and we will get back to you within 24 hours.
       </p>
+
+      {ticketNumber && (
+        <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+          Ticket <span className="font-semibold">{ticketNumber}</span> created. Save this number to
+          track your request.
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-6 grid gap-5">
         <div className="grid gap-5 md:grid-cols-2">
@@ -171,6 +217,35 @@ export function ContactForm() {
             className="w-full resize-none rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
           {errors.message && <p className="text-xs text-red-500">{errors.message}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <label
+            htmlFor="attachments"
+            className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+          >
+            Attachments (optional, max 5, 10MB each: PDF, Word, PNG, JPG, TXT, CSV)
+          </label>
+          <input
+            id="attachments"
+            type="file"
+            multiple
+            onChange={(e) => {
+              setFiles(Array.from(e.target.files ?? []).slice(0, 5));
+              setErrors((prev) => ({ ...prev, files: undefined }));
+            }}
+            className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-700"
+          />
+          {files.length > 0 && (
+            <ul className="space-y-1 text-xs text-slate-600">
+              {files.map((f) => (
+                <li key={`${f.name}-${f.size}`}>
+                  {f.name} ({(f.size / 1024).toFixed(1)} KB)
+                </li>
+              ))}
+            </ul>
+          )}
+          {errors.files && <p className="text-xs text-red-500">{errors.files}</p>}
         </div>
 
         <button

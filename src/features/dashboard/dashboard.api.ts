@@ -54,6 +54,12 @@ export interface SuperAdminDashboardData {
     assessmentCompletionRate: number | null;
     overallRate: number | null;
   };
+  studentSuccessRate: {
+    rate: number | null;
+    passed: number;
+    eligible: number;
+    passMark: number;
+  } | null;
   activeUsers: {
     weeklyActive: number;
     monthlyActive: number;

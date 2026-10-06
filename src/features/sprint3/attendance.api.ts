@@ -215,3 +215,51 @@ export function getAttendanceDashboardSummaryApi(accessToken: string, date?: str
     }
   );
 }
+
+export interface AttendanceReportResponse {
+  range: { from: string | null; to: string | null };
+  classRoom: { id: string; code: string; name: string } | null;
+  student: { id: string; studentCode: string; firstName: string; lastName: string } | null;
+  status: AttendanceStatus | null;
+  summary: { total: number; present: number; absent: number; late: number; excused: number };
+  records: Array<{
+    id: string;
+    date: string;
+    status: AttendanceStatus;
+    remarks: string | null;
+    classRoom: { id: string; code: string; name: string };
+    student: { id: string; studentCode: string; firstName: string; lastName: string };
+  }>;
+}
+
+export function getAttendanceReportApi(
+  accessToken: string,
+  params: { classRoomId?: string; studentId?: string; status?: string; from?: string; to?: string } = {}
+) {
+  const query = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v) query.set(k, v);
+  }
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<AttendanceReportResponse>(`/attendance/report${qs}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export async function downloadAttendanceReportPdfApi(
+  accessToken: string,
+  params: { classRoomId?: string; studentId?: string; status?: string; from?: string; to?: string } = {}
+): Promise<Blob> {
+  const query = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v) query.set(k, v);
+  }
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  const { API_BASE_URL } = await import('../../api/client');
+  const response = await fetch(`${API_BASE_URL}/attendance/report/pdf${qs}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) throw new Error('Could not download attendance PDF');
+  return response.blob();
+}

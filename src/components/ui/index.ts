@@ -10,3 +10,5 @@ export { WelcomeBanner } from './welcome-banner';
 export { ChartCard, PeriodTabs } from './chart-card';
 export { AnnouncementList } from './announcement-list';
 export type { AnnouncementListItem, AnnouncementPriority } from './announcement-list';
+export { SearchableSelect, updateSearchableSelection } from './searchable-select';
+export type { SearchableOption } from './searchable-select';

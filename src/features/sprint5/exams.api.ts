@@ -353,6 +353,7 @@ export function listExamsApi(
     termId?: string;
     classId?: string;
     subjectId?: string;
+    academicYearId?: string;
     q?: string;
     page?: number;
     pageSize?: number;
@@ -362,6 +363,7 @@ export function listExamsApi(
   if (params.termId) query.set('termId', params.termId);
   if (params.classId) query.set('classId', params.classId);
   if (params.subjectId) query.set('subjectId', params.subjectId);
+  if (params.academicYearId) query.set('academicYearId', params.academicYearId);
   if (params.q) query.set('q', params.q);
   if (params.page) query.set('page', String(params.page));
   if (params.pageSize) query.set('pageSize', String(params.pageSize));

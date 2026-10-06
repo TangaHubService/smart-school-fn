@@ -14,12 +14,18 @@ import {
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../features/auth/auth.context';
 import {
+  BILLING_CURRENCIES,
+  BILLING_PAYMENT_METHODS,
+  createManualInvoiceApi,
   grantAcademyAccessApi,
   listAcademyCatalogProgramsAdminApi,
   listAcademyEnrollmentsAdminApi,
+  listSchoolInvoicesApi,
   listSchoolSubscriptionsApi,
   listSubscriptionPlansApi,
+  recordManualPaymentApi,
   updateSchoolSubscriptionApi,
+  type SchoolInvoiceRow,
   type SchoolSubscriptionRow,
   type AcademyEnrollmentAdminRow,
 } from '../features/subscriptions/subscriptions.api';
@@ -67,6 +73,62 @@ const schoolSubColumns: DataTableColumn<SchoolSubscriptionRow>[] = [
     render: (row) => (
       <span className="text-slate-600">
         {row.currentPeriodEnd ? new Date(row.currentPeriodEnd).toLocaleDateString() : '—'}
+      </span>
+    ),
+  },
+];
+
+const INVOICE_STATUS_TONES: Record<string, 'brand' | 'success' | 'warning' | 'danger' | 'neutral'> = {
+  PENDING: 'warning',
+  PAID: 'success',
+  VOID: 'neutral',
+};
+
+const invoiceColumns: DataTableColumn<SchoolInvoiceRow>[] = [
+  {
+    key: 'invoiceNumber',
+    header: 'Invoice',
+    mobile: 'primary',
+    render: (row) => (
+      <span className="min-w-0">
+        <span className="block font-mono text-xs font-semibold text-slate-900">{row.invoiceNumber}</span>
+        <span className="block text-xs text-slate-500">{row.tenant.name}</span>
+      </span>
+    ),
+  },
+  {
+    key: 'amountDue',
+    header: 'Amount',
+    render: (row) => (
+      <span className="font-mono text-xs tabular-nums text-slate-900">
+        {Number(row.amountDue).toLocaleString()} {row.currency}
+      </span>
+    ),
+  },
+  {
+    key: 'paymentMethod',
+    header: 'Method',
+    mobile: 'secondary',
+    render: (row) => <span className="text-xs text-slate-600">{row.paymentMethod?.replace('_', ' ') ?? '—'}</span>,
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (row) => <Badge tone={INVOICE_STATUS_TONES[row.status] ?? 'neutral'}>{row.status}</Badge>,
+  },
+  {
+    key: 'periodEnd',
+    header: 'Expiring',
+    render: (row) => (
+      <span className="text-xs text-slate-600">{new Date(row.periodEnd).toLocaleDateString()}</span>
+    ),
+  },
+  {
+    key: 'paymentDate',
+    header: 'Paid',
+    render: (row) => (
+      <span className="text-xs text-slate-600">
+        {row.paymentDate ? new Date(row.paymentDate).toLocaleDateString() : row.paidAt ? new Date(row.paidAt).toLocaleDateString() : '—'}
       </span>
     ),
   },
@@ -137,6 +199,32 @@ export function SubscriptionManagementPage() {
   const [grantEmail, setGrantEmail] = useState('');
   const [grantProgramId, setGrantProgramId] = useState('');
   const [grantDays, setGrantDays] = useState('');
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('');
+  const [invoicePage, setInvoicePage] = useState(1);
+  const [payInvoice, setPayInvoice] = useState<SchoolInvoiceRow | null>(null);
+  const [payForm, setPayForm] = useState({
+    amount: '',
+    currency: 'RWF',
+    paymentMethod: 'CASH',
+    reference: '',
+    paymentDate: '',
+  });
+  const [invoiceForm, setInvoiceForm] = useState({
+    tenantId: '',
+    title: '',
+    description: '',
+    amountDue: '',
+    currency: 'RWF',
+    paymentMethod: 'CASH',
+    paymentDate: '',
+    periodStart: '',
+    periodEnd: '',
+    dueDate: '',
+    status: 'PENDING' as 'PENDING' | 'PAID' | 'VOID',
+    reference: '',
+    notes: '',
+  });
 
   const schoolSubsQuery = useQuery({
     queryKey: ['subscriptions', 'schools'],
@@ -161,6 +249,20 @@ export function SubscriptionManagementPage() {
     enabled: Boolean(token),
     queryFn: () => listAcademyEnrollmentsAdminApi(token, { page: 1, pageSize: 100 }),
   });
+
+  const invoicesQuery = useQuery({
+    queryKey: ['billing', 'invoices', invoiceStatusFilter, invoicePage],
+    enabled: Boolean(token),
+    queryFn: () =>
+      listSchoolInvoicesApi(token, {
+        status: invoiceStatusFilter || undefined,
+        page: invoicePage,
+        pageSize: 20,
+      }),
+  });
+
+  // Stable retry callback (avoids narrowing the query union inside JSX branches).
+  const retryInvoices = () => void invoicesQuery.refetch();
 
   const grantMutation = useMutation({
     mutationFn: () =>
@@ -211,12 +313,93 @@ export function SubscriptionManagementPage() {
     },
   });
 
+  const invoiceMutation = useMutation({
+    mutationFn: () =>
+      createManualInvoiceApi(token, {
+        tenantId: invoiceForm.tenantId,
+        title: invoiceForm.title.trim(),
+        description: invoiceForm.description.trim(),
+        amountDue: Number(invoiceForm.amountDue),
+        currency: invoiceForm.currency,
+        paymentMethod: invoiceForm.paymentMethod,
+        paymentDate: invoiceForm.paymentDate || undefined,
+        periodStart: new Date(invoiceForm.periodStart).toISOString(),
+        periodEnd: new Date(invoiceForm.periodEnd).toISOString(),
+        dueDate: invoiceForm.dueDate ? new Date(invoiceForm.dueDate).toISOString() : undefined,
+        status: invoiceForm.status,
+        reference: invoiceForm.reference.trim() || undefined,
+        notes: invoiceForm.notes.trim() || undefined,
+      }),
+    onSuccess: () => {
+      showToast({ type: 'success', title: 'Manual invoice created' });
+      void queryClient.invalidateQueries({ queryKey: ['billing', 'invoices'] });
+      setInvoiceOpen(false);      setInvoiceForm({
+        tenantId: '',
+        title: '',
+        description: '',
+        amountDue: '',
+        currency: 'RWF',
+        paymentMethod: 'CASH',
+        paymentDate: '',
+        periodStart: '',
+        periodEnd: '',
+        dueDate: '',
+        status: 'PENDING',
+        reference: '',
+        notes: '',
+      });
+    },
+    onError: (e: unknown) => {
+      const err = e as ApiClientError;
+      showToast({ type: 'error', title: 'Invoice failed', message: err.message });
+    },
+  });
+
+  const recordPaymentMutation = useMutation({
+    mutationFn: () =>
+      recordManualPaymentApi(token, payInvoice!.id, {
+        amount: Number(payForm.amount),
+        currency: payForm.currency,
+        paymentMethod: payForm.paymentMethod,
+        reference: payForm.reference.trim() || undefined,
+        paymentDate: payForm.paymentDate
+          ? new Date(payForm.paymentDate).toISOString()
+          : undefined,
+      }),
+    onSuccess: () => {
+      showToast({ type: 'success', title: 'Payment recorded', message: 'Invoice marked PAID.' });
+      setPayInvoice(null);
+      setPayForm({ amount: '', currency: 'RWF', paymentMethod: 'CASH', reference: '', paymentDate: '' });
+      void queryClient.invalidateQueries({ queryKey: ['billing', 'invoices'] });
+      void queryClient.invalidateQueries({ queryKey: ['subscriptions', 'schools'] });
+    },
+    onError: (e: unknown) => {
+      const err = e as ApiClientError;
+      showToast({ type: 'error', title: 'Payment failed', message: err.message });
+    },
+  });
+
+  const openPayDrawer = (row: SchoolInvoiceRow) => {
+    setPayInvoice(row);
+    setPayForm({
+      amount: String(row.amountDue),
+      currency: row.currency,
+      paymentMethod: row.paymentMethod ?? 'CASH',
+      reference: row.reference ?? '',
+      paymentDate: row.paymentDate ? row.paymentDate.slice(0, 10) : '',
+    });
+  };
+
   const programOptions = useMemo(
     () => catalogProgramsQuery.data?.items ?? [],
     [catalogProgramsQuery.data?.items]
   );
 
-  const isError = schoolSubsQuery.isError || plansQuery.isError || enrollmentsQuery.isError;
+  const isError =
+    schoolSubsQuery.isError ||
+    plansQuery.isError ||
+    enrollmentsQuery.isError ||
+    invoicesQuery.isError;
 
   if (isError) {
     return (
@@ -253,6 +436,14 @@ export function SubscriptionManagementPage() {
           >
             <Plus className="h-4 w-4" aria-hidden />
             Grant access
+          </button>
+          <button
+            type="button"
+            onClick={() => setInvoiceOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50"
+          >
+            <CreditCard className="h-4 w-4" aria-hidden />
+            New manual invoice
           </button>
         </div>
 
@@ -291,6 +482,95 @@ export function SubscriptionManagementPage() {
                     </button>
                   )}
                 />
+              </div>
+            </section>
+
+            <section className="mb-8 overflow-hidden rounded-xl border border-slate-200">
+              <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
+                <CreditCard className="h-4 w-4 text-brand-600" aria-hidden />
+                <h3 className="text-sm font-semibold text-slate-900">
+                  School invoices (manual + online billing)
+                </h3>
+                <select
+                  value={invoiceStatusFilter}
+                  onChange={(e) => {
+                    setInvoiceStatusFilter(e.target.value);
+                    setInvoicePage(1);
+                  }}
+                  className="ml-auto rounded-lg border border-slate-200 px-2 py-1 text-xs"
+                  aria-label="Filter invoices by status"
+                >
+                  <option value="">All statuses</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="PAID">Paid</option>
+                  <option value="VOID">Void</option>
+                </select>
+              </div>
+              <div className="p-4">
+                {invoicesQuery.isPending ? (
+                  <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
+                ) : invoicesQuery.isError ? (
+                  <p className="py-4 text-center text-sm text-red-600">
+                    Could not load invoices.{' '}
+                    <button className="underline" onClick={retryInvoices}>
+                      Retry
+                    </button>
+                  </p>
+                ) : (
+                  <>
+                    <DataTable<SchoolInvoiceRow>
+                      ariaLabel="School invoices"
+                      columns={invoiceColumns}
+                      data={invoicesQuery.data?.items ?? []}
+                      rowKey={(row) => row.id}
+                      emptyTitle="No invoices yet"
+                      emptyDescription="Create a manual invoice for schools not on online payment."
+                      minWidth={760}
+                      className="border-0 shadow-none"
+                      rowActions={(row) => (
+                        <div className="flex justify-end gap-2">
+                          {row.reference && (
+                            <span className="self-center font-mono text-[11px] text-slate-500">
+                              {row.reference}
+                            </span>
+                          )}
+                          {row.status !== 'PAID' && (
+                            <button
+                              type="button"
+                              onClick={() => openPayDrawer(row)}
+                              className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                            >
+                              Record payment
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    />
+                    {(invoicesQuery.data?.pagination.totalPages ?? 1) > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-3">
+                        <button
+                          type="button"
+                          disabled={invoicePage <= 1}
+                          onClick={() => setInvoicePage((p) => Math.max(1, p - 1))}
+                          className="rounded-lg border border-brand-200 px-3 py-1.5 text-xs disabled:opacity-50"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-xs text-slate-600">
+                          Page {invoicePage} of {invoicesQuery.data?.pagination.totalPages}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={invoicePage >= (invoicesQuery.data?.pagination.totalPages ?? 1)}
+                          onClick={() => setInvoicePage((p) => p + 1)}
+                          className="rounded-lg border border-brand-200 px-3 py-1.5 text-xs disabled:opacity-50"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </section>
 
@@ -414,6 +694,286 @@ export function SubscriptionManagementPage() {
           saving={updateSubMutation.isPending}
         />
       ) : null}
+
+      <AppDrawer
+        open={Boolean(payInvoice)}
+        onClose={() => !recordPaymentMutation.isPending && setPayInvoice(null)}
+        title="Record payment"
+        description={
+          payInvoice
+            ? `${payInvoice.invoiceNumber} · ${payInvoice.tenant.name} · ${Number(payInvoice.amountDue).toLocaleString()} ${payInvoice.currency} due`
+            : undefined
+        }
+        footer={
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setPayInvoice(null)}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
+              disabled={recordPaymentMutation.isPending}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={recordPaymentMutation.isPending || !Number(payForm.amount)}
+              onClick={() => recordPaymentMutation.mutate()}
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {recordPaymentMutation.isPending ? 'Saving…' : 'Confirm payment'}
+            </button>
+          </div>
+        }
+      >
+        <div className="grid gap-3 text-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Amount</span>
+              <input
+                type="number"
+                min={1}
+                value={payForm.amount}
+                onChange={(e) => setPayForm((f) => ({ ...f, amount: e.target.value }))}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Currency</span>
+              <select
+                value={payForm.currency}
+                onChange={(e) => setPayForm((f) => ({ ...f, currency: e.target.value }))}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              >
+                {BILLING_CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="grid gap-1">
+            <span className="font-medium text-slate-700">Payment method</span>
+            <select
+              value={payForm.paymentMethod}
+              onChange={(e) => setPayForm((f) => ({ ...f, paymentMethod: e.target.value }))}
+              className="rounded-lg border border-slate-200 px-3 py-2"
+            >
+              {BILLING_PAYMENT_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {m.replace('_', ' ')}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1">
+            <span className="font-medium text-slate-700">Payment date</span>
+            <input
+              type="date"
+              value={payForm.paymentDate}
+              onChange={(e) => setPayForm((f) => ({ ...f, paymentDate: e.target.value }))}
+              className="rounded-lg border border-slate-200 px-3 py-2"
+            />
+          </label>
+          <label className="grid gap-1">
+            <span className="font-medium text-slate-700">Reference / receipt no.</span>
+            <input
+              value={payForm.reference}
+              onChange={(e) => setPayForm((f) => ({ ...f, reference: e.target.value }))}
+              className="rounded-lg border border-slate-200 px-3 py-2"
+              placeholder="Optional"
+            />
+          </label>
+        </div>
+      </AppDrawer>
+
+      <AppDrawer
+        open={invoiceOpen}
+        onClose={() => !invoiceMutation.isPending && setInvoiceOpen(false)}
+        title="New manual invoice"
+        description="For schools not on online payment. Amount, currency, method and dates are stored."
+        footer={
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setInvoiceOpen(false)}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
+              disabled={invoiceMutation.isPending}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={
+                invoiceMutation.isPending ||
+                !invoiceForm.tenantId ||
+                !invoiceForm.title.trim() ||
+                !invoiceForm.description.trim() ||
+                !Number(invoiceForm.amountDue) ||
+                !invoiceForm.periodStart ||
+                !invoiceForm.periodEnd
+              }
+              onClick={() => invoiceMutation.mutate()}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {invoiceMutation.isPending ? 'Saving…' : 'Create invoice'}
+            </button>
+          </div>
+        }
+      >
+        <div className="grid gap-3 text-sm">
+          <label className="grid gap-1">
+            <span className="font-medium text-slate-700">School</span>
+            <select
+              value={invoiceForm.tenantId}
+              onChange={(e) => setInvoiceForm((f) => ({ ...f, tenantId: e.target.value }))}
+              className="rounded-lg border border-slate-200 px-3 py-2"
+            >
+              <option value="">Choose school…</option>
+              {(schoolSubsQuery.data?.items ?? []).map((s) => (
+                <option key={s.tenantId} value={s.tenantId}>
+                  {s.schoolName} ({s.tenantCode})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1">
+            <span className="font-medium text-slate-700">Title</span>
+            <input
+              value={invoiceForm.title}
+              onChange={(e) => setInvoiceForm((f) => ({ ...f, title: e.target.value }))}
+              className="rounded-lg border border-slate-200 px-3 py-2"
+              placeholder="2026 annual subscription"
+            />
+          </label>
+          <label className="grid gap-1">
+            <span className="font-medium text-slate-700">Description</span>
+            <textarea
+              value={invoiceForm.description}
+              onChange={(e) => setInvoiceForm((f) => ({ ...f, description: e.target.value }))}
+              className="rounded-lg border border-slate-200 px-3 py-2"
+              rows={2}
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Amount</span>
+              <input
+                type="number"
+                min={1}
+                value={invoiceForm.amountDue}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, amountDue: e.target.value }))}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Currency</span>
+              <select
+                value={invoiceForm.currency}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, currency: e.target.value }))}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              >
+                {BILLING_CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Payment method</span>
+              <select
+                value={invoiceForm.paymentMethod}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, paymentMethod: e.target.value }))}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              >
+                {BILLING_PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>
+                    {m.replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Status</span>
+              <select
+                value={invoiceForm.status}
+                onChange={(e) =>
+                  setInvoiceForm((f) => ({
+                    ...f,
+                    status: e.target.value as typeof f.status,
+                  }))
+                }
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="PAID">PAID</option>
+                <option value="VOID">VOID</option>
+              </select>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Payment date</span>
+              <input
+                type="date"
+                value={invoiceForm.paymentDate}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, paymentDate: e.target.value }))}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Due date</span>
+              <input
+                type="date"
+                value={invoiceForm.dueDate}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, dueDate: e.target.value }))}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              />
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Period start</span>
+              <input
+                type="date"
+                value={invoiceForm.periodStart}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, periodStart: e.target.value }))}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="font-medium text-slate-700">Expiring date</span>
+              <input
+                type="date"
+                value={invoiceForm.periodEnd}
+                onChange={(e) => setInvoiceForm((f) => ({ ...f, periodEnd: e.target.value }))}
+                className="rounded-lg border border-slate-200 px-3 py-2"
+              />
+            </label>
+          </div>
+          <label className="grid gap-1">
+            <span className="font-medium text-slate-700">Reference / receipt no.</span>
+            <input
+              value={invoiceForm.reference}
+              onChange={(e) => setInvoiceForm((f) => ({ ...f, reference: e.target.value }))}
+              className="rounded-lg border border-slate-200 px-3 py-2"
+              placeholder="Optional"
+            />
+          </label>
+          <label className="grid gap-1">
+            <span className="font-medium text-slate-700">Notes</span>
+            <textarea
+              value={invoiceForm.notes}
+              onChange={(e) => setInvoiceForm((f) => ({ ...f, notes: e.target.value }))}
+              className="rounded-lg border border-slate-200 px-3 py-2"
+              rows={2}
+            />
+          </label>
+        </div>
+      </AppDrawer>
     </div>
   );
 }

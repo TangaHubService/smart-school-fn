@@ -2,6 +2,8 @@ import { Download, Eye } from 'lucide-react';
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
+import { API_BASE_URL } from '../api/client';
+import { useAuth } from '../features/auth/auth.context';
 import { listActivityLogsApi } from '../features/audit/audit.api';
 import { SectionCard } from '../components/section-card';
 import { AppDrawer } from '../components/drawer';
@@ -102,15 +104,19 @@ const logColumns: DataTableColumn<ActivityLog>[] = [
 ];
 
 export function AuditLogsPage() {
+  const auth = useAuth();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [moduleFilter, setModuleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [dateError, setDateError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['activity-logs', page, search, actionFilter, moduleFilter, statusFilter],
+    queryKey: ['activity-logs', page, search, actionFilter, moduleFilter, statusFilter, fromDate, toDate],
     queryFn: () =>
       listActivityLogsApi({
         page,
@@ -119,8 +125,41 @@ export function AuditLogsPage() {
         actionType: actionFilter || undefined,
         module: moduleFilter || undefined,
         status: statusFilter || undefined,
+        from: fromDate || undefined,
+        to: toDate || undefined,
       }),
   });
+
+  const applyDateRange = (from: string, to: string) => {
+    if (from && to && from > to) {
+      setDateError('From date must be before To date');
+      return;
+    }
+    setDateError(null);
+    setPage(1);
+  };
+
+  const downloadExport = async (format: 'excel' | 'pdf') => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (actionFilter) params.set('actionType', actionFilter);
+    if (moduleFilter) params.set('module', moduleFilter);
+    if (statusFilter) params.set('status', statusFilter);
+    if (fromDate) params.set('from', fromDate);
+    if (toDate) params.set('to', toDate);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const response = await fetch(`${API_BASE_URL}/activity-logs/export/${format}${qs}`, {
+      headers: auth.accessToken ? { Authorization: `Bearer ${auth.accessToken}` } : {},
+    });
+    if (!response.ok) throw new Error('Export failed');
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `activity-logs.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const logs = data?.items ?? [];
   const pagination = data?.pagination;
@@ -136,15 +175,69 @@ export function AuditLogsPage() {
         title="Activity Log"
         subtitle="Track all system actions"
         action={
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-50"
-          >
-            <Download className="h-4 w-4" aria-hidden="true" />
-            Export
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void downloadExport('excel').catch(() => alert('Excel export failed'))}
+              className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-50"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => void downloadExport('pdf').catch(() => alert('PDF export failed'))}
+              className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-50"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              PDF
+            </button>
+          </div>
         }
       >
+        <div className="grid gap-2 border-b border-slate-200/80 px-4 py-3 sm:grid-cols-2">
+          <label className="grid gap-1 text-xs font-medium text-slate-600">
+            From date
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                applyDateRange(e.target.value, toDate);
+              }}
+              className="h-9 rounded-lg border border-slate-300 px-2 text-sm"
+            />
+          </label>
+          <label className="grid gap-1 text-xs font-medium text-slate-600">
+            To date
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                applyDateRange(fromDate, e.target.value);
+              }}
+              className="h-9 rounded-lg border border-slate-300 px-2 text-sm"
+            />
+          </label>
+        </div>
+        {dateError && <p className="px-4 pt-2 text-xs text-red-600">{dateError}</p>}
+        {(fromDate || toDate) && (
+          <div className="px-4 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setFromDate('');
+                setToDate('');
+                setDateError(null);
+                setPage(1);
+              }}
+              className="text-xs font-semibold text-brand-600 underline"
+            >
+              Reset date filter
+            </button>
+          </div>
+        )}
         <div className="mb-4 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]">
           <DataTableToolbar
             search={search}
@@ -214,6 +307,9 @@ export function AuditLogsPage() {
               setActionFilter('');
               setModuleFilter('');
               setStatusFilter('');
+              setFromDate('');
+              setToDate('');
+              setDateError(null);
               setPage(1);
             }}
           />

@@ -6,6 +6,9 @@ export interface UserListItem {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
+  sex: string | null;
+  hasDisability: boolean;
+  disabilityType: string | null;
   status: 'ACTIVE' | 'INACTIVE';
   tenant: {
     id: string;
@@ -78,6 +81,28 @@ export async function updateUserStatusApi(
     accessToken,
     body: { status },
   });
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  sex: string | null;
+  hasDisability: boolean;
+  disabilityType: string | null;
+}
+
+export async function getMyProfileApi(accessToken: string): Promise<UserProfile> {
+  return apiRequest<UserProfile>('/me', { accessToken });
+}
+
+export async function updateMyProfileApi(
+  accessToken: string,
+  body: Partial<Pick<UserProfile, 'firstName' | 'lastName' | 'phone' | 'sex' | 'hasDisability' | 'disabilityType'>>
+): Promise<UserProfile> {
+  return apiRequest<UserProfile>('/me', { method: 'PATCH', accessToken, body });
 }
 
 export async function fetchAllUsers(

@@ -102,6 +102,7 @@ const ROLE_META: Record<string, { tone: BadgeTone; label: string }> = {
   STUDENT: { tone: 'warning', label: 'Student' },
   PARENT: { tone: 'info', label: 'Parent' },
   PUBLIC_LEARNER: { tone: 'neutral', label: 'Learner' },
+  LEARNER: { tone: 'neutral', label: 'Learner' },
   GOV_AUDITOR: { tone: 'danger', label: 'Auditor' },
 };
 

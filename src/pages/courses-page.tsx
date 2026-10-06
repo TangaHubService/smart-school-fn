@@ -375,6 +375,7 @@ export function CoursesPage() {
 
   const [search, setSearch] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('ALL');
+  const [classFilter, setClassFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedLessonId, setSelectedLessonId] = useState('');
@@ -413,12 +414,13 @@ export function CoursesPage() {
   });
 
   const coursesQuery = useQuery({
-    queryKey: ['lms', 'courses', page, academicYearId],
+    queryKey: ['lms', 'courses', page, academicYearId, classFilter],
     queryFn: () =>
       listCoursesApi(auth.accessToken!, {
         page,
         pageSize: 12,
         academicYearId: academicYearId ?? undefined,
+        classId: classFilter !== 'ALL' ? classFilter : undefined,
       }),
   });
 
@@ -902,6 +904,25 @@ export function CoursesPage() {
                     ))}
                   </select>
                 </label>
+
+                <label className="grid gap-1 text-sm font-medium text-slate-700">
+                  <span>Class</span>
+                  <select
+                    value={classFilter}
+                    onChange={(event) => {
+                      setClassFilter(event.target.value);
+                      setPage(1);
+                    }}
+                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
+                  >
+                    <option value="ALL">All classes</option>
+                    {classRooms.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.code} - {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div className="grid gap-4">
@@ -944,33 +965,6 @@ export function CoursesPage() {
                             Filtered view
                           </span>
                         </div>
-                        {coursesQuery.data?.pagination.totalPages &&
-                        coursesQuery.data.pagination.totalPages > 1 ? (
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              disabled={page <= 1}
-                              onClick={() => setPage((current) => Math.max(1, current - 1))}
-                              className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                              Previous
-                            </button>
-                            <button
-                              type="button"
-                              disabled={page >= coursesQuery.data.pagination.totalPages}
-                              onClick={() =>
-                                setPage((current) =>
-                                  Math.min(coursesQuery.data!.pagination.totalPages, current + 1)
-                                )
-                              }
-                              className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              Next
-                              <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                            </button>
-                          </div>
-                        ) : null}
                       </div>
 
                       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -1069,6 +1063,37 @@ export function CoursesPage() {
                           );
                         })}
                       </div>
+
+                      {coursesQuery.data?.pagination.totalPages &&
+                      coursesQuery.data.pagination.totalPages > 1 ? (
+                        <div className="flex items-center justify-center gap-2 pt-2">
+                          <button
+                            type="button"
+                            disabled={page <= 1}
+                            onClick={() => setPage((current) => Math.max(1, current - 1))}
+                            className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                            Previous
+                          </button>
+                          <span className="text-sm text-slate-600">
+                            Page {page} of {coursesQuery.data.pagination.totalPages}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={page >= coursesQuery.data.pagination.totalPages}
+                            onClick={() =>
+                              setPage((current) =>
+                                Math.min(coursesQuery.data!.pagination.totalPages, current + 1)
+                              )
+                            }
+                            className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
                     <EmptyState

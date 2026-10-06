@@ -163,8 +163,19 @@ export interface AcademyPlanCheckoutResponse {
   planId: Exclude<AcademyPlanId, 'trial'>;
 }
 
+export interface AcademyPlanRate {
+  id: string;
+  name: string;
+  amount: number;
+  durationDays: number;
+  currency: string;
+}
+
 export const academyApi = {
   getPrograms: () => apiRequest<Program[]>('/public-academy/programs'),
+
+  getPlans: () =>
+    apiRequest<{ plans: AcademyPlanRate[]; currency: string }>('/public-academy/plans'),
 
   getCatalogTree: () => apiRequest<AcademyCatalogTree>('/public-academy/catalog/tree'),
 

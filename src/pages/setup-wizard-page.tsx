@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -8,13 +8,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  getRwandaCells,
-  getRwandaDistricts,
-  getRwandaProvinces,
-  getRwandaSectors,
-  getRwandaVillages,
-} from '../features/location/rwanda-location';
+import { LocationPicker, type LocationPickerValue } from '../features/location/location-picker';
 import { schoolSetupStatusApi, setupSchoolApi } from '../features/sprint1/sprint1.api';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import { ApiClientError } from '../types/api';
@@ -25,19 +19,12 @@ const schoolProfileSchema = z.object({
   schoolPhone: z.string().trim().min(7).max(40),
   schoolAddressLine1: z.string().trim().max(200).optional().or(z.literal('')),
   schoolAddressLine2: z.string().trim().max(200).optional().or(z.literal('')),
-  schoolProvince: z.string().trim().min(2).max(100),
-  schoolDistrict: z.string().trim().min(2).max(100),
-  schoolSector: z.string().trim().min(2).max(100),
-  schoolCell: z.string().trim().min(2).max(100),
-  schoolVillage: z.string().trim().min(2).max(100),
   logoUrl: z.string().trim().url().optional().or(z.literal('')),
 });
 
 type SchoolProfileValues = z.infer<typeof schoolProfileSchema>;
 
-function getRwandaOptions(values?: string[]) {
-  return values ?? [];
-}
+const emptyLocation: LocationPickerValue = { adminCountryCode: '' };
 
 function buildDefaultValues(tenantName: string): SchoolProfileValues {
   return {
@@ -46,11 +33,6 @@ function buildDefaultValues(tenantName: string): SchoolProfileValues {
     schoolPhone: '',
     schoolAddressLine1: '',
     schoolAddressLine2: '',
-    schoolProvince: '',
-    schoolDistrict: '',
-    schoolSector: '',
-    schoolCell: '',
-    schoolVillage: '',
     logoUrl: '',
   };
 }
@@ -64,10 +46,7 @@ export function SetupWizardPage() {
     defaultValues: buildDefaultValues(auth.me?.tenant.name ?? ''),
   });
 
-  const previousProvinceRef = useRef<string | undefined>(undefined);
-  const previousDistrictRef = useRef<string | undefined>(undefined);
-  const previousSectorRef = useRef<string | undefined>(undefined);
-  const previousCellRef = useRef<string | undefined>(undefined);
+  const [location, setLocation] = useState<LocationPickerValue>(emptyLocation);
 
   const schoolSetupStatusQuery = useQuery({
     queryKey: ['school-setup-status'],
@@ -84,14 +63,11 @@ export function SetupWizardPage() {
           phone: values.schoolPhone,
           addressLine1: values.schoolAddressLine1 || undefined,
           addressLine2: values.schoolAddressLine2 || undefined,
-          province: values.schoolProvince,
-          district: values.schoolDistrict,
-          sector: values.schoolSector,
-          cell: values.schoolCell,
-          village: values.schoolVillage,
-          city: values.schoolDistrict,
-          country: 'Rwanda',
-          timezone: 'Africa/Kigali',
+          adminCountryCode: location.adminCountryCode || undefined,
+          adminLevel1: location.adminLevel1,
+          adminLevel2: location.adminLevel2,
+          adminLevel3: location.adminLevel3,
+          adminLevel4: location.adminLevel4,
           logoUrl: values.logoUrl || undefined,
         },
         markSetupComplete: true,
@@ -117,86 +93,18 @@ export function SetupWizardPage() {
       schoolPhone: school.phone ?? '',
       schoolAddressLine1: school.addressLine1 ?? '',
       schoolAddressLine2: school.addressLine2 ?? '',
-      schoolProvince: school.province ?? '',
-      schoolDistrict: school.district ?? '',
-      schoolSector: school.sector ?? '',
-      schoolCell: school.cell ?? '',
-      schoolVillage: school.village ?? '',
       logoUrl: school.logoUrl ?? '',
     });
   }, [schoolSetupStatusQuery.data, form, auth.me?.tenant.name]);
 
-  const schoolProvince = form.watch('schoolProvince');
-  const schoolDistrict = form.watch('schoolDistrict');
-  const schoolSector = form.watch('schoolSector');
-  const schoolCell = form.watch('schoolCell');
-
-  useEffect(() => {
-    if (
-      previousProvinceRef.current !== undefined &&
-      previousProvinceRef.current !== schoolProvince
-    ) {
-      form.setValue('schoolDistrict', '');
-      form.setValue('schoolSector', '');
-      form.setValue('schoolCell', '');
-      form.setValue('schoolVillage', '');
-    }
-    previousProvinceRef.current = schoolProvince;
-  }, [schoolProvince, form]);
-
-  useEffect(() => {
-    if (
-      previousDistrictRef.current !== undefined &&
-      previousDistrictRef.current !== schoolDistrict
-    ) {
-      form.setValue('schoolSector', '');
-      form.setValue('schoolCell', '');
-      form.setValue('schoolVillage', '');
-    }
-    previousDistrictRef.current = schoolDistrict;
-  }, [schoolDistrict, form]);
-
-  useEffect(() => {
-    if (previousSectorRef.current !== undefined && previousSectorRef.current !== schoolSector) {
-      form.setValue('schoolCell', '');
-      form.setValue('schoolVillage', '');
-    }
-    previousSectorRef.current = schoolSector;
-  }, [schoolSector, form]);
-
-  useEffect(() => {
-    if (previousCellRef.current !== undefined && previousCellRef.current !== schoolCell) {
-      form.setValue('schoolVillage', '');
-    }
-    previousCellRef.current = schoolCell;
-  }, [schoolCell, form]);
-
-  const provinceOptions = useMemo(() => getRwandaOptions(getRwandaProvinces()), []);
-  const districtOptions = useMemo(
-    () => getRwandaOptions(getRwandaDistricts(schoolProvince)),
-    [schoolProvince]
-  );
-  const sectorOptions = useMemo(
-    () => getRwandaOptions(getRwandaSectors(schoolProvince, schoolDistrict)),
-    [schoolProvince, schoolDistrict]
-  );
-  const cellOptions = useMemo(
-    () => getRwandaOptions(getRwandaCells(schoolProvince, schoolDistrict, schoolSector)),
-    [schoolProvince, schoolDistrict, schoolSector]
-  );
-  const villageOptions = useMemo(
-    () =>
-      getRwandaOptions(getRwandaVillages(schoolProvince, schoolDistrict, schoolSector, schoolCell)),
-    [schoolProvince, schoolDistrict, schoolSector, schoolCell]
-  );
-
   const apiError = saveProfileMutation.error as ApiClientError | null;
   const setupComplete = Boolean((schoolSetupStatusQuery.data as any)?.isSetupComplete);
+  const savedSchool = (schoolSetupStatusQuery.data as any)?.school;
 
   return (
     <SectionCard
       title="School Profile"
-      subtitle="Complete school contact information and Rwanda address details. Academic years, classes, subjects, and staff stay in the sidebar."
+      subtitle="Complete school contact information and address details. Academic years, classes, subjects, and staff stay in the sidebar."
       action={
         <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-bold text-slate-800">
           {setupComplete ? 'Completed' : 'Action required'}
@@ -310,91 +218,17 @@ export function SetupWizardPage() {
             </label>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Province
-              <select
-                className="rounded-lg border border-brand-200 px-3 py-2"
-                {...form.register('schoolProvince')}
-              >
-                <option value="">Select province</option>
-                {provinceOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              District
-              <select
-                className="rounded-lg border border-brand-200 px-3 py-2 disabled:bg-slate-50 disabled:text-slate-400"
-                disabled={!schoolProvince}
-                {...form.register('schoolDistrict')}
-              >
-                <option value="">Select district</option>
-                {districtOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <FieldError message={form.formState.errors.schoolProvince?.message} />
-          <FieldError message={form.formState.errors.schoolDistrict?.message} />
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Sector
-              <select
-                className="rounded-lg border border-brand-200 px-3 py-2 disabled:bg-slate-50 disabled:text-slate-400"
-                disabled={!schoolProvince || !schoolDistrict}
-                {...form.register('schoolSector')}
-              >
-                <option value="">Select sector</option>
-                {sectorOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-slate-800">
-              Cell
-              <select
-                className="rounded-lg border border-brand-200 px-3 py-2 disabled:bg-slate-50 disabled:text-slate-400"
-                disabled={!schoolProvince || !schoolDistrict || !schoolSector}
-                {...form.register('schoolCell')}
-              >
-                <option value="">Select cell</option>
-                {cellOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <FieldError message={form.formState.errors.schoolSector?.message} />
-          <FieldError message={form.formState.errors.schoolCell?.message} />
-
-          <label className="grid gap-1 text-sm font-semibold text-slate-800">
-            Village
-            <select
-              className="rounded-lg border border-brand-200 px-3 py-2 disabled:bg-slate-50 disabled:text-slate-400"
-              disabled={!schoolProvince || !schoolDistrict || !schoolSector || !schoolCell}
-              {...form.register('schoolVillage')}
-            >
-              <option value="">Select village</option>
-              {villageOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-          <FieldError message={form.formState.errors.schoolVillage?.message} />
+          <LocationPicker
+            key={schoolSetupStatusQuery.isPending ? 'pending' : 'ready'}
+            initialValue={{
+              adminCountryCode: savedSchool?.adminCountryCode ?? '',
+              adminLevel1: savedSchool?.adminLevel1 ?? undefined,
+              adminLevel2: savedSchool?.adminLevel2 ?? undefined,
+              adminLevel3: savedSchool?.adminLevel3 ?? undefined,
+              adminLevel4: savedSchool?.adminLevel4 ?? undefined,
+            }}
+            onChange={setLocation}
+          />
 
           {apiError ? (
             <StateView title="Could not save school profile" message={apiError.message} />

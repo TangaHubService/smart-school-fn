@@ -72,16 +72,16 @@ const SUPER_ADMIN_QUICK_ACTIONS: DashboardQuickActionItem[] = [
     to: '/super-admin/schools?create=1',
   },
   {
-    label: 'Manage Courses',
-    description: 'Open the course workspace.',
-    icon: BookOpen,
-    to: '/admin/courses',
+    label: 'Manage Subscriptions',
+    description: 'Open billing workspace and manual school invoices.',
+    icon: CreditCard,
+    to: '/super-admin/subscriptions',
   },
   {
-    label: 'System Settings',
-    description: 'Review platform settings.',
+    label: 'Platform Settings',
+    description: 'Review platform settings and reports.',
     icon: Settings,
-    to: '/admin/setup',
+    to: '/super-admin/settings',
   },
 ];
 
@@ -206,9 +206,18 @@ export function SuperAdminDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard icon={Users} label="Total Users" value={data.metrics.totalUsers.toLocaleString()} tone="brand" to="/users" />
         <MetricCard icon={Building2} label="Active Schools" value={data.metrics.activeSchools.toLocaleString()} tone="success" to="/super-admin/schools" />
-        <MetricCard icon={CheckCircle2} label="Ongoing Exams" value={data.metrics.ongoingExams.toLocaleString()} tone="warning" />
-        <MetricCard icon={Headphones} label="Support Tickets" value={data.metrics.supportTickets.toLocaleString()} tone="danger" />
+        <MetricCard icon={CheckCircle2} label="Ongoing Exams" value={data.metrics.ongoingExams.toLocaleString()} tone="warning" to="/admin/exams" />
+        <MetricCard icon={Headphones} label="Support Tickets" value={data.metrics.supportTickets.toLocaleString()} tone="danger" to="/super-admin/support" />
       </div>
+
+      {data.studentSuccessRate ? (
+        <StudentSuccessRateCard
+          rate={data.studentSuccessRate.rate}
+          passed={data.studentSuccessRate.passed}
+          eligible={data.studentSuccessRate.eligible}
+          passMark={data.studentSuccessRate.passMark}
+        />
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <BillingCard billing={billing} />
@@ -528,8 +537,11 @@ function LatestReportsCard({ data }: { data: SuperAdminDashboardData }) {
         subtitle="Platform report activity"
         icon={FileBarChart2}
         tone="success"
-        action={<CardActionLink to="/admin">View all</CardActionLink>}
+        action={<CardActionLink to="/super-admin/reports">View all</CardActionLink>}
       />
+      {data.latestReports.length === 0 ? (
+        <p className="px-5 py-8 text-center text-sm text-slate-500">No reports yet.</p>
+      ) : null}
       <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-3">
         {data.latestReports.map((report) => (
           <div
@@ -560,6 +572,44 @@ function LatestReportsCard({ data }: { data: SuperAdminDashboardData }) {
             <span className="text-slate-400">→</span>
           </div>
         ))}
+      </div>
+    </Card>
+  );
+}
+
+function StudentSuccessRateCard({
+  rate,
+  passed,
+  eligible,
+  passMark,
+}: {
+  rate: number | null;
+  passed: number;
+  eligible: number;
+  passMark: number;
+}) {
+  return (
+    <Card>
+      <CardHeader
+        title="Student Success Rate"
+        subtitle={`Share of results ≥ ${passMark}% — updates as marks are published`}
+        icon={GraduationCap}
+        tone="success"
+        action={<CardActionLink to="/super-admin/reports">Reports</CardActionLink>}
+      />
+      <div className="p-5">
+        {rate == null ? (
+          <p className="py-4 text-center text-sm text-slate-500">
+            No result data yet. Success rate appears once report cards are locked or published.
+          </p>
+        ) : (
+          <div className="flex items-center gap-4">
+            <p className="text-4xl font-black tabular-nums text-slate-900">{rate}%</p>
+            <p className="text-sm text-slate-600">
+              {passed} of {eligible} results at or above {passMark}%
+            </p>
+          </div>
+        )}
       </div>
     </Card>
   );
