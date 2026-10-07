@@ -1,287 +1,32 @@
-import { BookOpen, CheckCircle2, Lock, Loader2, Sparkles } from 'lucide-react';
+import { Sparkles, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-import {
-  academyApi,
-  type AcademyCatalogClassRoom,
-  type AcademyPlanId,
-  type AcademySubscriptionSummary,
-} from '../api/academy-api';
-import { AppDrawer } from '../components/drawer';
+import { academyApi, splitCatalogGradesIntoBands } from '../api/academy-api';
 import { CardGridSkeleton } from '../components/skeleton-loader';
-import { useToast } from '../components/toast';
-import { useAuth } from '../features/auth/auth.context';
 import backgroundImage from '../asset/background.jpg';
-import socket from '../utils/socket';
-
-const ACADEMY_PLANS = [
-  {
-    id: 'test',
-    name: 'Test',
-    durationDays: 1,
-    price: 100,
-    description: 'Quick verification plan for checkout and payment flow testing.',
-  },
-  {
-    id: 'weekly',
-    name: 'Weekly',
-    durationDays: 7,
-    price: 2000,
-    description: 'Short sprint for focused revision and fast starts.',
-  },
-  {
-    id: 'monthly',
-    name: 'Monthly',
-    durationDays: 30,
-    price: 5000,
-    description: 'The balanced option for consistent learning and practice.',
-  },
-  {
-    id: 'quarterly',
-    name: 'Quarterly',
-    durationDays: 90,
-    price: 10000,
-    description: 'Longer runway for deeper progress across your selected classes.',
-  },
-  {
-    id: 'yearly',
-    name: 'Yearly',
-    durationDays: 365,
-    price: 30000,
-    description: 'Best value for extended access and uninterrupted momentum.',
-  },
-] as const satisfies Array<{
-  id: Exclude<AcademyPlanId, 'trial'>;
-  name: string;
-  durationDays: number;
-  price: number;
-  description: string;
-}>;
-
-type PurchasableAcademyPlan = (typeof ACADEMY_PLANS)[number];
-
-/** Widened plan shape for backend-driven rates (ids match the plan union). */
-export interface AcademyPlanOption {
-  id: Exclude<AcademyPlanId, 'trial'>;
-  name: string;
-  durationDays: number;
-  price: number;
-  description: string;
-}
-
-/** Display copy only — prices and durations always come from GET /public-academy/plans. */
-const PLAN_DESCRIPTIONS: Record<string, string> = {
-  test: 'Quick verification plan for checkout and payment flow testing.',
-  weekly: 'Short sprint for focused revision and fast starts.',
-  monthly: 'The balanced option for consistent learning and practice.',
-  quarterly: 'Longer runway for deeper progress across your selected classes.',
-  yearly: 'Best value for extended access and uninterrupted momentum.',
-};
 
 function cardImage(item: { thumbnail?: string | null }) {
   const thumbnail = item.thumbnail?.trim();
   return thumbnail ? thumbnail : backgroundImage;
 }
 
-function isPurchasablePlanId(value: string | null): value is PurchasableAcademyPlan['id'] {
-  return ACADEMY_PLANS.some((plan) => plan.id === value);
-}
-
-function formatPlanName(planCode: AcademyPlanId) {
-  if (planCode === 'trial') {
-    return 'Trial';
-  }
-  return ACADEMY_PLANS.find((plan) => plan.id === planCode)?.name ?? planCode;
-}
-
-function formatExpiry(value: string | null) {
-  if (!value) {
-    return 'No end date';
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
-
-export function PublicAcademyPage() {
+export function PublicAcademyPage({ hideHero = false }: { hideHero?: boolean } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
-  const auth = useAuth();
 
-  const requestedPlanId = searchParams.get('plan');
-  const defaultPlan: AcademyPlanOption =
-    ACADEMY_PLANS.find((plan) => plan.id === 'monthly') ?? ACADEMY_PLANS[0];
-  const [selectedPlan, setSelectedPlan] = useState<AcademyPlanOption>(
-    ACADEMY_PLANS.find((plan) => plan.id === requestedPlanId) ?? defaultPlan
-  );
   const [selectedYearId, setSelectedYearId] = useState<string | null>(null);
-  const [levelFilter, setLevelFilter] = useState('ALL');
-  const [classFilter, setClassFilter] = useState('');
-  const [selectedClass, setSelectedClass] = useState<
-    (AcademyCatalogClassRoom & { gradeLevelName: string }) | null
-  >(null);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'PENDING' | 'SUCCESS' | 'FAILED'>(
-    'IDLE'
-  );
-  const [paypackRef, setPaypackRef] = useState<string | null>(null);
-
-  const highlightClassRoomId = useMemo(() => {
-    const state = location.state as { highlightClassRoomId?: string } | null | undefined;
-    return state?.highlightClassRoomId;
-  }, [location.state]);
-
-  const isPublicLearner =
-    auth.me?.roles.includes('PUBLIC_LEARNER') || auth.me?.roles.includes('LEARNER') || false;
+  // Filters mirror the URL (?band=<lower|upper>&level=<gradeId>) so bands and
+  // levels are deep-linkable and shareable. State stays the source of truth.
+  const [levelFilter, setLevelFilter] = useState(searchParams.get('level') ?? 'ALL');
+  const [selectedBand, setSelectedBand] = useState(searchParams.get('band') ?? '');
 
   const catalogQuery = useQuery({
     queryKey: ['academy-catalog-tree'],
     queryFn: academyApi.getCatalogTree,
   });
-
-  // Plan rates are backend-driven (GET /public-academy/plans); the local
-  // ACADEMY_PLANS constant is only a fallback for offline/API errors.
-  const plansQuery = useQuery({
-    queryKey: ['academy-plans'],
-    queryFn: academyApi.getPlans,
-    staleTime: 5 * 60_000,
-    retry: 1,
-  });
-
-  const plans: AcademyPlanOption[] = useMemo(() => {
-    const remote = plansQuery.data?.plans;
-    if (remote?.length) {
-      return remote
-        .filter((p): p is typeof p & { id: AcademyPlanOption['id'] } =>
-          isPurchasablePlanId(p.id)
-        )
-        .map((p) => ({
-          id: p.id,
-          name: p.name,
-          durationDays: p.durationDays,
-          price: p.amount,
-          description: PLAN_DESCRIPTIONS[p.id] ?? '',
-        }));
-    }
-    return [...ACADEMY_PLANS];
-  }, [plansQuery.data]);
-
-  useEffect(() => {
-    if (!isPurchasablePlanId(requestedPlanId)) {
-      return;
-    }
-    const match = plans.find((plan) => plan.id === requestedPlanId);
-    if (match) {
-      setSelectedPlan(match);
-    }
-  }, [requestedPlanId, plans]);
-
-  // Keep the selected plan's price/duration in sync with backend rates.
-  useEffect(() => {
-    setSelectedPlan((prev) => {
-      const match = plans.find((plan) => plan.id === prev.id);
-      return match &&
-        (match.price !== prev.price ||
-          match.durationDays !== prev.durationDays ||
-          match.name !== prev.name)
-        ? match
-        : prev;
-    });
-  }, [plans]);
-
-  const subscriptionQuery = useQuery({
-    queryKey: ['academy-subscription-summary'],
-    queryFn: academyApi.getSubscriptionSummary,
-    enabled: Boolean(auth.me && isPublicLearner),
-  });
-
-  const selectMutation = useMutation({
-    mutationFn: (classRoomId: string) => academyApi.selectClass(classRoomId),
-    onSuccess: (data) => {
-      queryClient.setQueryData(['academy-subscription-summary'], data);
-      void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
-      showToast({
-        type: 'success',
-        title: 'Class added',
-        message: 'Every subject and course in this class is now part of your active plan.',
-      });
-    },
-    onError: (error: any) => {
-      showToast({ type: 'error', title: 'Could not add class', message: error.message });
-    },
-  });
-
-  const removeMutation = useMutation({
-    mutationFn: (classRoomId: string) => academyApi.removeClass(classRoomId),
-    onSuccess: (data) => {
-      queryClient.setQueryData(['academy-subscription-summary'], data);
-      void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
-      showToast({
-        type: 'success',
-        title: 'Class removed',
-        message: 'You now have a free slot to choose another class.',
-      });
-    },
-    onError: (error: any) => {
-      showToast({ type: 'error', title: 'Could not remove class', message: error.message });
-    },
-  });
-
-  const checkoutMutation = useMutation({
-    mutationFn: (payload: { planId: PurchasableAcademyPlan['id']; phoneNumber: string }) =>
-      academyApi.startPlanCheckout(payload),
-    onSuccess: (data) => {
-      setPaypackRef(data.paypackRef);
-      setPaymentStatus('PENDING');
-      showToast({ type: 'info', title: 'Payment initiated', message: data.message });
-    },
-    onError: (error: any) => {
-      setPaymentStatus('FAILED');
-      showToast({ type: 'error', title: 'Checkout failed', message: error.message });
-    },
-  });
-
-  useEffect(() => {
-    if (!paypackRef) {
-      return;
-    }
-
-    socket.emit('joinTransaction', { transactionId: paypackRef });
-
-    const handleUpdate = (data: { status: string }) => {
-      if (data.status === 'COMPLETED') {
-        setPaymentStatus('SUCCESS');
-        void queryClient.invalidateQueries({ queryKey: ['academy-subscription-summary'] });
-        void queryClient.invalidateQueries({ queryKey: ['lms', 'student-courses'] });
-        showToast({
-          type: 'success',
-          title: 'Plan activated',
-          message: 'Your academy plan is active. Choose up to 3 classes below.',
-        });
-      } else if (data.status === 'FAILED' || data.status === 'CANCELLED') {
-        setPaymentStatus('FAILED');
-        showToast({
-          type: 'error',
-          title: 'Payment failed',
-          message: 'The payment was not completed. Please try again.',
-        });
-      }
-    };
-
-    socket.on('transactionUpdate', handleUpdate);
-    return () => {
-      socket.off('transactionUpdate', handleUpdate);
-    };
-  }, [paypackRef, queryClient, showToast]);
 
   const academicYears = catalogQuery.data?.academicYears ?? [];
 
@@ -293,293 +38,160 @@ export function PublicAcademyPage() {
 
   const activeYear = academicYears.find((year) => year.id === selectedYearId) ?? academicYears[0];
 
+  // Level bands (e.g. Lower/Upper Primary): shared helper, same logic as the
+  // dedicated band/level pages so navigation stays consistent page to page.
+  const levelBands = useMemo(
+    () => splitCatalogGradesIntoBands(activeYear?.gradeLevels ?? []),
+    [activeYear]
+  );
+
+  const activeBand = levelBands.find((band) => band.key === selectedBand) ?? null;
+  const gradeBand =
+    levelBands.find((band) => band.grades.some((grade) => grade.id === levelFilter)) ?? null;
+  const shownBand = activeBand ?? gradeBand;
+  const shownGrades = shownBand ? shownBand.grades : [];
+  const showBands = !shownBand;
+  function clearLevelToBand() {
+    if (!shownBand) return;
+    setLevelFilter('ALL');
+    navigate(buildCatalogUrl(shownBand.key, null, null, 'academy-levels'));
+    scrollToId('academy-levels');
+  }
+
+  // Shared band/level links (?band=&level=<gradeId>): jump to the matching
+  // section once the catalog has loaded.
   useEffect(() => {
-    if (!highlightClassRoomId || !activeYear || catalogQuery.isPending) {
+    if (catalogQuery.isPending || !activeYear) {
+      return;
+    }
+    const levelId = searchParams.get('level');
+    const bandId = searchParams.get('band');
+    const target = levelId ? 'academy-levels' : bandId ? 'academy-levels' : null;
+    if (!target) {
       return;
     }
     const timer = window.setTimeout(() => {
-      document.getElementById(`academy-class-${highlightClassRoomId}`)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    }, 100);
+      document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
     return () => window.clearTimeout(timer);
-  }, [activeYear, catalogQuery.isPending, highlightClassRoomId]);
+  }, [catalogQuery.isPending, activeYear, searchParams]);
 
-  const selectedClassesById = useMemo(() => {
-    const map = new Map<string, AcademySubscriptionSummary['selectedClasses'][number]>();
-    for (const item of subscriptionQuery.data?.selectedClasses ?? []) {
-      map.set(item.classRoomId, item);
-    }
-    return map;
-  }, [subscriptionQuery.data?.selectedClasses]);
+  // Keep filters in sync when the URL changes (back/forward, shared links).
+  useEffect(() => {
+    const nextBand = searchParams.get('band') ?? '';
+    setSelectedBand((prev) => (prev === nextBand ? prev : nextBand));
+    const nextLevel = searchParams.get('level') ?? 'ALL';
+    setLevelFilter((prev) => (prev === nextLevel ? prev : nextLevel));
+  }, [searchParams]);
 
-  const accessibleClassesById = useMemo(() => {
-    const map = new Map<string, AcademySubscriptionSummary['accessibleClasses'][number]>();
-    for (const item of subscriptionQuery.data?.accessibleClasses ?? []) {
-      map.set(item.classRoomId, item);
-    }
-    return map;
-  }, [subscriptionQuery.data?.accessibleClasses]);
+  function buildCatalogUrl(
+    band: string | null,
+    level: string | null,
+    classId: string | null,
+    hash: string
+  ) {
+    const params = new URLSearchParams();
+    if (band) params.set('band', band);
+    if (level && level !== 'ALL') params.set('level', level);
+    if (classId) params.set('class', classId);
+    const query = params.toString();
+    return `${location.pathname}${query ? `?${query}` : ''}#${hash}`;
+  }
 
-  const currentSubscription = subscriptionQuery.data?.subscription ?? null;
-  const hasActivePlan =
-    currentSubscription?.status === 'ACTIVE' || currentSubscription?.status === 'TRIAL';
-  const classLimit = currentSubscription?.classLimit ?? 3;
-  const remainingClassSlots = currentSubscription?.remainingClassSlots ?? classLimit;
-
-  function navigateToLogin(planId: PurchasableAcademyPlan['id']) {
-    const params = new URLSearchParams({
-      tab: 'register',
-      returnTo: '/academy',
-      plan: planId,
+  function scrollToId(id: string) {
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
-    navigate(`/login?${params.toString()}`);
   }
 
-  function openClass() {
-    navigate('/student/courses');
+  function selectBand(band: string | null) {
+    setSelectedBand(band ?? '');
+    setLevelFilter('ALL');
+    navigate(buildCatalogUrl(band, null, null, 'academy-levels'));
+    scrollToId('academy-levels');
   }
-
-  function handlePlanClick(plan: AcademyPlanOption) {
-    setSelectedPlan(plan);
-
-    if (!auth.me) {
-      navigateToLogin(plan.id);
-      return;
-    }
-
-    if (!isPublicLearner) {
-      showToast({
-        type: 'error',
-        title: 'Learner account required',
-        message: 'Sign in with your public academy learner account to activate a plan.',
-      });
-      return;
-    }
-
-    setShowCheckoutModal(true);
-  }
-
-  function handleClassAction(classRoom: AcademyCatalogClassRoom) {
-    const access = accessibleClassesById.get(classRoom.id);
-    if (access) {
-      openClass();
-      return;
-    }
-
-    if (!auth.me) {
-      navigateToLogin(selectedPlan.id);
-      return;
-    }
-
-    if (!isPublicLearner) {
-      showToast({
-        type: 'error',
-        title: 'Learner account required',
-        message: 'Use a public academy learner account to choose academy classes.',
-      });
-      return;
-    }
-
-    if (!hasActivePlan) {
-      showToast({
-        type: 'info',
-        title: 'Choose a plan first',
-        message: 'Activate or renew a plan before selecting your classes.',
-      });
-      return;
-    }
-
-    if (currentSubscription && remainingClassSlots <= 0) {
-      showToast({
-        type: 'info',
-        title: 'All slots in use',
-        message: 'Remove one selected class to free a slot for another choice.',
-      });
-      return;
-    }
-
-    selectMutation.mutate(classRoom.id);
-  }
-
-  const slotUsage = currentSubscription
-    ? `${classLimit - remainingClassSlots}/${classLimit}`
-    : '0/3';
 
   return (
     <main className="bg-white">
-      <section
-        className="relative flex min-h-[58vh] items-center justify-center bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
-      >
-        <div className="absolute inset-0 bg-brand-950/70" />
-        <div className="relative mx-auto w-full max-w-5xl px-4 py-16 text-center sm:px-6 lg:px-8">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-brand-500/20 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-brand-200 ring-1 ring-brand-400/30">
-            <Sparkles className="h-3.5 w-3.5" />
-            Plan-based access
-          </div>
-          <h1 className="text-4xl font-bold uppercase tracking-tight text-white sm:text-6xl">
-            Smart School <span className="text-brand-400">Academy</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-3xl text-lg font-medium text-gray-100">
-            Activate a plan, then choose up to 3 classes and unlock every subject, course, and
-            lesson within each selected class.
-          </p>
-        </div>
-      </section>
-
-      <section className="border-b border-slate-200 bg-slate-50 py-8">
-        <div className="mx-auto grid w-full max-w-6xl gap-4 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
-          {[
-            {
-              step: 1,
-              title: 'Create account',
-              desc: 'Register or sign in with your academy learner account.',
-            },
-            {
-              step: 2,
-              title: 'Activate plan',
-              desc: 'Choose the access plan that fits your testing or learning needs and pay with MoMo.',
-            },
-            {
-              step: 3,
-              title: 'Choose 3 classes',
-              desc: 'Pick up to 3 classes and unlock every subject and course inside each one.',
-            },
-          ].map((item) => (
-            <div
-              key={item.step}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
-            >
-              <div className="flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
-                  {item.step}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                  <p className="mt-1 text-sm text-slate-600">{item.desc}</p>
-                </div>
-              </div>
+      {hideHero ? null : (
+        <section
+          className="relative flex min-h-[58vh] items-center justify-center bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${backgroundImage})` }}
+        >
+          <div className="absolute inset-0 bg-brand-950/70" />
+          <div className="relative mx-auto w-full max-w-5xl px-4 py-16 text-center sm:px-6 lg:px-8">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-brand-500/20 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-brand-200 ring-1 ring-brand-400/30">
+              <Sparkles className="h-3.5 w-3.5" />
+              Plan-based access
             </div>
-          ))}
-        </div>
-      </section>
+            <h1 className="text-4xl font-bold uppercase tracking-tight text-white sm:text-6xl">
+              Smart School <span className="text-brand-400">Programs</span>
+            </h1>
+            <p className="mx-auto mt-6 max-w-3xl text-lg font-medium text-gray-100">
+              Activate a plan, then enroll in up to 3 classes and unlock every subject, course,
+              and lesson within each enrolled class.
+            </p>
+          </div>
+        </section>
+      )}
 
-      <section className="py-20">
+      <section id="academy-levels" className="border-t border-slate-100 bg-white py-20 scroll-mt-24">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
-                Step 1
-              </p>
-              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">
-                Choose your plan
-              </h2>
-              <p className="mt-3 max-w-2xl text-slate-600">
-                All plans unlock the same academy catalog flow. The difference is how long your
-                chosen class access stays active.
-              </p>
-            </div>
-            {currentSubscription ? (
-              <div className="rounded-2xl border border-brand-100 bg-brand-50 px-5 py-4 text-sm text-brand-950">
-                <p className="font-semibold">Current access</p>
-                <p className="mt-1">
-                  {formatPlanName(currentSubscription.planCode)} · {currentSubscription.status}
-                </p>
-                <p className="mt-1 text-brand-900/80">Slots used: {slotUsage}</p>
-                <p className="mt-1 text-brand-900/80">
-                  Expires: {formatExpiry(currentSubscription.expiresAt)}
-                </p>
-              </div>
-            ) : null}
-          </div>
-
-          {auth.me && !isPublicLearner ? (
-            <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
-              You are signed in to a workspace account. Academy plans require a public academy
-              learner account.
-            </div>
-          ) : null}
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
-            {plansQuery.isPending ? (
-              <p className="text-sm text-slate-500">Loading plans…</p>
-            ) : (
-              plans.map((plan) => {
-              const isSelected = selectedPlan.id === plan.id;
-              const isCurrentPlan = currentSubscription?.planCode === plan.id && hasActivePlan;
-              return (
-                <article
-                  key={plan.id}
-                  className={[
-                    'rounded-3xl border p-6 shadow-sm transition',
-                    isSelected || isCurrentPlan
-                      ? 'border-brand-500 bg-brand-50 shadow-[0_24px_60px_rgba(30,90,168,0.12)]'
-                      : 'border-slate-200 bg-white hover:border-brand-200',
-                  ].join(' ')}
-                >
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
-                    {plan.name}
-                  </p>
-                  <p className="mt-4 text-4xl font-black text-slate-900">
-                    {plan.price.toLocaleString()}
-                    <span className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                      RWF
-                    </span>
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-700">
-                    {plan.durationDays} days access
-                  </p>
-                  <p className="mt-4 text-sm leading-relaxed text-slate-600">{plan.description}</p>
+          {shownBand ? (
+            <nav aria-label="Breadcrumb" className="mb-4">
+              <ol className="flex flex-wrap items-center gap-1 text-sm">
+                <li>
                   <button
                     type="button"
-                    onClick={() => handlePlanClick(plan)}
-                    className="mt-6 w-full rounded-2xl bg-brand-500 px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-brand-600"
+                    onClick={() => selectBand(null)}
+                    className="rounded px-1 py-0.5 font-medium text-brand-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-brand-500"
                   >
-                    {auth.me
-                      ? isCurrentPlan
-                        ? `Renew ${plan.name}`
-                        : `Choose ${plan.name}`
-                      : `Continue with ${plan.name}`}
+                    Levels
                   </button>
-                </article>
-                );
-              })
-            )}
-          </div>
-
-          {subscriptionQuery.data?.pendingPayment ? (
-            <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-950">
-              Payment pending for{' '}
-              <span className="font-semibold capitalize">
-                {subscriptionQuery.data.pendingPayment.planCode}
-              </span>
-              . Confirm the MoMo request on your phone to activate the plan.
-            </div>
+                </li>
+                <li aria-hidden="true" className="text-slate-400">
+                  /
+                </li>
+                {levelFilter !== 'ALL' ? (
+                  <>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={clearLevelToBand}
+                        className="rounded px-1 py-0.5 font-medium text-brand-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-brand-500"
+                      >
+                        {shownBand.title}
+                      </button>
+                    </li>
+                    <li aria-hidden="true" className="text-slate-400">
+                      /
+                    </li>
+                    <li aria-current="page" className="px-1 py-0.5 font-semibold text-slate-900">
+                      {shownBand.grades.find((grade) => grade.id === levelFilter)?.name ??
+                        'Level'}
+                    </li>
+                  </>
+                ) : (
+                  <li aria-current="page" className="px-1 py-0.5 font-semibold text-slate-900">
+                    {shownBand.title}
+                  </li>
+                )}
+              </ol>
+            </nav>
           ) : null}
-        </div>
-      </section>
-
-      <section className="border-t border-slate-100 bg-slate-50/70 py-20">
-        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
-                Step 2
+                Start here
               </p>
-              <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">
-                Browse by academic year, grade, and class
+              <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+                {showBands ? 'Choose your level group' : (shownBand?.title ?? 'Choose a level')}
               </h2>
               <p className="mt-3 max-w-2xl text-slate-600">
-                Your plan controls time. Purchasing or selecting a class unlocks every subject,
-                course, lesson, and assessment inside it. Remove a selected class any time to free a
-                slot.
+                {showBands
+                  ? 'Start with a level group, then pick a level to see its classes. Every card shows its levels, classes, and enrolled students.'
+                  : `${shownBand?.subtitle ?? ''}. Pick a level to see its classes — every card shows how many classes it holds and how many students are enrolled.`}
               </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-700 shadow-sm">
-              <p className="font-semibold text-slate-900">Current slot usage</p>
-              <p className="mt-1">{slotUsage} selected</p>
             </div>
           </div>
 
@@ -587,425 +199,120 @@ export function PublicAcademyPage() {
             <CardGridSkeleton count={6} className="lg:grid-cols-3" />
           ) : catalogQuery.isError ? (
             <div className="rounded-3xl border border-rose-200 bg-rose-50 px-6 py-12 text-center text-rose-700 shadow-sm">
-              We could not load the academy catalog right now. Please refresh the page and try
-              again.
+              We could not load levels right now. Please refresh the page and try again.
             </div>
           ) : academicYears.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center text-slate-600 shadow-sm">
-              No academy classes are ready yet. Link an academy program to a class in the admin
-              catalog to show it here.
+              No levels are ready yet. Programs linked to classes will appear here.
+            </div>
+          ) : showBands ? (
+            <div className="grid gap-8 md:grid-cols-2" role="list" aria-label="Level groups">
+              {levelBands.map((band) => (
+                <article
+                  key={band.key}
+                  role="listitem"
+                  className="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:border-brand-200"
+                >
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src={cardImage({ thumbnail: band.thumbnail })}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-brand-700 shadow-sm">
+                      {band.grades.length} {band.grades.length === 1 ? 'level' : 'levels'} ·{' '}
+                      {band.classes} {band.classes === 1 ? 'class' : 'classes'}
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col p-7">
+                    <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+                      {band.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-500">{band.subtitle}</p>
+                    <p className="mt-4 flex flex-1 items-center gap-2 text-[15px] leading-relaxed text-slate-600">
+                      <Users className="h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
+                      Enrolled students: {band.enrolled.toLocaleString()}
+                    </p>
+                      <Link
+                        to={`/programs/group/${band.key}`}
+                        aria-label={`View levels in ${band.title}`}
+                        className="mt-6 block w-full rounded-2xl bg-brand-500 px-4 py-3 text-center text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-brand-600"
+                      >
+                        View levels
+                      </Link>
+                  </div>
+                </article>
+              ))}
             </div>
           ) : (
-            <>
-              <div className="mb-6 grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[220px_1fr_auto]">
-                <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-slate-600">
-                  Level
-                  <select
-                    value={levelFilter}
-                    onChange={(e) => setLevelFilter(e.target.value)}
-                    className="h-10 rounded-xl border border-slate-300 px-3 text-sm normal-case"
+            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3" role="list" aria-label="Levels">
+              {shownGrades.map((grade, gradeIndex) => {
+                const classCount = grade.classRooms.length;
+                const courseCount = grade.classRooms.reduce(
+                  (sum, room) =>
+                    sum + room.subjects.reduce((inner, subject) => inner + subject.courseCount, 0),
+                  0
+                );
+                const enrolledTotal = grade.classRooms.reduce(
+                  (sum, room) => sum + (room.enrolledCount ?? 0),
+                  0
+                );
+                const gradeThumbnail =
+                  grade.classRooms.find((room) => room.thumbnail?.trim())?.thumbnail ?? null;
+                const isActive = levelFilter === grade.id;
+                return (
+                  <article
+                    key={grade.id}
+                    role="listitem"
+                    className={[
+                      'group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition',
+                      isActive
+                        ? 'border-brand-500 ring-2 ring-brand-400/30'
+                        : 'border-slate-200 hover:border-brand-200',
+                    ].join(' ')}
                   >
-                    <option value="ALL">All levels</option>
-                    {(activeYear?.gradeLevels ?? []).map((grade) => (
-                      <option key={grade.id} value={grade.id}>
-                        {grade.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-slate-600">
-                  Class
-                  <select
-                    value={classFilter}
-                    onChange={(e) => setClassFilter(e.target.value)}
-                    className="h-10 rounded-xl border border-slate-300 px-3 text-sm normal-case"
-                  >
-                    <option value="">All classes</option>
-                    {(activeYear?.gradeLevels ?? [])
-                      .filter((g) => levelFilter === 'ALL' || g.id === levelFilter)
-                      .flatMap((g) => g.classRooms)
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLevelFilter('ALL');
-                    setClassFilter('');
-                  }}
-                  className="mt-auto h-10 rounded-xl border border-slate-300 px-4 text-sm font-semibold"
-                >
-                  Reset
-                </button>
-              </div>
-              {academicYears.length > 1 ? (
-                <div className="mb-8 flex flex-wrap gap-2">
-                  {academicYears.map((year) => (
-                    <button
-                      key={year.id}
-                      type="button"
-                      onClick={() => setSelectedYearId(year.id)}
-                      className={[
-                        'rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] transition',
-                        activeYear?.id === year.id
-                          ? 'bg-brand-500 text-white'
-                          : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50',
-                      ].join(' ')}
-                    >
-                      {year.name}
-                      {year.isCurrent ? ' · Current' : ''}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-
-              {(activeYear?.gradeLevels ?? []).length === 0 ? (
-                <div className="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center text-slate-600 shadow-sm">
-                  No classes published for this academic year yet.
-                </div>
-              ) : (
-                <div className="space-y-14">
-                  {(activeYear?.gradeLevels ?? [])
-                    .filter((grade) => levelFilter === 'ALL' || grade.id === levelFilter)
-                    .map((grade) => {
-                      const rooms = grade.classRooms.filter(
-                        (c) => !classFilter || c.id === classFilter
-                      );
-                      if (!rooms.length) return null;
-                    <div key={grade.id}>
-                      <h3 className="mb-5 text-xl font-bold uppercase tracking-tight text-slate-900">
-                        {grade.name}
-                      </h3>
-                      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-                        {rooms.map((classRoom) => {
-                          const selected = selectedClassesById.get(classRoom.id);
-                          const accessible = accessibleClassesById.get(classRoom.id);
-                          const isLocked = !accessible;
-                          const canAdd =
-                            Boolean(auth.me && isPublicLearner && hasActivePlan) &&
-                            !selected &&
-                            !accessible &&
-                            Boolean(currentSubscription && remainingClassSlots > 0);
-                          const courseCount = classRoom.subjects.reduce(
-                            (sum, subject) => sum + subject.courseCount,
-                            0
-                          );
-
-                          return (
-                            <article
-                              key={classRoom.id}
-                              id={`academy-class-${classRoom.id}`}
-                              className={[
-                                'group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm transition',
-                                highlightClassRoomId === classRoom.id
-                                  ? 'border-brand-500 ring-2 ring-brand-400/30'
-                                  : 'border-slate-200 hover:border-brand-200',
-                              ].join(' ')}
-                            >
-                              <div className="relative h-48 overflow-hidden">
-                                <img
-                                  src={cardImage(classRoom)}
-                                  alt={classRoom.name}
-                                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                                <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-brand-700 shadow-sm">
-                                  {classRoom.subjects.length}{' '}
-                                  {classRoom.subjects.length === 1 ? 'subject' : 'subjects'} ·{' '}
-                                  {courseCount} {courseCount === 1 ? 'course' : 'courses'}
-                                </div>
-                                {isLocked ? (
-                                  <div className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm">
-                                    <Lock className="h-4 w-4" />
-                                  </div>
-                                ) : null}
-                              </div>
-                              <div className="flex flex-1 flex-col p-7">
-                                <div className="mb-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em]">
-                                  {accessible ? (
-                                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
-                                      {accessible.isLegacy ? 'Legacy access' : 'Accessible now'}
-                                    </span>
-                                  ) : null}
-                                  {selected ? (
-                                    <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">
-                                      Selected on plan
-                                    </span>
-                                  ) : null}
-                                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                                    {grade.name}
-                                  </span>
-                                </div>
-                                <h3 className="text-2xl font-bold tracking-tight text-slate-900">
-                                  {classRoom.name}
-                                </h3>
-                                <p className="mt-4 flex-1 text-[15px] leading-relaxed text-slate-600">
-                                  Unlock every subject, course, lesson, quiz, and assignment
-                                  published in {classRoom.name}.
-                                </p>
-
-                                <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                                  <p className="flex items-center gap-2 font-semibold text-slate-900">
-                                    <BookOpen className="h-4 w-4 text-brand-600" />
-                                    {classRoom.subjects.length}{' '}
-                                    {classRoom.subjects.length === 1 ? 'subject' : 'subjects'}{' '}
-                                    available
-                                  </p>
-                                  <p className="mt-1">
-                                    {classRoom.subjects
-                                      .slice(0, 3)
-                                      .map((s) => s.name)
-                                      .join(' • ') || 'Subjects coming soon.'}
-                                  </p>
-                                </div>
-
-                                {isLocked ? (
-                                  <p className="mt-3 text-sm font-semibold text-slate-700">
-                                    {classRoom.price.toLocaleString()} RWF one-time class value
-                                  </p>
-                                ) : null}
-
-                                <div className="mt-6 space-y-3">
-                                  {accessible?.expiresAt ? (
-                                    <p className="text-sm text-slate-500">
-                                      Access ends {formatExpiry(accessible.expiresAt)}
-                                    </p>
-                                  ) : currentSubscription?.expiresAt ? (
-                                    <p className="text-sm text-slate-500">
-                                      Current plan ends{' '}
-                                      {formatExpiry(currentSubscription.expiresAt)}
-                                    </p>
-                                  ) : null}
-
-                                  <div className="flex gap-3">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedClass({
-                                          ...classRoom,
-                                          gradeLevelName: grade.name,
-                                        });
-                                        setShowDetailsModal(true);
-                                      }}
-                                      className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-700 transition hover:bg-slate-50"
-                                    >
-                                      Preview
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={
-                                        selectMutation.isPending || removeMutation.isPending
-                                      }
-                                      onClick={() => handleClassAction(classRoom)}
-                                      className={[
-                                        'flex-[1.35] inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition',
-                                        accessible || canAdd
-                                          ? 'bg-brand-500 hover:bg-brand-600'
-                                          : 'bg-slate-400',
-                                      ].join(' ')}
-                                    >
-                                      {!accessible ? <Lock className="h-3.5 w-3.5" /> : null}
-                                      {accessible
-                                        ? 'Enter class'
-                                        : !auth.me
-                                          ? 'Login first'
-                                          : !hasActivePlan
-                                            ? 'Choose plan first'
-                                            : currentSubscription &&
-                                                remainingClassSlots <= 0 &&
-                                                !selected
-                                              ? `${classLimit}/${classLimit} selected`
-                                              : 'Purchase class'}
-                                    </button>
-                                  </div>
-
-                                  {selected ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => removeMutation.mutate(classRoom.id)}
-                                      disabled={removeMutation.isPending}
-                                      className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-rose-700 transition hover:bg-rose-100"
-                                    >
-                                      Remove from plan
-                                    </button>
-                                  ) : null}
-                                </div>
-                              </div>
-                            </article>
-                          );
-                        })}
+                    <div className="relative h-40 overflow-hidden">
+                      <img
+                        src={cardImage({ thumbnail: gradeThumbnail })}
+                        alt=""
+                        aria-hidden="true"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-brand-700 shadow-sm">
+                        {classCount} {classCount === 1 ? 'class' : 'classes'} · {courseCount}{' '}
+                        {courseCount === 1 ? 'course' : 'courses'}
                       </div>
                     </div>
-                    })}
-                </div>
-              )}
-            </>
+                    <div className="flex flex-1 flex-col p-7">
+                      <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+                        {grade.name}
+                      </h3>
+                      <p className="mt-4 flex flex-1 items-center gap-2 text-[15px] leading-relaxed text-slate-600">
+                        <Users className="h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
+                        Enrolled students: {enrolledTotal.toLocaleString()}
+                      </p>
+                      <Link
+                        to={`/programs/level/${grade.id}`}
+                        aria-label={`View classes in level ${grade.name}`}
+                        className="mt-6 block w-full rounded-2xl bg-brand-500 px-4 py-3 text-center text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-brand-600"
+                      >
+                        View classes
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           )}
         </div>
       </section>
 
-      <AppDrawer
-        open={showCheckoutModal}
-        onClose={() => {
-          setShowCheckoutModal(false);
-          setPaymentStatus('IDLE');
-          setPaypackRef(null);
-        }}
-        title={`${selectedPlan.name} plan`}
-        description="Activate your plan with MoMo. Your selected classes stay under the same 3-slot limit."
-      >
-        {paymentStatus === 'IDLE' ? (
-          <form
-            className="space-y-6"
-            onSubmit={(event) => {
-              event.preventDefault();
-              checkoutMutation.mutate({
-                planId: selectedPlan.id,
-                phoneNumber,
-              });
-            }}
-          >
-            <div className="rounded-2xl bg-brand-50 p-6">
-              <div className="flex justify-between text-sm font-medium text-slate-600">
-                <span>Plan</span>
-                <span>{selectedPlan.name}</span>
-              </div>
-              <div className="mt-2 flex justify-between border-t border-brand-100 pt-3 text-lg font-bold text-brand-800">
-                <span>Amount</span>
-                <span>{selectedPlan.price.toLocaleString()} RWF</span>
-              </div>
-              <p className="mt-2 text-xs text-slate-500">
-                After payment, choose up to 3 academy classes. Renewing extends the same selected
-                set until you change it.
-              </p>
-            </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-bold text-slate-800">
-                MoMo phone number
-              </label>
-              <input
-                type="tel"
-                required
-                placeholder="e.g. 078XXXXXXX"
-                className="w-full rounded-xl border border-brand-200 px-4 py-3 text-lg outline-none ring-brand-500 transition focus:ring-2"
-                value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
-              />
-            </div>
 
-            <button
-              type="submit"
-              disabled={checkoutMutation.isPending}
-              className="w-full rounded-xl bg-brand-500 py-4 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-brand-500/20 transition hover:bg-brand-600 disabled:opacity-50"
-            >
-              {checkoutMutation.isPending ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Initiating...
-                </span>
-              ) : (
-                `Pay ${selectedPlan.price.toLocaleString()} RWF`
-              )}
-            </button>
-          </form>
-        ) : paymentStatus === 'PENDING' ? (
-          <div className="flex flex-col items-center py-10 text-center">
-            <div className="relative">
-              <div className="absolute inset-0 animate-ping rounded-full bg-brand-500/20" />
-              <Loader2 className="relative h-16 w-16 animate-spin text-brand-500" />
-            </div>
-            <h3 className="mt-8 text-xl font-bold text-slate-900">Waiting for confirmation</h3>
-            <p className="mt-4 max-w-xs text-slate-600">
-              Confirm the MoMo request on your phone. Once payment succeeds, your plan will activate
-              here automatically.
-            </p>
-          </div>
-        ) : paymentStatus === 'SUCCESS' ? (
-          <div className="flex flex-col items-center py-10 text-center">
-            <div className="rounded-full bg-success-50 p-4">
-              <CheckCircle2 className="h-16 w-16 text-success-500" />
-            </div>
-            <h3 className="mt-8 text-2xl font-bold text-slate-900">Plan activated</h3>
-            <p className="mt-4 text-slate-600">
-              Your academy plan is now active. Close this window and choose up to 3 classes from the
-              catalog below.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setShowCheckoutModal(false);
-                setPaymentStatus('IDLE');
-                setPaypackRef(null);
-              }}
-              className="mt-10 rounded-xl bg-brand-500 px-8 py-3 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-brand-600"
-            >
-              Continue
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center py-10 text-center">
-            <h3 className="text-xl font-bold text-slate-900">Payment failed</h3>
-            <p className="mt-4 text-slate-600">We could not activate the plan. Please try again.</p>
-            <button
-              type="button"
-              onClick={() => setPaymentStatus('IDLE')}
-              className="mt-10 rounded-xl bg-slate-900 px-8 py-3 text-sm font-bold uppercase tracking-widest text-white"
-            >
-              Try again
-            </button>
-          </div>
-        )}
-      </AppDrawer>
 
-      <AppDrawer
-        open={showDetailsModal}
-        onClose={() => setShowDetailsModal(false)}
-        title={selectedClass?.name || 'Class details'}
-        description="Review this academy class before adding it to your plan."
-      >
-        <div className="space-y-6">
-          <div className="aspect-video w-full overflow-hidden rounded-2xl bg-slate-100">
-            <img
-              src={selectedClass ? cardImage(selectedClass) : undefined}
-              alt={selectedClass?.name}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-            <p className="font-semibold text-slate-900">Grade</p>
-            <p className="mt-1">{selectedClass?.gradeLevelName}</p>
-            <p className="mt-4 font-semibold text-slate-900">Subjects included</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(selectedClass?.subjects ?? []).map((subject) => (
-                <span
-                  key={subject.id}
-                  className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
-                >
-                  {subject.name} ({subject.courseCount})
-                </span>
-              ))}
-            </div>
-          </div>
-          {selectedClass ? (
-            <button
-              type="button"
-              onClick={() => {
-                setShowDetailsModal(false);
-                handleClassAction(selectedClass);
-              }}
-              className="w-full rounded-2xl bg-brand-500 py-4 text-sm font-black uppercase tracking-widest text-white transition hover:bg-brand-600"
-            >
-              {accessibleClassesById.get(selectedClass.id) ? 'Enter class' : 'Use this class'}
-            </button>
-          ) : null}
-        </div>
-      </AppDrawer>
     </main>
   );
 }

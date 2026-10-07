@@ -32,7 +32,7 @@ export function PublicHeader() {
   const publicNav = [
     { to: '/', label: t('header.home'), end: true },
     { to: '/about', label: t('header.about') },
-    { to: '/courses', label: t('header.programs') },
+    { to: '/programs#enroll', label: t('header.programs') },
     { to: '/contact', label: t('header.contact') },
   ];
 

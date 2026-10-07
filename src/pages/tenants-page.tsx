@@ -650,7 +650,7 @@ export function TenantsPage() {
               <span>
                 <span className="font-semibold text-slate-900">Public academy catalog school</span>
                 <span className="mt-1 block text-xs text-slate-500">
-                  Only one school should hold this role. Programs here appear on /academy for the
+                  Only one school should hold this role. Programs here appear on /programs for the
                   whole platform.
                 </span>
               </span>
@@ -842,7 +842,7 @@ function SchoolDetailView({ detail }: { detail: SchoolDetail }) {
         <DetailBlock label="School code" value={detail.code} mono />
         <DetailBlock
           label="Academy catalog"
-          value={detail.isAcademyCatalog ? 'Yes — programs listed on /academy' : 'No'}
+          value={detail.isAcademyCatalog ? 'Yes — programs listed on /programs' : 'No'}
         />
         <DetailBlock label="Workspace name" value={detail.name} />
         <DetailBlock label="Display name" value={detail.school?.displayName ?? '-'} />

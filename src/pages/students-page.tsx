@@ -565,20 +565,22 @@ export function StudentsPage() {
           >
             {exportMutation.isPending ? 'Exporting...' : 'Export Excel'}
           </button>
-          <button
-            type="button"
-            onClick={openExcelPicker}
-            disabled={
-              isImporting || previewImportMutation.isPending || commitImportMutation.isPending
-            }
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
-          >
-            {isImporting
-              ? 'Reading Excel...'
-              : previewImportMutation.isPending
-                ? 'Preparing preview...'
-                : 'Upload Excel'}
-          </button>
+          {hasPermission(auth.me, 'students.manage') ? (
+            <button
+              type="button"
+              onClick={openExcelPicker}
+              disabled={
+                isImporting || previewImportMutation.isPending || commitImportMutation.isPending
+              }
+              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            >
+              {isImporting
+                ? 'Reading Excel...'
+                : previewImportMutation.isPending
+                  ? 'Preparing preview...'
+                  : 'Upload Excel'}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => void downloadTemplate()}
@@ -586,13 +588,15 @@ export function StudentsPage() {
           >
             Template Excel
           </button>
-          <button
-            type="button"
-            onClick={openCreateStudent}
-            className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-          >
-            Add student
-          </button>
+          {hasPermission(auth.me, 'students.manage') ? (
+            <button
+              type="button"
+              onClick={openCreateStudent}
+              className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+            >
+              Add student
+            </button>
+          ) : null}
         </div>
       }
     >
@@ -660,7 +664,11 @@ export function StudentsPage() {
           }
           onRetry={() => void studentsQuery.refetch()}
           emptyTitle="No students found"
-          emptyDescription="Add one manually or import Excel."
+          emptyDescription={
+            hasPermission(auth.me, 'students.manage')
+              ? 'Add one manually or import Excel.'
+              : 'No students match the current filters.'
+          }
           pagination={{
             page: pagination.page,
             pageSize: pagination.pageSize,
@@ -684,25 +692,29 @@ export function StudentsPage() {
                   Conduct
                 </Link>
               ) : null}
-              <button
-                type="button"
-                onClick={() => openEditStudent(student)}
-                className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-brand-100"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setStudentToDelete({
-                    id: student.id,
-                    name: `${student.firstName} ${student.lastName}`,
-                  })
-                }
-                className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-              >
-                Delete
-              </button>
+              {hasPermission(auth.me, 'students.manage') ? (
+                <button
+                  type="button"
+                  onClick={() => openEditStudent(student)}
+                  className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-brand-100"
+                >
+                  Edit
+                </button>
+              ) : null}
+              {hasPermission(auth.me, 'students.manage') ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setStudentToDelete({
+                      id: student.id,
+                      name: `${student.firstName} ${student.lastName}`,
+                    })
+                  }
+                  className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                >
+                  Delete
+                </button>
+              ) : null}
             </div>
           )}
           minWidth={860}
@@ -712,7 +724,7 @@ export function StudentsPage() {
         </div>
 
       <DrawerForm
-        open={isStudentModalOpen}
+        open={hasPermission(auth.me, 'students.manage') && isStudentModalOpen}
         title={editingStudent ? 'Edit Student' : 'Add Student'}
         onClose={() => {
           setIsStudentModalOpen(false);

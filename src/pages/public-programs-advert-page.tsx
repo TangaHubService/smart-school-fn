@@ -1,11 +1,27 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
 import backgroundImage from '../asset/background.jpg';
-import { PublicAcademyProgramsShowcase } from '../components/public/public-academy-showcase';
 import { PublicCommunityCTA } from '../components/public/public-community-cta';
+import { PublicAcademyPage } from './public-academy-page';
 
 export function PublicProgramsAdvertPage() {
+  const location = useLocation();
+
+  // Hash entries (#academy-levels, #enroll) jump straight to that section so
+  // navigation continues from the right place, including on first load.
+  useEffect(() => {
+    if (!location.hash) {
+      return;
+    }
+    const id = location.hash.replace('#', '');
+    const timer = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [location.hash, location.pathname]);
+
   return (
     <main className="bg-white">
       <section
@@ -14,6 +30,19 @@ export function PublicProgramsAdvertPage() {
       >
         <div className="absolute inset-0 bg-slate-950/75" />
         <div className="relative mx-auto w-full max-w-4xl px-4 py-16 text-center sm:px-6 lg:px-8">
+          <nav aria-label="Breadcrumb" className="mb-4 flex justify-center">
+            <ol className="flex items-center gap-1 text-xs font-semibold text-white/70">
+              <li>
+                <Link to="/" className="rounded hover:text-white hover:underline">
+                  Home
+                </Link>
+              </li>
+              <li aria-hidden="true">/</li>
+              <li aria-current="page" className="text-white">
+                Programs
+              </li>
+            </ol>
+          </nav>
           <p className="mb-4 text-[11px] font-black uppercase tracking-[0.28em] text-brand-200">
             Smart School
           </p>
@@ -21,37 +50,29 @@ export function PublicProgramsAdvertPage() {
             Program catalog
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base font-medium text-white/90 sm:text-lg">
-            Browse every public program from our academy catalog. Enroll and pay securely on the
-            academy page.
+            Browse every public program, activate a plan, then enroll in up to 3 classes. Each
+            enrolled class unlocks every subject, course, and lesson inside it.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <a
-              href="#catalog"
+              href="#enroll"
               className="inline-flex items-center gap-2 rounded-2xl bg-brand-500 px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-brand-900/30 transition hover:bg-brand-400"
             >
               View programs
               <ArrowRight className="h-4 w-4" />
             </a>
-            <Link
-              to="/academy"
+            <a
+              href="#enroll"
               className="rounded-2xl border border-white/25 bg-white/10 px-8 py-4 text-xs font-black uppercase tracking-widest text-white backdrop-blur-sm transition hover:bg-white/20"
             >
-              Go to academy
-            </Link>
+              Enroll in a class
+            </a>
           </div>
         </div>
       </section>
 
-      <div id="catalog">
-        <PublicAcademyProgramsShowcase
-          eyebrow="Live listings"
-          title="All public programs"
-          subtitle="Same data as the API and the academy checkout—ideal for ads, QR codes, and shared links."
-          limit={null}
-          ctaHref="/academy"
-          ctaLabel="Open academy to enroll"
-          className="pt-12 pb-8"
-        />
+      <div id="enroll">
+        <PublicAcademyPage hideHero />
       </div>
 
       <PublicCommunityCTA />

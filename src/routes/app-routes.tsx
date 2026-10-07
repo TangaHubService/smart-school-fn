@@ -64,11 +64,12 @@ import { StudentConductProfilePage } from '../pages/student-conduct-profile-page
 import { MyLearningPage } from '../pages/my-learning-page';
 import { StudentDashboardPage } from '../pages/student-dashboard-page';
 import { PublicHomePage } from '../pages/public-home-page';
-import { PublicAcademyPage } from '../pages/public-academy-page';
 import { PublicAboutPage } from '../pages/public-about-page';
 import { PublicContactPage } from '../pages/public-contact-page';
-import { PublicCoursesPage } from '../pages/public-courses-page';
 import { PublicProgramsAdvertPage } from '../pages/public-programs-advert-page';
+import { PublicLevelGroupPage } from '../pages/public-level-group-page';
+import { PublicGradePage } from '../pages/public-grade-page';
+import { PublicClassPage } from '../pages/public-class-page';
 
 import { PrivacyPage } from '../pages/privacy-page';
 import { TermsPage } from '../pages/terms-page';
@@ -87,16 +88,19 @@ export function AppRoutes() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route path="/" element={<PublicHomePage />} />
-        <Route path="/platform" element={<Navigate to="/courses" replace />} />
+        <Route path="/platform" element={<Navigate to="/programs#enroll" replace />} />
         <Route path="/about" element={<PublicAboutPage />} />
-        <Route path="/academy" element={<PublicAcademyPage />} />
+        <Route path="/academy" element={<Navigate to="/programs#academy-levels" replace />} />
         <Route path="/programs" element={<PublicProgramsAdvertPage />} />
+        <Route path="/programs/group/:bandKey" element={<PublicLevelGroupPage />} />
+        <Route path="/programs/level/:gradeId" element={<PublicGradePage />} />
+        <Route path="/programs/class/:classId" element={<PublicClassPage />} />
         <Route path="/advert" element={<PublicProgramsAdvertPage />} />
-        <Route path="/courses" element={<PublicCoursesPage />} />
-        <Route path="/courses/all" element={<PublicCoursesPage />} />
-        <Route path="/courses/categories" element={<PublicCoursesPage />} />
-        <Route path="/courses/category/:categoryId" element={<PublicCoursesPage />} />
-        <Route path="/tuition" element={<Navigate to="/academy" replace />} />
+        <Route path="/courses" element={<Navigate to="/programs#enroll" replace />} />
+        <Route path="/courses/all" element={<Navigate to="/programs#enroll" replace />} />
+        <Route path="/courses/categories" element={<Navigate to="/programs#enroll" replace />} />
+        <Route path="/courses/category/:categoryId" element={<Navigate to="/programs#enroll" replace />} />
+        <Route path="/tuition" element={<Navigate to="/programs#academy-levels" replace />} />
 
         <Route path="/contact" element={<PublicContactPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />

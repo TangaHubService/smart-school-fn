@@ -78,6 +78,17 @@ export interface CourseSubjectOption {
   name: string;
 }
 
+export interface SectionItem {
+  id: string;
+  title: string;
+  sortOrder: number;
+  isPublished: boolean;
+  publishedAt: string | null;
+  lessonCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface LessonItem {
   id: string;
   title: string;
@@ -86,6 +97,8 @@ export interface LessonItem {
   body: string | null;
   externalUrl: string | null;
   sequence: number;
+  sectionId: string | null;
+  section: { id: string; title: string } | null;
   isPublished: boolean;
   publishedAt: string | null;
   mustPassAssessmentId?: string | null;
@@ -169,6 +182,24 @@ export interface CourseListResponse {
   };
 }
 
+export interface CourseSectionDetail {
+  id: string;
+  title: string;
+  sortOrder: number;
+  isPublished: boolean;
+  publishedAt: string | null;
+  lessonCount: number;
+  createdAt: string;
+  updatedAt: string;
+  lessons: Array<{
+    id: string;
+    title: string;
+    sequence: number;
+    contentType: LessonContentType;
+    isPublished: boolean;
+  }>;
+}
+
 export interface CourseDetailResponse {
   course: CourseSummary;
   lessons: {
@@ -180,6 +211,7 @@ export interface CourseDetailResponse {
       totalPages: number;
     };
   };
+  sections: CourseSectionDetail[];
   assignments: AssignmentItem[];
 }
 
@@ -218,6 +250,7 @@ export interface MyCoursesResponse {
   items: Array<
     CourseSummary & {
       lessons: LessonItem[];
+      sections: Array<{ id: string; title: string; sortOrder: number }>;
       assignments: Array<AssignmentItem & { mySubmission: SubmissionItem | null }>;
       assessments: CourseAssessmentItem[];
       completedLessonIds: string[];
@@ -435,6 +468,7 @@ export function createLessonApi(
     body?: string;
     externalUrl?: string;
     sequence?: number;
+    sectionId?: string;
     asset?: UploadedAssetPayload;
   }
 ) {
@@ -455,6 +489,7 @@ export function updateLessonApi(
     body?: string | null;
     externalUrl?: string | null;
     sequence?: number;
+    sectionId?: string | null;
     asset?: UploadedAssetPayload;
     removeAsset?: boolean;
   }
@@ -463,6 +498,60 @@ export function updateLessonApi(
     method: 'PATCH',
     accessToken,
     body: payload,
+  });
+}
+
+export function listSectionsApi(accessToken: string, courseId: string) {
+  return apiRequest<SectionItem[]>(`/courses/${courseId}/sections`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export function createSectionApi(
+  accessToken: string,
+  courseId: string,
+  payload: { title: string; sortOrder?: number }
+) {
+  return apiRequest<SectionItem>(`/courses/${courseId}/sections`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function updateSectionApi(
+  accessToken: string,
+  sectionId: string,
+  payload: { title?: string; sortOrder?: number }
+) {
+  return apiRequest<SectionItem>(`/sections/${sectionId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function deleteSectionApi(accessToken: string, sectionId: string) {
+  return apiRequest<{ id: string; deleted: boolean }>(`/sections/${sectionId}`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}
+
+export function reorderSectionsApi(accessToken: string, courseId: string, order: string[]) {
+  return apiRequest<SectionItem[]>(`/courses/${courseId}/sections/reorder`, {
+    method: 'PATCH',
+    accessToken,
+    body: { order },
+  });
+}
+
+export function publishSectionApi(accessToken: string, sectionId: string, isPublished: boolean) {
+  return apiRequest<SectionItem>(`/sections/${sectionId}/publish`, {
+    method: 'PATCH',
+    accessToken,
+    body: { isPublished },
   });
 }
 

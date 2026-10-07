@@ -167,7 +167,7 @@ export function PublicHomePage() {
               </p>
               <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
                 <Link
-                  to="/login?tab=register&returnTo=/academy"
+                  to="/login?tab=register&returnTo=/programs"
                   className="rounded-full bg-white px-9 py-3 text-xs font-black uppercase tracking-[0.14em] text-brand-600"
                 >
                   Create account now

@@ -137,19 +137,19 @@ export function PublicCoursesPage() {
             Welcome to Smart School Rwanda After Class Programs
           </h1>
           <p className="mx-auto mt-6 hidden max-w-3xl text-lg font-medium text-gray-100 md:block">
-            Explore academy programs by class or subject, then activate a plan on the academy page
-            and choose the 3 subjects you want to access.
+            Explore programs by class or subject, then activate a plan on the programs page
+            and enroll in the 3 classes you want to access.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
-              to="/academy"
+              to="/programs#enroll"
               className="group flex items-center gap-2 rounded-2xl bg-brand-500 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-brand-500/20 transition hover:bg-brand-600"
             >
-              Academy plans
+              Program plans
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
-              to="/login?tab=register&returnTo=/academy"
+              to="/login?tab=register&returnTo=/programs"
               className="rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-white backdrop-blur-md transition hover:bg-white/20"
             >
               Create learner account

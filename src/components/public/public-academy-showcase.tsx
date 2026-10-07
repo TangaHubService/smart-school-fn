@@ -14,6 +14,14 @@ function programImage(program: Program) {
 
 function ProgramAdvertCard({ program }: { program: Program }) {
   const desc = program.description?.trim() || 'Open enrollment — start anytime.';
+  const countParts: string[] = [];
+  if (program.className?.trim()) countParts.push(program.className.trim());
+  if (program.classSubjectCount !== undefined && program.classSubjectCount !== null) {
+    countParts.push(`${program.classSubjectCount} ${program.classSubjectCount === 1 ? 'subject' : 'subjects'}`);
+  }
+  if (program.classCourseCount !== undefined && program.classCourseCount !== null) {
+    countParts.push(`${program.classCourseCount} ${program.classCourseCount === 1 ? 'course' : 'courses'}`);
+  }
   return (
     <article className="group flex min-w-[280px] max-w-sm flex-shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-[0_28px_60px_rgba(30,90,168,0.12)] sm:min-w-0 sm:max-w-none">
       <div className="relative aspect-[16/10] overflow-hidden bg-slate-900">
@@ -26,14 +34,17 @@ function ProgramAdvertCard({ program }: { program: Program }) {
       </div>
       <div className="flex flex-1 flex-col p-6">
         <h3 className="text-lg font-bold tracking-tight text-slate-900">{program.title}</h3>
+        {countParts.length ? (
+          <p className="mt-1 text-xs font-semibold text-slate-500">{countParts.join(' · ')}</p>
+        ) : null}
         <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-slate-600">{desc}</p>
         <div className="mt-4 flex items-center justify-end gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
           <Link
-            to={`/academy`}
+            to="/programs#enroll"
             state={{ highlightClassRoomId: program.classRoomId }}
             className="inline-flex items-center gap-1 font-black uppercase tracking-wider text-brand-600 hover:text-brand-700"
           >
-            Enroll
+            Enroll in class
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -66,8 +77,8 @@ export function PublicAcademyProgramsShowcase({
   title,
   subtitle,
   limit,
-  ctaHref = '/academy',
-  ctaLabel = 'View full catalog',
+  ctaHref = '/programs#enroll',
+  ctaLabel = 'Enroll in a class',
   className = '',
   programs: programsProp,
   programsLoading: programsLoadingProp,
@@ -98,13 +109,13 @@ export function PublicAcademyProgramsShowcase({
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-10 text-center backdrop-blur-sm">
             <p className="text-sm text-white/80">
-              {emptyMessage ?? 'Programs from your academy catalog will appear here for visitors.'}
+              {emptyMessage ?? 'Programs from your public catalog will appear here for visitors.'}
             </p>
             <Link
               to={ctaHref}
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-brand-400"
             >
-              Open academy
+              {ctaLabel}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

@@ -29,6 +29,7 @@ export interface AcademyCatalogClassRoom {
   programId: string;
   price: number;
   thumbnail: string | null;
+  enrolledCount: number;
   subjects: AcademyCatalogSubject[];
 }
 
@@ -37,6 +38,64 @@ export interface AcademyCatalogGradeLevel {
   name: string;
   rank: number;
   classRooms: AcademyCatalogClassRoom[];
+}
+
+export interface CatalogLevelBand {
+  key: string;
+  title: string;
+  subtitle: string;
+  grades: AcademyCatalogGradeLevel[];
+  classes: number;
+  courses: number;
+  enrolled: number;
+  thumbnail: string | null;
+}
+
+/**
+ * Split catalog grades (already scoped to one academic year) into lower/upper
+ * level bands by rank. Titles adapt to primary naming, with a generic fallback.
+ */
+export function splitCatalogGradesIntoBands(
+  grades: AcademyCatalogGradeLevel[]
+): CatalogLevelBand[] {
+  const sorted = [...grades].sort((a, b) => a.rank - b.rank);
+  if (!sorted.length) return [];
+  const mid = Math.ceil(sorted.length / 2);
+  const groups = [sorted.slice(0, mid), sorted.slice(mid)].filter((list) => list.length > 0);
+  const isPrimary = sorted.every((grade) => /primary/i.test(grade.name));
+  return groups.map((bandGrades, index) => {
+    const first = bandGrades[0].name;
+    const last = bandGrades[bandGrades.length - 1].name;
+    const classes = bandGrades.reduce((sum, grade) => sum + grade.classRooms.length, 0);
+    const courses = bandGrades.reduce(
+      (sum, grade) =>
+        sum +
+        grade.classRooms.reduce(
+          (inner, room) =>
+            inner + room.subjects.reduce((total, subject) => total + subject.courseCount, 0),
+          0
+        ),
+      0
+    );
+    const enrolled = bandGrades.reduce(
+      (sum, grade) =>
+        sum + grade.classRooms.reduce((inner, room) => inner + (room.enrolledCount ?? 0), 0),
+      0
+    );
+    const thumbnail =
+      bandGrades.flatMap((grade) => grade.classRooms).find((room) => room.thumbnail?.trim())
+        ?.thumbnail ?? null;
+    return {
+      key: index === 0 ? 'lower' : 'upper',
+      title: isPrimary ? (index === 0 ? 'Lower Primary' : 'Upper Primary') : `Levels ${first} – ${last}`,
+      subtitle: bandGrades.map((grade) => grade.name).join(' · '),
+      grades: bandGrades,
+      classes,
+      courses,
+      enrolled,
+      thumbnail,
+    };
+  });
 }
 
 export interface AcademyCatalogAcademicYear {
@@ -79,6 +138,74 @@ export interface ProgramContentResponse {
 }
 
 export type AcademyPlanId = 'trial' | 'test' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+export const ACADEMY_PLANS = [
+  {
+    id: 'test',
+    name: 'Test',
+    durationDays: 1,
+    price: 100,
+    description: 'Quick verification plan for checkout and payment flow testing.',
+  },
+  {
+    id: 'weekly',
+    name: 'Weekly',
+    durationDays: 7,
+    price: 2000,
+    description: 'Short sprint for focused revision and fast starts.',
+  },
+  {
+    id: 'monthly',
+    name: 'Monthly',
+    durationDays: 30,
+    price: 5000,
+    description: 'The balanced option for consistent learning and practice.',
+  },
+  {
+    id: 'quarterly',
+    name: 'Quarterly',
+    durationDays: 90,
+    price: 10000,
+    description: 'Longer runway for deeper progress across your selected classes.',
+  },
+  {
+    id: 'yearly',
+    name: 'Yearly',
+    durationDays: 365,
+    price: 30000,
+    description: 'Best value for extended access and uninterrupted momentum.',
+  },
+] as const satisfies Array<{
+  id: Exclude<AcademyPlanId, 'trial'>;
+  name: string;
+  durationDays: number;
+  price: number;
+  description: string;
+}>;
+
+export type PurchasableAcademyPlan = (typeof ACADEMY_PLANS)[number];
+
+/** Widened plan shape for backend-driven rates (ids match the plan union). */
+export interface AcademyPlanOption {
+  id: Exclude<AcademyPlanId, 'trial'>;
+  name: string;
+  durationDays: number;
+  price: number;
+  description: string;
+}
+
+/** Display copy only — prices and durations always come from GET /public-academy/plans. */
+export const PLAN_DESCRIPTIONS: Record<string, string> = {
+  test: 'Quick verification plan for checkout and payment flow testing.',
+  weekly: 'Short sprint for focused revision and fast starts.',
+  monthly: 'The balanced option for consistent learning and practice.',
+  quarterly: 'Longer runway for deeper progress across your selected classes.',
+  yearly: 'Best value for extended access and uninterrupted momentum.',
+};
+
+export function isPurchasablePlanId(value: string | null): value is PurchasableAcademyPlan['id'] {
+  return ACADEMY_PLANS.some((plan) => plan.id === value);
+}
 export type AcademySubscriptionStatus =
   | 'TRIAL'
   | 'ACTIVE'

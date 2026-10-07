@@ -1,7 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Award,
+  BookOpen,
+  ChevronRight,
+  GraduationCap,
+  Layers,
+  School,
+  Sparkles,
+} from 'lucide-react';
 import { ReactNode, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import { z } from 'zod';
 
 import { ConfirmDrawer } from '../components/confirm-drawer';
@@ -34,6 +44,7 @@ import {
   updateSubjectApi,
   updateTermApi,
 } from '../features/sprint1/sprint1.api';
+import { listCoursesApi } from '../features/sprint4/lms.api';
 
 const academicYearSchema = z.object({
   name: z.string().trim().min(2),
@@ -151,6 +162,12 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Hierarchy drill-down state: Grade -> Class -> Subject/Course.
+  // Null means "list" level. Kept in-component so back/forward stays local
+  // and existing route permissions are untouched.
+  const [selectedGradeId, setSelectedGradeId] = useState<string | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+
   const showAcademicYears = focus === 'all' || focus === 'academic-years';
   const showClasses = focus === 'all' || focus === 'classes';
   const showSubjects = focus === 'all' || focus === 'subjects';
@@ -183,6 +200,19 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     queryKey: ['subjects'],
     queryFn: () => listSubjectsApi(auth.accessToken!),
     enabled: showSubjects,
+  });
+
+  // Courses for the selected class only — used to derive Subject -> Course
+  // grouping without changing any existing list behaviour.
+  const classCoursesQuery = useQuery({
+    queryKey: ['lms', 'courses', 'academics-hierarchy', selectedClassId],
+    queryFn: () =>
+      listCoursesApi(auth.accessToken!, {
+        classId: selectedClassId ?? undefined,
+        page: 1,
+        pageSize: 100,
+      }),
+    enabled: showClasses && Boolean(selectedClassId && auth.accessToken),
   });
 
   const yearForm = useForm<AcademicYearForm>({
@@ -348,6 +378,11 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
 
   const yearNameMap = useMemo(() => new Map(years.map((year) => [year.id, year.name])), [years]);
 
+  const sortedGrades = useMemo(
+    () => [...gradeLevels].sort((a, b) => Number(a.rank ?? 0) - Number(b.rank ?? 0)),
+    [gradeLevels]
+  );
+
   const filteredYears = useMemo(() => {
     const query = yearFilter.trim().toLowerCase();
     if (!query) {
@@ -376,14 +411,15 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
 
   const filteredGradeLevels = useMemo(() => {
     const query = gradeFilter.trim().toLowerCase();
+    const base = [...sortedGrades];
     if (!query) {
-      return gradeLevels;
+      return base;
     }
 
-    return gradeLevels.filter((level) =>
+    return base.filter((level) =>
       `${level.code} ${level.name} ${level.rank}`.toLowerCase().includes(query)
     );
-  }, [gradeLevels, gradeFilter]);
+  }, [sortedGrades, gradeFilter]);
 
   const filteredClassRooms = useMemo(() => {
     const query = classFilter.trim().toLowerCase();
@@ -408,6 +444,53 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         .includes(query)
     );
   }, [subjects, subjectFilter]);
+
+  // --- Hierarchy derivations (no new endpoints, client-side grouping) ---
+  const classesByGradeId = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const room of classRooms) {
+      const key = room.gradeLevelId ?? room.gradeLevel?.id ?? 'unassigned';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(room);
+    }
+    return map;
+  }, [classRooms]);
+
+  const selectedGrade = useMemo(
+    () => gradeLevels.find((level: any) => level.id === selectedGradeId) ?? null,
+    [gradeLevels, selectedGradeId]
+  );
+
+  const selectedClass = useMemo(
+    () => classRooms.find((room: any) => room.id === selectedClassId) ?? null,
+    [classRooms, selectedClassId]
+  );
+
+  const classesForSelectedGrade = useMemo(() => {
+    if (!selectedGradeId) return [];
+    const query = classFilter.trim().toLowerCase();
+    const rooms = classesByGradeId.get(selectedGradeId) ?? [];
+    if (!query) return rooms;
+    return rooms.filter((room: any) =>
+      `${room.code} ${room.name}`.toLowerCase().includes(query)
+    );
+  }, [classesByGradeId, selectedGradeId, classFilter]);
+
+  const classCourses = useMemo(
+    () => (classCoursesQuery.data as any)?.items ?? [],
+    [classCoursesQuery.data]
+  );
+
+  const subjectsForSelectedClass = useMemo(() => {
+    const groups = new Map<string, { id: string; name: string; courses: any[] }>();
+    for (const course of classCourses) {
+      const key = course.subject?.id ?? 'general';
+      const name = course.subject?.name ?? 'General studies';
+      if (!groups.has(key)) groups.set(key, { id: key, name, courses: [] });
+      groups.get(key)!.courses.push(course);
+    }
+    return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [classCourses]);
 
   function openAddYear() {
     setEditingYearId(null);
@@ -463,13 +546,33 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     setIsGradeModalOpen(true);
   }
 
-  function openAddClass() {
+  function openAddClass(presetGradeId?: string) {
     setEditingClassId(null);
     classForm.reset({
       ...classDefaults,
-      gradeLevelId: gradeLevels[0]?.id ?? '',
+      // Same behaviour everywhere: when launched inside a grade context,
+      // pre-fill (and lock) that grade; otherwise fall back to first grade.
+      gradeLevelId: presetGradeId ?? selectedGradeId ?? gradeLevels[0]?.id ?? '',
     });
     setIsClassModalOpen(true);
+  }
+
+  function selectGrade(gradeId: string) {
+    setSelectedGradeId(gradeId);
+    setSelectedClassId(null);
+  }
+
+  function selectClass(classId: string) {
+    setSelectedClassId(classId);
+  }
+
+  function backToGrades() {
+    setSelectedGradeId(null);
+    setSelectedClassId(null);
+  }
+
+  function backToClasses() {
+    setSelectedClassId(null);
   }
 
   function openEditClass(room: any) {
@@ -663,116 +766,311 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
       ) : null}
 
       {showClasses ? (
-        <>
-          <SectionCard
-            title="Grade Levels"
-            subtitle="List, update, and softly delete grade levels."
-            action={
+        <SectionCard
+          title="Grades and classes"
+          subtitle="Browse grade levels, open a grade to see its classes, then open a class to see subjects and courses."
+          action={
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={openAddGradeLevel}
-                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
               >
                 Add grade level
               </button>
-            }
-          >
-            <FilterInput
-              value={gradeFilter}
-              onChange={setGradeFilter}
-              placeholder="Filter by code, name, rank"
-              label="Filter grade levels"
-            />
-
-            {gradeLevelsQuery.isPending ? <LoadingRows /> : null}
-            {gradeLevelsQuery.isError ? (
-              <StateView
-                title="Could not load grade levels"
-                message="Please retry."
-                action={
-                  <button
-                    type="button"
-                    onClick={() => void gradeLevelsQuery.refetch()}
-                    className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-                  >
-                    Retry
-                  </button>
-                }
-              />
-            ) : null}
-
-            {!gradeLevelsQuery.isPending && !gradeLevelsQuery.isError ? (
-              <SimpleTable
-                columns={['Code', 'Name', 'Rank', 'Actions']}
-                rows={filteredGradeLevels.map((level) => [
-                  level.code,
-                  level.name,
-                  level.rank,
-                  <ActionButtons
-                    onEdit={() => openEditGradeLevel(level)}
-                    onDelete={() => requestDelete('gradeLevel', level.id, level.name)}
-                  />,
-                ])}
-                emptyMessage="No grade levels found."
-              />
-            ) : null}
-          </SectionCard>
-
-          <SectionCard
-            title="Classes"
-            subtitle="List, update, and softly delete classes."
-            action={
               <button
                 type="button"
-                onClick={openAddClass}
+                onClick={() => openAddClass()}
                 className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
               >
                 Add class
               </button>
+            </div>
+          }
+        >
+          <HierarchyBreadcrumbs
+            trail={
+              selectedClass && selectedGrade
+                ? [
+                    { label: 'Grades', onSelect: backToGrades },
+                    { label: selectedGrade.name, onSelect: backToClasses },
+                    { label: selectedClass.name },
+                  ]
+                : selectedGrade
+                  ? [
+                      { label: 'Grades', onSelect: backToGrades },
+                      { label: selectedGrade.name },
+                    ]
+                  : [{ label: 'Grades' }]
             }
-          >
-            <FilterInput
-              value={classFilter}
-              onChange={setClassFilter}
-              placeholder="Filter by class code, name, grade"
-              label="Filter classes"
+          />
+
+          {(gradeLevelsQuery.isPending || classRoomsQuery.isPending) && <LoadingRows />}
+          {gradeLevelsQuery.isError || classRoomsQuery.isError ? (
+            <StateView
+              title="Could not load grades or classes"
+              message="Please retry."
+              action={
+                <button
+                  type="button"
+                  onClick={() => {
+                    void gradeLevelsQuery.refetch();
+                    void classRoomsQuery.refetch();
+                  }}
+                  className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                >
+                  Retry
+                </button>
+              }
             />
+          ) : null}
 
-            {classRoomsQuery.isPending ? <LoadingRows /> : null}
-            {classRoomsQuery.isError ? (
-              <StateView
-                title="Could not load classes"
-                message="Please retry."
-                action={
-                  <button
-                    type="button"
-                    onClick={() => void classRoomsQuery.refetch()}
-                    className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-                  >
-                    Retry
-                  </button>
-                }
-              />
-            ) : null}
+          {!gradeLevelsQuery.isPending &&
+          !gradeLevelsQuery.isError &&
+          !classRoomsQuery.isPending &&
+          !classRoomsQuery.isError ? (
+            <>
+              {!selectedGrade ? (
+                <>
+                  <FilterInput
+                    value={gradeFilter}
+                    onChange={setGradeFilter}
+                    placeholder="Filter by code, name, rank"
+                    label="Filter grade levels"
+                  />
+                  {filteredGradeLevels.length ? (
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {filteredGradeLevels.map((level: any, index: number) => {
+                        const rooms = classesByGradeId.get(level.id) ?? [];
+                        return (
+                          <GradeCard
+                            key={level.id}
+                            iconIndex={index}
+                            title={level.name}
+                            code={level.code}
+                            countLabel={`${rooms.length} ${rooms.length === 1 ? 'class' : 'classes'}`}
+                            emptyHint={
+                              rooms.length
+                                ? undefined
+                                : 'No classes yet — open this grade to add the first class.'
+                            }
+                            onOpen={() => selectGrade(level.id)}
+                            onEdit={() => openEditGradeLevel(level)}
+                            onDelete={() =>
+                              requestDelete('gradeLevel', level.id, level.name)
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="No grade levels found"
+                      message="Add the first grade level to start organising classes, subjects, and courses."
+                      action={
+                        <button
+                          type="button"
+                          onClick={openAddGradeLevel}
+                          className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                        >
+                          Add grade level
+                        </button>
+                      }
+                    />
+                  )}
+                </>
+              ) : null}
 
-            {!classRoomsQuery.isPending && !classRoomsQuery.isError ? (
-              <SimpleTable
-                columns={['Code', 'Name', 'Grade', 'Capacity', 'Actions']}
-                rows={filteredClassRooms.map((room) => [
-                  room.code,
-                  room.name,
-                  room.gradeLevel?.name ?? '-',
-                  room.capacity ?? '-',
-                  <ActionButtons
-                    onEdit={() => openEditClass(room)}
-                    onDelete={() => requestDelete('classRoom', room.id, room.name)}
-                  />,
-                ])}
-                emptyMessage="No classes found."
-              />
-            ) : null}
-          </SectionCard>
-        </>
+              {selectedGrade && !selectedClass ? (
+                <>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        {selectedGrade.name}
+                      </h3>
+                      <p className="text-sm text-slate-600">
+                        {classesForSelectedGrade.length}{' '}
+                        {classesForSelectedGrade.length === 1 ? 'class' : 'classes'} in
+                        this grade
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditGradeLevel(selectedGrade)}
+                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
+                      >
+                        Update grade
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openAddClass(selectedGrade.id)}
+                        className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                      >
+                        Add class to {selectedGrade.name}
+                      </button>
+                    </div>
+                  </div>
+                  <FilterInput
+                    value={classFilter}
+                    onChange={setClassFilter}
+                    placeholder="Filter classes in this grade"
+                    label="Filter classes in this grade"
+                  />
+                  {classesForSelectedGrade.length ? (
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {classesForSelectedGrade.map((room: any) => (
+                        <ClassCard
+                          key={room.id}
+                          title={room.name}
+                          code={room.code}
+                          meta={
+                            room.capacity
+                              ? `Capacity ${room.capacity}`
+                              : 'Capacity not set'
+                          }
+                          onOpen={() => selectClass(room.id)}
+                          onEdit={() => openEditClass(room)}
+                          onDelete={() =>
+                            requestDelete('classRoom', room.id, room.name)
+                          }
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title={`No classes in ${selectedGrade.name} yet`}
+                      message="Add the first class for this grade. Subjects and courses attach to classes in the next step."
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => openAddClass(selectedGrade.id)}
+                          className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                        >
+                          Add class to {selectedGrade.name}
+                        </button>
+                      }
+                    />
+                  )}
+                </>
+              ) : null}
+
+              {selectedGrade && selectedClass ? (
+                <>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        {selectedClass.name}
+                      </h3>
+                      <p className="text-sm text-slate-600">
+                        {selectedGrade.name} · {selectedClass.code}
+                        {selectedClass.capacity
+                          ? ` · Capacity ${selectedClass.capacity}`
+                          : ''}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditClass(selectedClass)}
+                        className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
+                      >
+                        Update class
+                      </button>
+                      <Link
+                        to={`/admin/courses?classId=${selectedClass.id}`}
+                        className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                      >
+                        View courses for {selectedClass.name}
+                      </Link>
+                    </div>
+                  </div>
+
+                  {classCoursesQuery.isPending ? <LoadingRows /> : null}
+                  {classCoursesQuery.isError ? (
+                    <StateView
+                      title="Could not load courses for this class"
+                      message="Retry to see subjects and courses grouped under this class."
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => void classCoursesQuery.refetch()}
+                          className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                        >
+                          Retry
+                        </button>
+                      }
+                    />
+                  ) : null}
+
+                  {!classCoursesQuery.isPending && !classCoursesQuery.isError ? (
+                    subjectsForSelectedClass.length ? (
+                      <div className="grid gap-3">
+                        {subjectsForSelectedClass.map((group) => (
+                          <div
+                            key={group.id}
+                            className="rounded-xl border border-brand-100 bg-white p-4"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <BookOpen
+                                  className="h-4 w-4 text-brand-600"
+                                  aria-hidden="true"
+                                />
+                                <h4 className="text-sm font-bold text-slate-900">
+                                  {group.name}
+                                </h4>
+                                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                                  {group.courses.length}{' '}
+                                  {group.courses.length === 1 ? 'course' : 'courses'}
+                                </span>
+                              </div>
+                              <Link
+                                to={`/admin/courses?classId=${selectedClass.id}`}
+                                className="text-xs font-semibold text-brand-700 underline-offset-2 hover:underline"
+                              >
+                                Open {group.name} courses in Courses
+                              </Link>
+                            </div>
+                            <ul className="mt-2 grid gap-1.5">
+                              {group.courses.map((course: any) => (
+                                <li
+                                  key={course.id}
+                                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm"
+                                >
+                                  <span className="font-medium text-slate-800">
+                                    {course.title}
+                                  </span>
+                                  <span className="text-xs text-slate-500">
+                                    {course.counts?.lessons ?? 0} lessons ·{' '}
+                                    {course.academicYear?.name ?? ''}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyState
+                        title={`No subjects with courses in ${selectedClass.name} yet`}
+                        message="Create the first course for this class in Courses. It will appear here grouped under its subject."
+                        action={
+                          <Link
+                            to={`/admin/courses?classId=${selectedClass.id}`}
+                            className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                          >
+                            Create course for {selectedClass.name}
+                          </Link>
+                        }
+                      />
+                    )
+                  ) : null}
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </SectionCard>
       ) : null}
 
       {showSubjects ? (
@@ -1075,8 +1373,14 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
           Grade level
           <select
-            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+            className="rounded-lg border border-brand-200 px-3 py-2 text-sm disabled:bg-slate-100"
             {...classForm.register('gradeLevelId')}
+            disabled={!editingClassId && Boolean(selectedGradeId)}
+            title={
+              !editingClassId && selectedGradeId
+                ? `Locked to ${selectedGrade?.name ?? 'the selected grade'} because this class is created inside that grade.`
+                : undefined
+            }
           >
             <option value="">Select grade level</option>
             {gradeLevels.map((level) => (
@@ -1086,6 +1390,12 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             ))}
           </select>
         </label>
+        {!editingClassId && selectedGradeId ? (
+          <p className="text-xs text-slate-500">
+            Grade is locked to {selectedGrade?.name ?? 'the selected grade'} to keep
+            creation consistent with the hierarchy.
+          </p>
+        ) : null}
         <FieldError message={classForm.formState.errors.gradeLevelId?.message} />
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -1181,6 +1491,156 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         isLoading={isDeleting}
       />
     </div>
+  );
+}
+
+const GRADE_CARD_ICONS = [GraduationCap, School, Layers, BookOpen, Award, Sparkles];
+
+function HierarchyBreadcrumbs({
+  trail,
+}: {
+  trail: Array<{ label: string; onSelect?: () => void }>;
+}) {
+  return (
+    <nav aria-label="Breadcrumb" className="mb-3">
+      <ol className="flex flex-wrap items-center gap-1 text-sm">
+        {trail.map((crumb, index) => {
+          const isLast = index === trail.length - 1;
+          return (
+            <li key={`${crumb.label}-${index}`} className="flex items-center gap-1">
+              {index > 0 ? (
+                <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+              ) : null}
+              {crumb.onSelect && !isLast ? (
+                <button
+                  type="button"
+                  onClick={crumb.onSelect}
+                  className="rounded px-1 py-0.5 font-medium text-brand-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-brand-500"
+                >
+                  {crumb.label}
+                </button>
+              ) : (
+                <span aria-current={isLast ? 'page' : undefined} className="px-1 py-0.5 font-semibold text-slate-900">
+                  {crumb.label}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+function GradeCard({
+  iconIndex,
+  title,
+  code,
+  countLabel,
+  emptyHint,
+  onOpen,
+  onEdit,
+  onDelete,
+}: {
+  iconIndex: number;
+  title: string;
+  code: string;
+  countLabel: string;
+  emptyHint?: string;
+  onOpen: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const Icon = GRADE_CARD_ICONS[iconIndex % GRADE_CARD_ICONS.length];
+  return (
+    <article className="group flex flex-col rounded-xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Open grade ${title}, ${countLabel}`}
+        className="flex items-start gap-3 text-left focus-visible:outline-2 focus-visible:outline-brand-500 rounded-lg"
+      >
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-600 text-white">
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-bold text-slate-900">{title}</span>
+          <span className="block text-xs text-slate-500">{code}</span>
+          <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-slate-700">
+            {countLabel}
+          </span>
+        </span>
+      </button>
+      {emptyHint ? <p className="mt-2 text-xs text-slate-500">{emptyHint}</p> : null}
+      <div className="mt-3 flex gap-2 border-t border-slate-100 pt-2.5">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
+        >
+          Update
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
+        >
+          Delete
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function ClassCard({
+  title,
+  code,
+  meta,
+  onOpen,
+  onEdit,
+  onDelete,
+}: {
+  title: string;
+  code: string;
+  meta: string;
+  onOpen: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <article className="group flex flex-col rounded-xl border border-brand-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Open class ${title} to see subjects and courses`}
+        className="flex items-start gap-3 text-left focus-visible:outline-2 focus-visible:outline-brand-500 rounded-lg"
+      >
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-emerald-600 text-white">
+          <School className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-bold text-slate-900">{title}</span>
+          <span className="block text-xs text-slate-500">{code}</span>
+          <span className="mt-1 block text-xs text-slate-500">{meta}</span>
+        </span>
+      </button>
+      <div className="mt-3 flex gap-2 border-t border-slate-100 pt-2.5">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700"
+        >
+          Update
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700"
+        >
+          Delete
+        </button>
+      </div>
+    </article>
   );
 }
 

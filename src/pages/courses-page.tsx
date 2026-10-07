@@ -2,11 +2,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Eye,
   ExternalLink,
   FilePlus2,
+  FolderPlus,
   Lock,
   MessageCircle,
   Pencil,
@@ -16,7 +19,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -32,21 +36,26 @@ import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import { useAcademicYear } from '../contexts/academic-year-context';
-import { hasRole } from '../features/auth/auth-helpers';
+import { hasPermission, hasRole } from '../features/auth/auth-helpers';
 import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import {
   createCourseApi,
   createLessonApi,
+  createSectionApi,
   deleteCourseApi,
   deleteLessonApi,
+  deleteSectionApi,
   getCourseDetailApi,
   listCourseSubjectOptionsApi,
   listCoursesApi,
   LessonContentType,
   publishLessonApi,
+  publishSectionApi,
+  reorderSectionsApi,
   updateCourseApi,
   updateLessonApi,
+  updateSectionApi,
 } from '../features/sprint4/lms.api';
 
 interface AcademicYearOption {
@@ -109,6 +118,7 @@ const lessonFormSchema = z
     body: z.string().max(40000).optional(),
     externalUrl: z.string().trim().url('Enter a valid URL').optional().or(z.literal('')),
     sequence: z.coerce.number().int().min(1, 'Sequence must be at least 1').optional(),
+    sectionId: z.string().trim().optional().or(z.literal('')),
   })
   .superRefine((value, context) => {
     if (value.contentType === 'TEXT' && !htmlToPlainText(value.body)) {
@@ -148,6 +158,7 @@ type EditableLesson = {
   body: string | null;
   externalUrl: string | null;
   sequence: number;
+  sectionId: string | null;
   isPublished: boolean;
   fileAsset: {
     id: string;
@@ -169,6 +180,12 @@ type DeletableItem =
       id: string;
       title: string;
       description: string;
+    }
+  | {
+      type: 'section';
+      id: string;
+      title: string;
+      description: string;
     };
 
 const defaultCourseForm: CourseFormValues = {
@@ -186,6 +203,7 @@ const defaultLessonForm: LessonFormValues = {
   body: '<p></p>',
   externalUrl: '',
   sequence: undefined,
+  sectionId: '',
 };
 
 function formatDateTime(value: string | null | undefined) {
@@ -365,6 +383,7 @@ function StatusPill({ label, tone }: { label: string; tone: 'draft' | 'published
 
 export function CoursesPage() {
   const auth = useAuth();
+  const { t } = useTranslation('teacher');
   const { academicYearId } = useAcademicYear();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -372,10 +391,22 @@ export function CoursesPage() {
     hasRole(auth.me, 'TEACHER') &&
     !hasRole(auth.me, 'SCHOOL_ADMIN') &&
     !hasRole(auth.me, 'SUPER_ADMIN');
+  // Tabs and actions the user may not use are hidden, mirroring the server's
+  // permission checks (courses.manage, lessons.manage, lessons.publish).
+  const canManageCourses = hasPermission(auth.me, 'courses.manage');
+  const canManageLessons = hasPermission(auth.me, 'lessons.manage');
+  const canPublishLessons = hasPermission(auth.me, 'lessons.publish');
+  const canUseChat = hasPermission(auth.me, 'chat.read');
 
+  const [searchParams] = useSearchParams();
+  const classIdFromHierarchy = searchParams.get('classId') ?? '';
   const [search, setSearch] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('ALL');
-  const [classFilter, setClassFilter] = useState('ALL');
+  // Same behaviour as the Academics hierarchy: when opened via
+  // /admin/courses?classId=..., pre-select that class.
+  const [classFilter, setClassFilter] = useState(
+    classIdFromHierarchy ? classIdFromHierarchy : 'ALL'
+  );
   const [page, setPage] = useState(1);
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedLessonId, setSelectedLessonId] = useState('');
@@ -388,6 +419,9 @@ export function CoursesPage() {
   const [lessonFile, setLessonFile] = useState<File | null>(null);
   const [lessonFileError, setLessonFileError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<DeletableItem | null>(null);
+  const [newSectionTitle, setNewSectionTitle] = useState('');
+  const [editingSectionId, setEditingSectionId] = useState('');
+  const [editingSectionTitle, setEditingSectionTitle] = useState('');
 
   const courseForm = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -533,6 +567,7 @@ export function CoursesPage() {
         body: values.body || undefined,
         externalUrl: values.externalUrl || undefined,
         sequence: values.sequence,
+        sectionId: values.sectionId?.trim() ? values.sectionId.trim() : undefined,
         asset,
       });
     },
@@ -580,6 +615,7 @@ export function CoursesPage() {
         body: shouldKeepBody ? values.body || null : null,
         externalUrl: shouldKeepUrl ? values.externalUrl?.trim() || null : null,
         sequence: values.sequence,
+        sectionId: values.sectionId?.trim() ? values.sectionId.trim() : null,
         asset,
         removeAsset: shouldRemoveAsset || undefined,
       });
@@ -649,6 +685,119 @@ export function CoursesPage() {
     },
   });
 
+  function invalidateCourseDetail() {
+    if (selectedCourseId) {
+      void queryClient.invalidateQueries({ queryKey: ['lms', 'course-detail', selectedCourseId] });
+    }
+    void queryClient.invalidateQueries({ queryKey: ['lms', 'courses'] });
+  }
+
+  const createSectionMutation = useMutation({
+    mutationFn: (title: string) => createSectionApi(auth.accessToken!, selectedCourseId, { title }),
+    onSuccess: () => {
+      invalidateCourseDetail();
+      setNewSectionTitle('');
+      showToast({ type: 'success', title: t('sections.created') });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: t('sections.createFailed'),
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const updateSectionMutation = useMutation({
+    mutationFn: ({ sectionId, title }: { sectionId: string; title: string }) =>
+      updateSectionApi(auth.accessToken!, sectionId, { title }),
+    onSuccess: () => {
+      invalidateCourseDetail();
+      setEditingSectionId('');
+      setEditingSectionTitle('');
+      showToast({ type: 'success', title: t('sections.updated') });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: t('sections.updateFailed'),
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const deleteSectionMutation = useMutation({
+    mutationFn: (sectionId: string) => deleteSectionApi(auth.accessToken!, sectionId),
+    onSuccess: () => {
+      invalidateCourseDetail();
+      setPendingDelete(null);
+      showToast({ type: 'success', title: t('sections.deleted') });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: t('sections.deleteFailed'),
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const reorderSectionsMutation = useMutation({
+    mutationFn: (order: string[]) => reorderSectionsApi(auth.accessToken!, selectedCourseId, order),
+    onSuccess: () => {
+      invalidateCourseDetail();
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: t('sections.reorderFailed'),
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  const publishSectionMutation = useMutation({
+    mutationFn: ({ sectionId, isPublished }: { sectionId: string; isPublished: boolean }) =>
+      publishSectionApi(auth.accessToken!, sectionId, isPublished),
+    onSuccess: (_section, variables) => {
+      invalidateCourseDetail();
+      showToast({
+        type: 'success',
+        title: variables.isPublished ? t('sections.published') : t('sections.unpublished'),
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: t('sections.publishFailed'),
+        message: error instanceof Error ? error.message : 'Request failed',
+      });
+    },
+  });
+
+  function moveSection(sectionId: string, direction: -1 | 1) {
+    const ordered = [...(courseDetailQuery.data?.sections ?? [])].sort(
+      (a, b) => a.sortOrder - b.sortOrder
+    );
+    const index = ordered.findIndex((item) => item.id === sectionId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= ordered.length) {
+      return;
+    }
+    const next = [...ordered];
+    [next[index], next[target]] = [next[target], next[index]];
+    reorderSectionsMutation.mutate(next.map((item) => item.id));
+  }
+
+  function requestDeleteSection(section: { id: string; title: string }) {
+    setPendingDelete({
+      type: 'section',
+      id: section.id,
+      title: section.title,
+      description: t('sections.deleteConfirm', { title: section.title }),
+    });
+  }
+
   const academicYears = ((yearsQuery.data as AcademicYearOption[] | undefined) ?? []).slice();
   const classRooms = ((classesQuery.data as ClassRoomOption[] | undefined) ?? []).slice();
   const subjects = ((subjectsQuery.data as SubjectOption[] | undefined) ?? []).slice();
@@ -690,14 +839,28 @@ export function CoursesPage() {
     }
   }, [courseDetailQuery.data?.lessons.items, selectedLessonId]);
 
+  useEffect(() => {
+    if (!classIdFromHierarchy || !classRooms.length) return;
+    if (classRooms.some((item) => item.id === classIdFromHierarchy)) {
+      setClassFilter(classIdFromHierarchy);
+    }
+  }, [classIdFromHierarchy, classRooms]);
+
   function openCreateCourse() {
     setCourseModalMode('create');
     setCourseModalCourseId('');
     const currentAcademicYear = academicYears.find((item) => item.isCurrent) ?? academicYears[0];
+    // Keep creation consistent with the hierarchy entry point.
+    const preferredClassId =
+      classFilter !== 'ALL' && classRooms.some((item) => item.id === classFilter)
+        ? classFilter
+        : (classIdFromHierarchy && classRooms.some((item) => item.id === classIdFromHierarchy)
+          ? classIdFromHierarchy
+          : classRooms[0]?.id) || '';
     courseForm.reset({
       ...defaultCourseForm,
       academicYearId: currentAcademicYear?.id || '',
-      classRoomId: classRooms[0]?.id || '',
+      classRoomId: preferredClassId,
       subjectId: subjects[0]?.id || '',
     });
     setIsCourseModalOpen(true);
@@ -739,11 +902,15 @@ export function CoursesPage() {
 
   function openCreateLesson() {
     setLessonModalMode('create');
+    const firstSectionId = [...(courseDetailQuery.data?.sections ?? [])].sort(
+      (a, b) => a.sortOrder - b.sortOrder
+    )[0]?.id;
     lessonForm.reset({
       ...defaultLessonForm,
       sequence:
         (courseDetailQuery.data?.lessons.items[courseDetailQuery.data.lessons.items.length - 1]
           ?.sequence ?? 0) + 1,
+      sectionId: firstSectionId ?? '',
     });
     setLessonFile(null);
     setLessonFileError(null);
@@ -764,6 +931,7 @@ export function CoursesPage() {
       body: lesson.body ?? '<p></p>',
       externalUrl: lesson.externalUrl ?? '',
       sequence: lesson.sequence,
+      sectionId: lesson.sectionId ?? '',
     });
     setLessonFile(null);
     setLessonFileError(null);
@@ -839,13 +1007,21 @@ export function CoursesPage() {
       return;
     }
 
+    if (pendingDelete.type === 'section') {
+      await deleteSectionMutation.mutateAsync(pendingDelete.id).catch(() => undefined);
+      return;
+    }
+
     await deleteLessonMutation.mutateAsync(pendingDelete.id).catch(() => undefined);
   }
 
   const selectedCourse = courseDetailQuery.data?.course ?? null;
   const selectedLesson =
     courseDetailQuery.data?.lessons.items.find((lesson) => lesson.id === selectedLessonId) ?? null;
-  const isDeletePending = deleteCourseMutation.isPending || deleteLessonMutation.isPending;
+  const isDeletePending =
+    deleteCourseMutation.isPending ||
+    deleteLessonMutation.isPending ||
+    deleteSectionMutation.isPending;
 
   return (
     <div className="grid gap-5">
@@ -855,7 +1031,7 @@ export function CoursesPage() {
           selectedCourseId ? undefined : 'Create class courses and publish lessons for students.'
         }
         action={
-          selectedCourseId ? undefined : (
+          selectedCourseId || !canManageCourses ? undefined : (
             <button
               type="button"
               onClick={openCreateCourse}
@@ -1034,30 +1210,36 @@ export function CoursesPage() {
                                   <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                                   Open
                                 </button>
-                                <Link
-                                  to={`/admin/chat/${course.classRoom.id}`}
-                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                >
-                                  <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
-                                  Chat
-                                </Link>
-                                <button
-                                  type="button"
-                                  onClick={() => openEditCourse(course)}
-                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                >
-                                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => requestDeleteCourse(course)}
-                                  disabled={isDeletePending}
-                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                                  Delete
-                                </button>
+                                {canUseChat ? (
+                                  <Link
+                                    to={`/admin/chat/${course.classRoom.id}`}
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Chat
+                                  </Link>
+                                ) : null}
+                                {canManageCourses ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditCourse(course)}
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Edit
+                                  </button>
+                                ) : null}
+                                {canManageCourses ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => requestDeleteCourse(course)}
+                                    disabled={isDeletePending}
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                    Delete
+                                  </button>
+                                ) : null}
                               </div>
                             </article>
                           );
@@ -1098,15 +1280,21 @@ export function CoursesPage() {
                   ) : (
                     <EmptyState
                       title="No courses yet"
-                      message="Create the first class course to start publishing lessons."
+                      message={
+                        canManageCourses
+                          ? 'Create the first class course to start publishing lessons.'
+                          : 'No courses match the current filters.'
+                      }
                       action={
-                        <button
-                          type="button"
-                          onClick={openCreateCourse}
-                          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
-                        >
-                          Create course
-                        </button>
+                        canManageCourses ? (
+                          <button
+                            type="button"
+                            onClick={openCreateCourse}
+                            className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+                          >
+                            Create course
+                          </button>
+                        ) : undefined
                       }
                     />
                   )
@@ -1163,7 +1351,7 @@ export function CoursesPage() {
                             <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                             Lessons
                           </button>
-                        ) : (
+                       ) : canManageLessons ? (
                           <button
                             type="button"
                             onClick={openCreateLesson}
@@ -1172,7 +1360,7 @@ export function CoursesPage() {
                             <FilePlus2 className="h-3.5 w-3.5" aria-hidden="true" />
                             Add lesson
                           </button>
-                        )}
+                        ) : null}
                       </div>
                     }
                   >
@@ -1236,8 +1424,166 @@ export function CoursesPage() {
                           </p>
                         </div>
                       ) : (
-                        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                          {courseDetailQuery.data.lessons.items.map((lesson, lessonIndex) => {
+                        <>
+                          {canManageLessons ? (
+                          <div className="rounded-2xl border border-brand-100 bg-white p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div>
+                                <h3 className="text-sm font-bold text-slate-900">
+                                  {t('sections.title')}
+                                </h3>
+                                <p className="text-xs text-slate-500">{t('sections.subtitle')}</p>
+                              </div>
+                            </div>
+                            <ul className="mt-3 grid gap-2" aria-label={t('sections.title')}>
+                              {(courseDetailQuery.data?.sections ?? []).map((section) => (
+                                <li
+                                  key={section.id}
+                                  className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-3 py-2"
+                                >
+                                  {editingSectionId === section.id ? (
+                                    <>
+                                      <input
+                                        value={editingSectionTitle}
+                                        onChange={(event) =>
+                                          setEditingSectionTitle(event.target.value)
+                                        }
+                                        aria-label={t('sections.rename')}
+                                        className="min-w-0 flex-1 rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400"
+                                      />
+                                      <button
+                                        type="button"
+                                        disabled={
+                                          !editingSectionTitle.trim() ||
+                                          updateSectionMutation.isPending
+                                        }
+                                        onClick={() =>
+                                          updateSectionMutation.mutate({
+                                            sectionId: section.id,
+                                            title: editingSectionTitle.trim(),
+                                          })
+                                        }
+                                        className="rounded-lg bg-brand-500 px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                                      >
+                                        {t('sections.save')}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingSectionId('');
+                                          setEditingSectionTitle('');
+                                        }}
+                                        className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
+                                      >
+                                        {t('sections.cancel')}
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">
+                                        {section.title}
+                                      </span>
+                                      <StatusPill
+                                        label={
+                                          section.isPublished
+                                            ? t('sections.published')
+                                            : t('sections.draft')
+                                        }
+                                        tone={section.isPublished ? 'published' : 'draft'}
+                                      />
+                                      <span className="text-xs tabular-nums text-slate-500">
+                                        {t('sections.lessonCount', {
+                                          count: section.lessonCount,
+                                        })}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => moveSection(section.id, -1)}
+                                        disabled={reorderSectionsMutation.isPending}
+                                        aria-label={`${t('sections.moveUp')}: ${section.title}`}
+                                        className="grid h-8 w-8 place-items-center rounded-lg border border-brand-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                      >
+                                        <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => moveSection(section.id, 1)}
+                                        disabled={reorderSectionsMutation.isPending}
+                                        aria-label={`${t('sections.moveDown')}: ${section.title}`}
+                                        className="grid h-8 w-8 place-items-center rounded-lg border border-brand-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                      >
+                                        <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          publishSectionMutation.mutate({
+                                            sectionId: section.id,
+                                            isPublished: !section.isPublished,
+                                          })
+                                        }
+                                        disabled={publishSectionMutation.isPending}
+                                        className="rounded-lg border border-brand-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                      >
+                                        {section.isPublished
+                                          ? t('sections.unpublish')
+                                          : t('sections.publish')}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingSectionId(section.id);
+                                          setEditingSectionTitle(section.title);
+                                        }}
+                                        aria-label={`${t('sections.rename')}: ${section.title}`}
+                                        className="grid h-8 w-8 place-items-center rounded-lg border border-brand-200 bg-white text-slate-600 hover:bg-slate-50"
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          requestDeleteSection({
+                                            id: section.id,
+                                            title: section.title,
+                                          })
+                                        }
+                                        aria-label={`${t('sections.delete')}: ${section.title}`}
+                                        className="grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                      </button>
+                                    </>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                            <div className="mt-3 flex gap-2">
+                              <input
+                                value={newSectionTitle}
+                                onChange={(event) => setNewSectionTitle(event.target.value)}
+                                placeholder={t('sections.addPlaceholder')}
+                                aria-label={t('sections.addPlaceholder')}
+                                className="min-w-0 flex-1 rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-brand-400"
+                              />
+                              <button
+                                type="button"
+                                disabled={
+                                  !newSectionTitle.trim() || createSectionMutation.isPending
+                                }
+                                onClick={() =>
+                                  createSectionMutation.mutate(newSectionTitle.trim())
+                                }
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+                              >
+                                <FolderPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                                {t('sections.add')}
+                              </button>
+                            </div>
+                          </div>
+                          ) : null}
+                          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                            {courseDetailQuery.data.lessons.items.map((lesson, lessonIndex) => {
                             const cover =
                               COURSE_CARD_BACKGROUNDS[lessonIndex % COURSE_CARD_BACKGROUNDS.length];
 
@@ -1266,6 +1612,9 @@ export function CoursesPage() {
                                     <p className="text-lg font-medium text-slate-800">
                                       {lesson.title}
                                     </p>
+                                    <p className="text-xs font-semibold text-brand-700">
+                                      {lesson.section?.title ?? t('sections.unsectioned')}
+                                    </p>
                                     <p className="line-clamp-2 text-sm text-slate-600">
                                       {lesson.summary ?? 'Open this lesson to read the content.'}
                                     </p>
@@ -1281,57 +1630,70 @@ export function CoursesPage() {
                                     <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                                     Open
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditLesson(lesson)}
-                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                                    Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      publishLessonMutation.mutate({
-                                        lessonId: lesson.id,
-                                        isPublished: !lesson.isPublished,
-                                      })
-                                    }
-                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                  >
-                                    {lesson.isPublished ? (
-                                      <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                                    ) : (
-                                      <Send className="h-3.5 w-3.5" aria-hidden="true" />
-                                    )}
-                                    {lesson.isPublished ? 'Draft' : 'Publish'}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => requestDeleteLesson(lesson)}
-                                    disabled={deleteLessonMutation.isPending}
-                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                                    Delete
-                                  </button>
+                                  {canManageLessons ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditLesson(lesson)}
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                                      Edit
+                                    </button>
+                                  ) : null}
+                                  {canPublishLessons ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        publishLessonMutation.mutate({
+                                          lessonId: lesson.id,
+                                          isPublished: !lesson.isPublished,
+                                        })
+                                      }
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                      {lesson.isPublished ? (
+                                        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                                      ) : (
+                                        <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                                      )}
+                                      {lesson.isPublished ? 'Draft' : 'Publish'}
+                                    </button>
+                                  ) : null}
+                                  {canManageLessons ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => requestDeleteLesson(lesson)}
+                                      disabled={deleteLessonMutation.isPending}
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                      Delete
+                                    </button>
+                                  ) : null}
                                 </div>
                               </article>
                             );
                           })}
-                        </div>
+                          </div>
+                        </>
                       )
                     ) : (
                       <EmptyState
-                        message="No lessons yet. Add the first lesson to start your course feed."
+                        message={
+                          canManageLessons
+                            ? 'No lessons yet. Add the first lesson to start your course feed.'
+                            : 'No lessons in this course yet.'
+                        }
                         action={
-                          <button
-                            type="button"
-                            onClick={openCreateLesson}
-                            className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
-                          >
-                            Add lesson
-                          </button>
+                          canManageLessons ? (
+                            <button
+                              type="button"
+                              onClick={openCreateLesson}
+                              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+                            >
+                              Add lesson
+                            </button>
+                          ) : undefined
                         }
                       />
                     )}
@@ -1344,7 +1706,7 @@ export function CoursesPage() {
       </SectionCard>
 
       <DrawerForm
-        open={isCourseModalOpen}
+        open={canManageCourses && isCourseModalOpen}
         title={courseModalMode === 'edit' ? 'Edit course' : 'Create course'}
         description={
           courseModalMode === 'edit'
@@ -1448,7 +1810,13 @@ export function CoursesPage() {
 
       <ConfirmDrawer
         open={Boolean(pendingDelete)}
-        title={pendingDelete?.type === 'lesson' ? 'Delete lesson' : 'Delete course'}
+        title={
+          pendingDelete?.type === 'lesson'
+            ? 'Delete lesson'
+            : pendingDelete?.type === 'section'
+              ? t('sections.deleteTitle')
+              : 'Delete course'
+        }
         message={`${pendingDelete?.description ?? 'This item will be deleted.'} This action cannot be undone.`}
         onCancel={() => {
           if (!isDeletePending) {
@@ -1462,7 +1830,7 @@ export function CoursesPage() {
       />
 
       <DrawerForm
-        open={isLessonModalOpen}
+        open={canManageLessons && isLessonModalOpen}
         title={lessonModalMode === 'edit' ? 'Edit lesson' : 'Add lesson'}
         description={
           lessonModalMode === 'edit'
@@ -1490,6 +1858,20 @@ export function CoursesPage() {
             />
           </FormField>
         </div>
+
+        <FormField label={t('sections.sectionLabel')}>
+          <select
+            {...lessonForm.register('sectionId')}
+            className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-400"
+          >
+            <option value="">{t('sections.noSection')}</option>
+            {(courseDetailQuery.data?.sections ?? []).map((section) => (
+              <option key={section.id} value={section.id}>
+                {section.title}
+              </option>
+            ))}
+          </select>
+        </FormField>
 
         <FormField label="Summary" error={lessonForm.formState.errors.summary?.message}>
           <textarea

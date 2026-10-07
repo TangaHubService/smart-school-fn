@@ -46,12 +46,12 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
-                <Link to="/academy" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
+                <Link to="/programs#academy-levels" className="transition-colors hover:text-brand-300">
                   {t('footer.academy')}
                 </Link>
               </li>
               <li>
-                <Link to="/academy" onClick={scrollToTop} className="transition-colors hover:text-brand-300">
+                <Link to="/programs#enroll" className="transition-colors hover:text-brand-300">
                   {t('footer.pricing')}
                 </Link>
               </li>

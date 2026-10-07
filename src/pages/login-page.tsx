@@ -156,8 +156,11 @@ export function LoginPage() {
   const registerError = registerMutation.error as ApiClientError | null;
 
   const helperText =
-    returnTo === '/academy' || returnTo?.startsWith('/academy?')
-      ? 'Create or sign in to your academy learner account, then choose your plan and subjects.'
+    returnTo === '/programs' ||
+    returnTo?.startsWith('/programs?') ||
+    returnTo === '/academy' ||
+    returnTo?.startsWith('/academy?')
+      ? 'Create or sign in to your learner account, then choose your plan and enroll in classes.'
       : t('login.subtitle');
 
   function switchTab(nextTab: AuthTab) {

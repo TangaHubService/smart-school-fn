@@ -289,7 +289,7 @@ function StudentCourseProgressStrip({
   if (breakdown.total === 0) {
     return (
       <section className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center shadow-sm">
-        <p className="text-sm font-medium text-slate-800">No enrolled courses yet</p>
+        <p className="text-sm font-medium text-slate-800">No enrolled classes yet</p>
         <p className="mt-1 text-xs text-slate-600">
           When your school assigns classes, your progress will show here.
         </p>

@@ -159,7 +159,7 @@ export function AcademyProgramsAdminPage() {
       showToast({
         type: 'success',
         title: 'Program created',
-        message: 'It can appear on /academy if your school is the catalog tenant.',
+        message: 'It can appear on /programs if your school is the catalog tenant.',
       });
       setCreateOpen(false);
       createForm.reset(defaultProgramForm);
@@ -225,8 +225,8 @@ export function AcademyProgramsAdminPage() {
 
   return (
     <SectionCard
-      title="Academy programs (public catalog)"
-      subtitle="These catalog items appear on /academy for class-based access. Link a class so learners unlock every subject, course, and lesson in it after purchasing."
+      title="Programs (public catalog)"
+      subtitle="These catalog items appear on /programs for class-based enrollment. Link a class so learners unlock every subject, course, and lesson in it after enrolling."
       action={
         canManage ? (
           <button
@@ -318,14 +318,14 @@ export function AcademyProgramsAdminPage() {
           setCreateOpen(false);
           createMutation.reset();
         }}
-        title="New academy program"
+        title="New program"
         onSubmit={createForm.handleSubmit((values) => createMutation.mutate(values))}
         isLoading={createMutation.isPending}
         submitLabel="Create"
         formId="create-academy-program-form"
       >
         <p className="text-sm text-slate-600">
-          Appears on /academy when this school is the catalog tenant.
+          Appears on /programs when this school is the catalog tenant.
         </p>
         <ProgramFormFields form={createForm} classRoomOptions={classRoomOptions} />
         {createMutation.error ? (
@@ -346,7 +346,7 @@ export function AcademyProgramsAdminPage() {
           setEditing(null);
           updateMutation.reset();
         }}
-        title="Edit academy program"
+        title="Edit program"
         onSubmit={editForm.handleSubmit((values) => {
           if (!editing) {
             return;
@@ -469,7 +469,7 @@ function ProgramFormFields({
             })
           }
         />
-        Listed on public /academy
+        Listed on public /programs
       </label>
       <label className="flex items-center gap-2 text-sm font-medium text-slate-800">
         <input

@@ -198,7 +198,7 @@ export function ParentMyChildrenPage() {
             <div>
               <h3 className="mb-2 text-sm font-bold text-slate-900">Course progress</h3>
               {childLearningQuery.data.courses.length === 0 ? (
-                <EmptyState message="No enrolled courses with published lessons yet." />
+                <EmptyState message="No enrolled classes with published lessons yet." />
               ) : (
                 <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
                   <table className="w-full min-w-full table-auto text-left text-sm">
