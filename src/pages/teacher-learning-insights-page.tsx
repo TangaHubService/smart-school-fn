@@ -301,10 +301,9 @@ export function TeacherLearningInsightsPage() {
 
         {/* KPIs — horizontal scroll with border when overflow */}
         <section className="mb-6" aria-label="Overview metrics">
-          <div className="overflow-x-auto">
-            <InsightGrid
-              className="min-w-max grid grid-flow-col auto-cols-max gap-3 divide-y-0 divide-x divide-slate-100"
-              items={[
+          <InsightGrid
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 divide-y-0 sm:divide-x sm:divide-y-0"
+            items={[
               {
                 key: 'students',
                 icon: Users,
@@ -355,7 +354,6 @@ export function TeacherLearningInsightsPage() {
               },
             ]}
           />
-          </div>
         </section>
 
         {/* Charts */}
