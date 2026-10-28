@@ -463,7 +463,9 @@ export function ClassMarksPage() {
     (ledgerPagination?.totalItems ?? 0) === 0;
 
   return (
-    <div className="grid gap-6 overflow-visible">
+    <div className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid gap-6 overflow-hidden">
       <SectionCard
         title="Marks"
         subtitle=""
@@ -1224,5 +1226,7 @@ export function ClassMarksPage() {
         ) : null}
       </AppDrawer>
     </div>
+  </div>
+</div>
   );
 }
