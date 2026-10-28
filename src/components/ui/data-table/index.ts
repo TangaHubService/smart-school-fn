@@ -2,6 +2,8 @@ export { DataTable } from './data-table';
 export { DataTableToolbar } from './data-table-toolbar';
 export { DataTablePagination } from './data-table-pagination';
 export { DataTableEmptyState, DataTableErrorState } from './data-table';
+export { tableFeatures } from './table-features';
+export { useDataTable } from './use-data-table';
 export type {
   DataTableProps,
   DataTableColumn,

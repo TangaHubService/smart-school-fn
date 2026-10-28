@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -12,12 +12,15 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { Avatar } from '../components/ui/avatar';
-import { StatusBadge } from '../components/ui/badge';
+import { Badge, StatusBadge } from '../components/ui/badge';
 import {
   DataTable,
   DataTableToolbar,
   type DataTableColumn,
+  tableFeatures,
+  useDataTable,
 } from '../components/ui/data-table';
+import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../features/auth/auth.context';
 import { hasPermission } from '../features/auth/auth-helpers';
 import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
@@ -37,8 +40,9 @@ const studentColumns: DataTableColumn<StudentListItem>[] = [
     key: 'studentCode',
     header: 'Code',
     mobile: 'secondary',
+    className: 'whitespace-nowrap',
     render: (student) => (
-      <span className="text-xs font-bold tracking-wide text-slate-700">{student.studentCode}</span>
+      <span className="whitespace-nowrap text-xs font-bold tracking-wide text-slate-700">{student.studentCode}</span>
     ),
   },
   {
@@ -46,10 +50,11 @@ const studentColumns: DataTableColumn<StudentListItem>[] = [
     header: 'Student',
     sortable: false,
     mobile: 'primary',
+    className: 'whitespace-nowrap',
     render: (student) => (
-      <span className="flex items-center gap-3">
+      <span className="flex items-center gap-3 whitespace-nowrap">
         <Avatar name={`${student.firstName} ${student.lastName}`} size="sm" />
-        <span className="font-semibold text-slate-900">
+        <span className="whitespace-nowrap font-semibold text-slate-900">
           {student.firstName} {student.lastName}
         </span>
       </span>
@@ -58,28 +63,53 @@ const studentColumns: DataTableColumn<StudentListItem>[] = [
   {
     key: 'class',
     header: 'Class',
+    className: 'whitespace-nowrap',
     render: (student) => (
-      <span className="text-slate-700">{student.currentEnrollment?.classRoom.name ?? '—'}</span>
+      <span className="whitespace-nowrap text-slate-700">{student.currentEnrollment?.classRoom.name ?? '—'}</span>
     ),
   },
   {
     key: 'year',
     header: 'Year',
+    className: 'whitespace-nowrap',
     render: (student) => (
-      <span className="text-slate-600">{student.currentEnrollment?.academicYear.name ?? '—'}</span>
+      <span className="whitespace-nowrap text-slate-600">{student.currentEnrollment?.academicYear.name ?? '—'}</span>
     ),
+  },
+  {
+    key: 'gender',
+    header: 'Gender',
+    className: 'whitespace-nowrap',
+    render: (student) => (
+      <span className="whitespace-nowrap text-slate-600">{student.gender ? student.gender.charAt(0) + student.gender.slice(1).toLowerCase() : '—'}</span>
+    ),
+  },
+  {
+    key: 'disability',
+    header: 'Disability',
+    className: 'whitespace-nowrap',
+    render: (student) =>
+      student.hasDisability ? (
+        <Badge tone="warning" withDot>
+          {student.disabilityType || 'Recorded'}
+        </Badge>
+      ) : (
+        <span className="text-slate-400">—</span>
+      ),
   },
   {
     key: 'parents',
     header: 'Parents',
     align: 'center',
+    className: 'whitespace-nowrap',
     render: (student) => (
-      <span className="tabular-nums text-slate-600">{(student.parents ?? []).length}</span>
+      <span className="whitespace-nowrap tabular-nums text-slate-600">{(student.parents ?? []).length}</span>
     ),
   },
   {
     key: 'isActive',
     header: 'Status',
+    className: 'whitespace-nowrap',
     render: (student) => <StatusBadge status={student.isActive ? 'ACTIVE' : 'INACTIVE'} />,
   },
 ];
@@ -91,6 +121,8 @@ const studentSchema = z.object({
   email: z.string().trim().email('Enter a valid email').optional().or(z.literal('')),
   gender: z.enum(['', 'MALE', 'FEMALE', 'OTHER', 'UNDISCLOSED']).optional(),
   dateOfBirth: z.string().optional(),
+  hasDisability: z.boolean(),
+  disabilityType: z.string().trim().max(160).optional(),
   academicYearId: z.string().min(1, 'Academic year is required'),
   classRoomId: z.string().min(1, 'Class is required'),
 });
@@ -104,6 +136,8 @@ const defaultStudentForm: StudentForm = {
   email: '',
   gender: '',
   dateOfBirth: '',
+  hasDisability: false,
+  disabilityType: '',
   academicYearId: '',
   classRoomId: '',
 };
@@ -135,8 +169,96 @@ function toDateInput(value: string | null | undefined): string {
   return value.slice(0, 10);
 }
 
+function RowActions({
+  student,
+  openActionsId,
+  setOpenActionsId,
+  openEditStudent,
+  setStudentToDelete,
+  auth,
+}: {
+  student: any;
+  openActionsId: string | null;
+  setOpenActionsId: (id: string | null) => void;
+  openEditStudent: (s: any) => void;
+  setStudentToDelete: (d: { id: string; name: string }) => void;
+  auth: any;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const open = openActionsId === student.id;
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    if (open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + window.scrollY + 4, left: rect.right - 160 + window.scrollX });
+    } else {
+      setPos(null);
+    }
+  }, [open]);
+
+  return (
+    <div className="relative inline-block text-left">
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setOpenActionsId(open ? null : student.id)}
+        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+      >
+        Actions
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpenActionsId(null)} />
+          <div
+            className="fixed z-[60] w-40 rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
+            style={pos ? { top: pos.top, left: pos.left } : { top: 0, left: 0 }}
+          >
+            {hasPermission(auth.me, 'conduct.read') || hasPermission(auth.me, 'conduct.manage') ? (
+              <Link
+                to={`/admin/students/${student.id}/conduct`}
+                onClick={() => setOpenActionsId(null)}
+                className="block px-3 py-2 text-xs font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700"
+              >
+                Conduct
+              </Link>
+            ) : null}
+            {hasPermission(auth.me, 'students.manage') ? (
+              <button
+                type="button"
+                onClick={() => {
+                  openEditStudent(student);
+                  setOpenActionsId(null);
+                }}
+                className="block w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700"
+              >
+                Edit
+              </button>
+            ) : null}
+            {hasPermission(auth.me, 'students.manage') ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setStudentToDelete({ id: student.id, name: `${student.firstName} ${student.lastName}` });
+                  setOpenActionsId(null);
+                }}
+                className="block w-full text-left px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"
+              >
+                Delete
+              </button>
+            ) : null}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function StudentsPage() {
   const auth = useAuth();
+  // TanStack Table V9 feature registry active across system
+  const tableFeaturesRef = useMemo(() => tableFeatures, []);
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
@@ -149,6 +271,8 @@ export function StudentsPage() {
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
+  const [openTopMenu, setOpenTopMenu] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isImportPreviewOpen, setIsImportPreviewOpen] = useState(false);
   const [importFileName, setImportFileName] = useState('');
@@ -195,6 +319,8 @@ export function StudentsPage() {
         email: values.email || undefined,
         gender: values.gender ? (values.gender as any) : undefined,
         dateOfBirth: values.dateOfBirth || undefined,
+        hasDisability: values.hasDisability,
+        disabilityType: values.hasDisability ? values.disabilityType?.trim() || null : null,
         enrollment: {
           academicYearId: values.academicYearId,
           classRoomId: values.classRoomId,
@@ -224,6 +350,8 @@ export function StudentsPage() {
         email: values.email || null,
         gender: values.gender ? (values.gender as any) : null,
         dateOfBirth: values.dateOfBirth || null,
+        hasDisability: values.hasDisability,
+        disabilityType: values.hasDisability ? values.disabilityType?.trim() || null : null,
         enrollment: {
           academicYearId: values.academicYearId,
           classRoomId: values.classRoomId,
@@ -414,6 +542,8 @@ export function StudentsPage() {
       email: student.email ?? '',
       gender: student.gender ?? '',
       dateOfBirth: toDateInput(student.dateOfBirth),
+      hasDisability: Boolean(student.hasDisability),
+      disabilityType: student.disabilityType ?? '',
       academicYearId: student.currentEnrollment?.academicYear.id ?? years[0]?.id ?? '',
       classRoomId: student.currentEnrollment?.classRoom.id ?? classRooms[0]?.id ?? '',
     });
@@ -513,8 +643,26 @@ export function StudentsPage() {
 
   async function downloadTemplate() {
     const XLSX = await import('xlsx');
-    const headers = ['studentCode', 'firstName', 'lastName', 'gender', 'dateOfBirth', 'enrolledAt'];
-    const exampleRow = ['STU-001', 'Alice', 'Uwase', 'FEMALE', '2014-05-20', '2026-09-01'];
+    const headers = [
+      'studentCode',
+      'firstName',
+      'lastName',
+      'gender',
+      'dateOfBirth',
+      'hasDisability',
+      'disabilityType',
+      'enrolledAt',
+    ];
+    const exampleRow = [
+      'STU-001',
+      'Alice',
+      'Uwase',
+      'FEMALE',
+      '2014-05-20',
+      'yes',
+      'Visual',
+      '2026-09-01',
+    ];
     const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
@@ -558,36 +706,60 @@ export function StudentsPage() {
               event.target.value = '';
             }}
           />
-          <button
-            type="button"
-            onClick={() => exportMutation.mutate()}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-          >
-            {exportMutation.isPending ? 'Exporting...' : 'Export Excel'}
-          </button>
-          {hasPermission(auth.me, 'students.manage') ? (
+          <div className="relative inline-block text-left">
             <button
               type="button"
-              onClick={openExcelPicker}
-              disabled={
-                isImporting || previewImportMutation.isPending || commitImportMutation.isPending
-              }
-              className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+              onClick={() => setOpenTopMenu((v) => !v)}
+              className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-brand-100"
             >
-              {isImporting
-                ? 'Reading Excel...'
-                : previewImportMutation.isPending
-                  ? 'Preparing preview...'
-                  : 'Upload Excel'}
+              Excel
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${openTopMenu ? 'rotate-180' : ''}`} />
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => void downloadTemplate()}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-          >
-            Template Excel
-          </button>
+            {openTopMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setOpenTopMenu(false)} />
+                <div className="absolute right-0 z-50 mt-1 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportMutation.mutate();
+                      setOpenTopMenu(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700"
+                  >
+                    {exportMutation.isPending ? 'Exporting...' : 'Export Excel'}
+                  </button>
+                  {hasPermission(auth.me, 'students.manage') ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openExcelPicker();
+                        setOpenTopMenu(false);
+                      }}
+                      disabled={isImporting || previewImportMutation.isPending || commitImportMutation.isPending}
+                      className="block w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-40"
+                    >
+                      {isImporting
+                        ? 'Reading Excel...'
+                        : previewImportMutation.isPending
+                          ? 'Preparing preview...'
+                          : 'Upload Excel'}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void downloadTemplate();
+                      setOpenTopMenu(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-700"
+                  >
+                    Template Excel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           {hasPermission(auth.me, 'students.manage') ? (
             <button
               type="button"
@@ -682,40 +854,14 @@ export function StudentsPage() {
             pageSizeOptions: [10, 20, 50, 100],
           }}
           rowActions={(student) => (
-            <div className="flex flex-wrap justify-end gap-2">
-              {hasPermission(auth.me, 'conduct.read') ||
-              hasPermission(auth.me, 'conduct.manage') ? (
-                <Link
-                  to={`/admin/students/${student.id}/conduct`}
-                  className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Conduct
-                </Link>
-              ) : null}
-              {hasPermission(auth.me, 'students.manage') ? (
-                <button
-                  type="button"
-                  onClick={() => openEditStudent(student)}
-                  className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-brand-100"
-                >
-                  Edit
-                </button>
-              ) : null}
-              {hasPermission(auth.me, 'students.manage') ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setStudentToDelete({
-                      id: student.id,
-                      name: `${student.firstName} ${student.lastName}`,
-                    })
-                  }
-                  className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-                >
-                  Delete
-                </button>
-              ) : null}
-            </div>
+            <RowActions
+              student={student}
+              openActionsId={openActionsId}
+              setOpenActionsId={setOpenActionsId}
+              openEditStudent={openEditStudent}
+              setStudentToDelete={setStudentToDelete}
+              auth={auth}
+            />
           )}
           minWidth={860}
           className="border-0 shadow-none"
@@ -811,6 +957,28 @@ export function StudentsPage() {
               {...studentForm.register('dateOfBirth')}
             />
           </label>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-brand-300 text-brand-500 focus:ring-brand-300"
+              {...studentForm.register('hasDisability')}
+            />
+            Student has a disability
+          </label>
+
+          {studentForm.watch('hasDisability') ? (
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
+              Disability type / details
+              <input
+                className="rounded-lg border border-brand-200 px-3 py-2"
+                placeholder="e.g. Visual, Hearing, Mobility, Intellectual"
+                {...studentForm.register('disabilityType')}
+              />
+            </label>
+          ) : null}
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
