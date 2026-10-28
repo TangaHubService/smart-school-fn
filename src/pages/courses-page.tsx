@@ -15,6 +15,7 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  Search,
   Send,
   Trash2,
 } from 'lucide-react';
@@ -31,6 +32,7 @@ import { AppDrawer } from '../components/drawer';
 import { RichContent } from '../components/rich-content';
 import { RichTextEditor } from '../components/rich-text-editor';
 import { SecurePdfViewer } from '../components/secure-pdf-viewer';
+import { SearchableSelect } from '../components/ui/searchable-select';
 import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
@@ -170,23 +172,23 @@ type EditableLesson = {
 
 type DeletableItem =
   | {
-      type: 'course';
-      id: string;
-      title: string;
-      description: string;
-    }
+    type: 'course';
+    id: string;
+    title: string;
+    description: string;
+  }
   | {
-      type: 'lesson';
-      id: string;
-      title: string;
-      description: string;
-    }
+    type: 'lesson';
+    id: string;
+    title: string;
+    description: string;
+  }
   | {
-      type: 'section';
-      id: string;
-      title: string;
-      description: string;
-    };
+    type: 'section';
+    id: string;
+    title: string;
+    description: string;
+  };
 
 const defaultCourseForm: CourseFormValues = {
   title: '',
@@ -815,9 +817,9 @@ export function CoursesPage() {
       const subjectName = course.subject?.name ?? '';
       const matchesSearch = q
         ? [course.title, course.classRoom.name, course.academicYear.name, subjectName]
-            .join(' ')
-            .toLowerCase()
-            .includes(q)
+          .join(' ')
+          .toLowerCase()
+          .includes(q)
         : true;
       const matchesSubject = subjectFilter === 'ALL' ? true : course.subject?.id === subjectFilter;
 
@@ -1046,59 +1048,66 @@ export function CoursesPage() {
         <div className="grid gap-4">
           {!selectedCourseId ? (
             <>
-              <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-end">
+              <div className="grid gap-3 rounded-2xl border border-brand-100 bg-brand-50/80 p-3 lg:grid-cols-[1.2fr_0.95fr_0.95fr] lg:items-end lg:gap-4">
                 <label className="grid gap-1 text-sm font-medium text-slate-700">
                   <span>Search courses</span>
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(event) => {
-                      setSearch(event.target.value);
-                      setPage(1);
-                    }}
-                    placeholder="Search by title, class, or subject"
-                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
-                    aria-label="Search courses"
-                  />
+                  <div className="relative">
+                    <input
+                      type="search"
+                      value={search}
+                      onChange={(event) => {
+                        setSearch(event.target.value);
+                        setPage(1);
+                      }}
+                      placeholder="Search by title, class, or subject..."
+                      className="w-full rounded-xl border border-brand-200 bg-white px-3 py-2.5 pl-9 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
+                      aria-label="Search courses"
+                    />
+                    <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                  </div>
                 </label>
 
-                <label className="grid gap-1 text-sm font-medium text-slate-700">
-                  <span>Subject</span>
-                  <select
-                    value={subjectFilter}
-                    onChange={(event) => {
-                      setSubjectFilter(event.target.value);
-                      setPage(1);
-                    }}
-                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
-                  >
-                    <option value="ALL">All subjects</option>
-                    {subjects.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SearchableSelect
+                  label="Subject"
+                  value={
+                    subjectFilter === 'ALL'
+                      ? 'All subjects'
+                      : subjects.find((s) => s.id === subjectFilter)?.name ?? ''
+                  }
+                  selectedId={subjectFilter === 'ALL' ? '' : subjectFilter}
+                  options={[
+                    { id: 'ALL', label: 'All subjects' },
+                    ...subjects.map((s) => ({ id: s.id, label: s.name })),
+                  ]}
+                  placeholder="Select subject..."
+                  ariaLabel="Filter by subject"
+                  onInputChange={() => { }}
+                  onOptionSelect={(opt) => {
+                    setSubjectFilter(opt.id);
+                    setPage(1);
+                  }}
+                />
 
-                <label className="grid gap-1 text-sm font-medium text-slate-700">
-                  <span>Class</span>
-                  <select
-                    value={classFilter}
-                    onChange={(event) => {
-                      setClassFilter(event.target.value);
-                      setPage(1);
-                    }}
-                    className="rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand-400"
-                  >
-                    <option value="ALL">All classes</option>
-                    {classRooms.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.code} - {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SearchableSelect
+                  label="Class"
+                  value={
+                    classFilter === 'ALL'
+                      ? 'All classes'
+                      : classRooms.find((c) => c.id === classFilter)?.name ?? ''
+                  }
+                  selectedId={classFilter === 'ALL' ? '' : classFilter}
+                  options={[
+                    { id: 'ALL', label: 'All classes' },
+                    ...classRooms.map((c) => ({ id: c.id, label: `${c.code} - ${c.name}` })),
+                  ]}
+                  placeholder="Select class..."
+                  ariaLabel="Filter by class"
+                  onInputChange={() => { }}
+                  onOptionSelect={(opt) => {
+                    setClassFilter(opt.id);
+                    setPage(1);
+                  }}
+                />
               </div>
 
               <div className="grid gap-4">
@@ -1131,152 +1140,110 @@ export function CoursesPage() {
 
                 {!coursesQuery.isPending && !coursesQuery.isError ? (
                   visibleCourses.length ? (
-                    <div className="grid gap-3">
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm text-slate-700">
-                        <div>
-                          <span className="font-medium text-slate-800">
-                            {visibleCourses.length} courses
-                          </span>
-                          <span className="ml-2 text-xs uppercase tracking-[0.16em] text-slate-500">
-                            Filtered view
-                          </span>
-                        </div>
-                      </div>
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                      {visibleCourses.map((course, courseIndex) => {
+                        const cover =
+                          COURSE_CARD_BACKGROUNDS[courseIndex % COURSE_CARD_BACKGROUNDS.length];
+                        const courseLabel = `${course.subject?.name ?? 'General Studies'} / ${course.classRoom.name}`;
+                        const lastUpdated = new Intl.DateTimeFormat('en-RW', {
+                          dateStyle: 'medium',
+                        }).format(new Date(course.updatedAt));
 
-                      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                        {visibleCourses.map((course, courseIndex) => {
-                          const cover =
-                            COURSE_CARD_BACKGROUNDS[courseIndex % COURSE_CARD_BACKGROUNDS.length];
-                          const courseLabel = `${course.subject?.name ?? 'General Studies'} / ${course.classRoom.name}`;
-                          const lastUpdated = new Intl.DateTimeFormat('en-RW', {
-                            dateStyle: 'medium',
-                          }).format(new Date(course.updatedAt));
-
-                          return (
-                            <article
-                              key={course.id}
-                              className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
+                        return (
+                          <article
+                            key={course.id}
+                            className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedCourseId(course.id);
+                                setSelectedLessonId('');
+                              }}
+                              className="block w-full text-left"
                             >
+                              <div
+                                className="relative h-40 bg-[length:140px_140px]"
+                                style={cover}
+                              >
+                                <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
+                                  {courseLabel}
+                                </span>
+                                <span className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-xl bg-white text-[#184f8f] shadow-md">
+                                  <Lock className="h-5 w-5" aria-hidden="true" />
+                                </span>
+                              </div>
+                              <div className="space-y-3 px-4 py-4">
+                                <div className="space-y-1">
+                                  <p className="text-lg font-semibold text-slate-900">
+                                    {course.title}
+                                  </p>
+                                  <p className="text-sm text-slate-600">
+                                    {course.description?.trim() ||
+                                      'Open this course to review lessons and publish content.'}
+                                  </p>
+                                </div>
+
+                                <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
+                                  <span>{course.academicYear.name}</span>
+                                  <span>{course.counts.lessons} lessons</span>
+                                  <span>
+                                    {course.teacher.firstName} {course.teacher.lastName}
+                                  </span>
+                                  <span>Updated {lastUpdated}</span>
+                                </div>
+                              </div>
+                            </button>
+
+                            <div className="grid grid-cols-4 gap-2 border-t border-brand-100 px-4 py-3">
                               <button
                                 type="button"
                                 onClick={() => {
                                   setSelectedCourseId(course.id);
                                   setSelectedLessonId('');
                                 }}
-                                className="block w-full text-left"
+                                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-100"
                               >
-                                <div
-                                  className="relative h-40 bg-[length:140px_140px]"
-                                  style={cover}
-                                >
-                                  <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
-                                    {courseLabel}
-                                  </span>
-                                  <span className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-xl bg-white text-[#184f8f] shadow-md">
-                                    <Lock className="h-5 w-5" aria-hidden="true" />
-                                  </span>
-                                </div>
-                                <div className="space-y-3 px-4 py-4">
-                                  <div className="space-y-1">
-                                    <p className="text-lg font-semibold text-slate-900">
-                                      {course.title}
-                                    </p>
-                                    <p className="text-sm text-slate-600">
-                                      {course.description?.trim() ||
-                                        'Open this course to review lessons and publish content.'}
-                                    </p>
-                                  </div>
-
-                                  <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
-                                    <span>{course.academicYear.name}</span>
-                                    <span>{course.counts.lessons} lessons</span>
-                                    <span>
-                                      {course.teacher.firstName} {course.teacher.lastName}
-                                    </span>
-                                    <span>Updated {lastUpdated}</span>
-                                  </div>
-                                </div>
+                                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                                Open
                               </button>
-
-                              <div className="grid grid-cols-4 gap-2 border-t border-brand-100 px-4 py-3">
+                              {canUseChat ? (
+                                <Link
+                                  to={`/admin/chat/${course.classRoom.id}`}
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                  <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Chat
+                                </Link>
+                              ) : null}
+                              {canManageCourses ? (
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setSelectedCourseId(course.id);
-                                    setSelectedLessonId('');
-                                  }}
-                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-100"
+                                  onClick={() => openEditCourse(course)}
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                                 >
-                                  <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                                  Open
+                                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Edit
                                 </button>
-                                {canUseChat ? (
-                                  <Link
-                                    to={`/admin/chat/${course.classRoom.id}`}
-                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                  >
-                                    <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
-                                    Chat
-                                  </Link>
-                                ) : null}
-                                {canManageCourses ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditCourse(course)}
-                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                                    Edit
-                                  </button>
-                                ) : null}
-                                {canManageCourses ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => requestDeleteCourse(course)}
-                                    disabled={isDeletePending}
-                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                                    Delete
-                                  </button>
-                                ) : null}
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-
-                      {coursesQuery.data?.pagination.totalPages &&
-                      coursesQuery.data.pagination.totalPages > 1 ? (
-                        <div className="flex items-center justify-center gap-2 pt-2">
-                          <button
-                            type="button"
-                            disabled={page <= 1}
-                            onClick={() => setPage((current) => Math.max(1, current - 1))}
-                            className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                            Previous
-                          </button>
-                          <span className="text-sm text-slate-600">
-                            Page {page} of {coursesQuery.data.pagination.totalPages}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={page >= coursesQuery.data.pagination.totalPages}
-                            onClick={() =>
-                              setPage((current) =>
-                                Math.min(coursesQuery.data!.pagination.totalPages, current + 1)
-                              )
-                            }
-                            className="inline-flex items-center gap-1 rounded-lg border border-brand-200 px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            Next
-                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                        </div>
-                      ) : null}
+                              ) : null}
+                              {canManageCourses ? (
+                                <button
+                                  type="button"
+                                  onClick={() => requestDeleteCourse(course)}
+                                  disabled={isDeletePending}
+                                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Delete
+                                </button>
+                              ) : null}
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
+
+
                   ) : (
                     <EmptyState
                       title="No courses yet"
@@ -1351,7 +1318,7 @@ export function CoursesPage() {
                             <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                             Lessons
                           </button>
-                       ) : canManageLessons ? (
+                        ) : canManageLessons ? (
                           <button
                             type="button"
                             onClick={openCreateLesson}
@@ -1426,254 +1393,254 @@ export function CoursesPage() {
                       ) : (
                         <>
                           {canManageLessons ? (
-                          <div className="rounded-2xl border border-brand-100 bg-white p-4">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div>
-                                <h3 className="text-sm font-bold text-slate-900">
-                                  {t('sections.title')}
-                                </h3>
-                                <p className="text-xs text-slate-500">{t('sections.subtitle')}</p>
+                            <div className="rounded-2xl border border-brand-100 bg-white p-4">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                  <h3 className="text-sm font-bold text-slate-900">
+                                    {t('sections.title')}
+                                  </h3>
+                                  <p className="text-xs text-slate-500">{t('sections.subtitle')}</p>
+                                </div>
+                              </div>
+                              <ul className="mt-3 grid gap-2" aria-label={t('sections.title')}>
+                                {(courseDetailQuery.data?.sections ?? []).map((section) => (
+                                  <li
+                                    key={section.id}
+                                    className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-3 py-2"
+                                  >
+                                    {editingSectionId === section.id ? (
+                                      <>
+                                        <input
+                                          value={editingSectionTitle}
+                                          onChange={(event) =>
+                                            setEditingSectionTitle(event.target.value)
+                                          }
+                                          aria-label={t('sections.rename')}
+                                          className="min-w-0 flex-1 rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400"
+                                        />
+                                        <button
+                                          type="button"
+                                          disabled={
+                                            !editingSectionTitle.trim() ||
+                                            updateSectionMutation.isPending
+                                          }
+                                          onClick={() =>
+                                            updateSectionMutation.mutate({
+                                              sectionId: section.id,
+                                              title: editingSectionTitle.trim(),
+                                            })
+                                          }
+                                          className="rounded-lg bg-brand-500 px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                                        >
+                                          {t('sections.save')}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingSectionId('');
+                                            setEditingSectionTitle('');
+                                          }}
+                                          className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
+                                        >
+                                          {t('sections.cancel')}
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">
+                                          {section.title}
+                                        </span>
+                                        <StatusPill
+                                          label={
+                                            section.isPublished
+                                              ? t('sections.published')
+                                              : t('sections.draft')
+                                          }
+                                          tone={section.isPublished ? 'published' : 'draft'}
+                                        />
+                                        <span className="text-xs tabular-nums text-slate-500">
+                                          {t('sections.lessonCount', {
+                                            count: section.lessonCount,
+                                          })}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => moveSection(section.id, -1)}
+                                          disabled={reorderSectionsMutation.isPending}
+                                          aria-label={`${t('sections.moveUp')}: ${section.title}`}
+                                          className="grid h-8 w-8 place-items-center rounded-lg border border-brand-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                          <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => moveSection(section.id, 1)}
+                                          disabled={reorderSectionsMutation.isPending}
+                                          aria-label={`${t('sections.moveDown')}: ${section.title}`}
+                                          className="grid h-8 w-8 place-items-center rounded-lg border border-brand-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                          <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            publishSectionMutation.mutate({
+                                              sectionId: section.id,
+                                              isPublished: !section.isPublished,
+                                            })
+                                          }
+                                          disabled={publishSectionMutation.isPending}
+                                          className="rounded-lg border border-brand-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                        >
+                                          {section.isPublished
+                                            ? t('sections.unpublish')
+                                            : t('sections.publish')}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingSectionId(section.id);
+                                            setEditingSectionTitle(section.title);
+                                          }}
+                                          aria-label={`${t('sections.rename')}: ${section.title}`}
+                                          className="grid h-8 w-8 place-items-center rounded-lg border border-brand-200 bg-white text-slate-600 hover:bg-slate-50"
+                                        >
+                                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            requestDeleteSection({
+                                              id: section.id,
+                                              title: section.title,
+                                            })
+                                          }
+                                          aria-label={`${t('sections.delete')}: ${section.title}`}
+                                          className="grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                              <div className="mt-3 flex gap-2">
+                                <input
+                                  value={newSectionTitle}
+                                  onChange={(event) => setNewSectionTitle(event.target.value)}
+                                  placeholder={t('sections.addPlaceholder')}
+                                  aria-label={t('sections.addPlaceholder')}
+                                  className="min-w-0 flex-1 rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-brand-400"
+                                />
+                                <button
+                                  type="button"
+                                  disabled={
+                                    !newSectionTitle.trim() || createSectionMutation.isPending
+                                  }
+                                  onClick={() =>
+                                    createSectionMutation.mutate(newSectionTitle.trim())
+                                  }
+                                  className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+                                >
+                                  <FolderPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                                  {t('sections.add')}
+                                </button>
                               </div>
                             </div>
-                            <ul className="mt-3 grid gap-2" aria-label={t('sections.title')}>
-                              {(courseDetailQuery.data?.sections ?? []).map((section) => (
-                                <li
-                                  key={section.id}
-                                  className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-3 py-2"
-                                >
-                                  {editingSectionId === section.id ? (
-                                    <>
-                                      <input
-                                        value={editingSectionTitle}
-                                        onChange={(event) =>
-                                          setEditingSectionTitle(event.target.value)
-                                        }
-                                        aria-label={t('sections.rename')}
-                                        className="min-w-0 flex-1 rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-brand-400"
-                                      />
-                                      <button
-                                        type="button"
-                                        disabled={
-                                          !editingSectionTitle.trim() ||
-                                          updateSectionMutation.isPending
-                                        }
-                                        onClick={() =>
-                                          updateSectionMutation.mutate({
-                                            sectionId: section.id,
-                                            title: editingSectionTitle.trim(),
-                                          })
-                                        }
-                                        className="rounded-lg bg-brand-500 px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-                                      >
-                                        {t('sections.save')}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingSectionId('');
-                                          setEditingSectionTitle('');
-                                        }}
-                                        className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
-                                      >
-                                        {t('sections.cancel')}
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">
-                                        {section.title}
-                                      </span>
-                                      <StatusPill
-                                        label={
-                                          section.isPublished
-                                            ? t('sections.published')
-                                            : t('sections.draft')
-                                        }
-                                        tone={section.isPublished ? 'published' : 'draft'}
-                                      />
-                                      <span className="text-xs tabular-nums text-slate-500">
-                                        {t('sections.lessonCount', {
-                                          count: section.lessonCount,
-                                        })}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => moveSection(section.id, -1)}
-                                        disabled={reorderSectionsMutation.isPending}
-                                        aria-label={`${t('sections.moveUp')}: ${section.title}`}
-                                        className="grid h-8 w-8 place-items-center rounded-lg border border-brand-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                                      >
-                                        <ChevronUp className="h-4 w-4" aria-hidden="true" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => moveSection(section.id, 1)}
-                                        disabled={reorderSectionsMutation.isPending}
-                                        aria-label={`${t('sections.moveDown')}: ${section.title}`}
-                                        className="grid h-8 w-8 place-items-center rounded-lg border border-brand-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                                      >
-                                        <ChevronDown className="h-4 w-4" aria-hidden="true" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          publishSectionMutation.mutate({
-                                            sectionId: section.id,
-                                            isPublished: !section.isPublished,
-                                          })
-                                        }
-                                        disabled={publishSectionMutation.isPending}
-                                        className="rounded-lg border border-brand-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                                      >
-                                        {section.isPublished
-                                          ? t('sections.unpublish')
-                                          : t('sections.publish')}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingSectionId(section.id);
-                                          setEditingSectionTitle(section.title);
-                                        }}
-                                        aria-label={`${t('sections.rename')}: ${section.title}`}
-                                        className="grid h-8 w-8 place-items-center rounded-lg border border-brand-200 bg-white text-slate-600 hover:bg-slate-50"
-                                      >
-                                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          requestDeleteSection({
-                                            id: section.id,
-                                            title: section.title,
-                                          })
-                                        }
-                                        aria-label={`${t('sections.delete')}: ${section.title}`}
-                                        className="grid h-8 w-8 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                                      </button>
-                                    </>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                            <div className="mt-3 flex gap-2">
-                              <input
-                                value={newSectionTitle}
-                                onChange={(event) => setNewSectionTitle(event.target.value)}
-                                placeholder={t('sections.addPlaceholder')}
-                                aria-label={t('sections.addPlaceholder')}
-                                className="min-w-0 flex-1 rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-brand-400"
-                              />
-                              <button
-                                type="button"
-                                disabled={
-                                  !newSectionTitle.trim() || createSectionMutation.isPending
-                                }
-                                onClick={() =>
-                                  createSectionMutation.mutate(newSectionTitle.trim())
-                                }
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
-                              >
-                                <FolderPlus className="h-3.5 w-3.5" aria-hidden="true" />
-                                {t('sections.add')}
-                              </button>
-                            </div>
-                          </div>
                           ) : null}
                           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                             {courseDetailQuery.data.lessons.items.map((lesson, lessonIndex) => {
-                            const cover =
-                              COURSE_CARD_BACKGROUNDS[lessonIndex % COURSE_CARD_BACKGROUNDS.length];
+                              const cover =
+                                COURSE_CARD_BACKGROUNDS[lessonIndex % COURSE_CARD_BACKGROUNDS.length];
 
-                            return (
-                              <article
-                                key={lesson.id}
-                                className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedLessonId(lesson.id)}
-                                  className="block w-full text-left"
+                              return (
+                                <article
+                                  key={lesson.id}
+                                  className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
                                 >
-                                  <div
-                                    className="relative h-40 bg-[length:140px_140px]"
-                                    style={cover}
-                                  >
-                                    <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
-                                      Lesson {lesson.sequence} / {lesson.contentType}
-                                    </span>
-                                    <span className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-md">
-                                      {lesson.isPublished ? 'Published' : 'Draft'}
-                                    </span>
-                                  </div>
-                                  <div className="space-y-2 px-4 py-3">
-                                    <p className="text-lg font-medium text-slate-800">
-                                      {lesson.title}
-                                    </p>
-                                    <p className="text-xs font-semibold text-brand-700">
-                                      {lesson.section?.title ?? t('sections.unsectioned')}
-                                    </p>
-                                    <p className="line-clamp-2 text-sm text-slate-600">
-                                      {lesson.summary ?? 'Open this lesson to read the content.'}
-                                    </p>
-                                  </div>
-                                </button>
-
-                                <div className="grid grid-cols-2 gap-2 border-t border-brand-100 px-4 py-3 xl:grid-cols-4">
                                   <button
                                     type="button"
                                     onClick={() => setSelectedLessonId(lesson.id)}
-                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-100"
+                                    className="block w-full text-left"
                                   >
-                                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                                    Open
+                                    <div
+                                      className="relative h-40 bg-[length:140px_140px]"
+                                      style={cover}
+                                    >
+                                      <span className="absolute left-3 top-3 rounded-lg bg-[#184f8f] px-3 py-1 text-xs font-medium text-white shadow-sm">
+                                        Lesson {lesson.sequence} / {lesson.contentType}
+                                      </span>
+                                      <span className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-md">
+                                        {lesson.isPublished ? 'Published' : 'Draft'}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-2 px-4 py-3">
+                                      <p className="text-lg font-medium text-slate-800">
+                                        {lesson.title}
+                                      </p>
+                                      <p className="text-xs font-semibold text-brand-700">
+                                        {lesson.section?.title ?? t('sections.unsectioned')}
+                                      </p>
+                                      <p className="line-clamp-2 text-sm text-slate-600">
+                                        {lesson.summary ?? 'Open this lesson to read the content.'}
+                                      </p>
+                                    </div>
                                   </button>
-                                  {canManageLessons ? (
+
+                                  <div className="grid grid-cols-2 gap-2 border-t border-brand-100 px-4 py-3 xl:grid-cols-4">
                                     <button
                                       type="button"
-                                      onClick={() => openEditLesson(lesson)}
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                      onClick={() => setSelectedLessonId(lesson.id)}
+                                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-100"
                                     >
-                                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                                      Edit
+                                      <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                                      Open
                                     </button>
-                                  ) : null}
-                                  {canPublishLessons ? (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        publishLessonMutation.mutate({
-                                          lessonId: lesson.id,
-                                          isPublished: !lesson.isPublished,
-                                        })
-                                      }
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                    >
-                                      {lesson.isPublished ? (
-                                        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                                      ) : (
-                                        <Send className="h-3.5 w-3.5" aria-hidden="true" />
-                                      )}
-                                      {lesson.isPublished ? 'Draft' : 'Publish'}
-                                    </button>
-                                  ) : null}
-                                  {canManageLessons ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => requestDeleteLesson(lesson)}
-                                      disabled={deleteLessonMutation.isPending}
-                                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                                      Delete
-                                    </button>
-                                  ) : null}
-                                </div>
-                              </article>
-                            );
-                          })}
+                                    {canManageLessons ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => openEditLesson(lesson)}
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                                        Edit
+                                      </button>
+                                    ) : null}
+                                    {canPublishLessons ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          publishLessonMutation.mutate({
+                                            lessonId: lesson.id,
+                                            isPublished: !lesson.isPublished,
+                                          })
+                                        }
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                      >
+                                        {lesson.isPublished ? (
+                                          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                                        ) : (
+                                          <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                                        )}
+                                        {lesson.isPublished ? 'Draft' : 'Publish'}
+                                      </button>
+                                    ) : null}
+                                    {canManageLessons ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => requestDeleteLesson(lesson)}
+                                        disabled={deleteLessonMutation.isPending}
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                        Delete
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                </article>
+                              );
+                            })}
                           </div>
                         </>
                       )
@@ -1698,12 +1665,12 @@ export function CoursesPage() {
                       />
                     )}
                   </SectionCard>
-                </>
+                  </>
               ) : null}
-            </div>
-          )}
-        </div>
-      </SectionCard>
+              </div>
+            )}
+          </div>
+        </SectionCard>
 
       <DrawerForm
         open={canManageCourses && isCourseModalOpen}

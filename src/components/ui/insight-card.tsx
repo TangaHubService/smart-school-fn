@@ -27,7 +27,7 @@ export function InsightCard({
   tone?: InsightTone;
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-4">
+    <div className="flex items-center gap-3 border border-slate-200 bg-white px-4 py-4 rounded-xl shadow-sm">
       <span
         className={clsx(
           'grid h-11 w-11 shrink-0 place-items-center rounded-xl',
