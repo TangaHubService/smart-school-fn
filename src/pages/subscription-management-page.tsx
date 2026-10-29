@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreditCard, Plus, RefreshCw, School } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
@@ -12,13 +12,14 @@ import {
   type DataTableColumn,
 } from '../components/ui/data-table';
 import { Badge } from '../components/ui/badge';
+import socket from '../utils/socket';
 import { useAuth } from '../features/auth/auth.context';
 import {
   BILLING_CURRENCIES,
   BILLING_PAYMENT_METHODS,
   createManualInvoiceApi,
   grantAcademyAccessApi,
-  listAcademyCatalogProgramsAdminApi,
+  listAcademyCatalogClassesAdminApi,
   listAcademyEnrollmentsAdminApi,
   listSchoolInvoicesApi,
   listSchoolSubscriptionsApi,
@@ -147,10 +148,10 @@ const enrollmentColumns: DataTableColumn<AcademyEnrollmentAdminRow>[] = [
     ),
   },
   {
-    key: 'programTitle',
-    header: 'Program',
+    key: 'className',
+    header: 'Class',
     mobile: 'secondary',
-    render: (row) => <span className="text-slate-700">{row.programTitle}</span>,
+    render: (row) => <span className="text-slate-700">{row.className || row.programTitle}</span>,
   },
   {
     key: 'access',
@@ -197,7 +198,7 @@ export function SubscriptionManagementPage() {
   const [grantOpen, setGrantOpen] = useState(false);
   const [editSub, setEditSub] = useState<SchoolSubscriptionRow | null>(null);
   const [grantEmail, setGrantEmail] = useState('');
-  const [grantProgramId, setGrantProgramId] = useState('');
+  const [grantClassRoomId, setGrantClassRoomId] = useState('');
   const [grantDays, setGrantDays] = useState('');
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('');
@@ -210,6 +211,19 @@ export function SubscriptionManagementPage() {
     reference: '',
     paymentDate: '',
   });
+
+  // Real-time unblock via socket when payment is confirmed
+  useEffect(() => {
+    const handleUnlock = () => {
+      setPayInvoice(null);
+    };
+    socket.on('invoice:paid', handleUnlock);
+    socket.on('subscription:updated', handleUnlock);
+    return () => {
+      socket.off('invoice:paid', handleUnlock);
+      socket.off('subscription:updated', handleUnlock);
+    };
+  }, []);
   const [invoiceForm, setInvoiceForm] = useState({
     tenantId: '',
     title: '',
@@ -238,10 +252,10 @@ export function SubscriptionManagementPage() {
     queryFn: () => listSubscriptionPlansApi(token),
   });
 
-  const catalogProgramsQuery = useQuery({
-    queryKey: ['subscriptions', 'academy-catalog-programs'],
+  const catalogClassesQuery = useQuery({
+    queryKey: ['subscriptions', 'academy-catalog-classes'],
     enabled: Boolean(token) && grantOpen,
-    queryFn: () => listAcademyCatalogProgramsAdminApi(token),
+    queryFn: () => listAcademyCatalogClassesAdminApi(token),
   });
 
   const enrollmentsQuery = useQuery({
@@ -268,18 +282,18 @@ export function SubscriptionManagementPage() {
     mutationFn: () =>
       grantAcademyAccessApi(token, {
         email: grantEmail.trim() || undefined,
-        programId: grantProgramId,
+        classRoomId: grantClassRoomId,
         durationDays: grantDays.trim() ? parseInt(grantDays, 10) : undefined,
       }),
     onSuccess: (data) => {
       showToast({
         type: 'success',
         title: 'Access granted',
-        message: `${data.email} · ${data.programTitle}`,
+        message: `${data.email} · ${data.className || data.programTitle}`,
       });
       setGrantOpen(false);
       setGrantEmail('');
-      setGrantProgramId('');
+      setGrantClassRoomId('');
       setGrantDays('');
       void queryClient.invalidateQueries({ queryKey: ['subscriptions', 'academy-enrollments'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard', 'super-admin'] });
@@ -390,9 +404,9 @@ export function SubscriptionManagementPage() {
     });
   };
 
-  const programOptions = useMemo(
-    () => catalogProgramsQuery.data?.items ?? [],
-    [catalogProgramsQuery.data?.items]
+  const classOptions = useMemo(
+    () => catalogClassesQuery.data?.items ?? [],
+    [catalogClassesQuery.data?.items]
   );
 
   const isError =
@@ -426,7 +440,26 @@ export function SubscriptionManagementPage() {
   const loading = schoolSubsQuery.isPending || plansQuery.isPending || enrollmentsQuery.isPending;
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      {/* Background blocking overlay — shows when school has unpaid invoice */}
+      <div
+        aria-hidden={!payInvoice}
+        className={
+          payInvoice
+            ? 'pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[#10213F]/70 backdrop-blur-sm'
+            : 'pointer-events-none fixed inset-0 z-50 hidden'
+        }
+      >
+        <div className="mx-6 max-w-md rounded-2xl border border-white/20 bg-white/95 p-8 shadow-2xl text-center">
+          <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-600 shadow-sm ring-1 ring-red-100">
+            <svg className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+          </div>
+          <h2 className="text-xl font-extrabold text-[#10213F]">Payment Required</h2>
+          <p className="mt-2 text-sm text-slate-600">Your school has an unpaid invoice. Complete payment to unlock access.</p>
+          <p className="mt-1 text-xs text-slate-400">This block updates in real time via socket.</p>
+        </div>
+      </div>
+
       <SectionCard title="Billing & subscriptions">
         <div className="mb-4 flex flex-wrap gap-2">
           <button
@@ -621,7 +654,7 @@ export function SubscriptionManagementPage() {
             </button>
             <button
               type="button"
-              disabled={grantMutation.isPending || !grantEmail.trim() || !grantProgramId}
+              disabled={grantMutation.isPending || !grantEmail.trim() || !grantClassRoomId}
               onClick={() => grantMutation.mutate()}
               className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
@@ -642,25 +675,25 @@ export function SubscriptionManagementPage() {
             />
           </label>
           <label className="grid gap-1">
-            <span className="font-medium text-slate-700">Program</span>
-            {catalogProgramsQuery.isPending ? (
-              <Skeleton className="h-10 rounded-lg" label="Loading programs" />
-            ) : catalogProgramsQuery.isError ? (
+            <span className="font-medium text-slate-700">Class</span>
+            {catalogClassesQuery.isPending ? (
+              <Skeleton className="h-10 rounded-lg" label="Loading classes" />
+            ) : catalogClassesQuery.isError ? (
               <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                Could not load programs.
+                Could not load classes.
               </p>
-            ) : !catalogProgramsQuery.data?.catalogConfigured || programOptions.length === 0 ? (
+            ) : !catalogClassesQuery.data?.catalogConfigured || classOptions.length === 0 ? (
               <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                No programs available.
+                No classes available.
               </p>
             ) : (
               <select
-                value={grantProgramId}
-                onChange={(e) => setGrantProgramId(e.target.value)}
+                value={grantClassRoomId}
+                onChange={(e) => setGrantClassRoomId(e.target.value)}
                 className="rounded-lg border border-slate-200 px-3 py-2 outline-none focus:border-brand-400"
               >
                 <option value="">Choose…</option>
-                {programOptions.map((p) => (
+                {classOptions.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.title} — {p.price} RWF
                   </option>
@@ -697,8 +730,8 @@ export function SubscriptionManagementPage() {
 
       <AppDrawer
         open={Boolean(payInvoice)}
-        onClose={() => !recordPaymentMutation.isPending && setPayInvoice(null)}
-        title="Record payment"
+        onClose={() => false}
+        title="Record payment — Pay to unlock"
         description={
           payInvoice
             ? `${payInvoice.invoiceNumber} · ${payInvoice.tenant.name} · ${Number(payInvoice.amountDue).toLocaleString()} ${payInvoice.currency} due`
@@ -708,11 +741,11 @@ export function SubscriptionManagementPage() {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setPayInvoice(null)}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
-              disabled={recordPaymentMutation.isPending}
+              onClick={() => {}}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed"
+              disabled
             >
-              Cancel
+              Cancel (locked until paid)
             </button>
             <button
               type="button"
@@ -789,18 +822,18 @@ export function SubscriptionManagementPage() {
 
       <AppDrawer
         open={invoiceOpen}
-        onClose={() => !invoiceMutation.isPending && setInvoiceOpen(false)}
-        title="New manual invoice"
+        onClose={() => false}
+        title="New manual invoice — Pay to unlock"
         description="For schools not on online payment. Amount, currency, method and dates are stored."
         footer={
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setInvoiceOpen(false)}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
-              disabled={invoiceMutation.isPending}
+              onClick={() => {}}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed"
+              disabled
             >
-              Cancel
+              Cancel (locked until paid)
             </button>
             <button
               type="button"

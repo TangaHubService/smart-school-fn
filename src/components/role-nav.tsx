@@ -15,7 +15,6 @@ import {
   Home,
   LayoutTemplate,
   School,
-  Sparkles,
   Settings,
   Shapes,
   ShieldCheck,
@@ -179,16 +178,6 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/admin/learning-insights',
     icon: BarChart3,
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'GOV_AUDITOR'],
-    requiredPermissionsOr: ['courses.read', 'subject.manage'],
-    requiredPermissions: [],
-    setupState: 'COMPLETE',
-  },
-  {
-    key: 'academy-programs',
-    label: 'Academy programs',
-    to: '/admin/academy-programs',
-    icon: Sparkles,
-    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
     requiredPermissionsOr: ['courses.read', 'subject.manage'],
     requiredPermissions: [],
     setupState: 'COMPLETE',
@@ -498,9 +487,10 @@ export const NAV_ITEMS: NavItem[] = [
 
 interface RoleNavProps {
   onNavigate?: () => void;
+  collapsed?: boolean;
 }
 
-export function RoleNav({ onNavigate }: RoleNavProps) {
+export function RoleNav({ onNavigate, collapsed }: RoleNavProps) {
   const { t } = useTranslation('common');
   const auth = useAuth();
   const location = useLocation();
@@ -577,11 +567,6 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
       return false;
     }
 
-    // Hide academy programs for non-academy schools.
-    if (item.key === 'academy-programs' && !auth.me?.tenant?.isAcademyCatalog) {
-      return false;
-    }
-
     if (superAdmin) {
       return SUPER_ADMIN_KEYS.has(item.key);
     }
@@ -648,7 +633,7 @@ export function RoleNav({ onNavigate }: RoleNavProps) {
               }}
             >
               <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>{label}</span>
+              {!collapsed ? <span className="whitespace-nowrap">{label}</span> : null}
             </NavLink>
           </div>
         );

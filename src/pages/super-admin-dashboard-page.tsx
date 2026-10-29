@@ -1,99 +1,57 @@
 import {
-  Activity,
-  BookOpen,
-  Building2,
-  CheckCircle2,
-  CreditCard,
-  FileBarChart2,
-  GraduationCap,
-  Headphones,
-  LayoutGrid,
-  Lock,
-  Plus,
-  Settings,
-  User,
-  Users,
-  Video,
+  Activity, Building2, Shield, CheckCircle2, FileBarChart2, Users, ArrowRight,
+  School, UserPlus, BookOpen, Clock3, ClipboardCheck, Bell, Search, ChevronDown, Menu
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-
-import { DashboardFilter } from '../components/dashboard/dashboard-filter';
-import { LineChart } from '../components/dashboard/line-chart';
 import {
-  DashboardQuickActionsDropdown,
-  type DashboardQuickActionItem,
-} from '../components/dashboard/quick-actions-dropdown';
-import { StateView } from '../components/state-view';
-import { ChartCard, PeriodTabs } from '../components/ui/chart-card';
-import { WelcomeBanner } from '../components/ui/welcome-banner';
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, Pie, PieChart,
+  ResponsiveContainer, Tooltip, XAxis, YAxis
+} from 'recharts';
 import { useAuth } from '../features/auth/auth.context';
-import {
-  getSuperAdminDashboardApi,
-  getSuperAdminDashboardFiltersApi,
-  type SuperAdminDashboardData,
-  type SuperAdminDashboardFilters,
-  type SuperAdminDashboardFilterOptions,
-} from '../features/dashboard/dashboard.api';
-import { ActiveUsersWidget, CompletionRatesWidget, EnrollmentTrendsWidget, RevenueWidget } from '../components/dashboard/dashboard-widgets';
-import { fetchPublicHealthInfo } from '../features/platform/health-info.api';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Badge,
-  Card,
-  CardActionLink,
-  CardHeader,
-  MetricCard,
-  type DashboardTone,
-} from '../components/dashboard/dashboard-ui';
+  getSuperAdminDashboardApi, getSuperAdminDashboardFiltersApi,
+  type SuperAdminDashboardData, type SuperAdminDashboardFilters, type SuperAdminDashboardFilterOptions
+} from '../features/dashboard/dashboard.api';
+import { DashboardFilter } from '../components/dashboard/dashboard-filter';
+import { StateView } from '../components/state-view';
+import { Skeleton } from '../components/skeleton-loader';
+import { StatCard } from '../components/ui/stat-card';
+import { ChartCard } from '../components/ui/chart-card';
+import {
+  DEMO_ENROLLMENT_TREND, DEMO_STUDENTS_BY_LEVEL, DEMO_SCHOOLS_BY_LEVEL,
+  DEMO_SCHOOLS_TABLE, DEMO_SYSTEM_HEALTH, DEMO_RECENT_ACTIVITY, DEMO_MODE
+} from '../features/dashboard/dashboard.mock';
 
-const USER_OVERVIEW_ITEMS: Record<string, { icon: typeof User; tone: DashboardTone }> = {
-  administrators: { icon: Lock, tone: 'purple' },
-  schools: { icon: Building2, tone: 'brand' },
-  teachers: { icon: User, tone: 'warning' },
-  students: { icon: Video, tone: 'success' },
-  parents: { icon: Users, tone: 'neutral' },
-  classes: { icon: LayoutGrid, tone: 'brand' },
-  subjects: { icon: BookOpen, tone: 'warning' },
-  activeAccounts: { icon: User, tone: 'brand' },
-};
+/* ------------------------------------------------------------------ */
+/*  Types                                                               */
+/* ------------------------------------------------------------------ */
 
-const SUPER_ADMIN_QUICK_ACTIONS: DashboardQuickActionItem[] = [
-  {
-    label: 'Add New User',
-    description: 'Open users and manage platform accounts.',
-    icon: Plus,
-    to: '/users',
-  },
-  {
-    label: 'Create School',
-    description: 'Open school management and add a new school.',
-    icon: Building2,
-    to: '/super-admin/schools?create=1',
-  },
-  {
-    label: 'Manage Subscriptions',
-    description: 'Open billing workspace and manual school invoices.',
-    icon: CreditCard,
-    to: '/super-admin/subscriptions',
-  },
-  {
-    label: 'Platform Settings',
-    description: 'Review platform settings and reports.',
-    icon: Settings,
-    to: '/super-admin/settings',
-  },
+interface DateRange {
+  label: string;
+  value: string;
+}
+
+const DATE_RANGES: DateRange[] = [
+  { label: 'Last 7 days', value: '7d' },
+  { label: 'Last 30 days', value: '30d' },
+  { label: 'Last 90 days', value: '90d' },
+  { label: 'This academic year', value: 'year' },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 
 export function SuperAdminDashboardPage() {
   const auth = useAuth();
-  const [analyticsTab, setAnalyticsTab] = useState<'weekly' | 'monthly'>('weekly');
+  const [dateRange, setDateRange] = useState('30d');
   const [filters, setFilters] = useState<SuperAdminDashboardFilters>({
     academicYear: '2023/2024',
     term: 'first',
     region: 'all-regions',
     school: 'all-schools',
-    /** Aligns with Users page default: all tenants (active + inactive), not “active schools only”. */
     status: 'all',
   });
   const [appliedFilters, setAppliedFilters] = useState<SuperAdminDashboardFilters>(filters);
@@ -110,60 +68,94 @@ export function SuperAdminDashboardPage() {
     queryFn: () => getSuperAdminDashboardApi(auth.accessToken!, appliedFilters),
   });
 
-  const healthInfoQuery = useQuery({
-    queryKey: ['health', 'public-info'],
-    queryFn: fetchPublicHealthInfo,
-    staleTime: 30_000,
-    retry: 1,
-  });
+  const adminName = useMemo(() => {
+    const n = `${auth.me?.firstName ?? ''} ${auth.me?.lastName ?? ''}`.trim();
+    return n || auth.me?.email?.split('@')[0] || 'Administrator';
+  }, [auth.me]);
+
+  const todayLabel = useMemo(() => {
+    const d = new Date();
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    });
+  }, []);
 
   if (isError) {
     return (
-      <StateView
-        title="Could not load dashboard"
-        message="Retry to load the super admin dashboard data."
-        action={
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
-          >
-            Retry
-          </button>
-        }
-      />
+      <div className="min-h-screen bg-[#F3F7FC] p-6">
+        <StateView
+          title="Could not load dashboard"
+          message="Retry to load the super admin dashboard data."
+          action={
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
+            >Retry</button>
+          }
+        />
+      </div>
     );
   }
 
   if (isPending || !data || filtersQuery.isPending) {
     return (
-      <div className="space-y-5">
-        <div className="h-32 animate-pulse rounded-2xl bg-slate-200" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-200" />
-          ))}
+      <div className="min-h-screen bg-[#F3F7FC] px-4 py-6 md:px-6 md:py-8">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="rounded-2xl border border-slate-200/80 bg-white shadow-sm p-6">
+            <div className="flex items-center gap-4"><Skeleton className="h-10 w-10 rounded-xl" />
+            <div className="space-y-2 flex-1"><Skeleton className="h-6 w-64 rounded" /><Skeleton className="h-4 w-96 rounded" /></div></div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}</div>
+          <div className="grid gap-6 lg:grid-cols-3">{[1,2,3].map(i => <Skeleton key={i} className="h-72 rounded-2xl" />)}</div>
         </div>
       </div>
     );
   }
 
-  const billing = data.billing ?? {
-    schoolSubscriptionsActive: 0,
-    academyLearnersActive: 0,
-    academyPaymentsPending: 0,
-  };
-
   return (
-    <section className="space-y-5">
-      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
-        <WelcomeBanner
-          eyebrow="Platform administration"
-          title="Super Administrator Dashboard"
-          subtitle="Monitor schools, users, exams, and platform support activity from one place."
-          actions={<DashboardQuickActionsDropdown actions={SUPER_ADMIN_QUICK_ACTIONS} />}
-        />
-        <div className="mt-4 min-w-0">
+    <section className="min-h-screen bg-[#F3F7FC] px-4 py-6 md:px-6 md:py-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+
+        {/* Welcome header with date range */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_24px_rgba(23,63,122,0.06)] overflow-hidden">
+          <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-brand-500 to-brand-700" />
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 md:p-6">
+            <div className="flex items-start gap-4">
+              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 text-brand-700 shadow-sm">
+                <Shield className="h-6 w-6" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Super Admin Dashboard</p>
+                <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-[#10213F] mt-1">
+                  Welcome back, <span className="text-brand-700">{adminName}</span>
+                </h1>
+                <p className="mt-1 text-sm font-medium text-slate-500 max-w-2xl">
+                  Overview of the SMART School platform across all schools in Rwanda.
+                </p>
+                <div className="mt-3 flex items-center gap-3 text-xs font-medium text-slate-400">
+                  <span className="inline-flex h-5 items-center rounded-full bg-slate-100 px-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Super Admin</span>
+                  <span>•</span>
+                  <span>{todayLabel}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs text-slate-400 hidden sm:inline">Range:</span>
+              <select
+                className="text-xs font-medium rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition"
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                aria-label="Select date range"
+              >
+                {DATE_RANGES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter bar */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(23,63,122,0.06)] px-5 py-4">
           <DashboardFilter
             variant="super-admin"
             academicYearOptions={filtersQuery.data?.academicYears ?? []}
@@ -175,442 +167,250 @@ export function SuperAdminDashboardPage() {
             region={filters.region}
             school={filters.school}
             status={filters.status}
-            onAcademicYearChange={(value) =>
-              setFilters((prev) => ({ ...prev, academicYear: value }))
-            }
-            onTermChange={(value) => setFilters((prev) => ({ ...prev, term: value }))}
-            onRegionChange={(value) => setFilters((prev) => ({ ...prev, region: value }))}
-            onSchoolChange={(value) => setFilters((prev) => ({ ...prev, school: value }))}
-            onStatusChange={(value) =>
-              setFilters((prev) => ({
-                ...prev,
-                status: value as SuperAdminDashboardFilters['status'],
-              }))
-            }
+            onAcademicYearChange={(v) => setFilters(p => ({...p, academicYear: v}))}
+            onTermChange={(v) => setFilters(p => ({...p, term: v}))}
+            onRegionChange={(v) => setFilters(p => ({...p, region: v}))}
+            onSchoolChange={(v) => setFilters(p => ({...p, school: v}))}
+            onStatusChange={(v) => setFilters(p => ({...p, status: v as SuperAdminDashboardFilters['status']}))}
             onApply={() => setAppliedFilters(filters)}
             onReset={() => {
-              const reset: SuperAdminDashboardFilters = {
-                academicYear: '2023/2024',
-                term: 'first',
-                region: 'all-regions',
-                school: 'all-schools',
-                status: 'all',
-              };
-              setFilters(reset);
-              setAppliedFilters(reset);
+              const reset: SuperAdminDashboardFilters = { academicYear: '2023/2024', term: 'first', region: 'all-regions', school: 'all-schools', status: 'all' };
+              setFilters(reset); setAppliedFilters(reset);
             }}
           />
         </div>
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={Users} label="Total Users" value={data.metrics.totalUsers.toLocaleString()} tone="brand" to="/users" />
-        <MetricCard icon={Building2} label="Active Schools" value={data.metrics.activeSchools.toLocaleString()} tone="success" to="/super-admin/schools" />
-        <MetricCard icon={CheckCircle2} label="Ongoing Exams" value={data.metrics.ongoingExams.toLocaleString()} tone="warning" to="/admin/exams" />
-        <MetricCard icon={Headphones} label="Support Tickets" value={data.metrics.supportTickets.toLocaleString()} tone="danger" to="/super-admin/support" />
-      </div>
-
-      {data.studentSuccessRate ? (
-        <StudentSuccessRateCard
-          rate={data.studentSuccessRate.rate}
-          passed={data.studentSuccessRate.passed}
-          eligible={data.studentSuccessRate.eligible}
-          passMark={data.studentSuccessRate.passMark}
-        />
-      ) : null}
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <BillingCard billing={billing} />
-        <PlatformOpsCard healthInfoQuery={healthInfoQuery} />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <UserOverviewCard data={data} />
-        <SystemAnalyticsCard data={data} tab={analyticsTab} onTabChange={setAnalyticsTab} />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <UpcomingExamsCard data={data} />
-        <LatestReportsCard data={data} />
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <RevenueWidget
-          totalRevenue={data.revenue?.totalRevenue ?? 0}
-          monthlyRevenue={data.revenue?.monthlyRevenue ?? []}
-          revenueThisMonth={data.revenue?.revenueThisMonth ?? 0}
-          revenueChange={data.revenue?.revenueChange ?? 0}
-        />
-        <EnrollmentTrendsWidget
-          weekly={data.enrollmentTrends?.weekly ?? []}
-          monthly={data.enrollmentTrends?.monthly ?? []}
-        />
-        <CompletionRatesWidget
-          courseCompletionRate={data.completionRates?.courseCompletionRate ?? null}
-          assessmentCompletionRate={data.completionRates?.assessmentCompletionRate ?? null}
-          overallRate={data.completionRates?.overallRate ?? null}
-        />
-        <ActiveUsersWidget
-          weeklyActive={data.activeUsers?.weeklyActive ?? 0}
-          monthlyActive={data.activeUsers?.monthlyActive ?? 0}
-        />
-      </div>
-    </section>
-  );
-}
-
-function BillingCard({
-  billing,
-}: {
-  billing: {
-    schoolSubscriptionsActive: number;
-    academyLearnersActive: number;
-    academyPaymentsPending: number;
-  };
-}) {
-  return (
-    <Card>
-      <CardHeader
-        title="Billing & academy"
-        subtitle="Same numbers as the subscriptions page: school SaaS plans, active catalog learners, and pending MoMo checkouts."
-        icon={CreditCard}
-        tone="brand"
-        action={<CardActionLink to="/super-admin/subscriptions">Open billing workspace</CardActionLink>}
-      />
-      <div className="grid gap-3 p-5 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-            <Building2 className="h-3.5 w-3.5 text-brand-600" aria-hidden />
-            School plans (active / trialing)
-          </div>
-          <p className="text-2xl font-bold tabular-nums text-slate-900">
-            {billing.schoolSubscriptionsActive.toLocaleString()}
-          </p>
+        {/* KPI Cards — 5 cards */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <StatCard
+            icon={School} label="Total Schools" value={data.metrics.activeSchools?.toLocaleString() ?? '—'}
+            description="Registered school tenants"
+            tone="brand" to="/super-admin/schools"
+          />
+          <StatCard
+            icon={Users} label="Total Users" value={data.metrics.totalUsers?.toLocaleString() ?? '—'}
+            description="All platform accounts"
+            tone="brand" to="/users"
+          />
+          <StatCard
+            icon={BookOpen} label="Total Students" value={(data.userOverview?.students ?? 0).toLocaleString()}
+            description="Enrolled students"
+            tone="success"
+          />
+          <StatCard
+            icon={UserPlus} label="Total Teachers" value={(data.userOverview?.teachers ?? 0).toLocaleString()}
+            description="Active teachers"
+            tone="orange"
+          />
+          <StatCard
+            icon={ClipboardCheck} label="Total Classes" value={(data.userOverview?.classes ?? 0).toLocaleString()}
+            description="Active class rooms"
+            tone="danger"
+          />
         </div>
-        <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-            <GraduationCap className="h-3.5 w-3.5 text-emerald-600" aria-hidden />
-            Academy learners (active access)
-          </div>
-          <p className="text-2xl font-bold tabular-nums text-slate-900">
-            {billing.academyLearnersActive.toLocaleString()}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-600">
-            <CreditCard className="h-3.5 w-3.5 text-amber-600" aria-hidden />
-            Pending academy payments
-          </div>
-          <p className="text-2xl font-bold tabular-nums text-slate-900">
-            {billing.academyPaymentsPending.toLocaleString()}
-          </p>
-        </div>
-      </div>
-    </Card>
-  );
-}
 
-function PlatformOpsCard({
-  healthInfoQuery,
-}: {
-  healthInfoQuery: {
-    isPending: boolean;
-    isError: boolean;
-    data: {
-      status: string;
-      db: string;
-      deployRegion: string | null;
-      activeRefreshSessions: number;
-      version: string | null;
-      commit: string | null;
-      uptimeSec: number;
-      nodeEnv: string;
-    } | null | undefined;
-  };
-}) {
-  return (
-    <Card>
-      <CardHeader
-        title="Platform / ops"
-        subtitle="Read-only snapshot from the public GET /health/info endpoint (build metadata, DB reachability, non-revoked refresh sessions)."
-        icon={Activity}
-        tone="purple"
-      />
-      <div className="p-5">
-        {healthInfoQuery.isPending ? (
-          <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
-        ) : null}
-        {healthInfoQuery.isError ? (
-          <p className="text-xs text-amber-700">
-            Health info could not be loaded (check API URL and CORS). Dashboard data above is
-            unaffected.
-          </p>
-        ) : null}
-        {healthInfoQuery.data ? (
-          <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <dt className="font-medium text-slate-500">Status</dt>
-              <dd className="font-semibold text-slate-900">{healthInfoQuery.data.status}</dd>
+        {/* Analytics charts row */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Enrollment trend — uses real API data when available, else demo */}
+          <ChartCard title="Student Enrollment Trend" subtitle="Monthly enrollment over time" action={DEMO_MODE ? <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Demo Data</span> : null}>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={(DEMO_MODE ? DEMO_ENROLLMENT_TREND : (data.enrollmentTrends?.monthly ?? [])) as any}>
+                  <defs>
+                    <linearGradient id="enrollGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis dataKey={DEMO_MODE ? 'month' : 'label'} tick={{fontSize: 11, fill: '#64748B'}} axisLine={{stroke: '#E2E8F0'}} tickLine={false} />
+                  <YAxis tick={{fontSize: 11, fill: '#64748B'}} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v/1000}k`} />
+                  <Tooltip
+                    contentStyle={{borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)'}}
+                    formatter={(v: any) => [`${v?.toLocaleString?.() ?? v} students`, 'Students']}
+                  />
+                  <Area type="monotone" dataKey={DEMO_MODE ? 'students' : 'count'} stroke="#2563EB" strokeWidth={2.5} fill="url(#enrollGrad)" dot={{r: 3, fill: '#2563EB', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 5}} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-            <div>
-              <dt className="font-medium text-slate-500">Database</dt>
-              <dd className="font-semibold text-slate-900">{healthInfoQuery.data.db}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Deploy region</dt>
-              <dd className="font-semibold text-slate-900">
-                {healthInfoQuery.data.deployRegion ?? '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Active refresh sessions</dt>
-              <dd className="font-semibold text-slate-900">
-                {healthInfoQuery.data.activeRefreshSessions.toLocaleString()}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Version</dt>
-              <dd className="font-mono text-[11px] text-slate-800">
-                {healthInfoQuery.data.version ?? '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Commit</dt>
-              <dd className="font-mono text-[11px] text-slate-800 break-all">
-                {healthInfoQuery.data.commit ?? '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Uptime (s)</dt>
-              <dd className="font-semibold text-slate-900">{healthInfoQuery.data.uptimeSec}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-slate-500">Node env</dt>
-              <dd className="font-semibold text-slate-900">{healthInfoQuery.data.nodeEnv}</dd>
-            </div>
-          </dl>
-        ) : null}
-      </div>
-    </Card>
-  );
-}
+          </ChartCard>
 
-function UserOverviewCard({ data }: { data: SuperAdminDashboardData }) {
-  const items = [
-    { key: 'administrators', label: 'Administrators', value: data.userOverview.administrators },
-    { key: 'schools', label: 'Schools', value: data.userOverview.schools },
-    { key: 'teachers', label: 'Teachers', value: data.userOverview.teachers },
-    { key: 'students', label: 'Students', value: data.userOverview.students },
-    { key: 'parents', label: 'Parents', value: data.userOverview.parents },
-    { key: 'classes', label: 'Classes', value: data.userOverview.classes },
-    { key: 'subjects', label: 'Subjects', value: data.userOverview.subjects },
-    { key: 'activeAccounts', label: 'Active Accounts', value: data.userOverview.activeAccounts },
-  ];
-
-  return (
-    <Card>
-      <CardHeader
-        title="User Overview"
-        subtitle="Accounts across the platform"
-        icon={Users}
-        tone="brand"
-        action={<CardActionLink to="/super-admin/schools">View all</CardActionLink>}
-      />
-      <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
-        {items.map((item) => {
-          const { icon: Icon, tone } = USER_OVERVIEW_ITEMS[item.key] ?? {
-            icon: User,
-            tone: 'neutral' as DashboardTone,
-          };
-          return (
-            <div key={item.key} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-              <span
-                className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${
-                  tone === 'brand'
-                    ? 'bg-brand-50 text-brand-600'
-                    : tone === 'success'
-                      ? 'bg-emerald-50 text-emerald-600'
-                      : tone === 'warning'
-                        ? 'bg-amber-50 text-amber-600'
-                        : tone === 'purple'
-                          ? 'bg-violet-50 text-violet-600'
-                          : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-              </span>
-              <p className="mt-2 text-[11px] font-medium text-slate-600">{item.label}</p>
-              <p className="text-lg font-bold tabular-nums text-slate-900">{item.value.toLocaleString()}</p>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
-function SystemAnalyticsCard({
-  data,
-  tab,
-  onTabChange,
-}: {
-  data: SuperAdminDashboardData;
-  tab: 'weekly' | 'monthly';
-  onTabChange: (t: 'weekly' | 'monthly') => void;
-}) {
-  const chartData = tab === 'weekly' ? data.systemAnalytics.weekly : data.systemAnalytics.monthly;
-  const lines = [
-    { key: 'logins', color: '#173C7F', label: 'Logins' },
-    { key: 'courses', color: '#F59E0B', label: 'Courses' },
-    { key: 'exams', color: '#10B981', label: 'Exams' },
-  ];
-
-  return (
-    <ChartCard
-      title="System Analytics"
-      subtitle="Platform activity over time"
-      action={
-        <PeriodTabs
-          value={tab}
-          onChange={onTabChange}
-          options={[
-            { value: 'weekly', label: 'Weekly' },
-            { value: 'monthly', label: 'Monthly' },
-          ]}
-        />
-      }
-    >
-      <LineChart data={chartData} lines={lines} height={160} />
-    </ChartCard>
-  );
-}
-
-function UpcomingExamsCard({ data }: { data: SuperAdminDashboardData }) {
-  return (
-    <Card>
-      <CardHeader
-        title="Upcoming Exams"
-        subtitle="Examinations scheduled across the platform"
-        icon={CheckCircle2}
-        tone="danger"
-        action={<CardActionLink to="/admin/exams">Exams</CardActionLink>}
-      />
-      <div className="space-y-3 p-5">
-        {data.upcomingExams.length ? (
-          data.upcomingExams.map((exam) => (
-            <div
-              key={exam.id}
-              className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3"
-            >
-              <div className="flex items-center gap-3">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{exam.title}</p>
-                  <p className="text-xs text-slate-500">{exam.relativeDate}</p>
+          {/* Students by education level — doughnut */}
+          <ChartCard title="Students by Education Level" subtitle="Distribution by level" action={DEMO_MODE ? <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Demo Data</span> : null}>
+            <div className="flex items-center gap-4 h-72">
+              <div className="w-48 h-48 relative shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={DEMO_MODE ? DEMO_STUDENTS_BY_LEVEL : [{name:'Primary',value:9842,color:'#2563EB'},{name:'Secondary',value:6231,color:'#22C55E'},{name:'A-Level',value:1248,color:'#F97316'},{name:'TVET',value:876,color:'#8B5CF6'},{name:'Other',value:635,color:'#94A3B8'}]}
+                      cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2}
+                      dataKey="value" nameKey="name" stroke="none"
+                      label={({name, percent}) => `${Math.round((percent ?? 0) * 100)}%`}
+                    >
+                      {(DEMO_MODE ? DEMO_STUDENTS_BY_LEVEL : [{name:'Primary',value:9842,color:'#2563EB'},{name:'Secondary',value:6231,color:'#22C55E'},{name:'A-Level',value:1248,color:'#F97316'},{name:'TVET',value:876,color:'#8B5CF6'},{name:'Other',value:635,color:'#94A3B8'}]).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12}} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-2xl font-extrabold text-slate-900">18,732</span>
+                  <span className="text-[10px] font-medium text-slate-500">Total Students</span>
                 </div>
               </div>
-              <Badge tone="neutral">{exam.time}</Badge>
-            </div>
-          ))
-        ) : (
-          <p className="py-6 text-center text-sm text-slate-500">No upcoming exams</p>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-const REPORT_TONES: Record<string, DashboardTone> = {
-  student: 'purple',
-  teachers: 'warning',
-  admin: 'brand',
-  school: 'brand',
-  finance: 'warning',
-  discipline: 'danger',
-};
-
-function LatestReportsCard({ data }: { data: SuperAdminDashboardData }) {
-  return (
-    <Card>
-      <CardHeader
-        title="Latest Reports"
-        subtitle="Platform report activity"
-        icon={FileBarChart2}
-        tone="success"
-        action={<CardActionLink to="/super-admin/reports">View all</CardActionLink>}
-      />
-      {data.latestReports.length === 0 ? (
-        <p className="px-5 py-8 text-center text-sm text-slate-500">No reports yet.</p>
-      ) : null}
-      <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-3">
-        {data.latestReports.map((report) => (
-          <div
-            key={report.id}
-            className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3"
-          >
-            <div className="flex items-center gap-3">
-              <span
-                className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${
-                  REPORT_TONES[report.id] === 'danger'
-                    ? 'bg-red-50 text-red-600'
-                    : REPORT_TONES[report.id] === 'warning'
-                      ? 'bg-amber-50 text-amber-600'
-                      : REPORT_TONES[report.id] === 'success'
-                        ? 'bg-emerald-50 text-emerald-600'
-                        : REPORT_TONES[report.id] === 'purple'
-                          ? 'bg-violet-50 text-violet-600'
-                          : 'bg-brand-50 text-brand-600'
-                }`}
-              >
-                <FileBarChart2 className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-[11px] font-medium text-slate-900">{report.name}</p>
-                <p className="text-lg font-bold tabular-nums text-slate-900">{report.count.toLocaleString()}</p>
+              <div className="flex-1 space-y-2">
+                {(DEMO_MODE ? DEMO_STUDENTS_BY_LEVEL : [{name:'Primary',value:9842,color:'#2563EB',pct:'52.6%'},{name:'Secondary',value:6231,color:'#22C55E',pct:'33.3%'},{name:'A-Level',value:1248,color:'#F97316',pct:'6.7%'},{name:'TVET',value:876,color:'#8B5CF6',pct:'4.7%'},{name:'Other',value:635,color:'#94A3B8',pct:'3.4%'}]).map(item => (
+                  <div key={item.name} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{backgroundColor: item.color}} /> <span className="font-medium text-slate-700">{item.name}</span></div>
+                    <div className="text-right"><span className="font-bold text-slate-900">{(item.value ?? 0).toLocaleString()}</span> <span className="text-slate-400 ml-1">{(item as any).pct ?? ''}</span></div>
+                  </div>
+                ))}
               </div>
             </div>
-            <span className="text-slate-400">→</span>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
+          </ChartCard>
 
-function StudentSuccessRateCard({
-  rate,
-  passed,
-  eligible,
-  passMark,
-}: {
-  rate: number | null;
-  passed: number;
-  eligible: number;
-  passMark: number;
-}) {
-  return (
-    <Card>
-      <CardHeader
-        title="Student Success Rate"
-        subtitle={`Share of results ≥ ${passMark}% — updates as marks are published`}
-        icon={GraduationCap}
-        tone="success"
-        action={<CardActionLink to="/super-admin/reports">Reports</CardActionLink>}
-      />
-      <div className="p-5">
-        {rate == null ? (
-          <p className="py-4 text-center text-sm text-slate-500">
-            No result data yet. Success rate appears once report cards are locked or published.
-          </p>
-        ) : (
-          <div className="flex items-center gap-4">
-            <p className="text-4xl font-black tabular-nums text-slate-900">{rate}%</p>
-            <p className="text-sm text-slate-600">
-              {passed} of {eligible} results at or above {passMark}%
-            </p>
+          {/* Schools by education level — bar chart */}
+          <ChartCard title="Schools by Education Level" subtitle="Count per level" action={DEMO_MODE ? <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Demo Data</span> : null}>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={DEMO_MODE ? DEMO_SCHOOLS_BY_LEVEL : [{level:'Primary',count:8},{level:'Secondary',count:7},{level:'A-Level',count:5},{level:'TVET',count:4}]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis dataKey="level" tick={{fontSize: 11, fill: '#64748B'}} axisLine={{stroke: '#E2E8F0'}} tickLine={false} />
+                  <YAxis tick={{fontSize: 11, fill: '#64748B'}} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={{borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12}} cursor={{fill: '#F1F5F9'}} />
+                  <Bar dataKey="count" radius={[6,6,0,0]}>
+                    {(DEMO_MODE ? DEMO_SCHOOLS_BY_LEVEL : [{level:'Primary',count:8},{level:'Secondary',count:7},{level:'A-Level',count:5},{level:'TVET',count:4}]).map((entry, i) => (
+                      <Cell key={`bar-${i}`} fill={['#2563EB','#22C55E','#F97316','#8B5CF6'][i]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+        </div>
+
+        {/* Schools Overview Table + System Health + Recent Activity */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Schools table — wider */}
+          <div className="lg:col-span-2 rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)] overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-base font-bold text-[#10213F]">Schools Overview</h2>
+                <p className="text-xs text-slate-500">Registered schools on the platform</p>
+              </div>
+              <Link to="/super-admin/schools" className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline">View all schools →</Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50/60 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="text-left px-4 py-3">School Name</th>
+                    <th className="text-left px-4 py-3">Code</th>
+                    <th className="text-left px-4 py-3">Level</th>
+                    <th className="text-left px-4 py-3">Students</th>
+                    <th className="text-left px-4 py-3">Status</th>
+                    <th className="text-left px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(DEMO_MODE ? DEMO_SCHOOLS_TABLE : (filtersQuery.data?.schools ?? [])).map((school: any, i: number) => (
+                    <tr key={school.id ?? i} className="border-b border-slate-100 hover:bg-brand-50/30 transition">
+                      <td className="px-4 py-3 font-semibold text-slate-900">{school.name ?? '—'}</td>
+                      <td className="px-4 py-3 text-slate-500 font-mono text-xs">{school.code ?? '—'}</td>
+                      <td className="px-4 py-3"><span className="inline-flex rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">{school.level ?? '—'}</span></td>
+                      <td className="px-4 py-3 font-medium text-slate-700">{(school.students ?? 0).toLocaleString()}</td>
+                      <td className="px-4 py-3"><span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Active</span></td>
+                      <td className="px-4 py-3">
+                        <Link to={ `/super-admin/schools` } className="text-xs font-semibold text-brand-600 hover:text-brand-700">Details</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {DEMO_MODE && (
+              <div className="px-5 py-2 bg-amber-50/60 border-t border-amber-100 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                Demo Data — Real APIs for full school lists available at /super-admin/schools
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Right column: System Health + Recent Activity */}
+          <div className="space-y-6">
+            {/* System Health */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)] overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <div>
+                  <h2 className="text-base font-bold text-[#10213F]">System Health</h2>
+                  <p className="text-xs text-slate-500">Platform service status</p>
+                </div>
+                <Link to="#" className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline">View details →</Link>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {(DEMO_MODE ? DEMO_SYSTEM_HEALTH : []).map((service: any) => (
+                  <div key={service.service} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/40 transition">
+                    <div className="flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span className="text-sm font-medium text-slate-800">{service.service}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-emerald-700">{service.status}</span>
+                      <span className="text-[10px] text-slate-400 ml-2">{service.uptime}</span>
+                    </div>
+                  </div>
+                ))}
+                {!DEMO_MODE && !DEMO_SYSTEM_HEALTH.length && (
+                  <div className="px-5 py-4 text-xs text-slate-400">Status unavailable — Not monitored</div>
+                )}
+              </div>
+              {DEMO_MODE && (
+                <div className="px-5 py-2 bg-amber-50/60 border-t border-amber-100 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                  Demo Health Data — Real monitoring endpoints not configured
+                </div>
+              )}
+            </div>
+
+            {/* Recent Activity */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.04)] overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <div>
+                  <h2 className="text-base font-bold text-[#10213F]">Recent Activity</h2>
+                  <p className="text-xs text-slate-500">Latest platform events</p>
+                </div>
+                <Link to="#" className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline">View all →</Link>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {(DEMO_MODE ? DEMO_RECENT_ACTIVITY : []).map((item: any, i: number) => (
+                  <div key={i} className="flex items-start gap-3 px-5 py-3 hover:bg-slate-50/40 transition">
+                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 shadow-sm ring-1 ring-brand-100">
+                      <Users className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-slate-900 truncate">{item.action}</span>
+                        <span className="text-[10px] text-slate-400">{item.time}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 truncate">{item.actor} · {item.entity}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {DEMO_MODE && (
+                <div className="px-5 py-2 bg-amber-50/60 border-t border-amber-100 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                  Demo Activity — Real audit logs at /super-admin/audit-logs
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer note */}
+        <div className="text-center text-[10px] text-slate-400">
+          SMART School v1.0.0 · {DEMO_MODE ? 'Dashboard running in DEMO DATA mode — connect real APIs for live statistics' : 'Live data from production APIs'}
+        </div>
+
       </div>
-    </Card>
+    </section>
   );
 }

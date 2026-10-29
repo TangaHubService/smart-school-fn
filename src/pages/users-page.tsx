@@ -234,7 +234,7 @@ export function UsersPage() {
         render: (user) => (
           <span className="flex items-center gap-3">
             <Avatar name={fullName(user)} size="sm" />
-            <span className="font-semibold text-slate-900">{fullName(user)}</span>
+            <span className="font-semibold text-slate-900 whitespace-nowrap">{fullName(user)}</span>
           </span>
         ),
       },
@@ -244,7 +244,7 @@ export function UsersPage() {
         sortable: true,
         mobile: 'secondary',
         render: (user) => (
-          <span className="block max-w-56">
+          <span className="block max-w-56 whitespace-nowrap">
             <span className="block truncate text-xs text-slate-600">{user.email}</span>
             {user.phone ? (
               <span className="block truncate text-xs text-slate-400">{user.phone}</span>
@@ -256,14 +256,14 @@ export function UsersPage() {
         key: 'school',
         header: 'School',
         render: (user) => (
-          <span className="text-sm font-medium text-slate-700">{user.tenant?.name ?? '—'}</span>
+          <span className="text-sm font-medium text-slate-700 whitespace-nowrap">{user.tenant?.name ?? '—'}</span>
         ),
       },
       {
         key: 'roles',
         header: 'Role',
         render: (user) => (
-          <span className="flex flex-wrap gap-1">
+          <span className="flex flex-wrap gap-1 whitespace-nowrap">
             {user.roles.map((role) => (
               <RoleBadge key={role} role={role} />
             ))}
@@ -281,7 +281,7 @@ export function UsersPage() {
         header: 'Joined',
         sortable: true,
         render: (user) => (
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 whitespace-nowrap">
             {user.createdAt
               ? new Intl.DateTimeFormat('en-GB', {
                   day: '2-digit',

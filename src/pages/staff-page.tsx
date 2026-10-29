@@ -303,6 +303,7 @@ export function StaffPage() {
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [openMenuRow, setOpenMenuRow] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<StaffMember | null>(null);
   const [selectedMemberForView, setSelectedMemberForView] = useState<StaffMember | null>(null);
@@ -776,65 +777,28 @@ export function StaffPage() {
                       toggleMemberStatusMutation.variables?.member.id === row.member.id;
 
                     return (
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedMemberForView(row.member)}
-                          className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <select
+                          className="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700 border-0 outline-none"
+                          defaultValue=""
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (!v) return;
+                            if (v === 'view') { setSelectedMemberForView(row.member); }
+                            else if (v === 'edit') { setSelectedMemberForEdit(row.member); }
+                            else if (v === 'status') { toggleMemberStatusMutation.mutate({ member: row.member, status: nextStatus }); }
+                            else if (v === 'assign') { openAssignCourses(row.member); }
+                            else if (v === 'delete') { setDeleteTarget({ kind: 'MEMBER', id: row.member.id, label: formatMemberName(row.member) }); }
+                            e.target.value = '';
+                          }}
                         >
-                          View
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedMemberForEdit(row.member)}
-                          className="rounded-md border border-brand-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          disabled={disableStatusAction}
-                          title={
-                            isSelfMember && nextStatus === 'INACTIVE'
-                              ? 'You cannot deactivate your own account'
-                              : undefined
-                          }
-                          onClick={() =>
-                            toggleMemberStatusMutation.mutate({
-                              member: row.member,
-                              status: nextStatus,
-                            })
-                          }
-                          className={
-                            nextStatus === 'ACTIVE'
-                              ? 'rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60'
-                              : 'rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60'
-                          }
-                        >
-                          {isUpdatingThisMember ? 'Updating...' : statusActionLabel}
-                        </button>
-                        {isTeacher(row.member) ? (
-                          <button
-                            type="button"
-                            onClick={() => openAssignCourses(row.member)}
-                            className="rounded-md bg-brand-500 px-2 py-1 text-xs font-semibold text-white transition hover:bg-brand-600"
-                          >
-                            Assign subject
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDeleteTarget({
-                              kind: 'MEMBER',
-                              id: row.member.id,
-                              label: formatMemberName(row.member),
-                            })
-                          }
-                          className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-                        >
-                          Delete
-                        </button>
+                          <option value="">Actions</option>
+                          <option value="view">View</option>
+                          <option value="edit">Edit</option>
+                          <option value="status">{isUpdatingThisMember ? 'Updating...' : statusActionLabel}</option>
+                          {isTeacher(row.member) ? <option value="assign">Assign subject</option> : null}
+                          <option value="delete">Delete</option>
+                        </select>
                       </div>
                     );
                   })()

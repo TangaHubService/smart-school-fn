@@ -134,7 +134,7 @@ export function AppShell() {
                 ? 'bg-gradient-to-b from-[#06245a] via-[#073a7c] to-[#052f68]'
                 : 'bg-[#173C7F]',
               isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
-              isDesktopSidebarVisible ? 'md:translate-x-0' : 'md:hidden'
+              isDesktopSidebarVisible ? 'md:translate-x-0 md:w-72' : 'md:translate-x-0 md:w-16 md:overflow-hidden'
             )}
             aria-label="Sidebar"
           >
@@ -216,7 +216,7 @@ export function AppShell() {
             </div>
 
             <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-6 py-6">
-              <RoleNav onNavigate={closeMobileNav} />
+              <RoleNav onNavigate={closeMobileNav} collapsed={!isDesktopSidebarVisible} />
             </div>
 
             <div className="mt-auto shrink-0 px-6 pb-6 pt-6">
