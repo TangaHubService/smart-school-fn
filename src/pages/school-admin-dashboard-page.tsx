@@ -1,34 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
-import clsx from 'clsx';
 import {
-  BarChart3,
   Bell,
   CalendarCheck2,
-  CalendarDays,
-  CheckCircle2,
-  ClipboardCheck,
   FileBarChart2,
   FileText,
-  GraduationCap,
-  HeartPulse,
   ReceiptText,
   School,
-  Sparkles,
   TrendingUp,
   UserPlus,
   Users,
-  type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
-  Cell,
   Legend,
   Line,
   LineChart as RechartsLineChart,
-  Pie,
-  PieChart as RechartsPieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -55,18 +44,32 @@ import {
   type SchoolAdminDashboardFilters,
 } from '../features/dashboard/dashboard.api';
 import { listClassRoomsApi } from '../features/sprint1/sprint1.api';
+import { listStudentsApi, type StudentListItem } from '../features/sprint2/sprint2.api';
 import { listCoursesApi } from '../features/sprint4/lms.api';
 import { listLessonPlansApi, type LessonPlan } from '../features/sprint4/lesson-plans.api';
 import { AnnouncementList } from '../components/ui/announcement-list';
 import { Avatar } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
 import { DataTable, type DataTableColumn } from '../components/ui/data-table';
-import { InsightGrid } from '../components/ui/insight-card';
-import { StatCard } from '../components/ui/stat-card';
+import {
+  AttentionCard,
+  CardHeader,
+  DashboardCard,
+  EmptyPanel,
+  KpiStrip,
+  MeterRow,
+  PageHeader,
+  TextLink,
+  type AttentionItem,
+} from '../components/ui/dashboard-kit';
+import {
+  CHART_AXIS_TICK,
+  CHART_GRID,
+  CHART_SERIES,
+  CHART_TOOLTIP_STYLE,
+} from '../components/ui/chart-theme';
+import { DashboardQuickActionsDropdown, type DashboardQuickActionItem } from '../components/dashboard/quick-actions-dropdown';
 
-const CARD_CLASS =
-  'rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]';
-const GRADE_COLORS = ['#2563EB', '#22C55E', '#8B5CF6', '#F97316', '#EC4899'];
 
 function formatPercent(value: number | null): string {
   return value === null ? '—' : `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
@@ -211,6 +214,20 @@ export function SchoolAdminDashboardPage() {
     queryFn: () => getMySubscriptionInvoiceApi(auth.accessToken!),
   });
 
+  const canReadStudents = hasPermission(auth.me, 'students.read');
+
+  const studentsQuery = useQuery({
+    queryKey: ['students', 'school-dashboard', selectedAcademicYearId, classFilter],
+    enabled: Boolean(auth.accessToken && canReadStudents),
+    queryFn: () =>
+      listStudentsApi(auth.accessToken!, {
+        academicYearId: selectedAcademicYearId || undefined,
+        classId: classFilter !== 'all' ? classFilter : undefined,
+        page: 1,
+        pageSize: 8,
+      }),
+  });
+
   if (dashboardQuery.isError) {
     return (
       <StateView
@@ -238,8 +255,55 @@ export function SchoolAdminDashboardPage() {
   const announcements = announcementsQuery.data?.items ?? [];
   const lessonPlans = lessonPlansQuery.data?.items ?? [];
 
+  const invoice = billingQuery.data?.invoice;
+  const plansToReview = lessonPlans.filter((plan) => plan.status === 'SUBMITTED').length;
+  const attention: AttentionItem[] = [
+    ...(invoice && invoice.status !== 'PAID'
+      ? [
+          {
+            key: 'invoice',
+            title: 'Subscription payment due',
+            detail: `${invoice.amountDue.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${invoice.currency} by ${formatDate(invoice.dueDate)}`,
+            to: '/admin/subscription',
+            tone: 'warning' as const,
+          },
+        ]
+      : []),
+    ...(data.metrics.attendanceToday === null
+      ? [
+          {
+            key: 'attendance',
+            title: 'Attendance not recorded today',
+            to: '/admin/attendance',
+            tone: 'warning' as const,
+          },
+        ]
+      : []),
+    ...(plansToReview
+      ? [
+          {
+            key: 'lesson-plans',
+            title: `${plansToReview}${plansToReview >= lessonPlans.length && lessonPlans.length >= 5 ? '+' : ''} lesson ${plansToReview === 1 ? 'plan' : 'plans'} to review`,
+            to: '/teacher/lesson-plans',
+            tone: 'warning' as const,
+          },
+        ]
+      : []),
+    ...(data.metrics.examsConducted === 0
+      ? [
+          {
+            key: 'exams',
+            title: 'No exam marks this term',
+            detail: 'Class performance appears once marks are entered.',
+            to: '/admin/exams',
+            tone: 'info' as const,
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <section className="mx-auto max-w-[1680px] space-y-4 text-slate-900">
+    <section className="mx-auto max-w-[1480px] space-y-5 text-slate-900">
       <WelcomePanel
         data={data}
         userName={userName}
@@ -254,34 +318,41 @@ export function SchoolAdminDashboardPage() {
 
       <MetricGrid data={data} />
 
-      <div className="grid gap-4 xl:grid-cols-12">
-        <OverviewAnalyticsCard data={data.overviewAnalytics} className="xl:col-span-6" />
-        <SystemSummaryCard data={demographicsQuery.data} className="xl:col-span-3" />
-        <AnnouncementsCard
-          items={announcements}
-          isLoading={announcementsQuery.isPending}
-          canRead={canReadAnnouncements}
-          className="xl:col-span-3"
-        />
+      <div className="grid items-start gap-5 xl:grid-cols-12">
+        <div className="min-w-0 space-y-5 xl:col-span-8">
+          <OverviewAnalyticsCard data={data.overviewAnalytics} />
+          <QuickInsightsCard data={data.quickInsights} />
+          <StudentsCard
+            items={studentsQuery.data?.items ?? []}
+            total={studentsQuery.data?.pagination.totalItems ?? 0}
+            isLoading={studentsQuery.isPending}
+            canRead={canReadStudents}
+          />
+          <LessonPlanAuditCard
+            items={lessonPlans}
+            isLoading={lessonPlansQuery.isPending}
+            canRead={canReadCourses}
+          />
+        </div>
+        <div className="min-w-0 space-y-5 xl:col-span-4">
+          <AttentionCard items={attention} />
+          <StudentEnrollmentCard
+            data={demographicsQuery.data}
+            isLoading={demographicsQuery.isPending}
+          />
+          <TopClassesCard items={data.topClasses} />
+          <SubscriptionCard
+            data={billingQuery.data}
+            isLoading={billingQuery.isPending}
+            canRead={canReadBilling}
+          />
+          <AnnouncementsCard
+            items={announcements}
+            isLoading={announcementsQuery.isPending}
+            canRead={canReadAnnouncements}
+          />
+        </div>
       </div>
-
-      <div className="grid gap-4 xl:grid-cols-12">
-        <LessonPlanAuditCard
-          items={lessonPlans}
-          isLoading={lessonPlansQuery.isPending}
-          canRead={canReadCourses}
-          className="xl:col-span-5"
-        />
-        <TopClassesCard items={data.topClasses} className="xl:col-span-3" />
-        <SubscriptionCard
-          data={billingQuery.data}
-          isLoading={billingQuery.isPending}
-          canRead={canReadBilling}
-          className="xl:col-span-4"
-        />
-      </div>
-
-      <QuickInsightsCard data={data.quickInsights} />
     </section>
   );
 }
@@ -346,142 +417,258 @@ function WelcomePanel({
   ].filter((action) => hasPermission(me, action.permission));
 
   return (
-    <div className={clsx(CARD_CLASS, 'overflow-hidden')}>
-      <div className="flex flex-col gap-5 px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          {data.school.logoUrl ? (
-            <img
-              src={data.school.logoUrl}
-              alt=""
-              className="h-12 w-12 shrink-0 rounded-xl border border-slate-200 bg-white object-contain p-1"
-            />
-          ) : (
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-blue-50 text-brand-600">
-              <School className="h-6 w-6" />
-            </span>
-          )}
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold tracking-tight text-slate-950">
-              Welcome back, {userName} <span aria-hidden="true">👋</span>
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Here&apos;s what&apos;s happening at {data.school.displayName} today.
-            </p>
-          </div>
-        </div>
-
-        {quickActions.length ? (
-          <div className="flex flex-wrap gap-2 lg:justify-end">
-            {quickActions.map((action) => (
-              <Link
-                key={action.label}
-                to={action.to}
-                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/40 hover:text-slate-950"
-              >
-                <action.icon className={clsx('h-4 w-4', action.tone)} />
-                {action.label}
-              </Link>
+    <PageHeader
+      title={data.school.displayName}
+      subtitle={`Welcome back, ${userName}. ${new Date().toLocaleDateString(undefined, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })}`}
+      actions={
+        <>
+          <label className="sr-only" htmlFor="dashboard-class-filter">
+            Filter by class
+          </label>
+          <select
+            id="dashboard-class-filter"
+            value={classFilter}
+            onChange={(event) => onClassChange(event.target.value)}
+            className="h-10 w-full min-w-36 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 sm:w-auto"
+          >
+            <option value="all">All classes</option>
+            {classOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
             ))}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-3 sm:flex-row sm:items-center">
-        <span className="mr-auto text-xs font-medium text-slate-500">Dashboard scope</span>
-        <label className="sr-only" htmlFor="dashboard-class-filter">
-          Filter by class
-        </label>
-        <select
-          id="dashboard-class-filter"
-          value={classFilter}
-          onChange={(event) => onClassChange(event.target.value)}
-          className="h-9 min-w-44 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        >
-          <option value="all">All classes</option>
-          {classOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
-        <label className="sr-only" htmlFor="dashboard-course-filter">
-          Filter by course
-        </label>
-        <select
-          id="dashboard-course-filter"
-          value={courseFilter}
-          onChange={(event) => onCourseChange(event.target.value)}
-          className="h-9 min-w-44 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        >
-          <option value="all">All courses</option>
-          {courseOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.title}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
+          </select>
+          <label className="sr-only" htmlFor="dashboard-course-filter">
+            Filter by course
+          </label>
+          <select
+            id="dashboard-course-filter"
+            value={courseFilter}
+            onChange={(event) => onCourseChange(event.target.value)}
+            className="h-10 w-full min-w-36 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 sm:w-auto"
+          >
+            <option value="all">All courses</option>
+            {courseOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.title}
+              </option>
+            ))}
+          </select>
+          {quickActions.length ? (
+            <DashboardQuickActionsDropdown
+              actions={quickActions.map((action) => ({
+                label: action.label,
+                to: action.to,
+                icon: action.icon,
+                description: 'Navigate to ' + action.label.toLowerCase(),
+              }))}
+            />
+          ) : null}
+        </>
+      }
+    />
   );
 }
 
 function MetricGrid({ data }: { data: SchoolAdminDashboardData }) {
-  const metrics = [
-    {
-      label: 'Total Students',
-      value: data.metrics.totalStudents.toLocaleString(),
-      description: data.metrics.studentsChange
-        ? `+${data.metrics.studentsChange.toLocaleString()} this month`
-        : 'No new students this month',
-      icon: Users,
-      tone: 'brand' as const,
-      to: '/admin/students',
-    },
-    {
-      label: 'Total Teachers',
-      value: data.metrics.teachers.toLocaleString(),
-      description: data.metrics.teachersChange
-        ? `+${data.metrics.teachersChange.toLocaleString()} this month`
-        : 'No new teachers this month',
-      icon: GraduationCap,
-      tone: 'success' as const,
-      to: '/admin/staff',
-    },
-    {
-      label: 'Total Classes',
-      value: data.metrics.classes.toLocaleString(),
-      description: data.metrics.classesChange
-        ? `+${data.metrics.classesChange.toLocaleString()} this month`
-        : 'No new classes this month',
-      icon: School,
-      tone: 'purple' as const,
-      to: '/admin/classes',
-    },
-    {
-      label: 'Attendance Today',
-      value: formatPercent(data.metrics.attendanceToday),
-      description:
-        data.metrics.attendanceToday === null ? 'No attendance recorded yet' : 'Recorded today',
-      icon: CalendarCheck2,
-      tone: 'orange' as const,
-      to: '/admin/attendance',
-    },
-    {
-      label: 'Exams Conducted',
-      value: data.metrics.examsConducted.toLocaleString(),
-      description: 'With marks in the selected term',
-      icon: FileBarChart2,
-      tone: 'brand' as const,
-      to: '/admin/exams',
-    },
+  const change = (count: number) =>
+    count > 0
+      ? { hint: `+${count.toLocaleString()} this month`, positive: true }
+      : { hint: 'No change this month' };
+
+  return (
+    <KpiStrip
+      items={[
+        {
+          label: 'Students',
+          value: data.metrics.totalStudents.toLocaleString(),
+          to: '/admin/students',
+          ...change(data.metrics.studentsChange),
+        },
+        {
+          label: 'Teachers',
+          value: data.metrics.teachers.toLocaleString(),
+          to: '/admin/staff',
+          ...change(data.metrics.teachersChange),
+        },
+        {
+          label: 'Classes',
+          value: data.metrics.classes.toLocaleString(),
+          to: '/admin/classes',
+          ...change(data.metrics.classesChange),
+        },
+        {
+          label: 'Attendance today',
+          value: formatPercent(data.metrics.attendanceToday),
+          hint: data.metrics.attendanceToday === null ? 'Not recorded yet' : 'Recorded today',
+          to: '/admin/attendance',
+        },
+        {
+          label: 'Exams conducted',
+          value: data.metrics.examsConducted.toLocaleString(),
+          hint: 'With marks this term',
+          to: '/admin/exams',
+        },
+      ]}
+    />
+  );
+}
+
+function StudentEnrollmentCard({
+  data,
+  isLoading,
+  className,
+}: {
+  data?: DemographicsData;
+  isLoading: boolean;
+  className?: string;
+}) {
+  const total = data?.totalStudents ?? 0;
+  const boys = data?.totalBoys ?? 0;
+  const girls = data?.totalGirls ?? 0;
+  const disabilityCount = data?.studentsWithDisabilities ?? 0;
+  const pct = (value: number) =>
+    total > 0 ? `${Math.round((value / total) * 100)}%` : '';
+
+  const breakdown = [
+    { label: 'Boys', value: boys },
+    { label: 'Girls', value: girls },
+    { label: 'Students with a disability', value: disabilityCount },
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      {metrics.map((metric) => (
-        <StatCard key={metric.label} {...metric} />
-      ))}
-    </div>
+    <DashboardCard className={className}>
+      <CardHeader title="Student enrollment" />
+      {isLoading ? (
+        <ListSkeleton rows={4} />
+      ) : !data ? (
+        <EmptyPanel icon={Users} message="Student distribution is not available yet." />
+      ) : (
+        <div className="px-5 pb-5 pt-2">
+          <p className="text-[26px] font-semibold leading-8 tracking-tight tabular-nums text-slate-900">
+            {total.toLocaleString()}
+            <span className="ml-1.5 text-[13px] font-normal tracking-normal text-slate-500">
+              students
+            </span>
+          </p>
+          <div className="mt-4 space-y-3.5">
+            {breakdown.map((row) => (
+              <MeterRow
+                key={row.label}
+                label={row.label}
+                value={`${row.value.toLocaleString()}${pct(row.value) ? ` · ${pct(row.value)}` : ''}`}
+                percent={total > 0 ? (row.value / total) * 100 : 0}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </DashboardCard>
+  );
+}
+
+const dashboardStudentColumns: DataTableColumn<StudentListItem>[] = [
+  {
+    key: 'student',
+    header: 'Student',
+    mobile: 'primary',
+    render: (student) => (
+      <span className="flex items-center gap-2">
+        <Avatar size="sm" name={`${student.firstName} ${student.lastName}`} />
+        <span className="min-w-0">
+          <span className="block max-w-40 truncate text-xs font-semibold text-slate-800">
+            {student.firstName} {student.lastName}
+          </span>
+          <span className="block truncate text-[11px] text-slate-500">{student.studentCode}</span>
+        </span>
+      </span>
+    ),
+  },
+  {
+    key: 'class',
+    header: 'Class',
+    mobile: 'secondary',
+    render: (student) => (
+      <span className="text-xs text-slate-600">
+        {student.currentEnrollment
+          ? `${student.currentEnrollment.classRoom.code} · ${student.currentEnrollment.classRoom.name}`
+          : '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'gender',
+    header: 'Gender',
+    render: (student) => (
+      <span className="text-xs text-slate-600">
+        {student.gender
+          ? student.gender.charAt(0) + student.gender.slice(1).toLowerCase()
+          : '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (student) => (
+      <Badge tone={student.isActive ? 'success' : 'neutral'}>
+        {student.isActive ? 'Active' : 'Inactive'}
+      </Badge>
+    ),
+  },
+];
+
+function StudentsCard({
+  items,
+  total,
+  isLoading,
+  canRead,
+  className,
+}: {
+  items: StudentListItem[];
+  total: number;
+  isLoading: boolean;
+  canRead: boolean;
+  className?: string;
+}) {
+  return (
+    <DashboardCard className={className}>
+      <CardHeader
+        title="Students"
+        action={
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-medium text-slate-500">
+              {total.toLocaleString()} total
+            </span>
+            {canRead ? <TextLink to="/admin/students">View all</TextLink> : null}
+          </div>
+        }
+      />
+      {isLoading ? (
+        <ListSkeleton rows={5} />
+      ) : !canRead ? (
+        <EmptyPanel icon={Users} message="Student access is not enabled for this account." />
+      ) : (
+        <div className="p-2 pb-3">
+          <DataTable
+            ariaLabel="Students"
+            columns={dashboardStudentColumns}
+            data={items}
+            rowKey={(student) => student.id}
+            emptyTitle="No students"
+            emptyDescription="No students enrolled in the current scope yet."
+            minWidth={520}
+            skeletonRows={5}
+            className="border-0 shadow-none"
+          />
+        </div>
+      )}
+    </DashboardCard>
   );
 }
 
@@ -493,145 +680,72 @@ function OverviewAnalyticsCard({
   className?: string;
 }) {
   return (
-    <DashboardCard className={clsx('min-h-[330px]', className)}>
-      <CardHeader
-        title="Overview Analytics"
-        action={<span className="text-[11px] font-medium text-slate-500">Last 8 months</span>}
-      />
-      <div className="h-[275px] px-2 pb-4 pt-2 sm:px-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <RechartsLineChart data={data} margin={{ top: 14, right: 12, bottom: 0, left: -12 }}>
-            <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="label"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#64748B', fontSize: 11 }}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#64748B', fontSize: 10 }}
-              allowDecimals={false}
-            />
-            <Tooltip
-              contentStyle={{
-                border: '1px solid #E2E8F0',
-                borderRadius: 10,
-                boxShadow: '0 10px 30px rgba(15,23,42,.08)',
-                fontSize: 12,
-              }}
-            />
-            <Legend
-              iconType="circle"
-              iconSize={7}
-              wrapperStyle={{ fontSize: 11, paddingTop: 10 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="enrollments"
-              name="Enrollments"
-              stroke="#2563EB"
-              strokeWidth={2.5}
-              dot={{ r: 3, fill: '#2563EB' }}
-              activeDot={{ r: 5 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="attendance"
-              name="Attendance %"
-              stroke="#16A34A"
-              strokeWidth={2.5}
-              connectNulls
-              dot={{ r: 3, fill: '#16A34A' }}
-            />
-            <Line
-              type="monotone"
-              dataKey="assessments"
-              name="Assessment score %"
-              stroke="#7C3AED"
-              strokeWidth={2.5}
-              connectNulls
-              dot={{ r: 3, fill: '#7C3AED' }}
-            />
-          </RechartsLineChart>
-        </ResponsiveContainer>
-      </div>
-    </DashboardCard>
-  );
-}
-
-function SystemSummaryCard({ data, className }: { data?: DemographicsData; className?: string }) {
-  const summary = useMemo(() => {
-    const rows = (data?.byGrade ?? [])
-      .map((row) => ({ name: row.grade, value: row.boys + row.girls }))
-      .filter((row) => row.value > 0)
-      .sort((a, b) => b.value - a.value);
-    if (rows.length <= 5) return rows;
-    return [
-      ...rows.slice(0, 4),
-      { name: 'Other', value: rows.slice(4).reduce((sum, row) => sum + row.value, 0) },
-    ];
-  }, [data]);
-
-  return (
-    <DashboardCard className={clsx('min-h-[330px]', className)}>
-      <CardHeader title="System Summary" />
-      {!data ? (
-        <EmptyPanel icon={School} message="Student distribution is not available yet." />
-      ) : summary.length === 0 ? (
-        <EmptyPanel icon={School} message="No enrolled students in this scope." />
-      ) : (
-        <div className="grid gap-1 px-4 pb-4 pt-2 sm:grid-cols-[minmax(140px,1fr)_1fr] xl:grid-cols-1 2xl:grid-cols-[minmax(140px,1fr)_1fr]">
-          <div className="relative h-44 min-w-0">
+    <DashboardCard className={className}>
+      <CardHeader title="School trends" subtitle="Last 8 months" />
+      <div className="grid gap-6 px-5 pb-5 pt-3 md:grid-cols-2">
+        <figure className="min-w-0">
+          <figcaption className="mb-2 text-[13px] font-medium text-slate-700">Total students enrolled</figcaption>
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <RechartsPieChart>
-                <Pie
-                  data={summary}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={48}
-                  outerRadius={70}
-                  paddingAngle={1}
-                  stroke="none"
-                >
-                  {summary.map((row, index) => (
-                    <Cell key={row.name} fill={GRADE_COLORS[index % GRADE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ borderRadius: 10, borderColor: '#E2E8F0', fontSize: 11 }}
+              <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
+                <CartesianGrid stroke={CHART_GRID} strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={CHART_AXIS_TICK} />
+                <YAxis axisLine={false} tickLine={false} tick={CHART_AXIS_TICK} allowDecimals={false} />
+                <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={{ fill: '#F1F5F9' }} />
+                <Bar
+                  dataKey="enrollments"
+                  name="Students enrolled"
+                  fill={CHART_SERIES[0]}
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={22}
                 />
-              </RechartsPieChart>
+              </BarChart>
             </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
-              <p className="text-lg font-bold tabular-nums text-slate-950">
-                {data.totalStudents.toLocaleString()}
-              </p>
-              <p className="text-[10px] text-slate-500">Students</p>
-            </div>
           </div>
-          <div className="flex flex-col justify-center gap-2.5">
-            {summary.map((row, index) => {
-              const percentage = data.totalStudents ? (row.value / data.totalStudents) * 100 : 0;
-              return (
-                <div key={row.name} className="flex min-w-0 items-start gap-2">
-                  <span
-                    className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm"
-                    style={{ backgroundColor: GRADE_COLORS[index % GRADE_COLORS.length] }}
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate text-[11px] font-medium text-slate-700">{row.name}</p>
-                    <p className="text-[10px] text-slate-500">
-                      {row.value.toLocaleString()} ({percentage.toFixed(1)}%)
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+        </figure>
+        <figure className="min-w-0">
+          <figcaption className="mb-2 text-[13px] font-medium text-slate-700">
+            Attendance and assessment scores
+          </figcaption>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsLineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
+                <CartesianGrid stroke={CHART_GRID} strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={CHART_AXIS_TICK} />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={CHART_AXIS_TICK}
+                  domain={[0, 100]}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: '#475569' }} />
+                <Line
+                  type="monotone"
+                  dataKey="attendance"
+                  name="Attendance"
+                  stroke={CHART_SERIES[0]}
+                  strokeWidth={2}
+                  connectNulls
+                  dot={{ r: 3, strokeWidth: 0, fill: CHART_SERIES[0] }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="assessments"
+                  name="Assessment score"
+                  stroke={CHART_SERIES[1]}
+                  strokeWidth={2}
+                  connectNulls
+                  dot={{ r: 3, strokeWidth: 0, fill: CHART_SERIES[1] }}
+                  activeDot={{ r: 5 }}
+                />
+              </RechartsLineChart>
+            </ResponsiveContainer>
           </div>
-        </div>
-      )}
+        </figure>
+      </div>
     </DashboardCard>
   );
 }
@@ -648,9 +762,9 @@ function AnnouncementsCard({
   className?: string;
 }) {
   return (
-    <DashboardCard className={clsx('min-h-[330px]', className)}>
+    <DashboardCard className={className}>
       <CardHeader
-        title="Recent Announcements"
+        title="Recent announcements"
         action={canRead ? <TextLink to="/admin/announcements">View all</TextLink> : undefined}
       />
       {isLoading ? (
@@ -746,7 +860,7 @@ function LessonPlanAuditCard({
   return (
     <DashboardCard className={className}>
       <CardHeader
-        title="Lesson Plan Audit"
+        title="Lesson plan audit"
         action={canRead ? <TextLink to="/teacher/lesson-plans">View all</TextLink> : undefined}
       />
       {isLoading ? (
@@ -782,7 +896,7 @@ function TopClassesCard({
   return (
     <DashboardCard className={className}>
       <CardHeader
-        title="Top Performing Classes"
+        title="Top performing classes"
         action={<TextLink to="/admin/class-marks">View all</TextLink>}
       />
       {items.length === 0 ? (
@@ -791,32 +905,14 @@ function TopClassesCard({
           message="Class performance appears after exam marks are entered."
         />
       ) : (
-        <div className="space-y-3 px-4 pb-5 pt-3">
-          <div className="grid grid-cols-[1fr_2fr_auto] gap-3 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-            <span>Class</span>
-            <span>Average score</span>
-            <span>Students</span>
-          </div>
+        <div className="space-y-3.5 px-5 pb-5 pt-2">
           {items.slice(0, 5).map((item) => (
-            <div key={item.id} className="grid grid-cols-[1fr_2fr_auto] items-center gap-3">
-              <span className="truncate text-[11px] font-semibold text-slate-800">{item.name}</span>
-              <div className="flex items-center gap-2">
-                <span className="w-10 text-right text-[10px] font-medium tabular-nums text-slate-700">
-                  {item.averageScore.toFixed(1)}%
-                </span>
-                <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                  <span
-                    className="block h-full rounded-full bg-emerald-500"
-                    style={{
-                      width: `${Math.max(0, Math.min(100, item.averageScore))}%`,
-                    }}
-                  />
-                </span>
-              </div>
-              <span className="text-[10px] tabular-nums text-slate-600">
-                {item.students.toLocaleString()}
-              </span>
-            </div>
+            <MeterRow
+              key={item.id}
+              label={`${item.name} · ${item.students.toLocaleString()} students`}
+              value={`${item.averageScore.toFixed(1)}%`}
+              percent={item.averageScore}
+            />
           ))}
         </div>
       )}
@@ -838,7 +934,7 @@ function SubscriptionCard({
   if (isLoading) {
     return (
       <DashboardCard className={className}>
-        <CardHeader title="Subscription & Billing" />
+        <CardHeader title="Subscription and billing" />
         <ListSkeleton rows={3} />
       </DashboardCard>
     );
@@ -847,7 +943,7 @@ function SubscriptionCard({
   return (
     <DashboardCard className={className}>
       <CardHeader
-        title="Subscription & Billing"
+        title="Subscription and billing"
         action={canRead ? <TextLink to="/admin/subscription">View invoice</TextLink> : undefined}
       />
       {!canRead ? (
@@ -858,58 +954,23 @@ function SubscriptionCard({
           message="Subscription information is currently unavailable."
         />
       ) : (
-        <div className="m-4 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-xs font-semibold text-blue-700">{data.invoice.title}</p>
-                <span
-                  className={clsx(
-                    'rounded-full px-2 py-0.5 text-[9px] font-bold',
-                    data.invoice.status === 'PAID'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-amber-100 text-amber-700'
-                  )}
-                >
-                  {data.invoice.status}
-                </span>
-              </div>
-              <p className="mt-2 text-[10px] leading-4 text-slate-600">
-                {data.invoice.amountDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}{' '}
-                {data.invoice.currency}
-              </p>
-              <p className="mt-3 text-[9px] font-medium uppercase tracking-wide text-slate-400">
-                {data.invoice.status === 'PAID' ? 'Valid until' : 'Payment due'}
-              </p>
-              <p className="mt-1 text-xs font-semibold text-slate-800">
-                {formatDate(
-                  data.invoice.status === 'PAID' ? data.invoice.periodEnd : data.invoice.dueDate
-                )}
-              </p>
-            </div>
-            <span
-              className={clsx(
-                'grid h-20 w-20 shrink-0 place-content-center rounded-full border-8 border-white text-center shadow-sm',
-                data.invoice.status === 'PAID'
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'bg-amber-50 text-amber-700'
-              )}
-            >
-              {data.invoice.status === 'PAID' ? (
-                <CheckCircle2 className="mx-auto h-6 w-6" />
-              ) : (
-                <ReceiptText className="mx-auto h-6 w-6" />
-              )}
-              <span className="mt-1 text-[10px] font-bold">{data.invoice.status}</span>
-            </span>
+        <div className="px-5 pb-5 pt-2">
+          <div className="flex items-start justify-between gap-3">
+            <p className="min-w-0 text-[13px] text-slate-600 text-slate-900">{data.invoice.title}</p>
+            <Badge tone={data.invoice.status === 'PAID' ? 'success' : 'warning'}>
+              {data.invoice.status === 'PAID' ? 'Paid' : 'Payment due'}
+            </Badge>
           </div>
-          <Link
-            to="/admin/subscription"
-            className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-50"
-          >
-            <ReceiptText className="h-4 w-4" />
-            Open invoice
-          </Link>
+          <p className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
+            {data.invoice.amountDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}{' '}
+            <span className="text-sm font-medium text-slate-500">{data.invoice.currency}</span>
+          </p>
+          <p className="mt-1 text-[13px] text-slate-500">
+            {data.invoice.status === 'PAID' ? 'Valid until' : 'Due'}{' '}
+            {formatDate(
+              data.invoice.status === 'PAID' ? data.invoice.periodEnd : data.invoice.dueDate
+            )}
+          </p>
         </div>
       )}
     </DashboardCard>
@@ -918,90 +979,28 @@ function SubscriptionCard({
 
 function QuickInsightsCard({ data }: { data: SchoolAdminDashboardData['quickInsights'] }) {
   const insights = [
-    {
-      key: 'average-score',
-      label: 'Average Score',
-      value: formatPercent(data.averageScore),
-      hint: 'Recorded exam marks',
-      icon: BarChart3,
-      tone: 'brand' as const,
-    },
-    {
-      key: 'pass-rate',
-      label: 'Pass Rate',
-      value: formatPercent(data.passRate),
-      hint: 'Based on configured pass marks',
-      icon: ClipboardCheck,
-      tone: 'success' as const,
-    },
-    {
-      key: 'attendance-rate',
-      label: 'Attendance Rate',
-      value: formatPercent(data.attendanceRate),
-      hint: 'Present and late records',
-      icon: CalendarDays,
-      tone: 'purple' as const,
-    },
-    {
-      key: 'behavior-index',
-      label: 'Behavior Index',
-      value: formatPercent(data.behaviorIndex),
-      hint: 'Conduct marks for the term',
-      icon: Sparkles,
-      tone: 'orange' as const,
-    },
-    {
-      key: 'engagement',
-      label: 'Engagement Score',
-      value: formatPercent(data.engagementScore),
-      hint: 'Completed learning activity',
-      icon: HeartPulse,
-      tone: 'pink' as const,
-    },
+    { label: 'Average score', value: data.averageScore, hint: 'Recorded exam marks' },
+    { label: 'Pass rate', value: data.passRate, hint: 'Configured pass marks' },
+    { label: 'Attendance rate', value: data.attendanceRate, hint: 'Present and late' },
+    { label: 'Behavior index', value: data.behaviorIndex, hint: 'Conduct marks this term' },
+    { label: 'Engagement', value: data.engagementScore, hint: 'Completed activity' },
   ];
 
   return (
     <DashboardCard>
-      <CardHeader title="Quick Insights" />
-      <InsightGrid items={insights} className="pb-1 pt-1" />
+      <CardHeader title="Academic health" subtitle="Selected term" />
+      <div className="grid gap-x-8 gap-y-5 px-5 pb-5 pt-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+        {insights.map((item) => (
+          <MeterRow
+            key={item.label}
+            label={item.label}
+            value={formatPercent(item.value)}
+            percent={item.value ?? 0}
+            hint={item.value === null ? 'No data yet' : item.hint}
+          />
+        ))}
+      </div>
     </DashboardCard>
-  );
-}
-
-function DashboardCard({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <section className={clsx(CARD_CLASS, 'min-w-0 overflow-hidden', className)}>{children}</section>
-  );
-}
-
-function CardHeader({ title, action }: { title: string; action?: ReactNode }) {
-  return (
-    <div className="flex min-h-12 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-      <h2 className="text-sm font-semibold tracking-tight text-slate-950">{title}</h2>
-      {action}
-    </div>
-  );
-}
-
-function TextLink({ to, children }: { to: string; children: ReactNode }) {
-  return (
-    <Link
-      to={to}
-      className="text-[10px] font-semibold text-blue-600 transition hover:text-blue-800"
-    >
-      {children}
-    </Link>
-  );
-}
-
-function EmptyPanel({ icon: Icon, message }: { icon: LucideIcon; message: string }) {
-  return (
-    <div className="flex min-h-44 flex-col items-center justify-center px-6 py-8 text-center">
-      <span className="grid h-11 w-11 place-items-center rounded-full bg-slate-100 text-slate-400">
-        <Icon className="h-5 w-5" />
-      </span>
-      <p className="mt-3 max-w-xs text-xs leading-5 text-slate-500">{message}</p>
-    </div>
   );
 }
 
@@ -1017,8 +1016,8 @@ function ListSkeleton({ rows }: { rows: number }) {
 
 function DashboardSkeleton() {
   return (
-    <div className="mx-auto max-w-[1680px] space-y-4" aria-label="Loading dashboard">
-      <div className="h-36 animate-pulse rounded-xl bg-slate-200" />
+    <div className="mx-auto max-w-[1480px] space-y-5" aria-label="Loading dashboard">
+      <div className="h-14 w-96 max-w-full animate-pulse rounded-lg bg-slate-200" />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {Array.from({ length: 5 }, (_, index) => (
           <div key={index} className="h-28 animate-pulse rounded-xl bg-slate-200" />

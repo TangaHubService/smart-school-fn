@@ -6,10 +6,11 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        ui: ['"Geist Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
         'dashboard-blue': '#173C7F',
-        'content-bg': '#F0F2F5',
+        'content-bg': '#F5F7FA',
         brand: {
           50: '#EFF4FB',
           100: '#DCE7F7',
@@ -46,6 +47,7 @@ const config: Config = {
       },
       boxShadow: {
         soft: '0 12px 28px rgba(30, 90, 168, 0.10)',
+        card: '0 1px 2px rgba(15, 39, 72, 0.05), 0 4px 16px rgba(15, 39, 72, 0.05)',
       }
     }
   },

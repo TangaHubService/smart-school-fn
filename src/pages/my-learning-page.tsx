@@ -73,7 +73,7 @@ export function MyLearningPage() {
               <BookOpen className="h-8 w-8 text-brand-500" />
             </div>
             <h3 className="mt-4 text-lg font-bold text-slate-900">No enrolled classes yet</h3>
-            <p className="mt-2 text-slate-600">Explore our programs to enroll in a class and start learning.</p>
+            <p className="mt-2 text-slate-600">Explore our classes to enroll and start learning.</p>
             <Link
               to="/programs#enroll"
               className="mt-6 rounded-xl bg-brand-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"

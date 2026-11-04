@@ -17,6 +17,7 @@ export interface DrawerProps extends PropsWithChildren {
   onRetry?: () => void;
   onOpen?: () => void;
   role?: 'dialog' | 'alertdialog';
+  icon?: ReactNode;
 }
 
 export function AppDrawer({
@@ -35,6 +36,7 @@ export function AppDrawer({
   onRetry,
   onOpen,
   role = 'dialog',
+  icon,
 }: DrawerProps) {
   const { t } = useTranslation('common');
   const [shouldRender, setShouldRender] = useState(open);
@@ -103,9 +105,16 @@ export function AppDrawer({
         className={`app-drawer-panel relative z-10 flex h-full w-full flex-col bg-white shadow-2xl ${sizeClass}`}
       >
         <header className="flex items-start justify-between gap-4 border-b border-brand-100 px-4 py-4 sm:px-5">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-            {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
+          <div className="flex items-start gap-3">
+            {icon ? (
+              <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                {icon}
+              </span>
+            ) : null}
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+              {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
+            </div>
           </div>
           <button
             type="button"

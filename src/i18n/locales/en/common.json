@@ -61,7 +61,6 @@
     "subjects": "Subjects",
     "learning-content": "Course Management",
     "learning-insights": "Learning insights",
-    "academy-programs": "Academy programs",
     "continuous-assessment": "Continuous Assessment Test",
     "exams": "Examination Portal",
     "class-marks": "Marks",
@@ -101,6 +100,8 @@
   },
   "actions": {
     "close": "Close",
-    "retry": "Retry"
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save"
   }
 }

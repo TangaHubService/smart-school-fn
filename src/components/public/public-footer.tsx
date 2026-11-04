@@ -12,7 +12,7 @@ export function PublicFooter() {
   const { t } = useTranslation('public');
   return (
     <footer className="border-t border-white/5 bg-slate-950 py-16 text-slate-300">
-      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8 xl:px-10">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 ">
         <div className="grid items-start gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr_auto] lg:gap-8 xl:gap-10">
           <div className="space-y-6">
             <Link to="/" onClick={scrollToTop} className="flex items-center gap-3">

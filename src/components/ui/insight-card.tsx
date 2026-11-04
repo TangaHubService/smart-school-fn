@@ -4,46 +4,34 @@ import type { ReactNode } from 'react';
 
 export type InsightTone = 'brand' | 'success' | 'purple' | 'orange' | 'pink' | 'danger';
 
-const INSIGHT_TONES: Record<InsightTone, string> = {
-  brand: 'bg-blue-50 text-blue-600',
-  success: 'bg-emerald-50 text-emerald-600',
-  purple: 'bg-violet-50 text-violet-600',
-  orange: 'bg-orange-50 text-orange-600',
-  pink: 'bg-pink-50 text-pink-600',
-  danger: 'bg-red-50 text-red-600',
-};
-
 export function InsightCard({
   icon: Icon,
   label,
   value,
   hint,
-  tone = 'brand',
 }: {
   icon: LucideIcon;
   label: string;
   value: ReactNode;
   hint?: string;
+  /** Kept for callers; insight icons share one color. */
   tone?: InsightTone;
 }) {
   return (
-    <div className="flex items-center gap-3 border border-slate-200 bg-white px-4 py-4 rounded-xl shadow-sm">
+    <div className="flex items-center gap-3 px-5 py-4">
       <span
-        className={clsx(
-          'grid h-11 w-11 shrink-0 place-items-center rounded-xl',
-          INSIGHT_TONES[tone]
-        )}
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600"
       >
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
       <div className="min-w-0">
-        <p className="truncate text-[10px] font-medium uppercase tracking-wide text-slate-500">
+        <p className="truncate text-xs font-medium text-slate-500">
           {label}
         </p>
-        <p className="mt-0.5 text-lg font-bold tabular-nums tracking-tight text-slate-950">
+        <p className="mt-0.5 text-lg font-semibold tabular-nums tracking-tight text-slate-900">
           {value}
         </p>
-        {hint ? <p className="truncate text-[9px] text-slate-400">{hint}</p> : null}
+        {hint ? <p className="text-[11px] leading-4 text-slate-500">{hint}</p> : null}
       </div>
     </div>
   );

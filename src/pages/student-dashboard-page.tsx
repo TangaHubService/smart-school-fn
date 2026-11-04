@@ -1,54 +1,32 @@
-import {
-  Award,
-  BadgeCheck,
-  BookMarked,
-  BookOpen,
-  ClipboardCheck,
-  ChevronRight,
-  CircleDashed,
-  FileBarChart2,
-  FileText,
-  Home,
-  Megaphone,
-  MessageCircle,
-  PlayCircle,
-  Sparkles,
-  Timer,
-  Users,
-} from 'lucide-react';
+import { ArrowRight, BadgeCheck, BookMarked, BookOpen, ClipboardCheck, FileBarChart2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 
 import {
   DashboardQuickActionsDropdown,
   type DashboardQuickActionItem,
 } from '../components/dashboard/quick-actions-dropdown';
-import {
-  ActiveCoursesHierarchy,
-  type CourseHierarchyItem,
-} from '../components/dashboard/active-courses-hierarchy';
+import { LoadingCard, LoadingMetrics } from '../components/dashboard/dashboard-ui';
 import { StateView } from '../components/state-view';
-import { InlineSkeleton } from '../components/skeleton-loader';
-import { useAuth } from '../features/auth/auth.context';
+import { Badge, type BadgeTone } from '../components/ui/badge';
+import {
+  CardHeader,
+  DashboardCard,
+  EmptyPanel,
+  KpiStrip,
+  MeterRow,
+  PageHeader,
+  TextLink,
+} from '../components/ui/dashboard-kit';
 import { useAcademicYear } from '../contexts/academic-year-context';
+import { useAuth } from '../features/auth/auth.context';
 import {
   getStudentDashboardApi,
   type StudentDashboardData,
 } from '../features/dashboard/dashboard.api';
-import { listMyCoursesApi, type MyCoursesResponse } from '../features/sprint4/lms.api';
-import { useQuery } from '@tanstack/react-query';
+import { listMyCoursesApi } from '../features/sprint4/lms.api';
 import { courseEnrollmentState, getCourseProgressMetrics } from '../utils/course-progress';
-import {
-  Badge,
-  Card,
-  CardActionLink,
-  CardHeader,
-  EmptyInline,
-  LoadingCard,
-  LoadingMetrics,
-  MetricCard,
-  ProgressBar,
-} from '../components/dashboard/dashboard-ui';
 
 const STUDENT_QUICK_ACTIONS: DashboardQuickActionItem[] = [
   {
@@ -83,13 +61,33 @@ const STUDENT_QUICK_ACTIONS: DashboardQuickActionItem[] = [
   },
 ];
 
+type CourseState = 'in_progress' | 'not_started' | 'completed';
+
+interface CourseRow {
+  id: string;
+  title: string;
+  subject: string;
+  progress: number;
+  state: CourseState;
+}
+
+const COURSE_STATE: Record<CourseState, { label: string; tone: BadgeTone; order: number }> = {
+  in_progress: { label: 'In progress', tone: 'brand', order: 0 },
+  not_started: { label: 'Not started', tone: 'neutral', order: 1 },
+  completed: { label: 'Completed', tone: 'success', order: 2 },
+};
+
+function formatStudyTime(seconds: number): string {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} h ${rest} min` : `${hours} h`;
+}
+
 export function StudentDashboardPage() {
   const auth = useAuth();
   const { academicYearId, isLoading: isAcademicYearLoading } = useAcademicYear();
-
-  if (!isAcademicYearLoading && !academicYearId) {
-    return <Navigate to="/student/academic-year" replace />;
-  }
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['dashboard', 'student'],
@@ -103,21 +101,26 @@ export function StudentDashboardPage() {
     queryFn: () => listMyCoursesApi(auth.accessToken!, { page: 1, pageSize: 50 }),
   });
 
-  const hierarchyItems = useMemo<CourseHierarchyItem[]>(
+  const courses = useMemo<CourseRow[]>(
     () =>
-      (coursesQuery.data?.items ?? []).map((c) => ({
-        id: c.id,
-        title: c.title,
-        grade: c.academicYear?.name ?? '',
-        class:
-          `${c.classRoom?.code ?? ''}${c.classRoom?.code && c.classRoom?.name ? ' · ' : ''}${c.classRoom?.name ?? ''}`.trim(),
-        subject: c.subject?.name ?? 'Subject not set',
-        progress: Math.round(
-          getCourseProgressMetrics(c, c.completedLessonIds ?? []).overallProgress
-        ),
-      })),
+      (coursesQuery.data?.items ?? [])
+        .map((course) => {
+          const metrics = getCourseProgressMetrics(course, course.completedLessonIds ?? []);
+          return {
+            id: course.id,
+            title: course.title,
+            subject: course.subject?.name ?? 'Subject not set',
+            progress: Math.round(metrics.overallProgress),
+            state: courseEnrollmentState(metrics) as CourseState,
+          };
+        })
+        .sort((a, b) => COURSE_STATE[a.state].order - COURSE_STATE[b.state].order),
     [coursesQuery.data]
   );
+
+  if (!isAcademicYearLoading && !academicYearId) {
+    return <Navigate to="/student/academic-year" replace />;
+  }
 
   if (isError) {
     return (
@@ -128,7 +131,7 @@ export function StudentDashboardPage() {
           <button
             type="button"
             onClick={() => void refetch()}
-            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white"
           >
             Retry
           </button>
@@ -139,8 +142,8 @@ export function StudentDashboardPage() {
 
   if (isPending || !data) {
     return (
-      <div className="space-y-5">
-        <div className="h-28 animate-pulse rounded-2xl bg-slate-200" />
+      <div className="mx-auto max-w-[1480px] space-y-5">
+        <div className="h-14 w-96 max-w-full animate-pulse rounded-lg bg-slate-200" />
         <LoadingMetrics count={4} />
         <div className="grid gap-5 lg:grid-cols-3">
           <LoadingCard rows={4} className="lg:col-span-2" />
@@ -150,285 +153,260 @@ export function StudentDashboardPage() {
     );
   }
 
-  return (
-    <section className="space-y-5">
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Student portal
-          </p>
-          <h1 className="mt-2 text-[1.75rem] font-bold tracking-tight text-slate-900">
-            Hey, {auth.me?.firstName || 'Student'}
-          </h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            See how your courses are moving below, then open any area of your portal.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 shadow-sm lg:inline-flex">
-            <Home className="h-4 w-4 text-brand-500" />
-            <span>{data.school.displayName}</span>
-          </div>
-          <DashboardQuickActionsDropdown actions={STUDENT_QUICK_ACTIONS} />
-        </div>
-      </div>
+  const inProgress = courses.filter((course) => course.state === 'in_progress').length;
+  const completed = courses.filter((course) => course.state === 'completed').length;
 
-      <StudentCourseProgressStrip
-        isPending={coursesQuery.isPending}
-        isError={coursesQuery.isError}
-        onRetry={() => void coursesQuery.refetch()}
-        items={coursesQuery.data?.items}
+  return (
+    <section className="mx-auto max-w-[1480px] space-y-5 text-slate-900">
+      <PageHeader
+        title={`Hi, ${auth.me?.firstName || 'Student'}`}
+        subtitle={data.school.displayName}
+        actions={<DashboardQuickActionsDropdown actions={STUDENT_QUICK_ACTIONS} />}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          icon={BookOpen}
-          label="My courses"
-          value={data.metrics.myCourses}
-          tone="brand"
-          to="/student/courses"
-        />
-        <MetricCard
-          icon={ClipboardCheck}
-          label="Assignments submitted"
-          value={data.metrics.assignmentsSubmitted}
-          tone="purple"
-          to="/student/assignments"
-        />
-        <MetricCard
-          icon={BadgeCheck}
-          label="Tests taken"
-          value={data.metrics.myAssessments}
-          tone="warning"
-          to="/student/assessments"
-        />
-        <MetricCard
-          icon={FileBarChart2}
-          label="Report cards"
-          value={data.metrics.reportCards}
-          tone="success"
-          to="/student/report-cards"
-        />
-      </div>
+      <KpiStrip
+        items={[
+          {
+            label: 'My courses',
+            value: data.metrics.myCourses.toLocaleString(),
+            hint: `${inProgress} in progress · ${completed} completed`,
+            to: '/student/courses',
+          },
+          {
+            label: 'Assignments submitted',
+            value: data.metrics.assignmentsSubmitted.toLocaleString(),
+            hint: 'Your submitted work',
+            to: '/student/assignments',
+          },
+          {
+            label: 'Tests taken',
+            value: data.metrics.myAssessments.toLocaleString(),
+            hint: 'Quizzes and assessments',
+            to: '/student/assessments',
+          },
+          {
+            label: 'Report cards',
+            value: data.metrics.reportCards.toLocaleString(),
+            hint: 'Published results',
+            to: '/student/report-cards',
+          },
+        ]}
+      />
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ActiveCoursesHierarchy items={hierarchyItems} isLoading={coursesQuery.isPending} />
+      <div className="grid items-start gap-5 xl:grid-cols-12">
+        <div className="min-w-0 space-y-5 xl:col-span-8">
+          <ContinueLearningCard
+            courses={courses}
+            isLoading={coursesQuery.isPending}
+            isError={coursesQuery.isError}
+            onRetry={() => void coursesQuery.refetch()}
+          />
+          <CoursesCard courses={courses} />
         </div>
-        <div className="flex flex-col gap-5">
-          <PerformanceCard data={data} />
+        <div className="min-w-0 space-y-5 xl:col-span-4">
+          <ProgressCard data={data} />
+          <UpcomingExamsCard data={data} />
           <AnnouncementsCard data={data} />
         </div>
       </div>
-
-      <div className="grid gap-5 lg:grid-cols-3">
-        <StudentUpcomingExamsCard data={data} className="lg:col-span-2" />
-        <QuickLinksCard />
-      </div>
     </section>
   );
 }
 
-function StudentCourseProgressStrip({
-  isPending,
+/** The one thing to do next: resume the furthest-along course, or start the next one. */
+function ContinueLearningCard({
+  courses,
+  isLoading,
   isError,
   onRetry,
-  items,
 }: {
-  isPending: boolean;
+  courses: CourseRow[];
+  isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
-  items: MyCoursesResponse['items'] | undefined;
 }) {
-  const breakdown = useMemo(() => {
-    const list = items ?? [];
-    let notStarted = 0;
-    let inProgress = 0;
-    let completed = 0;
-    const inProgressCourses: { id: string; title: string; pct: number }[] = [];
-    for (const c of list) {
-      const m = getCourseProgressMetrics(c, c.completedLessonIds ?? []);
-      const s = courseEnrollmentState(m);
-      if (s === 'not_started') {
-        notStarted += 1;
-      } else if (s === 'in_progress') {
-        inProgress += 1;
-        if (inProgressCourses.length < 3) {
-          inProgressCourses.push({ id: c.id, title: c.title, pct: m.overallProgress });
-        }
-      } else {
-        completed += 1;
-      }
-    }
-    return { notStarted, inProgress, completed, total: list.length, inProgressCourses };
-  }, [items]);
-
-  if (isPending) {
-    return (
-      <section className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-        <InlineSkeleton label="Loading course progress" />
-      </section>
-    );
-  }
+  if (isLoading) return <LoadingCard rows={2} />;
 
   if (isError) {
     return (
-      <section className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-4 text-sm text-amber-950 shadow-sm">
-        <p className="font-medium">Could not load course progress.</p>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-2 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-700"
-        >
-          Retry
-        </button>
-      </section>
+      <DashboardCard>
+        <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+          <p className="text-sm text-slate-700">Your courses could not load.</p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Retry
+          </button>
+        </div>
+      </DashboardCard>
     );
   }
 
-  if (breakdown.total === 0) {
+  if (courses.length === 0) {
     return (
-      <section className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center shadow-sm">
-        <p className="text-sm font-medium text-slate-800">No enrolled classes yet</p>
-        <p className="mt-1 text-xs text-slate-600">
-          When your school assigns classes, your progress will show here.
-        </p>
-        <Link
-          to="/student/courses"
-          className="mt-3 inline-flex text-sm font-semibold text-brand-600 hover:text-brand-700"
-        >
-          Open courses
-        </Link>
-      </section>
+      <DashboardCard>
+        <EmptyPanel
+          icon={BookOpen}
+          message="You have no courses yet. They appear here once your classes are assigned."
+        />
+      </DashboardCard>
     );
   }
+
+  const next =
+    [...courses]
+      .filter((course) => course.state === 'in_progress')
+      .sort((a, b) => b.progress - a.progress)[0] ??
+    courses.find((course) => course.state === 'not_started');
+
+  if (!next) {
+    return (
+      <DashboardCard>
+        <CardHeader title="All courses completed" subtitle="You have finished every lesson and task." />
+        <div className="pb-4" />
+      </DashboardCard>
+    );
+  }
+
+  const isStarted = next.state === 'in_progress';
 
   return (
-    <section className="space-y-4" aria-label="Course progress overview">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <h2 className="text-base font-semibold text-slate-900">Your course progress</h2>
-        <Link
-          to="/student/my-learning"
-          className="text-sm font-medium text-brand-600 hover:text-brand-700"
-        >
-          View all in My Learning
-        </Link>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Link
-          to="/student/courses"
-          className="group flex flex-col gap-1 rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm ring-2 ring-transparent transition hover:border-slate-300 hover:ring-slate-100"
-        >
-          <div className="flex items-center gap-2 text-slate-600">
-            <CircleDashed className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="text-xs font-semibold uppercase tracking-wide">Not started</span>
+    <section className="rounded-xl bg-brand-900 p-5 text-white shadow-card sm:p-6">
+      <p className="text-[13px] font-medium text-white/70">
+        {isStarted ? 'Continue learning' : 'Start learning'}
+      </p>
+      <h2 className="mt-1 text-xl font-semibold tracking-tight">{next.title}</h2>
+      <p className="mt-0.5 text-[13px] text-white/70">{next.subject}</p>
+      <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full sm:max-w-xs">
+          <div className="flex items-baseline justify-between text-[13px]">
+            <span className="text-white/70">Progress</span>
+            <span className="font-semibold tabular-nums">{next.progress}%</span>
           </div>
-          <p className="text-3xl font-bold tabular-nums text-slate-900">{breakdown.notStarted}</p>
-          <p className="text-xs text-slate-500">Courses you have not begun</p>
-        </Link>
-        <Link
-          to="/student/my-learning"
-          className="group flex flex-col gap-1 rounded-xl border-2 border-amber-300/90 bg-gradient-to-br from-amber-50 to-amber-50/30 p-4 shadow-sm ring-2 ring-amber-200/60 transition hover:border-amber-400 hover:ring-amber-100"
-        >
-          <div className="flex items-center gap-2 text-amber-900">
-            <PlayCircle className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="text-xs font-semibold uppercase tracking-wide">In progress</span>
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/15">
+            <div className="h-full rounded-full bg-white" style={{ width: `${next.progress}%` }} />
           </div>
-          <p className="text-3xl font-bold tabular-nums text-amber-950">{breakdown.inProgress}</p>
-          <p className="text-xs text-amber-800/90">Active learning right now</p>
-        </Link>
-        <Link
-          to="/student/my-learning"
-          className="group flex flex-col gap-1 rounded-xl border-2 border-emerald-300/90 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm ring-2 ring-emerald-200/60 transition hover:border-emerald-400 hover:ring-emerald-100"
-        >
-          <div className="flex items-center gap-2 text-emerald-900">
-            <Award className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="text-xs font-semibold uppercase tracking-wide">Completed</span>
-          </div>
-          <p className="text-3xl font-bold tabular-nums text-emerald-950">{breakdown.completed}</p>
-          <p className="text-xs text-emerald-800/90">All lessons and tasks done</p>
-        </Link>
-      </div>
-      {breakdown.inProgressCourses.length > 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-900">Continue learning</h3>
-          <ul className="mt-3 grid gap-3 lg:grid-cols-3">
-            {breakdown.inProgressCourses.map((c) => (
-              <li key={c.id}>
-                <Link
-                  to={`/student/courses/${c.id}`}
-                  className="flex h-full items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-3 text-left transition hover:border-brand-200 hover:bg-brand-50/40"
-                >
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
-                    {c.title}
-                  </span>
-                  <span className="shrink-0 text-xs font-semibold text-brand-700">{c.pct}%</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
         </div>
-      ) : null}
+        <Link
+          to={`/student/courses/${next.id}`}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-brand-800 transition hover:bg-brand-50"
+        >
+          {isStarted ? 'Continue' : 'Start course'}
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </div>
     </section>
   );
 }
 
-function PerformanceCard({ data }: { data: StudentDashboardData }) {
-  const stats = data.learningStats;
-  const minutes = Math.round((stats?.timeSpentSecondsTotal ?? 0) / 60);
-  const avgScore = stats?.avgAssessmentScorePercent ?? null;
+function CoursesCard({ courses }: { courses: CourseRow[] }) {
+  if (courses.length === 0) return null;
 
   return (
-    <Card>
+    <DashboardCard>
       <CardHeader
-        title="My performance"
-        subtitle="Quiz scores and study activity"
-        icon={Sparkles}
-        tone="brand"
-        action={<CardActionLink to="/student/my-learning">Details</CardActionLink>}
+        title="My courses"
+        subtitle={`${courses.length.toLocaleString()} ${courses.length === 1 ? 'course' : 'courses'}`}
+        action={<TextLink to="/student/my-learning">My learning</TextLink>}
       />
-      <div className="p-5">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-slate-600">Average quiz score</p>
-          {avgScore !== null ? (
-            <Badge tone={avgScore >= 50 ? 'success' : 'warning'}>{avgScore}%</Badge>
-          ) : (
-            <Badge tone="neutral">No scores yet</Badge>
-          )}
+      <ul className="mt-2 divide-y divide-slate-100 border-t border-slate-100">
+        {courses.slice(0, 8).map((course) => (
+          <li key={course.id}>
+            <Link
+              to={`/student/courses/${course.id}`}
+              className="grid gap-3 px-5 py-3 transition hover:bg-slate-50 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-center"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="min-w-0 truncate text-sm font-medium text-slate-900">{course.title}</p>
+                  <Badge tone={COURSE_STATE[course.state].tone}>{COURSE_STATE[course.state].label}</Badge>
+                </div>
+                <p className="mt-0.5 truncate text-xs text-slate-500">{course.subject}</p>
+              </div>
+              <MeterRow label="Progress" value={`${course.progress}%`} percent={course.progress} />
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {courses.length > 8 ? (
+        <div className="border-t border-slate-100 px-5 py-3">
+          <TextLink to="/student/courses">View all courses</TextLink>
         </div>
-        {avgScore !== null && (
-          <ProgressBar
-            value={avgScore}
-            tone={avgScore >= 50 ? 'success' : 'warning'}
-            className="mt-3"
-          />
-        )}
-        <div className="mt-5 space-y-3">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-              <Timer className="h-[18px] w-[18px]" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{minutes} min</p>
-              <p className="text-xs text-slate-500">Time spent on lessons</p>
+      ) : null}
+    </DashboardCard>
+  );
+}
+
+function ProgressCard({ data }: { data: StudentDashboardData }) {
+  const stats = data.learningStats;
+  const avgScore = stats?.avgAssessmentScorePercent ?? null;
+  const week = data.attendanceWeek;
+  const rows = [
+    { label: 'Time on lessons', value: formatStudyTime(stats?.timeSpentSecondsTotal ?? 0) },
+    ...(week && week.daysWithRecords > 0
+      ? [{ label: 'Attendance this week', value: `${week.present} of ${week.daysWithRecords} days` }]
+      : []),
+    ...(data.conductOpen
+      ? [{ label: 'Open conduct entries', value: data.conductOpen.toLocaleString() }]
+      : []),
+  ];
+
+  return (
+    <DashboardCard>
+      <CardHeader title="My progress" action={<TextLink to="/student/my-learning">Details</TextLink>} />
+      <div className="px-5 pb-3 pt-2">
+        <MeterRow
+          label="Average quiz score"
+          value={avgScore === null ? '—' : `${avgScore}%`}
+          percent={avgScore ?? 0}
+          hint={avgScore === null ? 'No scores yet' : undefined}
+        />
+        <dl className="mt-2">
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              className="flex items-center justify-between gap-3 border-t border-slate-100 py-2.5 first:border-t-0"
+            >
+              <dt className="text-[13px] text-slate-600">{row.label}</dt>
+              <dd className="text-sm font-semibold tabular-nums text-slate-900">{row.value}</dd>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <Users className="h-[18px] w-[18px]" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                {data.conductOpen != null && data.conductOpen > 0
-                  ? `${data.conductOpen} open`
-                  : 'No open issues'}
-              </p>
-              <p className="text-xs text-slate-500">Conduct entries</p>
-            </div>
-          </div>
-        </div>
+          ))}
+        </dl>
       </div>
-    </Card>
+    </DashboardCard>
+  );
+}
+
+function UpcomingExamsCard({ data }: { data: StudentDashboardData }) {
+  const exams = data.upcomingExams;
+
+  return (
+    <DashboardCard>
+      <CardHeader
+        title="Upcoming exams"
+        action={<TextLink to="/student/assessments">Assessments</TextLink>}
+      />
+      {exams.length === 0 ? (
+        <p className="px-5 pb-5 pt-1 text-[13px] text-slate-500">No exams are scheduled.</p>
+      ) : (
+        <ul className="px-5 pb-3 pt-1">
+          {exams.map((exam) => (
+            <li
+              key={exam.id}
+              className="flex items-center justify-between gap-3 border-t border-slate-100 py-2.5 first:border-t-0"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-medium text-slate-900">{exam.title}</p>
+                <p className="text-xs text-slate-500">{exam.relativeDate}</p>
+              </div>
+              <span className="shrink-0 text-xs tabular-nums text-slate-600">{exam.time}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DashboardCard>
   );
 }
 
@@ -436,119 +414,33 @@ function AnnouncementsCard({ data }: { data: StudentDashboardData }) {
   const items = data.recentAnnouncements ?? [];
 
   return (
-    <Card>
+    <DashboardCard>
       <CardHeader
         title="Announcements"
-        subtitle="Latest updates from your school"
-        icon={Megaphone}
-        tone="warning"
-        action={<CardActionLink to="/student/announcements">View all</CardActionLink>}
+        action={<TextLink to="/student/announcements">View all</TextLink>}
       />
-      <div className="p-5">
-        {items.length === 0 ? (
-          <EmptyInline icon={Megaphone} title="No announcements yet" />
-        ) : (
-          <div className="space-y-3">
-            {items.map((a) => (
-              <div key={a.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                <p className="text-sm font-semibold text-slate-900">{a.title}</p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-600">{a.excerpt}</p>
-                {a.publishedAt && (
-                  <p className="mt-1 text-[11px] text-slate-400">
-                    {new Date(a.publishedAt).toLocaleDateString(undefined, {
+      {items.length === 0 ? (
+        <p className="px-5 pb-5 pt-1 text-[13px] text-slate-500">No announcements yet.</p>
+      ) : (
+        <ul className="px-5 pb-3 pt-1">
+          {items.map((item) => (
+            <li key={item.id} className="border-t border-slate-100 py-3 first:border-t-0">
+              <div className="flex items-center justify-between gap-3">
+                <p className="min-w-0 truncate text-[13px] font-medium text-slate-900">{item.title}</p>
+                {item.publishedAt ? (
+                  <span className="shrink-0 text-xs text-slate-500">
+                    {new Date(item.publishedAt).toLocaleDateString(undefined, {
                       month: 'short',
                       day: 'numeric',
                     })}
-                  </p>
-                )}
+                  </span>
+                ) : null}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-function StudentUpcomingExamsCard({
-  data,
-  className,
-}: {
-  data: StudentDashboardData;
-  className?: string;
-}) {
-  return (
-    <Card className={className}>
-      <CardHeader
-        title="Upcoming exams"
-        subtitle="Tests and examinations scheduled for you"
-        icon={FileBarChart2}
-        tone="danger"
-        action={<CardActionLink to="/student/assessments">Assessments</CardActionLink>}
-      />
-      <div className="p-5">
-        {data.upcomingExams.length === 0 ? (
-          <EmptyInline
-            icon={FileBarChart2}
-            title="No upcoming exams"
-            message="Your school has not scheduled any exams yet. Relax and keep learning."
-          />
-        ) : (
-          <div className="space-y-3">
-            {data.upcomingExams.map((exam) => (
-              <div
-                key={exam.id}
-                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{exam.title}</p>
-                    <p className="text-xs text-slate-500">{exam.relativeDate}</p>
-                  </div>
-                </div>
-                <Badge tone="neutral">{exam.time}</Badge>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-function QuickLinksCard() {
-  return (
-    <Card>
-      <CardHeader title="Quick links" icon={BookMarked} tone="purple" />
-      <div className="space-y-3 p-5">
-        <Link
-          to="/student/courses"
-          className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-brand-200 hover:bg-brand-50/40"
-        >
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-            <FileText className="h-5 w-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-900">Secure PDF Viewer</p>
-            <p className="text-xs text-slate-500">View course materials</p>
-          </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
-        </Link>
-        <Link
-          to="/student/chat"
-          className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40"
-        >
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-            <MessageCircle className="h-5 w-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-900">Student Group Chat</p>
-            <p className="text-xs text-slate-500">Discuss with classmates</p>
-          </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
-        </Link>
-      </div>
-    </Card>
+              <p className="mt-1 text-xs leading-relaxed text-slate-600">{item.excerpt}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DashboardCard>
   );
 }

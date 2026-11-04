@@ -41,7 +41,7 @@ interface NavItem {
   setupState: SetupState;
 }
 
-const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
+export const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
   dashboard: 'Dashboard',
   tenants: 'School Management',
   users: 'Users',
@@ -50,6 +50,17 @@ const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
   'auditor-management': 'Auditor Management',
   subscriptions: 'Subscription Management',
 };
+
+/** Sidebar sections for staff roles. Items not listed stay in an unlabeled top section. */
+const NAV_GROUPS: Array<{ id: string; label: string; keys: string[] }> = [
+  { id: 'overview', label: '', keys: ['dashboard', 'reports-analytics'] },
+  { id: 'schools', label: 'Schools', keys: ['tenants', 'subscriptions'] },
+  { id: 'academics', label: 'Academics', keys: ['years', 'class-management', 'subjects', 'timetable', 'learning-content', 'learning-insights'] },
+  { id: 'assessment', label: 'Assessment', keys: ['continuous-assessment', 'exams', 'class-marks', 'conduct-marks-settings', 'report-cards'] },
+  { id: 'people', label: 'People', keys: ['students', 'attendance', 'parents', 'staff', 'users', 'auditor-management', 'access-control'] },
+  { id: 'communication', label: 'Communication', keys: ['announcements', 'notifications', 'support-center'] },
+  { id: 'administration', label: 'Administration', keys: ['setup', 'subscription', 'audit-reports', 'audit-logs', 'system-settings'] },
+];
 
 export const NAV_ITEMS: NavItem[] = [
   {
@@ -599,45 +610,65 @@ export function RoleNav({ onNavigate, collapsed }: RoleNavProps) {
     return true;
   });
 
-  return (
-    <nav aria-label="Primary" className="grid w-max gap-0.5">
-      {items.map((item) => {
-        const itemModule = item.to.match(/[?&]module=([^&]+)/)?.[1] ?? null;
-        const label =
-          item.key === 'dashboard' || item.key === 'student-dashboard'
-            ? item.key === 'student-dashboard'
-              ? t('headerTitle.dashboard')
-              : superAdmin
-                ? t('headerTitle.dashboard')
-                : getDashboardLabel()
-            : superAdmin && SUPER_ADMIN_NAV_OVERRIDES[item.key]
-              ? t(`nav.${item.key}`, { defaultValue: SUPER_ADMIN_NAV_OVERRIDES[item.key] })
-              : t(`nav.${item.key}`, { defaultValue: item.label });
-        return (
-          <div key={item.key}>
-            <NavLink
-              to={item.to}
-              end={item.key === 'dashboard' || item.key === 'student-dashboard'}
-              onClick={onNavigate}
-              className={({ isActive }) => {
-                const itemIsActive = itemModule ? activeAuditorModule === itemModule : isActive;
+  const listedKeys = new Set(NAV_GROUPS.flatMap((group) => group.keys));
+  const groupedItems = [
+    { id: 'other', label: '', items: items.filter((item) => !listedKeys.has(item.key)) },
+    ...NAV_GROUPS.map((group) => ({
+      id: group.id,
+      label: group.label,
+      items: items.filter((item) => group.keys.includes(item.key)),
+    })),
+  ].filter((group) => group.items.length > 0);
 
-                return clsx(
-                  'group flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition duration-150',
-                  itemIsActive
-                    ? schoolAdmin
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-950/20 ring-1 ring-blue-400/50'
-                      : 'bg-white text-[#173C7F] shadow-sm ring-1 ring-brand-200'
-                    : 'text-white/90 hover:bg-white/20 hover:text-white'
-                );
-              }}
-            >
-              <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {!collapsed ? <span className="whitespace-nowrap">{label}</span> : null}
-            </NavLink>
-          </div>
-        );
-      })}
+  return (
+    <nav aria-label="Primary" className="grid gap-4">
+      {groupedItems.map((group) => (
+        <div key={group.id} className="grid gap-0.5">
+          {group.label && !collapsed ? (
+            <p className="px-3 pb-1 text-[11px] font-medium text-white/50">
+              {t(`navGroup.${group.id}`, { defaultValue: group.label })}
+            </p>
+          ) : null}
+          {group.items.map((item) => {
+            const itemModule = item.to.match(/[?&]module=([^&]+)/)?.[1] ?? null;
+            const label =
+              item.key === 'dashboard' || item.key === 'student-dashboard'
+                ? item.key === 'student-dashboard'
+                  ? t('headerTitle.dashboard')
+                  : superAdmin
+                    ? t('headerTitle.dashboard')
+                    : getDashboardLabel()
+                : superAdmin && SUPER_ADMIN_NAV_OVERRIDES[item.key]
+                  ? t(`nav.${item.key}`, { defaultValue: SUPER_ADMIN_NAV_OVERRIDES[item.key] })
+                  : t(`nav.${item.key}`, { defaultValue: item.label });
+            return (
+              <div key={item.key}>
+                <NavLink
+                  to={item.to}
+                  end={item.key === 'dashboard' || item.key === 'student-dashboard'}
+                  onClick={onNavigate}
+                  title={label}
+                  aria-label={collapsed ? label : undefined}
+                  className={({ isActive }) => {
+                    const itemIsActive = itemModule ? activeAuditorModule === itemModule : isActive;
+
+                    return clsx(
+                      'group flex w-full items-center gap-2.5 whitespace-nowrap rounded-md py-1.5 text-[13px] font-medium transition duration-150',
+                      collapsed ? 'justify-center px-2' : 'px-3',
+                      itemIsActive
+                        ? 'bg-white/[0.14] text-white'
+                      : 'text-white/70 hover:bg-white/[0.07] hover:text-white'
+                    );
+                  }}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {!collapsed ? <span className="min-w-0 truncate">{label}</span> : null}
+                </NavLink>
+              </div>
+            );
+          })}
+        </div>
+      ))}
     </nav>
   );
 }

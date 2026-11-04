@@ -34,9 +34,12 @@ export interface DataTableProps<TData> {
   minWidth?: number;
   className?: string;
   ariaLabel?: string;
-  pagination?: boolean;
-  paginationState?: { pageIndex: number; pageSize: number; totalItems: number };
+  pagination?: boolean | DataTablePaginationProps;
+  paginationState?: DataTablePaginationProps;
   onPaginationChange?: (pageIndex: number, pageSize: number) => void;
+
+  sort?: DataTableSort | null;
+  onSortChange?: (sort: DataTableSort) => void;
 }
 
 function defaultCell<TData>(row: TData, column: DataTableColumn<TData>): ReactNode {
@@ -114,7 +117,7 @@ export function DataTable<TData>({
   return (
     <div
       className={clsx(
-        'min-w-0 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]',
+        'min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card',
         className
       )}
     >

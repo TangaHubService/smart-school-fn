@@ -31,7 +31,8 @@ import { AcademicYearSelector } from './academic-year-selector';
 import { ConnectionStatusBanner } from './connection-status-banner';
 import { LanguageSwitcher } from './language-switcher';
 import { LowBandwidthToggle } from './low-bandwidth-toggle';
-import { RoleNav } from './role-nav';
+import { NAV_ITEMS, RoleNav, SUPER_ADMIN_NAV_OVERRIDES } from './role-nav';
+import logo from '../asset/logo.jpg';
 
 export function AppShell() {
   const { t } = useTranslation('common');
@@ -75,6 +76,26 @@ export function AppShell() {
             ? t('headerTitle.parentPortal')
             : t('headerTitle.dashboard');
 
+  // Top bar names the page you are on; the dashboard falls back to the role title.
+  const currentNavItem = isStudent
+    ? undefined
+    : NAV_ITEMS.filter((item) => {
+        const path = item.to.split('?')[0];
+        return path !== '/' && (location.pathname === path || location.pathname.startsWith(`${path}/`));
+      }).sort((a, b) => b.to.length - a.to.length)[0];
+  const pageTitle =
+    currentNavItem && !['dashboard', 'student-dashboard'].includes(currentNavItem.key)
+      ? t(`nav.${currentNavItem.key}`, {
+          defaultValue:
+            (superAdmin && SUPER_ADMIN_NAV_OVERRIDES[currentNavItem.key]) || currentNavItem.label,
+        })
+      : headerTitle;
+
+  useEffect(() => {
+    document.body.classList.add('ss-admin-ui');
+    return () => document.body.classList.remove('ss-admin-ui');
+  }, []);
+
   const userDisplayName =
     `${auth.me?.firstName ?? ''} ${auth.me?.lastName ?? ''}`.trim() || auth.me?.email || 'User';
   const userDisplayEmail = auth.me?.email ?? '-';
@@ -104,6 +125,8 @@ export function AppShell() {
       : null,
   ].filter(Boolean) as Array<{ to: string; label: string; title?: string }>;
 
+  const sidebarCollapsed = !isDesktopSidebarVisible && !isMobileNavOpen;
+
   function closeMobileNav() {
     setIsMobileNavOpen(false);
   }
@@ -129,59 +152,56 @@ export function AppShell() {
         {isStudent ? null : (
           <aside
             className={clsx(
-              'fixed inset-y-0 left-0 z-40 flex w-max max-w-[100vw] flex-col overflow-x-hidden overflow-y-hidden text-white md:sticky md:top-0 md:h-screen md:shrink-0 md:rounded-none',
-              schoolAdmin
-                ? 'bg-gradient-to-b from-[#06245a] via-[#073a7c] to-[#052f68]'
-                : 'bg-[#173C7F]',
+              'fixed inset-y-0 left-0 z-40 flex w-64 max-w-[100vw] flex-col overflow-hidden bg-brand-900 text-white transition-[width] duration-200 md:sticky md:top-0 md:h-screen md:shrink-0',
               isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
-              isDesktopSidebarVisible ? 'md:translate-x-0 md:w-72' : 'md:translate-x-0 md:w-16 md:overflow-hidden'
+              isDesktopSidebarVisible ? 'md:translate-x-0 md:w-64' : 'md:translate-x-0 md:w-16'
             )}
             aria-label="Sidebar"
           >
-            <div className={'border-b border-white/10 px-6 py-5'}>
-              <div className="flex items-center justify-between md:hidden">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
-                  {t('shell.navigation')}
-                </span>
+            <div className={clsx('border-b border-white/10 py-4', sidebarCollapsed ? 'px-3' : 'px-4')}>
+              <div className="mb-3 flex items-center justify-between md:hidden">
+                <span className="text-sm font-medium text-white/80">{t('shell.navigation')}</span>
                 <button
                   type="button"
                   onClick={closeMobileNav}
-                  className="inline-flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white"
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/20 px-2.5 py-1.5 text-xs font-medium text-white"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                   {t('shell.close')}
                 </button>
               </div>
-              <div className="mt-2 flex items-center gap-2 md:mt-0">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20">
-                  <span className="text-base">🎓</span>
-                </div>
-                <div>
-                  <p className="whitespace-nowrap text-base font-bold tracking-tight text-white">
-                    Smart<span className="text-amber-400">School</span>
-                  </p>
-                  <p className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wider text-white/80">
-                    {isStudent
-                      ? t('headerTitle.studentPortal')
-                      : isTeacher
-                        ? t('headerTitle.teacherPortal')
-                        : isParent
-                          ? t('headerTitle.parentPortal')
-                          : 'RWANDA ADMIN OS'}
-                  </p>
-                </div>
+              <div className={clsx('flex items-center gap-3', sidebarCollapsed && 'justify-center')}>
+                <img
+                  src={logo}
+                  alt={sidebarCollapsed ? 'Smart School' : ''}
+                  className="h-9 w-9 shrink-0 rounded-lg bg-white object-cover"
+                />
+                {sidebarCollapsed ? null : (
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold tracking-tight text-white">
+                      Smart School
+                    </p>
+                    <p className="truncate text-xs text-white/60">{superAdmin
+                        ? 'Platform admin'
+                        : schoolAdmin
+                          ? 'School admin'
+                          : hasRole(auth.me, 'GOV_AUDITOR')
+                            ? 'Government auditor'
+                            : headerTitle}</p>
+                  </div>
+                )}
               </div>
-              {schoolAdmin && auth.me?.school ? (
-                <div className="mt-5 rounded-xl border border-white/10 bg-white/10 p-3 shadow-inner">
+              {schoolAdmin && auth.me?.school && !sidebarCollapsed ? (
+                <div className="mt-4 rounded-lg bg-white/[0.07] p-3">
                   <div className="flex items-center gap-3">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white text-[#173C7F]">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/10 text-white">
                       <Building2 className="h-5 w-5" aria-hidden="true" />
                     </span>
                     <div className="min-w-0">
-                      <p className="max-w-40 truncate text-xs font-semibold text-white">
+                      <p className="max-w-40 truncate text-[13px] font-medium text-white">
                         {auth.me.school.displayName}
                       </p>
-                      <p className="mt-0.5 max-w-40 truncate text-[10px] text-white/65">
+                      <p className="mt-0.5 max-w-40 truncate text-[11px] text-white/70">
                         {auth.me.tenant.code}
                       </p>
                     </div>
@@ -189,7 +209,7 @@ export function AppShell() {
                   {canReadBilling ? (
                     <p
                       className={clsx(
-                        'mt-3 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                        'mt-3 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium',
                         invoiceStatus === undefined
                           ? 'bg-white/10 text-white/70'
                           : invoiceStatus === 'PAID'
@@ -215,23 +235,28 @@ export function AppShell() {
               ) : null}
             </div>
 
-            <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-6 py-6">
-              <RoleNav onNavigate={closeMobileNav} collapsed={!isDesktopSidebarVisible} />
+            <div
+              className={clsx(
+                'min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden py-4 [scrollbar-color:rgba(255,255,255,0.2)_transparent] [scrollbar-width:thin]',
+                sidebarCollapsed ? 'px-2' : 'px-3'
+              )}
+            >
+              <RoleNav onNavigate={closeMobileNav} collapsed={sidebarCollapsed} />
             </div>
 
-            <div className="mt-auto shrink-0 px-6 pb-6 pt-6">
+            <div className={clsx('shrink-0 border-t border-white/10 py-3', sidebarCollapsed ? 'px-2' : 'px-3')}>
               <button
                 type="button"
                 onClick={() => void auth.logout()}
+                title={sidebarCollapsed ? t('shell.logout') : undefined}
+                aria-label={sidebarCollapsed ? t('shell.logout') : undefined}
                 className={clsx(
-                  'inline-flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-4 py-3 text-left text-sm font-semibold transition',
-                  schoolAdmin
-                    ? 'border border-white/15 bg-white/5 text-red-300 hover:bg-white/10 hover:text-red-200'
-                    : 'bg-white text-red-600 hover:bg-white/95'
+                  'flex w-full items-center gap-3 whitespace-nowrap rounded-lg py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white',
+                  sidebarCollapsed ? 'justify-center px-2' : 'px-3'
                 )}
               >
                 <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {t('shell.logout')}
+                {sidebarCollapsed ? null : t('shell.logout')}
               </button>
             </div>
           </aside>
@@ -242,9 +267,9 @@ export function AppShell() {
             <header
               className={clsx(
                 'sticky top-0 z-30 shrink-0 px-5 transition-[padding] duration-200',
-                schoolAdmin
-                  ? 'border-b border-slate-200 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)]'
-                  : 'bg-[#173C7F]',
+                !isStudent
+                  ? 'border-b border-slate-200 bg-white'
+                  : 'bg-brand-900',
                 'py-3',
                 isStudent && 'shadow-[0_6px_18px_rgba(15,23,42,0.14)]'
               )}
@@ -257,8 +282,8 @@ export function AppShell() {
                       onClick={() => setIsMobileNavOpen(true)}
                       className={clsx(
                         'grid h-10 w-10 place-items-center rounded-lg border md:hidden',
-                        schoolAdmin
-                          ? 'border-slate-200 bg-slate-50 text-slate-700'
+                        !isStudent
+                          ? 'border-slate-200 bg-white text-slate-600'
                           : 'border-white/20 bg-white/10 text-white'
                       )}
                       aria-label={t('shell.openSidebar')}
@@ -271,8 +296,8 @@ export function AppShell() {
                       onClick={() => setIsDesktopSidebarVisible((current) => !current)}
                       className={clsx(
                         'hidden h-10 min-w-10 place-items-center rounded-lg border md:grid',
-                        schoolAdmin
-                          ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                        !isStudent
+                          ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                           : 'border-white/20 bg-white/10 text-white'
                       )}
                       aria-label={
@@ -290,23 +315,21 @@ export function AppShell() {
                 ) : (
                   <a
                     href="/"
+                    aria-label={t('headerTitle.dashboard')}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-white/95 px-3 py-1.5 text-xs font-medium text-[#173C7F] shadow-sm transition hover:bg-white"
                   >
                     <ArrowLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   </a>
                 )}
 
-                <Home
-                  className={clsx('h-4 w-4 shrink-0', schoolAdmin ? 'text-blue-600' : 'text-white')}
-                  aria-hidden="true"
-                />
+                {isStudent ? <Home className="h-4 w-4 shrink-0 text-white" aria-hidden="true" /> : null}
                 <span
                   className={clsx(
-                    'text-sm font-bold',
-                    schoolAdmin ? 'text-slate-900' : 'text-white'
+                    'text-sm font-semibold',
+                    !isStudent ? 'text-slate-900' : 'text-white'
                   )}
                 >
-                  {headerTitle}
+                  {pageTitle}
                 </span>
 
                 <div className="ml-auto flex items-center gap-2">
@@ -315,7 +338,7 @@ export function AppShell() {
                     <LowBandwidthToggle />
                     <LanguageSwitcher
                       className={
-                        schoolAdmin
+                        !isStudent
                           ? '[&_span]:text-slate-600 [&_select]:border-slate-200 [&_select]:bg-white [&_select]:text-slate-700'
                           : '[&_span]:text-white/85 [&_select]:border-white/25 [&_select]:bg-white/10 [&_select]:text-white'
                       }
@@ -326,12 +349,12 @@ export function AppShell() {
                     <button
                       type="button"
                       onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                      className="hidden min-w-[220px] items-center gap-2 rounded-lg   text-left transition sm:flex"
+                      className="hidden max-w-[240px] items-center gap-2 rounded-lg text-left transition sm:flex"
                     >
                       <div
                         className={clsx(
                           'grid h-8 w-8 place-items-center rounded-full',
-                          schoolAdmin ? 'bg-amber-400 text-white' : 'bg-white text-brand-600'
+                          !isStudent ? 'bg-brand-50 text-brand-600' : 'bg-white text-brand-600'
                         )}
                       >
                         <User className="h-4 w-4" aria-hidden="true" />
@@ -340,7 +363,7 @@ export function AppShell() {
                         <p
                           className={clsx(
                             'truncate text-xs font-semibold',
-                            schoolAdmin ? 'text-slate-900' : 'text-white'
+                            !isStudent ? 'text-slate-900' : 'text-white'
                           )}
                         >
                           {userDisplayName}
@@ -348,7 +371,7 @@ export function AppShell() {
                         <p
                           className={clsx(
                             'truncate text-[11px]',
-                            schoolAdmin ? 'text-slate-500' : 'text-white/75'
+                            !isStudent ? 'text-slate-500' : 'text-white/75'
                           )}
                         >
                           {userDisplayEmail}
@@ -357,7 +380,7 @@ export function AppShell() {
                       <ChevronDown
                         className={clsx(
                           'h-4 w-4 transition-transform duration-200',
-                          schoolAdmin ? 'text-slate-500' : 'text-white',
+                          !isStudent ? 'text-slate-500' : 'text-white',
                           isProfileMenuOpen && 'rotate-180'
                         )}
                         aria-hidden="true"
@@ -369,8 +392,8 @@ export function AppShell() {
                       onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                       className={clsx(
                         'grid h-10 w-10 place-items-center rounded-lg transition sm:hidden',
-                        schoolAdmin
-                          ? 'bg-amber-400 text-white hover:bg-amber-500'
+                        !isStudent
+                          ? 'bg-brand-50 text-brand-600 hover:bg-brand-100'
                           : 'bg-white text-brand-600 hover:bg-white/90'
                       )}
                       title={userDisplayName}

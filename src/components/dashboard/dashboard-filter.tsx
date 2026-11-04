@@ -52,7 +52,7 @@ export function DashboardFilter({
   variant = 'super-admin',
 }: DashboardFilterProps) {
   const selectClass =
-    'h-9 rounded border border-slate-200 bg-slate-50 px-2 text-xs text-slate-700 outline-none focus:border-blue-400';
+    'min-w-[130px] flex-1 h-9 rounded border border-slate-200 bg-slate-50 px-2 text-xs text-slate-700 outline-none focus:border-blue-400';
 
   function termCodeFromSequence(sequence: number): string {
     if (sequence === 1) return 'first';
@@ -172,10 +172,8 @@ export function DashboardFilter({
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-card">
       <div className="flex flex-wrap items-center gap-2">
-        <Filter className="h-4 w-4 text-slate-600" />
-        <span className="text-xs font-semibold text-slate-700">Filter Section</span>
         <select
           className={selectClass}
           value={academicYear}
@@ -236,23 +234,16 @@ export function DashboardFilter({
         <button
           type="button"
           onClick={onApply}
-          className="rounded bg-dashboard-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0f2a5c]"
+          className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
         >
           Apply Filter
         </button>
         <button
           type="button"
           onClick={onReset}
-          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
         >
           Reset
-        </button>
-        <button
-          type="button"
-          className="grid h-9 w-9 place-items-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-          aria-label="Search"
-        >
-          <Search className="h-4 w-4" />
         </button>
       </div>
     </div>

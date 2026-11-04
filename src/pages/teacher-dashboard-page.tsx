@@ -1,17 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowUpRight,
-  BarChart3,
-  BookOpen,
-  CheckCircle2,
-  ClipboardCheck,
-  Clock3,
-  FileBarChart2,
-  Megaphone,
-  School,
-  Sparkles,
-  Users,
-} from 'lucide-react';
+import { BarChart3, BookOpen, ClipboardCheck, FileBarChart2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -23,18 +11,18 @@ import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import { getTeacherDashboardApi, type TeacherDashboardData } from '../features/dashboard/dashboard.api';
 import { listMyAnnouncementsApi } from '../features/announcements/announcements.api';
+import { LoadingCard, LoadingMetrics } from '../components/dashboard/dashboard-ui';
+import { Badge, type BadgeTone } from '../components/ui/badge';
 import {
-  Badge,
-  Card,
-  CardActionLink,
+  AttentionCard,
   CardHeader,
-  EmptyInline,
-  LoadingCard,
-  LoadingMetrics,
-  MetricCard,
-  ProgressBar,
-  type DashboardTone,
-} from '../components/dashboard/dashboard-ui';
+  DashboardCard,
+  KpiStrip,
+  MeterRow,
+  PageHeader,
+  TextLink,
+  type AttentionItem,
+} from '../components/ui/dashboard-kit';
 
 function getTodayKigaliDate(): string {
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -82,69 +70,53 @@ const TEACHER_QUICK_ACTIONS: DashboardQuickActionItem[] = [
 
 const CLASS_STATUS_META: Record<
   'COMPLETE' | 'PARTIAL' | 'UNMARKED',
-  { label: string; tone: DashboardTone; bar: DashboardTone }
+  { label: string; tone: BadgeTone }
 > = {
-  COMPLETE: { label: 'Complete', tone: 'success', bar: 'success' },
-  PARTIAL: { label: 'Partial', tone: 'warning', bar: 'warning' },
-  UNMARKED: { label: 'Unmarked', tone: 'neutral', bar: 'brand' },
+  COMPLETE: { label: 'Complete', tone: 'success' },
+  PARTIAL: { label: 'Partial', tone: 'warning' },
+  UNMARKED: { label: 'Unmarked', tone: 'neutral' },
 };
 
-function buildRecommendations(data: TeacherDashboardData) {
-  const items: Array<{
-    id: string;
-    title: string;
-    from: string;
-    priority: 'high' | 'medium' | 'low';
-    to: string;
-  }> = [];
+function plural(count: number, one: string, many = `${one}s`) {
+  return `${count.toLocaleString()} ${count === 1 ? one : many}`;
+}
+
+function buildAttention(data: TeacherDashboardData): AttentionItem[] {
+  const items: AttentionItem[] = [];
 
   if (data.todayAttendance.pendingClasses > 0) {
     items.push({
-      id: 'attendance',
-      title: `Mark attendance for ${data.todayAttendance.pendingClasses} pending class${
-        data.todayAttendance.pendingClasses > 1 ? 'es' : ''
-      } today`,
-      from: 'Today attendance',
-      priority: 'high',
+      key: 'attendance',
+      title: `Mark attendance for ${plural(data.todayAttendance.pendingClasses, 'class', 'classes')}`,
+      detail: 'Pending today',
       to: '/admin/attendance',
+      tone: 'warning',
     });
   }
   if (data.metrics.pendingSubmissions > 0) {
     items.push({
-      id: 'grading',
-      title: `${data.metrics.pendingSubmissions} submission${
-        data.metrics.pendingSubmissions > 1 ? 's' : ''
-      } awaiting your review`,
-      from: 'Assignments',
-      priority: 'high',
+      key: 'grading',
+      title: `${plural(data.metrics.pendingSubmissions, 'submission')} to review`,
       to: '/admin/assignments',
+      tone: 'warning',
     });
   }
   if (data.todayClasses.some((c) => c.status === 'PARTIAL')) {
     items.push({
-      id: 'partial',
-      title: 'Finish attendance for partially marked classes',
-      from: 'Today attendance',
-      priority: 'medium',
+      key: 'partial',
+      title: 'Finish partially marked attendance',
       to: '/admin/attendance',
+      tone: 'warning',
     });
   }
-  if (data.upcomingExams.length > 0) {
+  const nextExam = data.upcomingExams[0];
+  if (nextExam) {
     items.push({
-      id: 'exam',
-      title: `Prepare for "${data.upcomingExams[0].title}"`,
-      from: data.upcomingExams[0].relativeDate,
-      priority: 'medium',
+      key: 'exam',
+      title: `Prepare for "${nextExam.title}"`,
+      detail: nextExam.relativeDate,
       to: '/admin/exams',
-    });
-  }
-  if (data.metrics.pendingSubmissions === 0 && data.todayAttendance.pendingClasses === 0) {
-    items.push({
-      id: 'next',
-      title: 'Plan your next lessons and activities',
-      from: 'Course workspace',
-      priority: 'low',
-      to: '/admin/courses',
+      tone: 'info',
     });
   }
 
@@ -188,8 +160,8 @@ export function TeacherDashboardPage() {
 
   if (isPending || !data) {
     return (
-      <div className="space-y-5">
-        <div className="h-28 animate-pulse rounded-2xl bg-slate-200" />
+      <div className="mx-auto max-w-[1480px] space-y-5">
+        <div className="h-14 w-96 max-w-full animate-pulse rounded-lg bg-slate-200" />
         <LoadingMetrics count={4} />
         <div className="grid gap-5 lg:grid-cols-2">
           <LoadingCard rows={4} />
@@ -199,300 +171,183 @@ export function TeacherDashboardPage() {
     );
   }
 
-  const recommendations = buildRecommendations(data);
-  const classesStarted =
-    data.todayClasses.filter((c) => c.markedStudents > 0).length;
+  const classesStarted = data.todayClasses.filter((c) => c.markedStudents > 0).length;
+  const totalStudents = data.todayClasses.reduce((sum, c) => sum + c.totalStudents, 0);
 
   return (
-    <section className="space-y-5">
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            {t('dashboard.portal')}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-900">
-              {data.school.displayName}
-              {data.school.city ? `, ${data.school.city}` : ''}
-            </h1>
-            <DashboardQuickActionsDropdown actions={TEACHER_QUICK_ACTIONS} />
-          </div>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {t('dashboard.subtitle')}
-          </p>
-        </div>
-        <span className="text-sm text-slate-600">{t('dashboard.today', { date: todayStr })}</span>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          icon={BookOpen}
-          label={t('dashboard.metrics.myCourses')}
-          value={data.metrics.myCourses}
-          tone="brand"
-          to="/admin/courses"
-        />
-        <MetricCard
-          icon={School}
-          label={t('dashboard.metrics.myClasses')}
-          value={data.metrics.myClasses}
-          tone="purple"
-          to="/admin/my-classes"
-        />
-        <MetricCard
-          icon={ClipboardCheck}
-          label={t('dashboard.metrics.pendingToGrade')}
-          value={data.metrics.pendingSubmissions}
-          tone="warning"
-          to="/admin/assignments"
-          helper={data.metrics.pendingSubmissions > 0 ? 'Needs your review' : 'All caught up'}
-        />
-        <MetricCard
-          icon={Users}
-          label={t('dashboard.metrics.markedToday')}
-          value={`${data.todayAttendance.markedStudents} / ${data.todayClasses.reduce(
-            (sum, c) => sum + c.totalStudents,
-            0
-          )}`}
-          tone="success"
-          to="/admin/attendance"
-          helper={`${classesStarted} of ${data.todayClasses.length} classes started`}
-        />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-3">
-        <TodayClassesCard data={data} className="lg:col-span-2" />
-        <RecommendationsCard items={recommendations} />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <AttendanceSummaryCard data={data} />
-        <UpcomingExamsCard data={data} />
-      </div>
-
-      <AnnouncementsCard
-        isLoading={announcementsQuery.isPending}
-        items={(announcementsQuery.data?.items ?? []).map((item) => ({
-          id: item.id,
-          title: item.title,
-          excerpt: item.body.length > 140 ? `${item.body.slice(0, 140)}…` : item.body,
-          publishedAt: item.publishedAt,
-        }))}
+    <section className="mx-auto max-w-[1480px] space-y-5 text-slate-900">
+      <PageHeader
+        title={`${data.school.displayName}${data.school.city ? `, ${data.school.city}` : ''}`}
+        subtitle={`${t('dashboard.subtitle')} ${t('dashboard.today', { date: todayStr })}`}
+        actions={<DashboardQuickActionsDropdown actions={TEACHER_QUICK_ACTIONS} />}
       />
+
+      <KpiStrip
+        items={[
+          {
+            label: t('dashboard.metrics.myCourses'),
+            value: data.metrics.myCourses.toLocaleString(),
+            hint: 'Courses you teach',
+            to: '/admin/courses',
+          },
+          {
+            label: t('dashboard.metrics.myClasses'),
+            value: data.metrics.myClasses.toLocaleString(),
+            hint: 'Classes assigned to you',
+            to: '/admin/my-classes',
+          },
+          {
+            label: t('dashboard.metrics.pendingToGrade'),
+            value: data.metrics.pendingSubmissions.toLocaleString(),
+            hint: data.metrics.pendingSubmissions > 0 ? 'Needs your review' : 'All caught up',
+            positive: data.metrics.pendingSubmissions === 0,
+            to: '/admin/assignments',
+          },
+          {
+            label: t('dashboard.metrics.markedToday'),
+            value: `${data.todayAttendance.markedStudents.toLocaleString()} / ${totalStudents.toLocaleString()}`,
+            hint: `${classesStarted} of ${plural(data.todayClasses.length, 'class', 'classes')} started`,
+            to: '/admin/attendance',
+          },
+        ]}
+      />
+
+      <div className="grid items-start gap-5 xl:grid-cols-12">
+        <div className="min-w-0 space-y-5 xl:col-span-8">
+          <TodayClassesCard data={data} />
+          <AnnouncementsCard
+            isLoading={announcementsQuery.isPending}
+            items={(announcementsQuery.data?.items ?? []).map((item) => ({
+              id: item.id,
+              title: item.title,
+              excerpt: item.body.length > 140 ? `${item.body.slice(0, 140)}…` : item.body,
+              publishedAt: item.publishedAt,
+            }))}
+          />
+        </div>
+        <div className="min-w-0 space-y-5 xl:col-span-4">
+          <AttentionCard items={buildAttention(data)} />
+          <AttendanceSummaryCard data={data} totalStudents={totalStudents} />
+          <UpcomingExamsCard data={data} />
+        </div>
+      </div>
     </section>
   );
 }
 
-function TodayClassesCard({
-  data,
-  className,
-}: {
-  data: TeacherDashboardData;
-  className?: string;
-}) {
+function TodayClassesCard({ data }: { data: TeacherDashboardData }) {
   const started = data.todayClasses.filter((c) => c.markedStudents > 0).length;
 
   return (
-    <Card className={className}>
+    <DashboardCard>
       <CardHeader
         title="Today's classes"
-        subtitle={`${started} of ${data.todayClasses.length} class${
-          data.todayClasses.length === 1 ? '' : 'es'
-        } have attendance records`}
-        icon={CheckCircle2}
-        tone="success"
-        action={<CardActionLink to="/admin/attendance">Mark attendance</CardActionLink>}
+        subtitle={`${started} of ${plural(data.todayClasses.length, 'class', 'classes')} have attendance records`}
+        action={<TextLink to="/admin/attendance">Mark attendance</TextLink>}
       />
-      <div className="p-5">
-        {data.todayClasses.length === 0 ? (
-          <EmptyInline
-            icon={Clock3}
-            title="No classes scheduled today"
-            message="Once your classes are set up, attendance status will appear here."
-          />
-        ) : (
-          <div className="space-y-3">
-            {data.todayClasses.map((c) => {
-              const meta = CLASS_STATUS_META[c.status];
-              const pct =
-                c.totalStudents > 0
-                  ? Math.round((c.markedStudents / c.totalStudents) * 100)
-                  : 0;
-              return (
+      {data.todayClasses.length === 0 ? (
+        <p className="px-5 pb-5 pt-2 text-[13px] text-slate-500">
+          No classes are scheduled today. Attendance status appears here once classes are set up.
+        </p>
+      ) : (
+        <ul className="mt-2 divide-y divide-slate-100 border-t border-slate-100">
+          {data.todayClasses.map((c) => {
+            const meta = CLASS_STATUS_META[c.status];
+            const pct = c.totalStudents > 0 ? (c.markedStudents / c.totalStudents) * 100 : 0;
+            return (
+              <li key={c.classRoomId}>
                 <Link
-                  key={c.classRoomId}
                   to="/admin/attendance"
-                  className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 transition hover:border-brand-200 hover:bg-brand-50/40"
+                  className="grid gap-3 px-5 py-3 transition hover:bg-slate-50 sm:grid-cols-[minmax(0,1fr)_200px] sm:items-center"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-slate-900">{c.className}</p>
+                      <p className="text-sm font-medium text-slate-900">{c.className}</p>
                       <Badge tone={meta.tone}>{meta.label}</Badge>
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 truncate text-xs text-slate-500">
                       {c.subjectNames.length > 0 ? c.subjectNames.join(' · ') : 'Subjects not set'}
                     </p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <ProgressBar value={pct} tone={meta.bar} className="max-w-[160px]" />
-                      <span className="text-xs font-medium tabular-nums text-slate-600">
-                        {c.markedStudents}/{c.totalStudents} students
-                      </span>
-                    </div>
                   </div>
-                  <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-400" />
+                  <MeterRow
+                    label="Marked"
+                    value={`${c.markedStudents}/${c.totalStudents}`}
+                    percent={pct}
+                  />
                 </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </Card>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </DashboardCard>
   );
 }
 
-const RECOMMENDATION_META: Record<
-  'high' | 'medium' | 'low',
-  { label: string; tone: DashboardTone }
-> = {
-  high: { label: 'High', tone: 'danger' },
-  medium: { label: 'Medium', tone: 'warning' },
-  low: { label: 'Low', tone: 'brand' },
-};
-
-function RecommendationsCard({
-  items,
+function AttendanceSummaryCard({
+  data,
+  totalStudents,
 }: {
-  items: Array<{
-    id: string;
-    title: string;
-    from: string;
-    priority: 'high' | 'medium' | 'low';
-    to: string;
-  }>;
+  data: TeacherDashboardData;
+  totalStudents: number;
 }) {
-  return (
-    <Card>
-      <CardHeader
-        title="Recommendations"
-        subtitle="Prioritised actions for today"
-        icon={Sparkles}
-        tone="purple"
-      />
-      <div className="space-y-3 p-5">
-        {items.length === 0 ? (
-          <EmptyInline
-            icon={Sparkles}
-            title="Nothing needs attention"
-            message="You are all caught up. New recommendations will appear here."
-          />
-        ) : (
-          items.map((r) => (
-            <Link
-              key={r.id}
-              to={r.to}
-              className="block rounded-xl border-l-2 border-slate-200 bg-slate-50/50 p-3 transition hover:border-l-purple-400 hover:bg-slate-50"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900">{r.title}</p>
-                <Badge tone={RECOMMENDATION_META[r.priority].tone}>
-                  {RECOMMENDATION_META[r.priority].label}
-                </Badge>
-              </div>
-              <p className="mt-1 text-xs text-slate-500">{r.from}</p>
-            </Link>
-          ))
-        )}
-      </div>
-    </Card>
-  );
-}
-
-function AttendanceSummaryCard({ data }: { data: TeacherDashboardData }) {
-  const totalStudents = data.todayClasses.reduce((sum, c) => sum + c.totalStudents, 0);
-  const markedPct =
-    totalStudents > 0 ? Math.round((data.todayAttendance.markedStudents / totalStudents) * 100) : 0;
+  const markedPct = totalStudents > 0 ? (data.todayAttendance.markedStudents / totalStudents) * 100 : 0;
   const sessionsStarted = data.todayAttendance.totalClasses - data.todayAttendance.pendingClasses;
+  const rows = [
+    { label: 'Classes started', value: `${sessionsStarted} of ${data.todayAttendance.totalClasses}` },
+    { label: 'Classes pending', value: data.todayAttendance.pendingClasses.toLocaleString() },
+  ];
 
   return (
-    <Card>
-      <CardHeader
-        title="Today attendance"
-        subtitle="Coverage across your scheduled classes"
-        icon={ClipboardCheck}
-        tone="warning"
-        action={<CardActionLink to="/admin/attendance">Open</CardActionLink>}
-      />
-      <div className="p-5">
-        <div className="flex items-end justify-between">
-          <p className="text-sm font-medium text-slate-600">Students marked</p>
-          <p className="text-2xl font-bold tabular-nums text-slate-900">
-            {data.todayAttendance.markedStudents}
-            <span className="text-sm font-medium text-slate-400"> / {totalStudents}</span>
-          </p>
-        </div>
-        <ProgressBar value={markedPct} tone="success" className="mt-3" />
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-center">
-            <p className="text-lg font-bold tabular-nums text-slate-900">
-              {sessionsStarted}
-              <span className="text-sm font-medium text-slate-400">/{data.todayAttendance.totalClasses}</span>
-            </p>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-              Classes started
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-center">
-            <p className="text-lg font-bold tabular-nums text-amber-700">
-              {data.todayAttendance.pendingClasses}
-            </p>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-              Pending
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-center">
-            <p className="text-lg font-bold tabular-nums text-slate-900">{totalStudents}</p>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-              Total students
-            </p>
-          </div>
-        </div>
+    <DashboardCard>
+      <CardHeader title="Today's attendance" action={<TextLink to="/admin/attendance">Open</TextLink>} />
+      <div className="px-5 pb-3 pt-2">
+        <MeterRow
+          label="Students marked"
+          value={`${data.todayAttendance.markedStudents.toLocaleString()} / ${totalStudents.toLocaleString()}`}
+          percent={markedPct}
+        />
+        <dl className="mt-2">
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              className="flex items-center justify-between gap-3 border-t border-slate-100 py-2.5 first:border-t-0"
+            >
+              <dt className="text-[13px] text-slate-600">{row.label}</dt>
+              <dd className="text-sm font-semibold tabular-nums text-slate-900">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
-    </Card>
+    </DashboardCard>
   );
 }
 
 function UpcomingExamsCard({ data }: { data: TeacherDashboardData }) {
+  const exams = data.upcomingExams;
+
   return (
-    <Card>
-      <CardHeader
-        title="Upcoming exams"
-        subtitle="Exams you need to administer or mark"
-        icon={FileBarChart2}
-        tone="brand"
-        action={<CardActionLink to="/admin/exams">View all</CardActionLink>}
-      />
-      <div className="p-5">
-        {data.upcomingExams.length === 0 ? (
-          <EmptyInline icon={FileBarChart2} title="No upcoming exams" />
-        ) : (
-          <div className="space-y-3">
-            {data.upcomingExams.map((exam) => (
-              <Link
-                key={exam.id}
-                to="/admin/exams"
-                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 transition hover:border-brand-200 hover:bg-brand-50/40"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{exam.title}</p>
-                  <p className="text-xs text-slate-500">{exam.relativeDate}</p>
-                </div>
-                <Badge tone="brand">{exam.time}</Badge>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    </Card>
+    <DashboardCard>
+      <CardHeader title="Upcoming exams" action={<TextLink to="/admin/exams">View all</TextLink>} />
+      {exams.length === 0 ? (
+        <p className="px-5 pb-5 pt-1 text-[13px] text-slate-500">No exams are scheduled.</p>
+      ) : (
+        <ul className="px-5 pb-3 pt-1">
+          {exams.map((exam) => (
+            <li
+              key={exam.id}
+              className="flex items-center justify-between gap-3 border-t border-slate-100 py-2.5 first:border-t-0"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-medium text-slate-900">{exam.title}</p>
+                <p className="text-xs text-slate-500">{exam.relativeDate}</p>
+              </div>
+              <span className="shrink-0 text-xs tabular-nums text-slate-600">{exam.time}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DashboardCard>
   );
 }
 
@@ -506,38 +361,33 @@ function AnnouncementsCard({
   if (isLoading) return <LoadingCard rows={2} />;
 
   return (
-    <Card>
+    <DashboardCard>
       <CardHeader
         title="Announcements"
-        subtitle="Latest school updates"
-        icon={Megaphone}
-        tone="brand"
-        action={<CardActionLink to="/admin/announcements">View all</CardActionLink>}
+        action={<TextLink to="/admin/announcements">View all</TextLink>}
       />
-      <div className="p-5">
-        {items.length === 0 ? (
-          <EmptyInline icon={Megaphone} title="No announcements yet" />
-        ) : (
-          <div className="space-y-3">
-            {items.map((a) => (
-              <div key={a.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-900">{a.title}</p>
-                  {a.publishedAt && (
-                    <span className="shrink-0 text-[11px] text-slate-400">
-                      {new Date(a.publishedAt).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-xs leading-relaxed text-slate-600">{a.excerpt}</p>
+      {items.length === 0 ? (
+        <p className="px-5 pb-5 pt-1 text-[13px] text-slate-500">No announcements yet.</p>
+      ) : (
+        <ul className="px-5 pb-3 pt-1">
+          {items.map((a) => (
+            <li key={a.id} className="border-t border-slate-100 py-3 first:border-t-0">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[13px] font-medium text-slate-900">{a.title}</p>
+                {a.publishedAt ? (
+                  <span className="shrink-0 text-xs text-slate-500">
+                    {new Date(a.publishedAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                ) : null}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </Card>
+              <p className="mt-1 text-xs leading-relaxed text-slate-600">{a.excerpt}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DashboardCard>
   );
 }

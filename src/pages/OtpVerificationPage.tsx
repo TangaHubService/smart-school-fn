@@ -70,7 +70,7 @@ export function OtpVerificationPage() {
 
   const handleOtpChange = (index: number, value: string) => {
     const digits = value.replace(/\D/g, '').slice(-1);
-    const newOtp = otpDigits.split('').fill('');
+    const newOtp = Array.from({ length: 6 }, (_, i) => otpDigits[i] ?? '');
     newOtp[index] = digits;
     setValue('otp', newOtp.join(''));
 

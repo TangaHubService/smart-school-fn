@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, CheckCircle2, Loader2, Lock, Users } from 'lucide-react';
 
@@ -11,17 +11,12 @@ import {
   splitCatalogGradesIntoBands,
   type AcademyPlanOption,
 } from '../api/academy-api';
-import backgroundImage from '../asset/background.jpg';
 import { AppDrawer } from '../components/drawer';
 import { CardGridSkeleton } from '../components/skeleton-loader';
+import { CatalogMessage, CategoryBanner } from '../components/public/program-browse';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import socket from '../utils/socket';
-
-function cardImage(thumbnail: string | null) {
-  const value = thumbnail?.trim();
-  return value ? value : backgroundImage;
-}
 
 export function PublicClassPage() {
   const { classId } = useParams();
@@ -231,12 +226,6 @@ export function PublicClassPage() {
   const selected = (subscriptionQuery.data?.selectedClasses ?? []).some(
     (item) => item.classRoomId === classId
   );
-  const canAdd =
-    Boolean(auth.me && isPublicLearner && hasActivePlan) &&
-    !selected &&
-    !accessible &&
-    Boolean(currentSubscription && remainingClassSlots > 0);
-
   function navigateToLogin() {
     const params = new URLSearchParams({ tab: 'register', returnTo: `/programs/class/${classId}` });
     if (selectedPlan) {
@@ -256,10 +245,14 @@ export function PublicClassPage() {
       return;
     }
     if (!isPublicLearner) {
+      const isSchoolStudent =
+        auth.me?.roles.includes('STUDENT') || auth.me?.roles.includes('PARENT');
       showToast({
-        type: 'error',
-        title: 'Learner account required',
-        message: 'Use a learner account to enroll in classes.',
+        type: isSchoolStudent ? 'info' : 'error',
+        title: isSchoolStudent ? 'School enrollment applies' : 'Learner account required',
+        message: isSchoolStudent
+          ? 'Your school enrolls you in classes — check My Learning, or register a separate learner account to enroll in public classes.'
+          : 'Use a learner account to enroll in classes.',
       });
       return;
     }
@@ -284,153 +277,88 @@ export function PublicClassPage() {
     located?.room.subjects.reduce((sum, subject) => sum + subject.courseCount, 0) ?? 0;
 
   return (
-    <main className="bg-white">
-      <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <nav aria-label="Breadcrumb" className="mb-4">
-          <ol className="flex flex-wrap items-center gap-1 text-sm">
-            <li>
-              <Link
-                to="/"
-                className="rounded px-1 py-0.5 font-medium text-brand-700 underline-offset-2 hover:underline"
-              >
-                Home
-              </Link>
-            </li>
-            <li aria-hidden="true" className="text-slate-400">
-              /
-            </li>
-            <li>
-              <Link
-                to="/programs#academy-levels"
-                className="rounded px-1 py-0.5 font-medium text-brand-700 underline-offset-2 hover:underline"
-              >
-                Programs
-              </Link>
-            </li>
-            {located?.band ? (
-              <>
-                <li aria-hidden="true" className="text-slate-400">
-                  /
-                </li>
-                <li>
-                  <Link
-                    to={`/programs/group/${located.band.key}`}
-                    className="rounded px-1 py-0.5 font-medium text-brand-700 underline-offset-2 hover:underline"
-                  >
-                    {located.band.title}
-                  </Link>
-                </li>
-              </>
-            ) : null}
-            {located ? (
-              <>
-                <li aria-hidden="true" className="text-slate-400">
-                  /
-                </li>
-                <li>
-                  <Link
-                    to={`/programs/level/${located.grade.id}`}
-                    className="rounded px-1 py-0.5 font-medium text-brand-700 underline-offset-2 hover:underline"
-                  >
-                    {located.grade.name}
-                  </Link>
-                </li>
-                <li aria-hidden="true" className="text-slate-400">
-                  /
-                </li>
-                <li aria-current="page" className="px-1 py-0.5 font-semibold text-slate-900">
-                  {located.room.name}
-                </li>
-              </>
-            ) : (
-              <>
-                <li aria-hidden="true" className="text-slate-400">
-                  /
-                </li>
-                <li aria-current="page" className="px-1 py-0.5 font-semibold text-slate-900">
-                  Class
-                </li>
-              </>
-            )}
-          </ol>
-        </nav>
-
+    <main className="min-h-[60vh] bg-slate-50">
+      <CategoryBanner
+        crumbs={[
+          { label: 'All Programs', to: '/programs#academy-levels' },
+          ...(located?.band
+            ? [{ label: located.band.title, to: `/programs/group/${located.band.key}` }]
+            : []),
+          ...(located && located.grade.classRooms.length > 1
+            ? [{ label: located.grade.name, to: `/programs/level/${located.grade.id}` }]
+            : []),
+          { label: located?.room.name ?? 'Class' },
+        ]}
+        title={located?.room.name ?? 'Class'}
+        subtitle={
+          located
+            ? `Unlock every subject, course, lesson, quiz, and assignment published in ${located.room.name}.`
+            : undefined
+        }
+      />
+      <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         {catalogQuery.isPending ? (
           <CardGridSkeleton count={3} className="lg:grid-cols-3" />
         ) : catalogQuery.isError || !located ? (
-          <div className="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
-            <h1 className="text-2xl font-bold text-slate-900">Class not found</h1>
-            <p className="mx-auto mt-2 max-w-md text-slate-600">
-              This class is not available right now. Back to programs to pick another class.
-            </p>
-            <Link
-              to="/programs#academy-levels"
-              className="mt-6 inline-block rounded-2xl bg-brand-500 px-6 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-brand-600"
-            >
-              Back to programs
-            </Link>
-          </div>
+          <CatalogMessage
+            title="Class not found"
+            message="This class is not available right now. Go back to programs to pick another class."
+            action={{ label: 'Back to programs', to: '/programs#academy-levels' }}
+          />
         ) : (
-          <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
+          <div className="grid items-start gap-8 lg:grid-cols-[1fr_22rem]">
             <div>
-              <div className="relative overflow-hidden rounded-3xl">
-                <img
-                  src={cardImage(located.room.thumbnail)}
-                  alt=""
-                  aria-hidden="true"
-                  className="aspect-[16/8] w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-brand-700 shadow-sm">
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+                <span className="inline-flex items-center gap-1.5">
+                  <BookOpen className="h-4 w-4 text-brand-500" aria-hidden="true" />
                   {located.room.subjects.length}{' '}
                   {located.room.subjects.length === 1 ? 'subject' : 'subjects'} · {courseTotal}{' '}
                   {courseTotal === 1 ? 'course' : 'courses'}
-                </div>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-brand-500" aria-hidden="true" />
+                  {(located.room.enrolledCount ?? 0).toLocaleString()} enrolled
+                </span>
+                <span className="text-slate-500">{located.year.name}</span>
               </div>
-
-              <p className="mt-6 text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
-                {located.year.name} · {located.grade.name}
-              </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-                {located.room.name}
-              </h1>
-              <p className="mt-3 flex items-center gap-2 text-slate-600">
-                <Users className="h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
-                Enrolled students: {(located.room.enrolledCount ?? 0).toLocaleString()}
-              </p>
-              <p className="mt-3 max-w-2xl text-slate-600">
-                Unlock every subject, course, lesson, quiz, and assignment published in{' '}
-                {located.room.name}.
-              </p>
-
-              <h2 className="mt-8 text-xl font-bold tracking-tight text-slate-900">Subjects</h2>
-              <ul className="mt-4 grid gap-2" aria-label={`Subjects in ${located.room.name}`}>
-                {located.room.subjects.map((subject) => (
-                  <li
-                    key={subject.id}
-                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
-                  >
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-600 text-white">
-                      <BookOpen className="h-5 w-5" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-bold text-slate-900">
-                        {subject.name}
-                      </span>
-                      <span className="block text-xs text-slate-500">
-                        {subject.courseCount} {subject.courseCount === 1 ? 'course' : 'courses'}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <h2 className="mt-8 text-xl font-semibold tracking-tight text-slate-900">Courses</h2>
+              {courseTotal ? (
+                <ul
+                  className="mt-4 grid gap-4 sm:grid-cols-2"
+                  aria-label={`Courses in ${located.room.name}`}
+                >
+                  {located.room.subjects.flatMap((subject) =>
+                    subject.courses.map((course) => (
+                      <li
+                        key={course.id}
+                        className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-[0_1px_3px_rgba(15,39,72,0.08)]"
+                      >
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                          <BookOpen className="h-5 w-5" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-slate-900">
+                            {course.title}
+                          </span>
+                          <span className="block text-[13px] text-slate-500">{subject.name}</span>
+                        </span>
+                        {accessible ? null : (
+                          <Lock className="h-4 w-4 shrink-0 text-slate-400" aria-label="Locked until you enroll" />
+                        )}
+                      </li>
+                    ))
+                  )}
+                </ul>
+              ) : (
+                <p className="mt-4 rounded-xl bg-white p-6 text-sm text-slate-600">
+                  Courses for this class will appear here once they are published.
+                </p>
+              )}
             </div>
 
             <div>
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-600">
-                  Enrollment
-                </p>
+              <div className="rounded-xl bg-white p-6 shadow-[0_1px_3px_rgba(15,39,72,0.08),0_8px_24px_rgba(15,39,72,0.06)] lg:sticky lg:top-24">
+                <h2 className="text-sm font-semibold text-slate-900">Enrollment</h2>
                 {accessible ? (
                   <p className="mt-2 inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                     Accessible now
@@ -440,9 +368,9 @@ export function PublicClassPage() {
                     Selected on plan
                   </p>
                 ) : null}
-                <p className="mt-4 text-4xl font-black text-slate-900">
+                <p className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
                   {located.room.price.toLocaleString()}
-                  <span className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  <span className="ml-1.5 text-sm font-medium text-slate-500">
                     RWF
                   </span>
                 </p>
@@ -465,17 +393,15 @@ export function PublicClassPage() {
                   disabled={selectMutation.isPending || removeMutation.isPending}
                   onClick={handleEnroll}
                   className={[
-                    'mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm font-bold uppercase tracking-[0.16em] text-white transition disabled:opacity-60',
-                    accessible || canAddHere()
-                      ? 'bg-brand-500 hover:bg-brand-600'
-                      : 'bg-slate-400',
+                    'mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition disabled:opacity-60',
+                    'bg-brand-500 hover:bg-brand-600',
                   ].join(' ')}
                 >
                   {!accessible ? <Lock className="h-4 w-4" aria-hidden="true" /> : null}
                   {accessible
                     ? 'Enter class'
                     : !auth.me
-                      ? 'Login first'
+                      ? 'Log in to enroll'
                       : !hasActivePlan
                         ? 'Enroll now'
                         : currentSubscription &&
@@ -490,7 +416,7 @@ export function PublicClassPage() {
                     type="button"
                     onClick={() => removeMutation.mutate(located.room.id)}
                     disabled={removeMutation.isPending}
-                    className="mt-3 w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-rose-700 transition hover:bg-rose-100"
+                    className="mt-3 w-full rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
                   >
                     Remove from plan
                   </button>
@@ -660,13 +586,4 @@ export function PublicClassPage() {
       </AppDrawer>
     </main>
   );
-
-  function canAddHere() {
-    return (
-      Boolean(auth.me && isPublicLearner && hasActivePlan) &&
-      !selected &&
-      !accessible &&
-      Boolean(currentSubscription && remainingClassSlots > 0)
-    );
-  }
 }

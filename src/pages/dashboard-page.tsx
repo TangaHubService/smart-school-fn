@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
 import {
@@ -26,7 +26,7 @@ import { SchoolAdminDashboardPage } from './school-admin-dashboard-page';
 import { SuperAdminDashboardPage } from './super-admin-dashboard-page';
 import { TeacherDashboardPage } from './teacher-dashboard-page';
 import { useAuth } from '../features/auth/auth.context';
-import { hasPermission, isSchoolSetupComplete } from '../features/auth/auth-helpers';
+import { hasPermission, isSchoolSetupComplete, hasRole } from '../features/auth/auth-helpers';
 import { resolveDashboardId } from '../features/dashboard/dashboard-registry';
 import {
   listAssessmentsApi,
@@ -53,6 +53,13 @@ export function DashboardPage() {
   }
   if (dashboardId === 'school-admin') {
     return <SchoolAdminDashboardPage />;
+  }
+  // These roles have their own dashboards; the generic one shows staff metrics.
+  if (hasRole(auth.me, 'PARENT')) {
+    return <Navigate to="/parent/dashboard" replace />;
+  }
+  if (hasRole(auth.me, 'GOV_AUDITOR')) {
+    return <Navigate to="/auditor/dashboard" replace />;
   }
   return <GenericRoleDashboard />;
 }

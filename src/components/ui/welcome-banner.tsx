@@ -23,19 +23,19 @@ export function WelcomeBanner({
   return (
     <section
       className={clsx(
-        'rounded-xl border border-slate-200/90 bg-white px-5 py-5 shadow-[0_4px_18px_rgba(15,23,42,0.055)]',
+        'rounded-xl border border-slate-200 bg-white px-5 py-5 shadow-card',
         className
       )}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           {eyebrow ? (
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <p className="text-[13px] font-medium text-slate-500">
               {eyebrow}
             </p>
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="min-w-0 truncate text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+            <h1 className="min-w-0 truncate text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
               {title}
             </h1>
             {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}

@@ -1,15 +1,15 @@
 import { apiRequest } from './client';
 
-export interface Program {
+/** Public academy class — pricing lives on the class. */
+export interface AcademyClass {
   id: string;
   title: string;
   description?: string | null;
   thumbnail?: string | null;
-  section?: string | null;
   price: number;
   durationDays: number;
-  classRoomId?: string | null;
-  className?: string | null;
+  classRoomId: string;
+  className: string;
   gradeLevelId?: string | null;
   gradeLevelName?: string | null;
   classSubjectCount?: number;
@@ -17,16 +17,19 @@ export interface Program {
   classCourseTitles?: string[];
 }
 
+/** Legacy alias — programs were removed, classes carry the pricing. */
+export type Program = AcademyClass;
+
 export interface AcademyCatalogSubject {
   id: string;
   name: string;
   courseCount: number;
+  courses: Array<{ id: string; title: string }>;
 }
 
 export interface AcademyCatalogClassRoom {
   id: string;
   name: string;
-  programId: string;
   price: number;
   thumbnail: string | null;
   enrolledCount: number;
@@ -109,33 +112,27 @@ export interface AcademyCatalogTree {
   academicYears: AcademyCatalogAcademicYear[];
 }
 
-export interface ProgramEnrollment {
+export interface ClassEnrollment {
   id: string;
-  programId: string;
+  classRoomId: string;
   userId: string;
   isActive: boolean;
   isTrial?: boolean;
   expiresAt: string | null;
-  program: Program;
+  classRoom: AcademyClass;
 }
 
-export interface PurchaseRequest {
-  programId: string;
-  phoneNumber: string;
-  planId: string;
+/** Legacy alias. */
+export type ProgramEnrollment = ClassEnrollment;
+
+export interface ClassContentResponse {
+  classRoomId: string;
+  className: string;
+  courses: any[];
 }
 
-export interface PurchaseResponse {
-  message: string;
-  paymentId: string;
-  paypackRef: string;
-}
-
-export interface ProgramContentResponse {
-  programId: string;
-  programTitle: string;
-  course: any; // We can refine this type based on the Course model if needed
-}
+/** Legacy alias. */
+export type ProgramContentResponse = ClassContentResponse;
 
 export type AcademyPlanId = 'trial' | 'test' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 
@@ -228,8 +225,7 @@ export interface AcademySubscriptionSummary {
     className: string;
     gradeLevelName: string;
     thumbnail: string | null;
-    programId: string;
-    programTitle: string;
+    price: number;
     expiresAt: string | null;
     isTrial: boolean;
     isLegacy: boolean;
@@ -239,8 +235,7 @@ export interface AcademySubscriptionSummary {
     className: string;
     gradeLevelName: string;
     thumbnail: string | null;
-    programId: string;
-    programTitle: string;
+    price: number;
     expiresAt: string | null;
     isTrial: boolean;
     isLegacy: boolean;
@@ -299,14 +294,18 @@ export interface AcademyPlanRate {
 }
 
 export const academyApi = {
-  getPrograms: () => apiRequest<Program[]>('/public-academy/programs'),
+  getPrograms: () => apiRequest<AcademyClass[]>('/public-academy/classes'),
+
+  getClasses: () => apiRequest<AcademyClass[]>('/public-academy/classes'),
 
   getPlans: () =>
     apiRequest<{ plans: AcademyPlanRate[]; currency: string }>('/public-academy/plans'),
 
   getCatalogTree: () => apiRequest<AcademyCatalogTree>('/public-academy/catalog/tree'),
 
-  getProgramById: (id: string) => apiRequest<Program>(`/public-academy/programs/${id}`),
+  getProgramById: (id: string) => apiRequest<AcademyClass>(`/public-academy/classes/${id}`),
+
+  getClassById: (id: string) => apiRequest<AcademyClass>(`/public-academy/classes/${id}`),
 
   getSubscriptionSummary: () =>
     apiRequest<AcademySubscriptionSummary>('/public-academy/subscription'),
@@ -328,30 +327,10 @@ export const academyApi = {
       method: 'DELETE',
     }),
 
-  selectProgram: (programId: string) =>
-    apiRequest<AcademySubscriptionSummary>('/public-academy/subscription/programs/select', {
-      method: 'POST',
-      body: { programId },
-    }),
-
-  removeProgram: (programId: string) =>
-    apiRequest<AcademySubscriptionSummary>(`/public-academy/subscription/programs/${programId}`, {
-      method: 'DELETE',
-    }),
-
-  purchaseProgram: (data: PurchaseRequest) =>
-    apiRequest<PurchaseResponse>('/public-academy/purchase', {
-      method: 'POST',
-      body: data,
-    }),
-
-  getMyEnrollments: () => apiRequest<ProgramEnrollment[]>('/public-academy/my-enrollments'),
-
-  getProgramContent: (id: string) =>
-    apiRequest<ProgramContentResponse>(`/public-academy/programs/${id}/content`),
+  getMyEnrollments: () => apiRequest<ClassEnrollment[]>('/public-academy/my-enrollments'),
 
   getClassContent: (classRoomId: string) =>
-    apiRequest<ProgramContentResponse>(`/public-academy/classes/${classRoomId}/content`),
+    apiRequest<ClassContentResponse>(`/public-academy/classes/${classRoomId}/content`),
 };
 
 export interface AcademicYearSummary {

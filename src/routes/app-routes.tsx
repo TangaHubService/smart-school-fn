@@ -15,7 +15,6 @@ import { AssignmentsPage } from '../pages/assignments-page';
 import { ClassMarksPage } from '../pages/class-marks-page';
 import { ConductMarksSettingsPage } from '../pages/conduct-marks-settings-page';
 import { ClassesPage } from '../pages/classes-page';
-import { AcademyProgramsAdminPage } from '../pages/academy-programs-admin-page';
 import { CoursesPage } from '../pages/courses-page';
 import { DashboardPage } from '../pages/dashboard-page';
 import { ExamsPage } from '../pages/exams-page';
@@ -211,7 +210,6 @@ export function AppRoutes() {
             </Route>
             <Route element={<RequirePermission permission="courses.read" />}>
               <Route path="/admin/courses" element={<CoursesPage />} />
-              <Route path="/admin/academy-programs" element={<AcademyProgramsAdminPage />} />
               <Route path="/admin/my-classes" element={<TeacherMyClassesPage />} />
               <Route path="/admin/subjects" element={<SubjectsPage />} />
               <Route path="/teacher/lesson-plans" element={<TeacherLessonPlansPage />} />

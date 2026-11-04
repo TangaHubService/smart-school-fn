@@ -23,7 +23,7 @@ export function ChartCard({
   return (
     <section
       className={clsx(
-        'min-w-0 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]',
+        'min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card',
         className
       )}
     >
@@ -36,7 +36,7 @@ export function ChartCard({
         </div>
         {action ? <div className="flex shrink-0 items-center gap-2">{action}</div> : null}
       </div>
-      <div className={clsx('p-4', bodyClassName)}>{children}</div>
+      <div className={bodyClassName ?? 'p-4'}>{children}</div>
     </section>
   );
 }

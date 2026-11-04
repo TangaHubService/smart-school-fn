@@ -20,6 +20,8 @@ export interface StudentListItem {
   email: string | null;
   gender: StudentGender | null;
   dateOfBirth: string | null;
+  hasDisability: boolean;
+  disabilityType: string | null;
   isActive: boolean;
   currentEnrollment: {
     id: string;
@@ -204,6 +206,8 @@ export function createStudentApi(
     gender?: StudentGender;
     dateOfBirth?: string;
     email?: string;
+    hasDisability?: boolean;
+    disabilityType?: string | null;
     enrollment: {
       academicYearId: string;
       classRoomId: string;
@@ -269,6 +273,8 @@ export function updateStudentApi(
     email?: string | null;
     gender?: StudentGender | null;
     dateOfBirth?: string | null;
+    hasDisability?: boolean;
+    disabilityType?: string | null;
     isActive?: boolean;
     enrollment?: {
       academicYearId: string;
@@ -319,6 +325,8 @@ export function importStudentsApi(
       lastName: string;
       gender?: string | null;
       dateOfBirth?: string | null;
+      hasDisability?: boolean;
+      disabilityType?: string | null;
       academicYearId: string | null;
       classRoomId: string | null;
       enrolledAt?: string | null;

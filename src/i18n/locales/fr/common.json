@@ -30,7 +30,7 @@
     "activeSubscription": "Abonnement actif",
     "paymentDue": "Paiement dû"
   },
-"headerTitle": {
+  "headerTitle": {
     "superAdmin": "Super Admin Dashboard",
     "dashboard": "Dashboard",
     "studentPortal": "Portail Étudiant",
@@ -61,7 +61,6 @@
     "subjects": "Matières",
     "learning-content": "Gestion des cours",
     "learning-insights": "Analyse d'apprentissage",
-    "academy-programs": "Programmes académie",
     "continuous-assessment": "Test d'évaluation continue",
     "exams": "Portail des examens",
     "class-marks": "Notes",
@@ -98,6 +97,8 @@
   },
   "actions": {
     "close": "Fermer",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
   }
 }

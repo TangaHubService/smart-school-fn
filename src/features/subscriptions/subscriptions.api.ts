@@ -28,15 +28,18 @@ export type SubscriptionPlanRow = {
   maxStaff: number | null;
 };
 
-export type AcademyCatalogProgramAdminRow = {
+export type AcademyCatalogClassAdminRow = {
   id: string;
   title: string;
   price: number;
   durationDays: number;
   listedInPublicCatalog: boolean;
-  courseId: string | null;
-  courseTitle: string | null;
+  classRoomId: string;
+  className: string;
 };
+
+/** Legacy alias — programs were removed, classes carry the pricing. */
+export type AcademyCatalogProgramAdminRow = AcademyCatalogClassAdminRow;
 
 export type AcademyEnrollmentAdminRow = {
   id: string;
@@ -45,6 +48,8 @@ export type AcademyEnrollmentAdminRow = {
   userName: string;
   programId: string;
   programTitle: string;
+  classRoomId: string;
+  className: string;
   tenantName: string;
   tenantCode: string;
   isActive: boolean;
@@ -92,16 +97,19 @@ export async function updateSchoolSubscriptionApi(
   });
 }
 
-export async function listAcademyCatalogProgramsAdminApi(accessToken: string) {
+export async function listAcademyCatalogClassesAdminApi(accessToken: string) {
   return apiRequest<{
     catalogConfigured: boolean;
     catalogTenantId: string | null;
-    items: AcademyCatalogProgramAdminRow[];
-  }>('/subscriptions/academy/catalog-programs', {
+    items: AcademyCatalogClassAdminRow[];
+  }>('/subscriptions/academy/catalog-classes', {
     method: 'GET',
     accessToken,
   });
 }
+
+/** Legacy alias. */
+export const listAcademyCatalogProgramsAdminApi = listAcademyCatalogClassesAdminApi;
 
 export async function listAcademyEnrollmentsAdminApi(
   accessToken: string,
@@ -125,7 +133,7 @@ export async function grantAcademyAccessApi(
   body: {
     userId?: string;
     email?: string;
-    programId: string;
+    classRoomId: string;
     durationDays?: number;
   }
 ) {
@@ -135,6 +143,8 @@ export async function grantAcademyAccessApi(
     email: string;
     programId: string;
     programTitle: string;
+    classRoomId: string;
+    className: string;
     expiresAt: string;
     isTrial: boolean;
   }>('/subscriptions/academy/grant-access', {

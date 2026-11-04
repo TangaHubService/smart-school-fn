@@ -61,7 +61,6 @@
     "subjects": "Amasomo",
     "learning-content": "Imicungire y'amasomo",
     "learning-insights": "Isesengura ry'amasomo",
-    "academy-programs": "Porogaramu za academy",
     "continuous-assessment": "Ikizamini cy'igenzura rihoraho",
     "exams": "Portal y'ibizamini",
     "class-marks": "Amanota",
@@ -98,6 +97,8 @@
   },
   "actions": {
     "close": "Funga",
-    "retry": "Ongera ugerageze"
+    "retry": "Ongera ugerageze",
+    "cancel": "Guhaza",
+    "save": "Bika"
   }
 }

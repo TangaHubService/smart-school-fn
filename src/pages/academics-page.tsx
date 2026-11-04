@@ -3,18 +3,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Award,
   BookOpen,
+  Calendar,
   ChevronRight,
   GraduationCap,
   Layers,
+  Plus,
   School,
+  Search,
   Sparkles,
 } from 'lucide-react';
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 
 import { ConfirmDrawer } from '../components/confirm-drawer';
+import { AppDrawer } from '../components/drawer';
 import { DrawerForm } from '../components/drawer-form';
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
@@ -161,6 +165,8 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [termsDrawerYearId, setTermsDrawerYearId] = useState<string | null>(null);
+  const lastTermsDrawerYearRef = useRef<string | null>(null);
 
   // Hierarchy drill-down state: Grade -> Class -> Subject/Course.
   // Null means "list" level. Kept in-component so back/forward stays local
@@ -262,6 +268,10 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       showToast({ type: 'success', title: 'Term created' });
+      if (lastTermsDrawerYearRef.current !== null) {
+        setTermsDrawerYearId(lastTermsDrawerYearRef.current);
+        lastTermsDrawerYearRef.current = null;
+      }
     },
   });
 
@@ -276,6 +286,10 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['terms'] });
       showToast({ type: 'success', title: 'Term updated' });
+      if (lastTermsDrawerYearRef.current !== null) {
+        setTermsDrawerYearId(lastTermsDrawerYearRef.current);
+        lastTermsDrawerYearRef.current = null;
+      }
     },
   });
 
@@ -378,6 +392,15 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
 
   const yearNameMap = useMemo(() => new Map(years.map((year) => [year.id, year.name])), [years]);
 
+  const yearTermCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const term of terms) {
+      const count = map.get(term.academicYearId) ?? 0;
+      map.set(term.academicYearId, count + 1);
+    }
+    return map;
+  }, [terms]);
+
   const sortedGrades = useMemo(
     () => [...gradeLevels].sort((a, b) => Number(a.rank ?? 0) - Number(b.rank ?? 0)),
     [gradeLevels]
@@ -398,16 +421,23 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
 
   const filteredTerms = useMemo(() => {
     const query = termFilter.trim().toLowerCase();
-    if (!query) {
+    if (!query && !termsDrawerYearId) {
       return terms;
     }
 
-    return terms.filter((term) =>
-      `${term.name} ${term.sequence} ${yearNameMap.get(term.academicYearId) ?? ''}`
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [terms, termFilter, yearNameMap]);
+    return terms.filter((term) => {
+      const matchesQuery =
+        !query ||
+        `${term.name} ${term.sequence} ${yearNameMap.get(term.academicYearId) ?? ''}`
+          .toLowerCase()
+          .includes(query);
+
+      const matchesYear =
+        !termsDrawerYearId || term.academicYearId === termsDrawerYearId;
+
+      return matchesQuery && matchesYear;
+    });
+  }, [terms, termFilter, termsDrawerYearId, yearNameMap]);
 
   const filteredGradeLevels = useMemo(() => {
     const query = gradeFilter.trim().toLowerCase();
@@ -510,15 +540,18 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
   }
 
   function openAddTerm() {
+    lastTermsDrawerYearRef.current = termsDrawerYearId;
     setEditingTermId(null);
     termForm.reset({
       ...termDefaults,
-      academicYearId: years[0]?.id ?? '',
+      academicYearId: termsDrawerYearId ?? years[0]?.id ?? '',
     });
+    setTermsDrawerYearId(null);
     setIsTermModalOpen(true);
   }
 
   function openEditTerm(term: any) {
+    lastTermsDrawerYearRef.current = termsDrawerYearId;
     setEditingTermId(term.id);
     termForm.reset({
       academicYearId: term.academicYearId,
@@ -527,6 +560,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
       startDate: toDateInput(term.startDate),
       endDate: toDateInput(term.endDate),
     });
+    setTermsDrawerYearId(null);
     setIsTermModalOpen(true);
   }
 
@@ -697,72 +731,26 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
                   toDateInput(year.startDate),
                   toDateInput(year.endDate),
                   year.isCurrent ? 'Yes' : 'No',
-                  <ActionButtons
-                    onEdit={() => openEditYear(year)}
-                    onDelete={() => requestDelete('academicYear', year.id, year.name)}
-                  />,
+                  <div className="flex items-center gap-2">
+                    <ActionButtons
+                      onEdit={() => openEditYear(year)}
+                      onDelete={() => requestDelete('academicYear', year.id, year.name)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setTermsDrawerYearId(year.id)}
+                      className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200"
+                    >
+                      View Terms
+                    </button>
+                  </div>
                 ])}
                 emptyMessage="No academic years found."
               />
             ) : null}
           </SectionCard>
 
-          <SectionCard
-            title="Terms"
-            subtitle="List, update, and softly delete terms."
-            action={
-              <button
-                type="button"
-                onClick={openAddTerm}
-                className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-              >
-                Add term
-              </button>
-            }
-          >
-            <FilterInput
-              value={termFilter}
-              onChange={setTermFilter}
-              placeholder="Filter by term name, sequence, or year"
-              label="Filter terms"
-            />
-
-            {termsQuery.isPending ? <LoadingRows /> : null}
-            {termsQuery.isError ? (
-              <StateView
-                title="Could not load terms"
-                message="Please retry."
-                action={
-                  <button
-                    type="button"
-                    onClick={() => void termsQuery.refetch()}
-                    className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-                  >
-                    Retry
-                  </button>
-                }
-              />
-            ) : null}
-
-            {!termsQuery.isPending && !termsQuery.isError ? (
-              <SimpleTable
-                columns={['Name', 'Sequence', 'Year', 'Start', 'End', 'Actions']}
-                rows={filteredTerms.map((term) => [
-                  term.name,
-                  term.sequence,
-                  yearNameMap.get(term.academicYearId) ?? term.academicYearId,
-                  toDateInput(term.startDate),
-                  toDateInput(term.endDate),
-                  <ActionButtons
-                    onEdit={() => openEditTerm(term)}
-                    onDelete={() => requestDelete('term', term.id, term.name)}
-                  />,
-                ])}
-                emptyMessage="No terms found."
-              />
-            ) : null}
-          </SectionCard>
-        </>
+          </>
       ) : null}
 
       {showClasses ? (
@@ -1475,6 +1463,130 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           <input type="checkbox" {...subjectForm.register('isCore')} /> Core subject
         </label>
       </DrawerForm>
+
+      <AppDrawer
+        open={!!termsDrawerYearId}
+        onClose={() => setTermsDrawerYearId(null)}
+        title="Academic Year Terms"
+        description="Manage terms for the selected academic year."
+        size="default"
+        icon={<Calendar className="h-5 w-5" aria-hidden="true" />}
+        bodyClassName="px-4 py-4 sm:px-5"
+      >
+        <div className="flex flex-col gap-4">
+          <div className="rounded-lg bg-brand-50 px-3 py-2.5 text-sm text-slate-700">
+            <span className="font-semibold">Academic Year:</span>{' '}
+            {yearNameMap.get(termsDrawerYearId ?? '') ?? 'Unknown'}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[12rem]">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <input
+                value={termFilter}
+                onChange={(e) => setTermFilter(e.target.value)}
+                placeholder="Search terms..."
+                className="h-10 w-full rounded-lg border border-brand-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-brand-400"
+                aria-label="Search terms"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={openAddTerm}
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add New Term
+            </button>
+          </div>
+
+          {termsQuery.isPending ? (
+            <LoadingRows />
+          ) : termsQuery.isError ? (
+            <StateView
+              title="Could not load terms"
+              message="Please retry."
+              action={
+                <button
+                  type="button"
+                  onClick={() => void termsQuery.refetch()}
+                  className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                >
+                  Retry
+                </button>
+              }
+            />
+          ) : (
+            <>
+              {filteredTerms.length === 0 ? (
+                <EmptyState
+                  title="No terms found"
+                  message="Add the first term for this academic year."
+                  action={
+                    <button
+                      type="button"
+                      onClick={openAddTerm}
+                      className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+                    >
+                      Add New Term
+                    </button>
+                  }
+                />
+              ) : (
+                <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
+                  <table className="w-full min-w-full table-auto text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-brand-100 text-slate-700">
+                        <th className="px-2 py-2 font-semibold">No.</th>
+                        <th className="px-2 py-2 font-semibold">Name</th>
+                        <th className="px-2 py-2 font-semibold">Sequence</th>
+                        <th className="px-2 py-2 font-semibold">Start Date</th>
+                        <th className="px-2 py-2 font-semibold">End Date</th>
+                        <th className="px-2 py-2 font-semibold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTerms.map((term: any, index: number) => (
+                        <tr key={term.id} className="border-b border-brand-50">
+                          <td className="px-2 py-2 align-middle text-slate-600">{index + 1}</td>
+                          <td className="px-2 py-2 align-middle font-medium text-slate-900">{term.name}</td>
+                          <td className="px-2 py-2 align-middle text-slate-600">{term.sequence}</td>
+                          <td className="px-2 py-2 align-middle text-slate-600">{toDateInput(term.startDate)}</td>
+                          <td className="px-2 py-2 align-middle text-slate-600">{toDateInput(term.endDate)}</td>
+                          <td className="px-2 py-2 align-middle">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditTerm(term)}
+                                className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-brand-100"
+                                aria-label={`Edit term ${term.name}`}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => requestDelete('term', term.id, term.name)}
+                                className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
+                                aria-label={`Delete term ${term.name}`}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs text-slate-500">
+          You can add, edit or delete terms. Deleting a term will remove it from the academic year and may affect related records.
+        </div>
+      </AppDrawer>
 
       <ConfirmDrawer
         open={Boolean(deleteTarget)}

@@ -81,10 +81,10 @@ const tenantColumns: DataTableColumn<TenantListItem>[] = [
     mobile: 'primary',
     render: (tenant) => (
       <span className="min-w-0">
-        <span className="block font-semibold text-slate-900">
+        <span className="block whitespace-nowrap font-semibold text-slate-900">
           {tenant.school?.displayName ?? tenant.name}
         </span>
-        <span className="block text-xs text-slate-500">{tenant.name}</span>
+        <span className="block whitespace-nowrap text-xs text-slate-500">{tenant.name}</span>
       </span>
     ),
   },
@@ -454,6 +454,30 @@ export function TenantsPage() {
         </button>
       }
     >
+      {/* Start summary card */}
+      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+        {tenantsQuery.data ? (
+          <>
+            <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs font-medium text-slate-500">Total Schools</p>
+              <p className="text-xl font-bold tabular-nums text-slate-900">{tenantsQuery.data.length}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs font-medium text-slate-500">Active</p>
+              <p className="text-xl font-bold tabular-nums text-emerald-600">{tenantsQuery.data.filter((t) => t.isActive).length}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs font-medium text-slate-500">Inactive</p>
+              <p className="text-xl font-bold tabular-nums text-amber-600">{tenantsQuery.data.filter((t) => !t.isActive).length}</p>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs font-medium text-slate-500">Academy Catalog</p>
+              <p className="text-xl font-bold tabular-nums text-brand-600">{tenantsQuery.data.filter((t) => t.isAcademyCatalog).length}</p>
+            </div>
+          </>
+        ) : null}
+      </div>
+
       <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]">
         <DataTableToolbar
           search={search}
@@ -510,57 +534,24 @@ export function TenantsPage() {
             minWidth={980}
             className="border-0 shadow-none"
             rowActions={(tenant) => (
-              <div className="flex justify-end gap-2">
+              <div className="relative inline-block text-right">
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditSchoolId(null);
-                    setViewSchoolId(tenant.id);
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const el = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement | null;
+                    if (el) el.classList.toggle('hidden');
                   }}
                   className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
-                  View
+                  Actions ▾
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setViewSchoolId(null);
-                    setEditSchoolId(tenant.id);
-                    updateSchoolMutation.reset();
-                  }}
-                  className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setStatusTargetSchool({
-                      id: tenant.id,
-                      name: tenant.school?.displayName ?? tenant.name,
-                      isActive: tenant.isActive,
-                    })
-                  }
-                  className={
-                    tenant.isActive
-                      ? 'rounded-lg border border-danger-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-danger-500 transition hover:bg-danger-50'
-                      : 'rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50'
-                  }
-                >
-                  {tenant.isActive ? 'Deactivate' : 'Reactivate'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setDeleteTargetSchool({
-                      id: tenant.id,
-                      name: tenant.school?.displayName ?? tenant.name,
-                    })
-                  }
-                  className="rounded-lg border border-red-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
-                >
-                  Delete
-                </button>
+                <div className="hidden absolute right-0 z-50 mt-1 w-32 rounded-xl border border-slate-200 bg-white py-1 shadow-2xl">
+                  <button type="button" onClick={() => { setEditSchoolId(null); setViewSchoolId(tenant.id); }} className="block w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-left">View</button>
+                  <button type="button" onClick={() => { setViewSchoolId(null); setEditSchoolId(tenant.id); updateSchoolMutation.reset(); }} className="block w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-left">Edit</button>
+                  <button type="button" onClick={() => setStatusTargetSchool({ id: tenant.id, name: tenant.school?.displayName ?? tenant.name, isActive: tenant.isActive })} className="block w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-left">{tenant.isActive ? 'Deactivate' : 'Reactivate'}</button>
+                  <button type="button" onClick={() => setDeleteTargetSchool({ id: tenant.id, name: tenant.school?.displayName ?? tenant.name })} className="block w-full px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 text-left">Delete</button>
+                </div>
               </div>
             )}
           />
@@ -650,7 +641,7 @@ export function TenantsPage() {
               <span>
                 <span className="font-semibold text-slate-900">Public academy catalog school</span>
                 <span className="mt-1 block text-xs text-slate-500">
-                  Only one school should hold this role. Programs here appear on /programs for the
+                  Only one school should hold this role. Classes here appear on /programs for the
                   whole platform.
                 </span>
               </span>
@@ -842,7 +833,7 @@ function SchoolDetailView({ detail }: { detail: SchoolDetail }) {
         <DetailBlock label="School code" value={detail.code} mono />
         <DetailBlock
           label="Academy catalog"
-          value={detail.isAcademyCatalog ? 'Yes — programs listed on /programs' : 'No'}
+          value={detail.isAcademyCatalog ? 'Yes — classes listed on /programs' : 'No'}
         />
         <DetailBlock label="Workspace name" value={detail.name} />
         <DetailBlock label="Display name" value={detail.school?.displayName ?? '-'} />

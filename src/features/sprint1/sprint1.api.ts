@@ -517,7 +517,16 @@ export function listClassRoomsApi(accessToken: string) {
 
 export function createClassRoomApi(
   accessToken: string,
-  payload: { gradeLevelId: string; code: string; name: string; capacity?: number }
+  payload: {
+    gradeLevelId: string;
+    code: string;
+    name: string;
+    capacity?: number;
+    price?: number;
+    durationDays?: number;
+    thumbnail?: string;
+    listedInPublicCatalog?: boolean;
+  }
 ) {
   return apiRequest('/classes', {
     method: 'POST',
@@ -541,6 +550,10 @@ export function updateClassRoomApi(
     code?: string;
     name?: string;
     capacity?: number;
+    price?: number;
+    durationDays?: number;
+    thumbnail?: string | null;
+    listedInPublicCatalog?: boolean;
     isActive?: boolean;
   }
 ) {

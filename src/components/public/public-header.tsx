@@ -1,4 +1,4 @@
-import { Menu, X } from 'lucide-react';
+import { Menu, User, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
@@ -11,8 +11,8 @@ import { getDefaultLandingPath } from '../../features/auth/auth-helpers';
 
 function navClass(isActive: boolean) {
   return [
-    'group relative text-[13px] uppercase tracking-wider transition-colors',
-    isActive ? 'text-brand-600 font-semibold' : 'text-slate-600 hover:text-brand-600',
+    'group relative text-sm font-medium transition-colors',
+    isActive ? 'text-brand-600' : 'text-slate-700 hover:text-brand-600',
   ].join(' ');
 }
 
@@ -37,8 +37,8 @@ export function PublicHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-brand-100 bg-white/90 shadow-sm backdrop-blur-lg">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 bg-white shadow-[0_1px_3px_rgba(15,39,72,0.1)]">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2">
           <img
             src={logo}
@@ -48,7 +48,7 @@ export function PublicHeader() {
           <span className="text-lg font-bold tracking-tight text-brand-600">Smart school</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav aria-label="Main" className="hidden items-center gap-8 lg:flex">
           {publicNav.map((item) => (
             <NavLink
               key={item.to}
@@ -76,8 +76,9 @@ export function PublicHeader() {
           <LanguageSwitcher className="text-slate-600 [&_span]:text-slate-600" />
           <Link
             to={workspaceLink}
-            className="rounded-full bg-brand-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.13em] text-white transition hover:bg-brand-600"
+            className="inline-flex items-center gap-2 rounded-lg border-[1.5px] border-brand-500 px-4 py-2 text-sm font-medium text-brand-600 transition hover:bg-brand-500 hover:text-white"
           >
+            <User className="h-4 w-4" aria-hidden="true" />
             {auth.isAuthenticated ? t('header.openWorkspace') : t('header.signIn')}
           </Link>
         </div>
@@ -87,6 +88,7 @@ export function PublicHeader() {
           onClick={() => setIsOpen((current) => !current)}
           className="inline-flex items-center justify-center rounded-lg border border-brand-200 bg-white p-2 text-brand-600 lg:hidden"
           aria-label={t('header.toggleNav')}
+          aria-expanded={isOpen}
         >
           {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -94,7 +96,7 @@ export function PublicHeader() {
 
       {isOpen ? (
         <div className="border-t border-brand-100 bg-white lg:hidden">
-          <div className="mx-auto grid w-full max-w-6xl gap-2 px-4 py-3 sm:px-6">
+          <div className="mx-auto grid w-full max-w-7xl gap-2 px-4 py-3 sm:px-6">
             {publicNav.map((item) => (
               <NavLink
                 key={item.to}
@@ -118,7 +120,7 @@ export function PublicHeader() {
             <Link
               to={workspaceLink}
               onClick={() => setIsOpen(false)}
-              className="mt-1 rounded-lg bg-brand-500 px-3 py-2 text-center text-sm font-semibold text-white"
+              className="mt-1 rounded-lg border-[1.5px] border-brand-500 px-3 py-2 text-center text-sm font-medium text-brand-600"
             >
               {auth.isAuthenticated ? t('header.openWorkspace') : t('header.signIn')}
             </Link>

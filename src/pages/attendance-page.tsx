@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileDown, FileSpreadsheet } from 'lucide-react';
 import { z } from 'zod';
 
+import { Avatar } from '../components/ui/avatar';
 import { EmptyState } from '../components/empty-state';
 import { AppDrawer } from '../components/drawer';
 import { SectionCard } from '../components/section-card';
@@ -102,6 +103,7 @@ export function AttendancePage() {
   const [reportFrom, setReportFrom] = useState('');
   const [reportTo, setReportTo] = useState('');
   const [reportStatus, setReportStatus] = useState<'' | AttendanceStatus>('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const attendanceReportQuery = useQuery({
@@ -294,15 +296,12 @@ export function AttendancePage() {
     const rows = classAttendanceQuery.data?.students ?? [];
     const q = search.trim().toLowerCase();
 
-    if (!q) {
-      return rows;
-    }
-
     return rows.filter((row) => {
-      const fullName = `${row.firstName} ${row.lastName}`.toLowerCase();
-      return fullName.includes(q) || row.studentCode.toLowerCase().includes(q);
+      const matchesSearch = !q || `${row.firstName} ${row.lastName}`.toLowerCase().includes(q) || row.studentCode.toLowerCase().includes(q);
+      const matchesStatus = !statusFilter || row.status === statusFilter;
+      return matchesSearch && matchesStatus;
     });
-  }, [classAttendanceQuery.data?.students, search]);
+  }, [classAttendanceQuery.data?.students, search, statusFilter]);
 
   const hasUnsavedChanges = useMemo(() => {
     const rows = classAttendanceQuery.data?.students ?? [];
@@ -484,48 +483,34 @@ export function AttendancePage() {
   return (
     <SectionCard
       title="Attendance"
-      subtitle="Mark class attendance quickly with offline queue and background sync."
+      subtitle="Record, review, and manage daily class attendance."
       action={
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {classAttendanceQuery.data && classAttendanceQuery.data.students.length > 0 && (
             <>
               <button
                 type="button"
                 onClick={handleExportExcel}
-                className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-brand-100"
               >
-                <FileSpreadsheet className="mr-1.5 h-4 w-4 inline" />
+                <FileSpreadsheet className="h-4 w-4" />
                 Export Excel
               </button>
               <button
                 type="button"
                 onClick={handleExportPDF}
-                className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-brand-100"
               >
-                <FileDown className="mr-1.5 h-4 w-4 inline" />
+                <FileDown className="h-4 w-4" />
                 Export PDF
               </button>
             </>
           )}
           <button
             type="button"
-            onClick={() => applyBulkStatus('PRESENT')}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-          >
-            Mark All Present
-          </button>
-          <button
-            type="button"
-            onClick={() => applyBulkStatus('ABSENT')}
-            className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-slate-700"
-          >
-            Mark All Absent
-          </button>
-          <button
-            type="button"
             onClick={() => void handleSaveAttendance()}
             disabled={saveAttendanceMutation.isPending || classAttendanceQuery.isPending}
-            className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 disabled:opacity-60"
           >
             {saveAttendanceMutation.isPending ? 'Saving...' : 'Save Attendance'}
           </button>
@@ -533,25 +518,39 @@ export function AttendancePage() {
       }
     >
       <div
-        className={`mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm ${
+        className={`mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm shadow-sm ${
           isOnline
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+            ? 'border-emerald-200 bg-emerald-50/80 text-emerald-900'
             : 'border-amber-200 bg-amber-50 text-amber-900'
         }`}
         role="status"
         aria-live="polite"
       >
-        <p className="font-semibold">
-          {isOnline ? 'Online' : 'Offline'} • Queue: {queueStats.pending} pending,{' '}
-          {queueStats.failed} failed
-          {isSyncing ? ' • Syncing...' : ''}
-        </p>
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex h-2.5 w-2.5 rounded-full ${
+              isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+            }`}
+            aria-hidden="true"
+          />
+          <p className="font-semibold leading-relaxed">
+            <span className="uppercase tracking-wide text-[11px] font-bold text-slate-500">
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
+            {isSyncing ? (
+              <span className="ml-2 inline-flex items-center gap-1 text-emerald-700">
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-emerald-400 border-t-emerald-700" />
+                Syncing...
+              </span>
+            ) : null}
+          </p>
+        </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => void syncQueue(true)}
             disabled={!isOnline || isSyncing || queueStats.total === 0}
-            className="rounded-lg border border-current/20 bg-white/70 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300/40 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100 disabled:opacity-40"
           >
             Sync now
           </button>
@@ -561,132 +560,85 @@ export function AttendancePage() {
               void clearFailedAttendanceQueueItems().then(() => refreshQueueStats());
             }}
             disabled={queueStats.failed === 0}
-            className="rounded-lg border border-current/20 bg-white/70 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-50 disabled:opacity-40"
           >
             Clear failed
           </button>
         </div>
+        <p className="w-full text-[11px] text-slate-500 mt-1">Queue: <span className="font-semibold text-slate-700">{queueStats.pending}</span> pending • <span className="font-semibold text-slate-700">{queueStats.failed}</span> failed</p>
       </div>
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-[220px_180px_1fr_auto]">
-        <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          Class
-          <select
-            value={selectedClassId}
-            onChange={(event) => setSelectedClassId(event.target.value)}
-            className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-            aria-label="Select class"
+      <div className="mb-4 rounded-xl border border-slate-200/90 bg-white p-4 shadow-[0_2px_10px_rgba(15,23,42,0.04)]">
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-[1fr_1fr_2fr_1fr_auto] lg:grid-cols-[220px_180px_2fr_160px_auto] items-end">
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Class
+            <select
+              value={selectedClassId}
+              onChange={(event) => setSelectedClassId(event.target.value)}
+              className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400 shadow-sm"
+              aria-label="Select class"
+            >
+              <option value="">Select class</option>
+              {(classesQuery.data ?? []).map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.code} - {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Date
+            <input
+              type="date"
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
+              className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400 shadow-sm"
+              aria-label="Attendance date"
+            />
+          </label>
+
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Search student
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Name or student code"
+              className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400 shadow-sm"
+              aria-label="Search student in attendance grid"
+            />
+          </label>
+
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Status
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400 shadow-sm"
+              aria-label="Filter by attendance status"
+            >
+              <option value="">All statuses</option>
+              <option value="PRESENT">Present</option>
+              <option value="ABSENT">Absent</option>
+              <option value="LATE">Late</option>
+              <option value="EXCUSED">Excused</option>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedClassId('');
+              setDate(getTodayKigaliDate());
+              setSearch('');
+              setStatusFilter('');
+            }}
+            className="h-10 rounded-lg border border-brand-200 bg-brand-50 px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-brand-100"
           >
-            <option value="">Select class</option>
-            {(classesQuery.data ?? []).map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.code} - {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          Date
-          <input
-            type="date"
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-            className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-            aria-label="Attendance date"
-          />
-        </label>
-
-        <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          Search
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by student code or name"
-            className="h-10 rounded-lg border border-brand-200 px-3 text-sm outline-none focus:border-brand-400"
-            aria-label="Search student in attendance grid"
-          />
-        </label>
-
-        <button
-          type="button"
-          onClick={() => void classAttendanceQuery.refetch()}
-          className="mt-auto h-10 rounded-lg border border-brand-200 bg-brand-50 px-3 text-sm font-semibold text-slate-700"
-        >
-          Refresh
-        </button>
-      </div>
-
-      <div className="mb-4 grid gap-2 rounded-xl border border-slate-200/90 bg-slate-50/60 p-3 sm:grid-cols-[160px_160px_180px_auto_auto]">
-        <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          From date
-          <input
-            type="date"
-            value={reportFrom}
-            onChange={(e) => setReportFrom(e.target.value)}
-            className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
-            aria-label="Report from date"
-          />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          To date
-          <input
-            type="date"
-            value={reportTo}
-            onChange={(e) => setReportTo(e.target.value)}
-            className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
-            aria-label="Report to date"
-          />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          Status
-          <select
-            value={reportStatus}
-            onChange={(e) => setReportStatus(e.target.value as '' | AttendanceStatus)}
-            className="h-10 rounded-lg border border-brand-200 px-3 text-sm"
-            aria-label="Report status filter"
-          >
-            <option value="">All statuses</option>
-            <option value="PRESENT">Present</option>
-            <option value="ABSENT">Absent</option>
-            <option value="LATE">Late</option>
-            <option value="EXCUSED">Excused</option>
-          </select>
-        </label>
-        <button
-          type="button"
-          onClick={() => {
-            setReportFrom('');
-            setReportTo('');
-            setReportStatus('');
-          }}
-          className="mt-auto h-10 rounded-lg border border-brand-200 bg-white px-3 text-sm font-semibold text-slate-700"
-        >
-          Reset range
-        </button>
-        <button
-          type="button"
-          onClick={() => void handleDownloadServerPdf()}
-          disabled={downloadingPdf || !selectedClassId}
-          className="mt-auto h-10 rounded-lg bg-brand-500 px-3 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {downloadingPdf ? 'Preparing…' : 'Official PDF'}
-        </button>
-      </div>
-
-      {reportFrom && reportTo && reportFrom > reportTo && (
-        <p className="mb-3 text-sm text-red-600">From date must be before To date.</p>
-      )}
-
-      {attendanceReportQuery.data && (
-        <div className="mb-4 flex flex-wrap gap-2 text-sm">
-          {(['total', 'present', 'absent', 'late', 'excused'] as const).map((k) => (
-            <span key={k} className="rounded-lg border border-brand-200 bg-white px-3 py-1.5 font-semibold uppercase text-slate-700">
-              {k}: {attendanceReportQuery.data!.summary[k]}
-            </span>
-          ))}
+            Reset
+          </button>
         </div>
-      )}
+      </div>
 
       {hasUnsavedChanges ? (
         <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -760,50 +712,77 @@ export function AttendancePage() {
       !classAttendanceQuery.isError &&
       classAttendanceQuery.data ? (
         <>
-          <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-slate-800">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Total</p>
-              <p className="text-lg font-bold">{classAttendanceQuery.data.summary.total}</p>
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/60 to-blue-50/30 px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M2 12h20"/></svg>
+                </span>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600 mb-0.5">Total</p>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900">{classAttendanceQuery.data.summary.total}</p>
             </div>
-            <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-              <p className="text-xs uppercase tracking-[0.14em] text-emerald-600">Present</p>
-              <p className="text-lg font-bold">{classAttendanceQuery.data.summary.present}</p>
+            <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-emerald-50/30 px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Present</p>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900">{classAttendanceQuery.data.summary.present}</p>
             </div>
-            <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-900">
-              <p className="text-xs uppercase tracking-[0.14em] text-red-600">Absent</p>
-              <p className="text-lg font-bold">{classAttendanceQuery.data.summary.absent}</p>
+            <div className="rounded-2xl border border-red-100 bg-gradient-to-br from-red-50/60 to-red-50/30 px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-600">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </span>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-red-600">Absent</p>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900">{classAttendanceQuery.data.summary.absent}</p>
             </div>
-            <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              <p className="text-xs uppercase tracking-[0.14em] text-amber-600">Late</p>
-              <p className="text-lg font-bold">{classAttendanceQuery.data.summary.late}</p>
+            <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50/60 to-amber-50/30 px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </span>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600">Late</p>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900">{classAttendanceQuery.data.summary.late}</p>
             </div>
-            <div className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-              <p className="text-xs uppercase tracking-[0.14em] text-sky-600">Excused</p>
-              <p className="text-lg font-bold">{classAttendanceQuery.data.summary.excused}</p>
+            <div className="rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50/60 to-cyan-50/30 px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-cyan-100 text-cyan-600">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </span>
+              </div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-600">Excused</p>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900">{classAttendanceQuery.data.summary.excused}</p>
             </div>
           </div>
 
           <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
             <table className="w-full min-w-full table-auto text-left text-sm">
               <thead>
-                <tr className="border-b border-brand-100 text-slate-700">
-                  <th className="px-2 py-2 font-semibold">#</th>
-                  <th className="px-2 py-2 font-semibold">Code</th>
-                  <th className="px-2 py-2 font-semibold">Student</th>
-                  <th className="px-2 py-2 font-semibold">Status</th>
-                  <th className="px-2 py-2 font-semibold">Remarks</th>
-                  <th className="px-2 py-2 font-semibold">History</th>
+                <tr className="border-b border-brand-100 text-slate-700 bg-slate-50/50">
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">#</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Student</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Status</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Remarks</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">History</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRows.map((row, index) => (
-                  <tr key={row.studentId} className="border-b border-brand-50">
-                    <td className="px-2 py-2 align-middle text-slate-600">{index + 1}</td>
-                    <td className="px-2 py-2 align-middle font-semibold text-slate-800">
-                      {row.studentCode}
-                    </td>
-                    <td className="px-2 py-2 align-middle">
-                      {row.firstName} {row.lastName}
+                  <tr key={row.studentId} className="border-b border-brand-50 hover:bg-slate-50/60 transition">
+                    <td className="px-3 py-3 align-middle text-slate-600 font-medium">{index + 1}</td>
+                    <td className="px-3 py-3 align-middle">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={`${row.firstName} ${row.lastName}`} size="sm" />
+                        <div>
+                          <p className="font-semibold text-slate-900 leading-snug">{row.firstName} {row.lastName}</p>
+                          <p className="text-xs text-slate-500">{row.studentCode}</p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-2 py-2 align-middle">
                       <select

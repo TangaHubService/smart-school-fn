@@ -2,18 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BadgeCheck,
   BarChart3,
   BookOpen,
   CalendarDays,
-  ChevronDown,
+  ChevronRight,
   ClipboardCheck,
   ClipboardList,
   Download,
   FileBarChart2,
-  MapPin,
-  School,
-  TrendingUp,
 } from 'lucide-react';
 
 import { DemographicsWidget } from '../components/dashboard/demographics-widget';
@@ -27,7 +23,16 @@ import {
   getAuditorReportApi,
   type AcademicAuditModule,
 } from '../features/audit/audit.api';
-import { Badge, Card, CardHeader, MetricCard } from '../components/dashboard/dashboard-ui';
+import { Badge } from '../components/ui/badge';
+import {
+  AttentionCard,
+  CardHeader,
+  DashboardCard,
+  KpiStrip,
+  MeterRow,
+  PageHeader,
+  type AttentionItem,
+} from '../components/ui/dashboard-kit';
 
 const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   ATTENDANCE: ClipboardList,
@@ -44,6 +49,14 @@ const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   SAFETY: ClipboardList,
   COMPLIANCE: ClipboardCheck,
 };
+
+function scoreTone(score: number) {
+  return score >= 75 ? 'success' : score >= 50 ? 'warning' : 'danger';
+}
+
+function formatScore(score: number | null) {
+  return score === null ? '—' : `${score}%`;
+}
 
 export function AuditorDashboardPage() {
   const auth = useAuth();
@@ -82,47 +95,48 @@ export function AuditorDashboardPage() {
 
   const { scope, stats, recentAudits } = data;
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Auditor Dashboard</h1>
-        <div className="mt-2 flex flex-wrap items-center gap-4 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-semibold text-slate-900">{scope.level}</span>
-          </div>
-          <span className="text-sm text-slate-500">—</span>
-          <span className="text-sm text-slate-700">{scope.country}</span>
-          {scope.province && (
-            <>
-              <ChevronDown className="h-3 w-3 rotate-270 text-slate-400" />
-              <span className="text-sm text-slate-700">{scope.province}</span>
-            </>
-          )}
-          {scope.district && (
-            <>
-              <ChevronDown className="h-3 w-3 rotate-270 text-slate-400" />
-              <span className="text-sm text-slate-700">{scope.district}</span>
-            </>
-          )}
-          {scope.sector && (
-            <>
-              <ChevronDown className="h-3 w-3 rotate-270 text-slate-400" />
-              <span className="text-sm text-slate-700">{scope.sector}</span>
-            </>
-          )}
-        </div>
-      </div>
+  const scopePath = [scope.country, scope.province, scope.district, scope.sector]
+    .filter(Boolean)
+    .join(' / ');
+  const attention: AttentionItem[] = [
+    ...(stats.pendingSchools > 0
+      ? [
+          {
+            key: 'pending',
+            title: `${stats.pendingSchools.toLocaleString()} ${stats.pendingSchools === 1 ? 'school' : 'schools'} not audited yet`,
+            to: '/auditor/schools',
+            tone: 'warning' as const,
+          },
+        ]
+      : []),
+    ...(stats.draftAudits > 0
+      ? [
+          {
+            key: 'drafts',
+            title: `${stats.draftAudits.toLocaleString()} draft ${stats.draftAudits === 1 ? 'report' : 'reports'} to finish`,
+            to: '/auditor/audits',
+            tone: 'warning' as const,
+          },
+        ]
+      : []),
+  ];
+  const tabClass = (active: boolean) =>
+    `-mb-px border-b-2 px-1 py-2 text-sm font-medium transition ${
+      active
+        ? 'border-brand-500 text-brand-600'
+        : 'border-transparent text-slate-500 hover:text-slate-900'
+    }`;
 
-      <div className="flex gap-2 border-b border-slate-200">
+  return (
+    <section className="mx-auto max-w-[1480px] space-y-5 text-slate-900">
+      <PageHeader title="Audit overview" subtitle={`${scope.level}: ${scopePath}`} />
+
+      <div className="flex gap-5 border-b border-slate-200">
         <button
           type="button"
           onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 text-sm font-semibold ${
-            activeTab === 'overview'
-              ? 'border-b-2 border-brand-600 text-brand-600'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={tabClass(activeTab === 'overview')}
+          aria-pressed={activeTab === 'overview'}
         >
           Overview
         </button>
@@ -132,11 +146,8 @@ export function AuditorDashboardPage() {
             setActiveTab('report');
             setShowReport(true);
           }}
-          className={`px-4 py-2 text-sm font-semibold ${
-            activeTab === 'report'
-              ? 'border-b-2 border-brand-600 text-brand-600'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={tabClass(activeTab === 'report')}
+          aria-pressed={activeTab === 'report'}
         >
           Report
         </button>
@@ -144,124 +155,102 @@ export function AuditorDashboardPage() {
 
       {activeTab === 'overview' && (
         <>
-          {demogQuery.data && (
-            <DemographicsWidget
-              data={demogQuery.data}
-              isLoading={demogQuery.isPending}
-              segment={demogSegment}
-              onSegmentChange={setDemogSegment}
-            />
-          )}
+          <KpiStrip
+            items={[
+              {
+                label: 'Schools in scope',
+                value: stats.totalSchoolsInScope.toLocaleString(),
+                hint: 'Under your jurisdiction',
+              },
+              {
+                label: 'Submitted reports',
+                value: stats.completedAudits.toLocaleString(),
+                hint: 'Audits completed',
+              },
+              { label: 'Drafts', value: stats.draftAudits.toLocaleString(), hint: 'Not submitted yet' },
+              {
+                label: 'Pending schools',
+                value: stats.pendingSchools.toLocaleString(),
+                hint: 'Awaiting audit',
+              },
+              {
+                label: 'Compliance score',
+                value: formatScore(stats.averageComplianceScore),
+                hint: stats.averageComplianceScore === null ? 'No audits yet' : 'Average across audits',
+              },
+            ]}
+          />
 
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-            <MetricCard
-              icon={School}
-              label="Schools in Scope"
-              value={stats.totalSchoolsInScope}
-              tone="brand"
-            />
-            <MetricCard
-              icon={BadgeCheck}
-              label="Submitted Reports"
-              value={stats.completedAudits}
-              tone="success"
-            />
-            <MetricCard
-              icon={FileBarChart2}
-              label="Drafts"
-              value={stats.draftAudits}
-              tone="neutral"
-            />
-            <MetricCard
-              icon={FileBarChart2}
-              label="Pending Schools"
-              value={stats.pendingSchools}
-              tone="warning"
-            />
-            <MetricCard
-              icon={BadgeCheck}
-              label="Compliance Score"
-              value={
-                stats.averageComplianceScore !== null ? `${stats.averageComplianceScore}%` : '—'
-              }
-              tone="purple"
-            />
-          </div>
+          <div className="grid items-start gap-5 xl:grid-cols-12">
+            <div className="min-w-0 space-y-5 xl:col-span-8">
+              {demogQuery.data ? (
+                <DemographicsWidget
+                  data={demogQuery.data}
+                  isLoading={demogQuery.isPending}
+                  segment={demogSegment}
+                  onSegmentChange={setDemogSegment}
+                />
+              ) : null}
 
-          <Card>
-            <CardHeader
-              title="Audit Modules"
-              subtitle="Open a module to audit schools"
-              icon={ClipboardList}
-              tone="brand"
-            />
-            <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-              {AUDITOR_AUDIT_MODULES.map((module) => {
-                const Icon = MODULE_ICONS[module];
-                return (
-                  <Link
-                    key={module}
-                    to={`/auditor/schools?module=${module}`}
-                    className="flex items-center gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-brand-300 hover:shadow-md"
-                  >
-                    <div className="rounded-lg bg-brand-50 p-2">
-                      <Icon className="h-5 w-5 text-brand-600" />
-                    </div>
-                    <span className="font-medium text-slate-900">
-                      {ACADEMIC_AUDIT_MODULE_LABELS[module]}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader
-              title="Recent Audits"
-              subtitle="Most recently submitted audit reports"
-              icon={FileBarChart2}
-              tone="success"
-            />
-
-            {recentAudits.length === 0 ? (
-              <p className="px-5 pb-6 text-sm text-slate-500">No audits submitted yet.</p>
-            ) : (
-              <div className="space-y-3 p-5">
-                {recentAudits.map((audit) => {
-                  const Icon = MODULE_ICONS[audit.module] || FileBarChart2;
-                  return (
-                    <div
-                      key={audit.id}
-                      className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-4"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="h-4 w-4 text-slate-400" />
-                        <div>
-                          <p className="font-medium text-slate-900">{audit.school}</p>
-                          <p className="text-sm text-slate-500">
-                            {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]}
+              <DashboardCard>
+                <CardHeader title="Recent audits" subtitle="Latest submitted reports" />
+                {recentAudits.length === 0 ? (
+                  <p className="px-5 pb-5 pt-1 text-[13px] text-slate-500">
+                    No audits have been submitted yet.
+                  </p>
+                ) : (
+                  <ul className="px-5 pb-3 pt-1">
+                    {recentAudits.map((audit) => (
+                      <li
+                        key={audit.id}
+                        className="flex items-center justify-between gap-3 border-t border-slate-100 py-2.5 first:border-t-0"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-medium text-slate-900">
+                            {audit.school}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]} ·{' '}
+                            {new Date(audit.createdAt).toLocaleDateString()}
                           </p>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge
-                          tone={
-                            audit.score >= 75 ? 'success' : audit.score >= 50 ? 'warning' : 'danger'
-                          }
+                        <Badge tone={scoreTone(audit.score)}>{audit.score}%</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </DashboardCard>
+            </div>
+
+            <div className="min-w-0 space-y-5 xl:col-span-4">
+              <AttentionCard items={attention} />
+              <DashboardCard>
+                <CardHeader title="Audit modules" subtitle="Open a module to audit schools" />
+                <ul className="px-2 pb-2 pt-1">
+                  {AUDITOR_AUDIT_MODULES.map((module) => {
+                    const Icon = MODULE_ICONS[module];
+                    return (
+                      <li key={module}>
+                        <Link
+                          to={`/auditor/schools?module=${module}`}
+                          className="group flex items-center gap-3 rounded-lg px-3 py-2.5 transition hover:bg-slate-50"
                         >
-                          {audit.score}%
-                        </Badge>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {new Date(audit.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
+                          <Icon className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+                          <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-slate-900">
+                            {ACADEMIC_AUDIT_MODULE_LABELS[module]}
+                          </span>
+                          <ChevronRight
+                            className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-brand-500"
+                            aria-hidden="true"
+                          />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </DashboardCard>
+            </div>
+          </div>
         </>
       )}
 
@@ -272,7 +261,7 @@ export function AuditorDashboardPage() {
           {reportQuery.data && (
             <>
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-slate-900">Audit Report</h2>
+                <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">Audit report</h2>
                 <button
                   type="button"
                   onClick={() => {
@@ -296,119 +285,96 @@ export function AuditorDashboardPage() {
                     a.click();
                     URL.revokeObjectURL(url);
                   }}
-                  className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+                  className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-[13px] font-medium text-white hover:bg-brand-600"
                 >
                   <Download className="h-4 w-4" />
                   Export CSV
                 </button>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  icon={School}
-                  label="Schools in Scope"
-                  value={reportQuery.data.report.totalSchoolsInScope}
-                  tone="brand"
-                />
-                <MetricCard
-                  icon={BadgeCheck}
-                  label="Schools Audited"
-                  value={reportQuery.data.report.schoolsAudited}
-                  tone="success"
-                />
-                <MetricCard
-                  icon={FileBarChart2}
-                  label="Total Audits"
-                  value={reportQuery.data.report.totalAudits}
-                  tone="neutral"
-                />
-                <MetricCard
-                  icon={TrendingUp}
-                  label="Average Score"
-                  value={
-                    reportQuery.data.report.averageScore !== null
-                      ? `${reportQuery.data.report.averageScore}%`
-                      : '—'
-                  }
-                  tone={
-                    reportQuery.data.report.averageScore != null &&
-                    reportQuery.data.report.averageScore >= 75
-                      ? 'success'
-                      : 'warning'
-                  }
-                />
-              </div>
+              <KpiStrip
+                items={[
+                  {
+                    label: 'Schools in scope',
+                    value: reportQuery.data.report.totalSchoolsInScope.toLocaleString(),
+                    hint: 'Under your jurisdiction',
+                  },
+                  {
+                    label: 'Schools audited',
+                    value: reportQuery.data.report.schoolsAudited.toLocaleString(),
+                    hint: 'With at least one audit',
+                  },
+                  {
+                    label: 'Total audits',
+                    value: reportQuery.data.report.totalAudits.toLocaleString(),
+                    hint: 'All modules',
+                  },
+                  {
+                    label: 'Average score',
+                    value: formatScore(reportQuery.data.report.averageScore),
+                    hint: 'Across audits',
+                  },
+                ]}
+              />
 
               {Object.keys(reportQuery.data.report.moduleDistribution).length > 0 && (
-                <div className="rounded-2xl border bg-white p-6 shadow-sm">
-                  <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                    Audit Distribution by Module
-                  </h3>
-                  <div className="space-y-2">
+                <DashboardCard>
+                  <CardHeader title="Audits by module" />
+                  <div className="space-y-3.5 px-5 pb-5 pt-2">
                     {Object.entries(reportQuery.data.report.moduleDistribution).map(
                       ([module, count]) => {
                         const total = reportQuery.data.report.totalAudits;
                         const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                         return (
-                          <div key={module} className="flex items-center gap-3">
-                            <span className="w-40 text-sm text-slate-700">
-                              {ACADEMIC_AUDIT_MODULE_LABELS[module as AcademicAuditModule] ||
-                                module}
-                            </span>
-                            <div className="flex-1 rounded-full bg-slate-100 h-2">
-                              <div
-                                className="h-2 rounded-full bg-blue-600"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <span className="w-16 text-right text-sm font-medium text-slate-600">
-                              {count} ({pct}%)
-                            </span>
-                          </div>
+                          <MeterRow
+                            key={module}
+                            label={
+                              ACADEMIC_AUDIT_MODULE_LABELS[module as AcademicAuditModule] || module
+                            }
+                            value={`${count} · ${pct}%`}
+                            percent={pct}
+                          />
                         );
                       }
                     )}
                   </div>
-                </div>
+                </DashboardCard>
               )}
 
-              <div className="rounded-2xl border bg-white p-6 shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-slate-900">School Audit Summary</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-xs font-medium text-slate-500">
-                        <th className="py-2 pr-4">School</th>
-                        <th className="py-2 pr-4">Location</th>
-                        <th className="py-2 pr-4">Audits</th>
-                        <th className="py-2">Latest Score</th>
+              <DashboardCard>
+                <CardHeader title="Schools" />
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[520px] text-left text-sm">
+                    <thead className="border-y border-slate-100 bg-slate-50 text-xs text-slate-500">
+                      <tr>
+                        <th scope="col" className="px-5 py-2.5 font-medium">School</th>
+                        <th scope="col" className="px-5 py-2.5 font-medium">Location</th>
+                        <th scope="col" className="px-5 py-2.5 font-medium">Audits</th>
+                        <th scope="col" className="px-5 py-2.5 font-medium">Latest score</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-100">
+                      {reportQuery.data.report.schools.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-5 py-6 text-center text-[13px] text-slate-500">
+                            No schools are in your audit scope yet.
+                          </td>
+                        </tr>
+                      ) : null}
                       {reportQuery.data.report.schools.map((school) => (
-                        <tr key={school.id} className="border-b border-slate-100">
-                          <td className="py-2 pr-4 font-medium text-slate-900">{school.name}</td>
-                          <td className="py-2 pr-4 text-slate-600">
+                        <tr key={school.id}>
+                          <td className="px-5 py-3 font-medium text-slate-900">{school.name}</td>
+                          <td className="px-5 py-3 text-slate-600">
                             {[school.province, school.district, school.sector]
                               .filter(Boolean)
                               .join(', ') || '—'}
                           </td>
-                          <td className="py-2 pr-4 text-slate-700">{school.auditCount}</td>
-                          <td className="py-2">
+                          <td className="px-5 py-3 tabular-nums text-slate-700">{school.auditCount}</td>
+                          <td className="px-5 py-3">
                             {school.latestScore !== null ? (
-                              <span
-                                className={`font-semibold ${
-                                  school.latestScore >= 75
-                                    ? 'text-green-600'
-                                    : school.latestScore >= 50
-                                      ? 'text-amber-600'
-                                      : 'text-red-600'
-                                }`}
-                              >
-                                {school.latestScore}%
-                              </span>
+                              <Badge tone={scoreTone(school.latestScore)}>{school.latestScore}%</Badge>
                             ) : (
-                              <span className="text-slate-400">—</span>
+                              <span className="text-slate-500">—</span>
                             )}
                           </td>
                         </tr>
@@ -416,52 +382,38 @@ export function AuditorDashboardPage() {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </DashboardCard>
 
-              <div className="rounded-2xl border bg-white p-6 shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-slate-900">Recent Audits</h3>
+              <DashboardCard>
+                <CardHeader title="Recent audits" />
                 {reportQuery.data.report.recentAudits.length === 0 ? (
-                  <p className="text-sm text-slate-500">No audits found.</p>
+                  <p className="px-5 pb-5 pt-1 text-[13px] text-slate-500">No audits found.</p>
                 ) : (
-                  <div className="space-y-2">
-                    {reportQuery.data.report.recentAudits.map((audit) => {
-                      const Icon = MODULE_ICONS[audit.module] || FileBarChart2;
-                      return (
-                        <div
-                          key={audit.id}
-                          className="flex items-center justify-between rounded-lg border border-slate-100 p-3"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className="h-4 w-4 text-slate-400" />
-                            <div>
-                              <p className="font-medium text-slate-900">{audit.school}</p>
-                              <p className="text-xs text-slate-500">
-                                {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]} —{' '}
-                                {new Date(audit.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <span
-                            className={`font-semibold ${
-                              audit.score >= 75
-                                ? 'text-green-600'
-                                : audit.score >= 50
-                                  ? 'text-amber-600'
-                                  : 'text-red-600'
-                            }`}
-                          >
-                            {audit.score}%
-                          </span>
+                  <ul className="px-5 pb-3 pt-1">
+                    {reportQuery.data.report.recentAudits.map((audit) => (
+                      <li
+                        key={audit.id}
+                        className="flex items-center justify-between gap-3 border-t border-slate-100 py-2.5 first:border-t-0"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] font-medium text-slate-900">
+                            {audit.school}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {ACADEMIC_AUDIT_MODULE_LABELS[audit.module]} ·{' '}
+                            {new Date(audit.createdAt).toLocaleDateString()}
+                          </p>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <Badge tone={scoreTone(audit.score)}>{audit.score}%</Badge>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </div>
+              </DashboardCard>
             </>
           )}
         </div>
       )}
-    </div>
+    </section>
   );
 }

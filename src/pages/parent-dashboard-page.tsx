@@ -1,18 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
-import { ClipboardList, FileBarChart2, Home, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { useMemo } from 'react';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
 import { listMyChildrenApi } from '../features/sprint2/sprint2.api';
 import { getParentReportCardsApi } from '../features/sprint5/exams.api';
+import { LoadingCard, LoadingMetrics } from '../components/dashboard/dashboard-ui';
 import {
-  Card,
-  CardActionLink,
+  AttentionCard,
   CardHeader,
-  LoadingCard,
-  LoadingMetrics,
-  MetricCard,
-} from '../components/dashboard/dashboard-ui';
+  DashboardCard,
+  EmptyPanel,
+  KpiStrip,
+  MeterRow,
+  PageHeader,
+  TextLink,
+  type AttentionItem,
+} from '../components/ui/dashboard-kit';
 import { Avatar } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
 import { DataTable, type DataTableColumn } from '../components/ui/data-table';
@@ -38,7 +42,7 @@ const childColumns: DataTableColumn<ChildRow>[] = [
     render: (child) => (
       <span className="flex items-center gap-2">
         <Avatar size="sm" name={`${child.firstName} ${child.lastName}`} />
-        <span className="text-sm font-medium text-slate-900">
+        <span className="whitespace-nowrap text-sm font-medium text-slate-900">
           {child.firstName} {child.lastName}
         </span>
       </span>
@@ -48,39 +52,35 @@ const childColumns: DataTableColumn<ChildRow>[] = [
     key: 'className',
     header: 'Class',
     mobile: 'secondary',
-    render: (child) => <span className="text-slate-600">{child.className}</span>,
+    render: (child) => <span className="whitespace-nowrap text-slate-600">{child.className}</span>,
   },
   {
     key: 'present',
     header: 'Present',
     align: 'center',
-    render: (child) => <Badge tone="success">{child.present}</Badge>,
+    render: (child) => <span className="tabular-nums text-slate-700">{child.present}</span>,
   },
   {
     key: 'absent',
     header: 'Absent',
     align: 'center',
-    render: (child) => <Badge tone="danger">{child.absent}</Badge>,
+    render: (child) => <span className="tabular-nums text-slate-700">{child.absent}</span>,
   },
   {
     key: 'late',
     header: 'Late',
     align: 'center',
-    render: (child) => <Badge tone="warning">{child.late}</Badge>,
-  },
-  {
-    key: 'excused',
-    header: 'Excused',
-    align: 'center',
-    render: (child) => <Badge tone="neutral">{child.excused}</Badge>,
+    render: (child) => <span className="tabular-nums text-slate-700">{child.late}</span>,
   },
   {
     key: 'attendancePct',
-    header: 'Attendance %',
+    header: 'Attendance',
     align: 'center',
     mobile: 'secondary',
     render: (child) => {
-      const percentage = child.total > 0 ? Math.round((child.present / child.total) * 100) : 0;
+      // No records is not the same as 0% attendance.
+      if (child.total === 0) return <span className="text-slate-500">No records</span>;
+      const percentage = Math.round((child.present / child.total) * 100);
       return (
         <Badge tone={percentage >= 90 ? 'success' : percentage >= 75 ? 'warning' : 'danger'}>
           {percentage}%
@@ -198,7 +198,7 @@ export function ParentDashboardPage() {
     0
   );
   const attendancePct =
-    attendanceTotal > 0 ? Math.round((totalPresent / attendanceTotal) * 100) : 0;
+    attendanceTotal > 0 ? Math.round((totalPresent / attendanceTotal) * 100) : null;
 
   if (isError) {
     return (
@@ -223,8 +223,8 @@ export function ParentDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-5">
-        <div className="h-28 animate-pulse rounded-2xl bg-slate-200" />
+      <div className="mx-auto max-w-[1480px] space-y-5">
+        <div className="h-14 w-96 max-w-full animate-pulse rounded-lg bg-slate-200" />
         <LoadingMetrics count={4} />
         <div className="grid gap-5 lg:grid-cols-2">
           <LoadingCard rows={3} />
@@ -234,148 +234,119 @@ export function ParentDashboardPage() {
     );
   }
 
+  const attention: AttentionItem[] = childRows
+    .filter((child) => child.absent > 0)
+    .map((child) => ({
+      key: `absent-${child.id}`,
+      title: `${child.firstName} missed ${child.absent} ${child.absent === 1 ? 'day' : 'days'}`,
+      detail: 'In the last 30 days',
+      to: '/parent/my-children',
+      tone: 'warning' as const,
+    }));
+
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-          Parent portal
-        </p>
-        <h1 className="mt-2 text-[1.75rem] font-bold tracking-tight text-slate-900">
-          Welcome{parent ? `, ${parent.firstName}` : ''}!
-        </h1>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-          Monitor your children&apos;s academic progress and stay updated.
-        </p>
-      </div>
+    <section className="mx-auto max-w-[1480px] space-y-5 text-slate-900">
+      <PageHeader
+        title={`Welcome${parent ? `, ${parent.firstName}` : ''}`}
+        subtitle="Your children's attendance and results."
+      />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard icon={Users} label="Linked Children" value={children.length} tone="brand" />
-        <MetricCard icon={ClipboardList} label="Present (30d)" value={totalPresent} tone="success" />
-        <MetricCard icon={ClipboardList} label="Absent (30d)" value={totalAbsent} tone="danger" />
-        <MetricCard icon={ClipboardList} label="Late (30d)" value={totalLate} tone="warning" helper={attendancePct > 0 ? `${attendancePct}% attendance` : undefined} />
-      </div>
+      <KpiStrip
+        items={[
+          {
+            label: 'Children',
+            value: children.length.toLocaleString(),
+            hint: 'Linked to your account',
+            to: '/parent/my-children',
+          },
+          {
+            label: 'Attendance',
+            value: attendancePct === null ? '—' : `${attendancePct}%`,
+            hint: attendancePct === null ? 'No records yet' : 'Last 30 days',
+          },
+          { label: 'Days absent', value: totalAbsent.toLocaleString(), hint: 'Last 30 days' },
+          { label: 'Days late', value: totalLate.toLocaleString(), hint: 'Last 30 days' },
+        ]}
+      />
 
-      {childRows.length > 0 && (
-        <Card>
-          <CardHeader
-            title="Children Performance"
-            subtitle="Attendance comparison over the last 30 days"
+      {children.length === 0 ? (
+        <DashboardCard>
+          <EmptyPanel
             icon={Users}
-            tone="brand"
+            message="No children are linked yet. Ask your school administrator to link your children's accounts."
           />
-          <div className="p-4">
-            <DataTable
-              ariaLabel="Children attendance"
-              columns={childColumns}
-              data={childRows}
-              rowKey={(child) => child.id}
-              emptyTitle="No children linked yet"
-              emptyDescription="Contact your school administrator to link your children's accounts."
-              minWidth={640}
-              className="border-0 shadow-none"
-              sort={null}
-            />
-          </div>
-        </Card>
-      )}
+        </DashboardCard>
+      ) : (
+        <div className="grid items-start gap-5 xl:grid-cols-12">
+          <div className="min-w-0 space-y-5 xl:col-span-8">
+            <DashboardCard>
+              <CardHeader title="Attendance by child" subtitle="Last 30 days" />
+              <div className="px-2 pb-3 pt-1">
+                <DataTable
+                  ariaLabel="Children attendance"
+                  columns={childColumns}
+                  data={childRows}
+                  rowKey={(child) => child.id}
+                  emptyTitle="No children linked yet"
+                  minWidth={500}
+                  className="border-0 shadow-none"
+                  sort={null}
+                />
+              </div>
+            </DashboardCard>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <CardHeader
-            title="Recent Report Cards"
-            subtitle="Latest published results"
-            icon={FileBarChart2}
-            tone="brand"
-            action={
-              reportCards.length > 0 ? (
-                <CardActionLink to="/parent/report-cards">View all report cards</CardActionLink>
-              ) : undefined
-            }
-          />
-          <div className="p-4">
-            <DataTable
-              ariaLabel="Recent report cards"
-              columns={reportCardColumns}
-              data={reportCardRows}
-              rowKey={(row) => row.id}
-              emptyTitle="No report cards available yet"
-              minWidth={420}
-              className="border-0 shadow-none"
-              sort={null}
-            />
+            <DashboardCard>
+              <CardHeader
+                title="Recent report cards"
+                action={
+                  reportCards.length > 0 ? (
+                    <TextLink to="/parent/report-cards">View all</TextLink>
+                  ) : undefined
+                }
+              />
+              <div className="px-2 pb-3 pt-1">
+                <DataTable
+                  ariaLabel="Recent report cards"
+                  columns={reportCardColumns}
+                  data={reportCardRows}
+                  rowKey={(row) => row.id}
+                  emptyTitle="No report cards yet"
+                  emptyDescription="Published results will appear here."
+                  minWidth={420}
+                  className="border-0 shadow-none"
+                  sort={null}
+                />
+              </div>
+            </DashboardCard>
           </div>
-        </Card>
 
-        <Card>
-          <CardHeader
-            title="Recent Activity"
-            subtitle="Latest updates from your children"
-            icon={Home}
-            tone="success"
-          />
-          <div className="p-4">
-            <DataTable
-              ariaLabel="Recent activity"
-              columns={activityColumns}
-              data={activityRows(childRows, reportCardRows)}
-              rowKey={(row) => row.id}
-              emptyTitle="No recent activity"
-              minWidth={420}
-              className="border-0 shadow-none"
-              sort={null}
-            />
+          <div className="min-w-0 space-y-5 xl:col-span-4">
+            <AttentionCard items={attention} />
+            <DashboardCard>
+              <CardHeader title="Children" />
+              <div className="space-y-4 px-5 pb-5 pt-2">
+                {childRows.map((child) => (
+                  <MeterRow
+                    key={child.id}
+                    label={`${child.firstName} ${child.lastName}`}
+                    value={
+                      child.total > 0 ? `${Math.round((child.present / child.total) * 100)}%` : '—'
+                    }
+                    percent={child.total > 0 ? (child.present / child.total) * 100 : 0}
+                    hint={
+                      child.total > 0
+                        ? `${child.className} · ${child.present} of ${child.total} days present${
+                            child.excused > 0 ? ` · ${child.excused} excused` : ''
+                          }`
+                        : `${child.className} · No attendance records yet`
+                    }
+                  />
+                ))}
+              </div>
+            </DashboardCard>
           </div>
-        </Card>
-      </div>
-
-      {children.length === 0 && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
-          <p className="font-semibold text-amber-900">No children linked yet</p>
-          <p className="mt-1 text-sm text-amber-700">
-            Contact your school administrator to link your children&apos;s accounts.
-          </p>
         </div>
       )}
-    </div>
+    </section>
   );
-}
-
-interface ActivityRowData {
-  id: string;
-  student: string;
-  activity: string;
-  details: string;
-}
-
-const activityColumns: DataTableColumn<ActivityRowData>[] = [
-  { key: 'student', header: 'Student', mobile: 'primary' },
-  { key: 'activity', header: 'Activity', mobile: 'secondary' },
-  { key: 'details', header: 'Details' },
-];
-
-function activityRows(
-  childRows: ChildRow[],
-  reportCardRows: ReportCardRow[]
-): ActivityRowData[] {
-  const rows: ActivityRowData[] = [];
-
-  childRows.slice(0, 5).forEach((child) => {
-    rows.push({
-      id: `attendance-${child.id}`,
-      student: `${child.firstName} ${child.lastName}`,
-      activity: 'Attendance',
-      details: `Last 30 days: ${child.present}/${child.total} present`,
-    });
-  });
-
-  reportCardRows.slice(0, 3).forEach((rc) => {
-    rows.push({
-      id: `report-${rc.id}`,
-      student: rc.studentName,
-      activity: 'Report card',
-      details: `${rc.termName} - ${rc.grade}`,
-    });
-  });
-
-  return rows;
 }

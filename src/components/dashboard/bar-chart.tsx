@@ -80,6 +80,14 @@ export function BarChart({ data, height = 120, color = '#2563EB', stacked, keys,
               <rect x={x} y={y} width={barWidth} height={barH} rx={2} fill={color} fillOpacity={0.8} />
               <text
                 x={x + barWidth / 2}
+                y={y - 4}
+                textAnchor="middle"
+                className="fill-slate-700 text-[9px] font-bold"
+              >
+                {val}
+              </text>
+              <text
+                x={x + barWidth / 2}
                 y={height - 4}
                 textAnchor="middle"
                 className="fill-slate-500 text-[9px]"

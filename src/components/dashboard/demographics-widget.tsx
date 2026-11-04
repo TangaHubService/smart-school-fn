@@ -1,5 +1,4 @@
-import { Accessibility, Mars, Venus } from 'lucide-react';
-
+import { CHART_SERIES } from '../ui/chart-theme';
 import { BarChart } from './bar-chart';
 
 export interface DemographicsData {
@@ -71,7 +70,7 @@ export function DemographicsWidget({
 
   if (isLoading) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-card">
         <div className="grid grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-200" />
@@ -84,58 +83,33 @@ export function DemographicsWidget({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-lg font-bold text-slate-900">Student Demographics</h2>
+    <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+      <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">Student demographics</h2>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
-              <Mars className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">Boys</p>
-              <p className="text-2xl font-bold tabular-nums text-blue-950">
-                {data.totalBoys.toLocaleString()}
-              </p>
-            </div>
-          </div>
+      <dl className="mt-3 grid grid-cols-3 gap-4">
+        <div>
+          <dt className="text-[13px] text-slate-500">Boys</dt>
+          <dd className="mt-0.5 text-xl font-semibold tabular-nums text-slate-900">
+            {data.totalBoys.toLocaleString()}
+          </dd>
         </div>
-
-        <div className="rounded-xl border border-pink-100 bg-pink-50/50 p-4">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-pink-100 text-pink-700">
-              <Venus className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-pink-800">Girls</p>
-              <p className="text-2xl font-bold tabular-nums text-pink-950">
-                {data.totalGirls.toLocaleString()}
-              </p>
-            </div>
-          </div>
+        <div>
+          <dt className="text-[13px] text-slate-500">Girls</dt>
+          <dd className="mt-0.5 text-xl font-semibold tabular-nums text-slate-900">
+            {data.totalGirls.toLocaleString()}
+          </dd>
         </div>
-
-        <div className="rounded-xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-white p-4 ring-2 ring-amber-200/60">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-              <Accessibility className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
-                Students with Disabilities
-              </p>
-              <p className="text-2xl font-bold tabular-nums text-amber-950">
-                {data.studentsWithDisabilities.toLocaleString()}
-              </p>
-              <p className="text-xs text-amber-700/80">{disabilityPct}% of total enrollment</p>
-            </div>
-          </div>
+        <div>
+          <dt className="text-[13px] text-slate-500">With a disability</dt>
+          <dd className="mt-0.5 text-xl font-semibold tabular-nums text-slate-900">
+            {data.studentsWithDisabilities.toLocaleString()}
+            <span className="ml-1.5 text-xs font-normal text-slate-500">{disabilityPct}%</span>
+          </dd>
         </div>
-      </div>
+      </dl>
 
       <div className="mt-5">
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+        <div className="inline-flex max-w-full flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
           {(['sector', 'grade', 'academicYear'] as const).map((seg) => (
             <button
               key={seg}
@@ -159,8 +133,8 @@ export function DemographicsWidget({
             data={chartData}
             height={160}
             stacked
-            keys={['boys', 'girls', 'disabilities']}
-            colors={['#2563EB', '#EC4899', '#F59E0B']}
+            keys={['boys', 'girls']}
+            colors={[CHART_SERIES[0], CHART_SERIES[1]]}
           />
         </div>
 
@@ -171,19 +145,20 @@ export function DemographicsWidget({
                 <th className="py-2 pr-3">{SEGMENT_LABELS[segment]}</th>
                 <th className="py-2 pr-3">Boys</th>
                 <th className="py-2 pr-3">Girls</th>
-                <th className="py-2 pr-3">Disabilities</th>
+                <th className="py-2 pr-3">With a disability</th>
                 <th className="py-2">Total</th>
               </tr>
             </thead>
             <tbody>
               {chartData.map((row) => {
-                const total = (row.boys as number) + (row.girls as number) + (row.disabilities as number);
+                // Students with a disability are already counted among boys and girls.
+                const total = (row.boys as number) + (row.girls as number);
                 return (
                   <tr key={row.label} className="border-b border-slate-100">
                     <td className="py-2 pr-3 font-medium text-slate-900">{row.label}</td>
                     <td className="py-2 pr-3 text-slate-700">{(row.boys as number).toLocaleString()}</td>
                     <td className="py-2 pr-3 text-slate-700">{(row.girls as number).toLocaleString()}</td>
-                    <td className="py-2 pr-3 text-amber-700 font-medium">
+                    <td className="py-2 pr-3 text-slate-700">
                       {(row.disabilities as number).toLocaleString()}
                     </td>
                     <td className="py-2 font-semibold text-slate-900">{total.toLocaleString()}</td>

@@ -35,10 +35,6 @@ export interface SuperAdminDashboardData {
     count: number;
     icon: string;
   }>;
-  systemAnalytics: {
-    weekly: Array<{ label: string; logins: number; courses: number; exams: number }>;
-    monthly: Array<{ label: string; logins: number; courses: number; exams: number }>;
-  };
   revenue: {
     totalRevenue: number;
     monthlyRevenue: Array<{ month: string; amount: number }>;
