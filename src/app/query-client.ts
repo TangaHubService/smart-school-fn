@@ -2,24 +2,19 @@ import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 
 import { ApiClientError } from '../types/api';
 
-const SUBSCRIPTION_PATH = '/admin/subscription';
-
 /**
- * Server-side hard gate: unpaid schools get HTTP 402 on every school-scoped
- * API. When that happens, send the admin to the subscription invoice page.
+ * Server-side hard gate: locked schools get HTTP 402 on school-scoped APIs.
+ * Re-check access so the invoice payment gate in the app shell opens.
  */
 function handleGlobalQueryError(error: unknown): void {
   if (!(error instanceof ApiClientError) || error.status !== 402) {
     return;
   }
-  if (typeof window === 'undefined') {
-    return;
+  const access = queryClient.getQueryData<{ blocked: boolean }>(['billing', 'access']);
+  if (!access?.blocked) {
+    // A page can fail several requests at once, so join any check already running.
+    void queryClient.refetchQueries({ queryKey: ['billing', 'access'] }, { cancelRefetch: false });
   }
-  const { pathname } = window.location;
-  if (pathname === SUBSCRIPTION_PATH || pathname.startsWith('/login')) {
-    return;
-  }
-  window.location.assign(SUBSCRIPTION_PATH);
 }
 
 export const queryClient = new QueryClient({

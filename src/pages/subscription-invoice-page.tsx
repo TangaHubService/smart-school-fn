@@ -9,18 +9,14 @@ import { PageSkeleton } from '../components/skeleton-loader';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
+  formatInvoiceAmount,
   getMySubscriptionInvoiceApi,
   paySubscriptionInvoiceApi,
   type SubscriptionInvoice,
   type SubscriptionInvoicePaymentRow,
+  MOBILE_MONEY_PHONE_PATTERN,
 } from '../features/billing/billing.api';
 import { ApiClientError } from '../types/api';
-
-const PHONE_PATTERN = /^(?:\+?250|0)7\d{8}$/;
-
-function formatRwf(amount: number): string {
-  return `${amount.toLocaleString('en-US')} RWF`;
-}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -83,7 +79,7 @@ function PaymentsTable({ payments }: { payments: SubscriptionInvoicePaymentRow[]
             <tr key={p.id} className="border-b border-slate-50">
               <td className="px-4 py-2.5 font-mono text-xs text-slate-700">{p.providerRef}</td>
               <td className="px-4 py-2.5 capitalize text-slate-700">{p.provider}</td>
-              <td className="px-4 py-2.5 text-slate-700">{formatRwf(p.amount)}</td>
+              <td className="px-4 py-2.5 text-slate-700">{formatInvoiceAmount(p.amount, p.currency)}</td>
               <td className="px-4 py-2.5 text-slate-700">{p.status}</td>
               <td className="px-4 py-2.5 text-slate-700">{formatDate(p.createdAt)}</td>
             </tr>
@@ -168,7 +164,7 @@ export function SubscriptionInvoicePage() {
   const isPaid = invoice.status === 'PAID';
 
   function submitPayment() {
-    if (!PHONE_PATTERN.test(phoneNumber.trim())) {
+    if (!MOBILE_MONEY_PHONE_PATTERN.test(phoneNumber.trim())) {
       setPhoneError('Enter a valid MTN/Airtel Mobile Money number (e.g. 0788123456)');
       return;
     }
@@ -251,13 +247,13 @@ export function SubscriptionInvoicePage() {
                     </p>
                   </div>
                   <span className="whitespace-nowrap font-bold text-slate-900">
-                    {formatRwf(invoice.amountDue)}
+                    {formatInvoiceAmount(invoice.amountDue, invoice.currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between bg-slate-50 px-4 py-4">
                   <span className="font-bold text-slate-900">Total Payable</span>
                   <span className="text-xl font-extrabold text-brand-700">
-                    {formatRwf(invoice.amountDue)}
+                    {formatInvoiceAmount(invoice.amountDue, invoice.currency)}
                   </span>
                 </div>
               </div>
@@ -288,7 +284,7 @@ export function SubscriptionInvoicePage() {
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between gap-3">
                   <dt className="text-slate-500">Subscription fee</dt>
-                  <dd className="font-semibold text-slate-900">{formatRwf(invoice.amountDue)}</dd>
+                  <dd className="font-semibold text-slate-900">{formatInvoiceAmount(invoice.amountDue, invoice.currency)}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-slate-500">Taxes</dt>
@@ -296,7 +292,7 @@ export function SubscriptionInvoicePage() {
                 </div>
                 <div className="flex justify-between gap-3 border-t border-slate-200 pt-3">
                   <dt className="font-bold text-slate-900">Amount due</dt>
-                  <dd className="font-bold text-brand-700">{formatRwf(invoice.amountDue)}</dd>
+                  <dd className="font-bold text-brand-700">{formatInvoiceAmount(invoice.amountDue, invoice.currency)}</dd>
                 </div>
               </dl>
 
@@ -341,9 +337,7 @@ export function SubscriptionInvoicePage() {
       <AppDrawer
         open={payOpen}
         title="Pay annual subscription"
-        description={`You will receive a Mobile Money prompt on your phone for ${formatRwf(
-          invoice.amountDue
-        )}.`}
+        description={`You will receive a Mobile Money prompt on your phone for ${formatInvoiceAmount(invoice.amountDue, invoice.currency)}.`}
         onClose={() => {
           if (payMutation.isPending) return;
           setPayOpen(false);
@@ -381,7 +375,7 @@ export function SubscriptionInvoicePage() {
           >
             {payMutation.isPending
               ? 'Processing payment...'
-              : `Pay ${formatRwf(invoice.amountDue)}`}
+              : `Pay ${formatInvoiceAmount(invoice.amountDue, invoice.currency)}`}
           </button>
         </form>
       </AppDrawer>

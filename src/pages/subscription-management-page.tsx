@@ -13,10 +13,12 @@ import {
 } from '../components/ui/data-table';
 import { Badge } from '../components/ui/badge';
 import socket from '../utils/socket';
+import { ConfirmModal } from '../components/confirm-modal';
 import { useAuth } from '../features/auth/auth.context';
 import {
   BILLING_CURRENCIES,
   BILLING_PAYMENT_METHODS,
+  cancelInvoiceApi,
   createManualInvoiceApi,
   grantAcademyAccessApi,
   listAcademyCatalogClassesAdminApi,
@@ -115,7 +117,7 @@ const invoiceColumns: DataTableColumn<SchoolInvoiceRow>[] = [
   {
     key: 'status',
     header: 'Status',
-    render: (row) => <Badge tone={INVOICE_STATUS_TONES[row.status] ?? 'neutral'}>{row.status}</Badge>,
+    render: (row) => <Badge tone={INVOICE_STATUS_TONES[row.status] ?? 'neutral'}>{row.status === 'VOID' ? 'CANCELLED' : row.status}</Badge>,
   },
   {
     key: 'periodEnd',
@@ -204,6 +206,7 @@ export function SubscriptionManagementPage() {
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('');
   const [invoicePage, setInvoicePage] = useState(1);
   const [payInvoice, setPayInvoice] = useState<SchoolInvoiceRow | null>(null);
+  const [invoiceToCancel, setInvoiceToCancel] = useState<SchoolInvoiceRow | null>(null);
   const [payForm, setPayForm] = useState({
     amount: '',
     currency: 'RWF',
@@ -393,6 +396,24 @@ export function SubscriptionManagementPage() {
     },
   });
 
+  const cancelInvoiceMutation = useMutation({
+    mutationFn: (invoiceId: string) => cancelInvoiceApi(token, invoiceId),
+    onSuccess: () => {
+      showToast({
+        type: 'success',
+        title: 'Invoice cancelled',
+        message: `${invoiceToCancel?.invoiceNumber} no longer has to be paid.`,
+      });
+      setInvoiceToCancel(null);
+      void queryClient.invalidateQueries({ queryKey: ['billing', 'invoices'] });
+    },
+    onError: (e: unknown) => {
+      const err = e as ApiClientError;
+      setInvoiceToCancel(null);
+      showToast({ type: 'error', title: 'Could not cancel invoice', message: err.message });
+    },
+  });
+
   const openPayDrawer = (row: SchoolInvoiceRow) => {
     setPayInvoice(row);
     setPayForm({
@@ -536,7 +557,7 @@ export function SubscriptionManagementPage() {
                   <option value="">All statuses</option>
                   <option value="PENDING">Pending</option>
                   <option value="PAID">Paid</option>
-                  <option value="VOID">Void</option>
+                  <option value="VOID">Cancelled</option>
                 </select>
               </div>
               <div className="p-4">
@@ -567,14 +588,23 @@ export function SubscriptionManagementPage() {
                               {row.reference}
                             </span>
                           )}
-                          {row.status !== 'PAID' && (
-                            <button
-                              type="button"
-                              onClick={() => openPayDrawer(row)}
-                              className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
-                            >
-                              Record payment
-                            </button>
+                          {row.status === 'PENDING' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => setInvoiceToCancel(row)}
+                                className="rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                              >
+                                Cancel invoice
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openPayDrawer(row)}
+                                className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                              >
+                                Record payment
+                              </button>
+                            </>
                           )}
                         </div>
                       )}
@@ -727,6 +757,24 @@ export function SubscriptionManagementPage() {
           saving={updateSubMutation.isPending}
         />
       ) : null}
+
+      <ConfirmModal
+        open={Boolean(invoiceToCancel)}
+        title="Cancel this invoice?"
+        message={
+          invoiceToCancel
+            ? `${invoiceToCancel.tenant.name} will no longer have to pay ${invoiceToCancel.invoiceNumber} (${Number(invoiceToCancel.amountDue).toLocaleString()} ${invoiceToCancel.currency}). If nothing else is owed, the school unlocks right away. This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Cancel invoice"
+        cancelLabel="Keep invoice"
+        isDestructive
+        isLoading={cancelInvoiceMutation.isPending}
+        onCancel={() => setInvoiceToCancel(null)}
+        onConfirm={() => {
+          if (invoiceToCancel) cancelInvoiceMutation.mutate(invoiceToCancel.id);
+        }}
+      />
 
       <AppDrawer
         open={Boolean(payInvoice)}

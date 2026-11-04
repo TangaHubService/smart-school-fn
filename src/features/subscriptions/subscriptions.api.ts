@@ -189,6 +189,10 @@ export function recordManualPaymentApi(
   });
 }
 
+export function cancelInvoiceApi(accessToken: string, invoiceId: string) {
+  return apiRequest(`/billing/invoices/${invoiceId}/cancel`, { method: 'POST', accessToken });
+}
+
 export interface SchoolInvoiceRow {
   id: string;
   invoiceNumber: string;

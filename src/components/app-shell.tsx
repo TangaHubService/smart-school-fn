@@ -29,6 +29,7 @@ import { getMySubscriptionInvoiceApi } from '../features/billing/billing.api';
 import { SetStudentHeaderActionsContext } from '../contexts/student-header-actions.context';
 import { AcademicYearSelector } from './academic-year-selector';
 import { ConnectionStatusBanner } from './connection-status-banner';
+import { InvoicePaymentGate } from './invoice-payment-gate';
 import { LanguageSwitcher } from './language-switcher';
 import { LowBandwidthToggle } from './low-bandwidth-toggle';
 import { NAV_ITEMS, RoleNav, SUPER_ADMIN_NAV_OVERRIDES } from './role-nav';
@@ -505,6 +506,7 @@ export function AppShell() {
         </Link>
       ) : null}
       <ConnectionStatusBanner />
+      <InvoicePaymentGate />
     </main>
   );
 }
