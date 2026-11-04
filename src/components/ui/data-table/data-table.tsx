@@ -1,46 +1,17 @@
-import { flexRender, type ColumnDef, type Row, type Header, type HeaderGroup } from '@tanstack/react-table';
 import clsx from 'clsx';
 import { ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
-import { Fragment, type ReactNode } from 'react';
-import { tableFeatures } from './table-features';
-import { useDataTable } from './use-data-table';
+import type { RowData } from '@tanstack/react-table';
+import { Fragment, useMemo, type ReactNode } from 'react';
 
-export interface DataTableColumn<TData> {
-  key: string;
-  header: string;
-  sortable?: boolean;
-  align?: 'left' | 'center' | 'right';
-  className?: string;
-  headerClassName?: string;
-  render?: (row: TData, index: number) => ReactNode;
-  mobile?: 'primary' | 'secondary' | 'hidden';
-}
+import { DataTablePagination } from './data-table-pagination';
+import type { DataTableColumn, DataTableProps, DataTableSort } from './types';
+import { useDataTable, type DataTableColumnDef } from './use-data-table';
 
-export interface DataTableProps<TData> {
-  columns: DataTableColumn<TData>[];
-  data: TData[];
-  rowKey: (row: TData, index: number) => string;
-  loading?: boolean;
-  skeletonRows?: number;
-  error?: { title?: string; message?: string } | null;
-  onRetry?: () => void;
-  emptyTitle?: string;
-  emptyDescription?: string;
-  showIndex?: boolean;
-  rowActions?: (row: TData) => ReactNode;
-  actionsHeader?: string;
-  actionsAlign?: 'left' | 'center' | 'right';
-  stickyHeader?: boolean;
-  minWidth?: number;
-  className?: string;
-  ariaLabel?: string;
-  pagination?: boolean | DataTablePaginationProps;
-  paginationState?: DataTablePaginationProps;
-  onPaginationChange?: (pageIndex: number, pageSize: number) => void;
-
-  sort?: DataTableSort | null;
-  onSortChange?: (sort: DataTableSort) => void;
-}
+const ALIGN_CLASS = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+} as const;
 
 function defaultCell<TData>(row: TData, column: DataTableColumn<TData>): ReactNode {
   const value = (row as Record<string, unknown>)[column.key];
@@ -55,7 +26,7 @@ function SortIcon({ direction }: { direction?: 'asc' | 'desc' | null }) {
   return <ArrowUpDown className="h-3.5 w-3.5 opacity-40" aria-hidden="true" />;
 }
 
-export function DataTable<TData>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   rowKey,
@@ -73,46 +44,40 @@ export function DataTable<TData>({
   minWidth = 760,
   className,
   ariaLabel = 'Data table',
-  pagination = false,
-  paginationState,
-  onPaginationChange,
+  sort = null,
+  onSortChange,
+  pagination,
 }: DataTableProps<TData>) {
   const hasActions = Boolean(rowActions);
   const colSpan = columns.length + (showIndex ? 1 : 0) + (hasActions ? 1 : 0);
 
-  // Convert custom column shape to TanStack ColumnDef
-  const tanstackColumns = columns.map((col) => ({
-    id: col.key,
-    header: col.header,
-    accessorKey: col.key,
-    cell: ({ row }: { row: Row<TData> }) => {
-      const raw = row.original;
-      const index = row.index;
-      if (col.render) return col.render(raw, index);
-      return defaultCell(raw, col);
-    },
-    enableSorting: col.sortable === true,
-    meta: {
-      align: col.align ?? 'left',
-      className: col.className,
-      headerClassName: col.headerClassName,
-      mobile: col.mobile,
-    },
-  })) as ColumnDef<TData, unknown>[];
+  const rowOffset = pagination ? (pagination.page - 1) * pagination.pageSize : 0;
 
-  const { table, subscribe } = useDataTable({
-    data,
-    columns: tanstackColumns,
-    initialState: paginationState
-      ? {
-          pagination: { pageIndex: paginationState.pageIndex, pageSize: paginationState.pageSize },
-        }
-      : undefined,
-    manualPagination: Boolean(paginationState),
-  });
+  const tableColumns = useMemo<Array<DataTableColumnDef<TData>>>(
+    () => columns.map((column) => ({ id: column.key, header: column.header })),
+    [columns]
+  );
+  const table = useDataTable({ data, columns: tableColumns });
+  const rows = table.getRowModel().rows;
 
-  const headerGroups = table.getHeaderGroups();
-  const rowModel = table.getRowModel();
+  // Mobile cards: title comes from the column marked primary, or the first column.
+  const primaryColumn = columns.find((column) => column.mobile === 'primary') ?? columns[0];
+  const secondaryColumns = columns.filter(
+    (column) => column.mobile === 'secondary' && column !== primaryColumn
+  );
+  const detailColumns = columns.filter(
+    (column) =>
+      column !== primaryColumn && column.mobile !== 'secondary' && column.mobile !== 'hidden'
+  );
+
+  function handleSort(column: DataTableColumn<TData>) {
+    if (!onSortChange) return;
+    const next: DataTableSort = {
+      sortBy: column.key,
+      sortOrder: sort?.sortBy === column.key && sort.sortOrder === 'asc' ? 'desc' : 'asc',
+    };
+    onSortChange(next);
+  }
 
   return (
     <div
@@ -154,13 +119,13 @@ export function DataTable<TData>({
           <li key={rowKey(row, index)} className="space-y-3 p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                {columns.length ? (
+                {primaryColumn ? (
                   <div className="min-w-0 text-sm font-semibold text-slate-900">
-                    {columns[0].render ? columns[0].render(row, index) : defaultCell(row, columns[0])}
+                    {primaryColumn.render ? primaryColumn.render(row, index) : defaultCell(row, primaryColumn)}
                   </div>
                 ) : null}
                 <div className="flex flex-wrap gap-x-3 gap-y-1">
-                  {columns.filter((c) => c.mobile === 'secondary').map((col) => (
+                  {secondaryColumns.map((col) => (
                     <Fragment key={col.key}>
                       {col.render ? col.render(row, index) : defaultCell(row, col)}
                     </Fragment>
@@ -169,14 +134,14 @@ export function DataTable<TData>({
               </div>
               {showIndex ? (
                 <span className="shrink-0 text-xs font-semibold text-slate-400">
-                  {paginationState ? paginationState.pageIndex * paginationState.pageSize + index + 1 : index + 1}
+                  {rowOffset + index + 1}
                 </span>
               ) : null}
             </div>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
-              {columns.filter((c) => c.mobile !== 'primary' && c.mobile !== 'secondary').map((col) => (
+              {detailColumns.map((col) => (
                 <div key={col.key} className="min-w-0">
-                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{col.header}</dt>
+                  <dt className="text-[11px] font-medium text-slate-500">{col.header}</dt>
                   <dd className="mt-0.5 truncate text-xs text-slate-700">
                     {col.render ? col.render(row, index) : defaultCell(row, col)}
                   </dd>
@@ -200,52 +165,58 @@ export function DataTable<TData>({
           style={{ minWidth }}
         >
           <thead className={clsx(stickyHeader && 'sticky top-0 z-10')}>
-            {headerGroups.map((headerGroup: HeaderGroup<TData>) => (
-              <tr
-                key={headerGroup.id}
-                className="bg-slate-50/80 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500"
-              >
-                {showIndex ? (
-                  <th scope="col" className="w-14 border-b border-slate-200 px-4 py-3">
-                    No
-                  </th>
-                ) : null}
-                {headerGroup.headers.map((header: Header<TData, unknown>) => {
-                  const colDef = tanstackColumns.find((c) => c.id === header.id);
-                  const meta = colDef?.meta as { align?: string; headerClassName?: string } | undefined;
-                  return (
-                    <th
-                      key={header.id}
-                      scope="col"
-                      aria-sort={undefined}
-                      className={clsx(
-                        'border-b border-slate-200 px-4 py-3',
-                        meta?.align === 'right' ? 'text-right' : meta?.align === 'center' ? 'text-center' : 'text-left',
-                        meta?.headerClassName
-                      )}
-                    >
-                      {header.isPlaceholder ? null : (
-                        <span className={clsx('inline-flex items-center gap-1 uppercase tracking-wider text-slate-500', colDef?.enableSorting ? 'cursor-pointer hover:text-brand-600' : 'cursor-default')}>
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {colDef?.enableSorting ? <SortIcon direction={null} /> : null}
-                        </span>
-                      )}
-                    </th>
-                  );
-                })}
-                {hasActions ? (
+            <tr className="bg-slate-50/80 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              {showIndex ? (
+                <th scope="col" className="w-14 border-b border-slate-200 px-4 py-3">
+                  No
+                </th>
+              ) : null}
+              {columns.map((column) => {
+                const isActiveSort = sort?.sortBy === column.key;
+                return (
                   <th
+                    key={column.key}
                     scope="col"
+                    aria-sort={
+                      column.sortable && isActiveSort
+                        ? sort?.sortOrder === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : undefined
+                    }
                     className={clsx(
                       'border-b border-slate-200 px-4 py-3',
-                      actionsAlign === 'right' ? 'text-right' : actionsAlign === 'center' ? 'text-center' : 'text-left'
+                      ALIGN_CLASS[column.align ?? 'left'],
+                      column.headerClassName
                     )}
                   >
-                    {actionsHeader}
+                    {column.sortable && onSortChange ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSort(column)}
+                        className={clsx(
+                          'inline-flex items-center gap-1 uppercase tracking-wider transition hover:text-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500',
+                          isActiveSort && 'text-brand-600'
+                        )}
+                      >
+                        {column.header}
+                        <SortIcon direction={isActiveSort ? sort?.sortOrder ?? null : null} />
+                      </button>
+                    ) : (
+                      column.header
+                    )}
                   </th>
-                ) : null}
-              </tr>
-            ))}
+                );
+              })}
+              {hasActions ? (
+                <th
+                  scope="col"
+                  className={clsx('border-b border-slate-200 px-4 py-3', ALIGN_CLASS[actionsAlign])}
+                >
+                  {actionsHeader}
+                </th>
+              ) : null}
+            </tr>
           </thead>
           <tbody>
             {loading
@@ -273,7 +244,7 @@ export function DataTable<TData>({
               </tr>
             ) : null}
 
-            {!loading && !error && rowModel.rows.length === 0 ? (
+            {!loading && !error && rows.length === 0 ? (
               <tr>
                 <td colSpan={colSpan} className="px-4 py-10">
                   <DataTableEmptyState title={emptyTitle} description={emptyDescription} />
@@ -281,11 +252,11 @@ export function DataTable<TData>({
               </tr>
             ) : null}
 
-            {!loading && !error && rowModel.rows.map((row) => (
+            {!loading && !error && rows.map((row) => (
               <tr key={rowKey(row.original, row.index)} className="transition-colors hover:bg-brand-50/30">
                 {showIndex ? (
                   <td className="border-b border-slate-100 px-4 py-3.5 text-xs font-semibold text-slate-400">
-                    {paginationState ? paginationState.pageIndex * paginationState.pageSize + row.index + 1 : row.index + 1}
+                    {rowOffset + row.index + 1}
                   </td>
                 ) : null}
                 {columns.map((col) => {
@@ -320,16 +291,7 @@ export function DataTable<TData>({
         </table>
       </div>
 
-      {/* Pagination (optional external sync) */}
-      {pagination && paginationState && onPaginationChange ? (
-        <DataTablePagination
-          page={paginationState.pageIndex + 1}
-          pageSize={paginationState.pageSize}
-          totalItems={paginationState.totalItems}
-          onPageChange={(p) => onPaginationChange(p - 1, paginationState.pageSize)}
-          onPageSizeChange={(size) => onPaginationChange(0, size)}
-        />
-      ) : null}
+      {pagination && !loading && !error ? <DataTablePagination {...pagination} /> : null}
     </div>
   );
 }
@@ -358,28 +320,5 @@ export function DataTableErrorState({ title = 'Failed to load data', message = '
         <button type="button" onClick={onRetry} className="mt-3 inline-flex h-9 items-center rounded-lg bg-brand-500 px-4 text-sm font-semibold text-white transition hover:bg-brand-600">Retry</button>
       ) : null}
     </div>
-  );
-}
-
-// Minimal pagination component for external pagination sync
-function DataTablePagination({ page, pageSize, totalItems, onPageChange, onPageSizeChange }: any) {
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const from = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
-  const to = Math.min(page * pageSize, totalItems);
-  return (
-    <nav aria-label="Table pagination" className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
-      <div className="flex items-center gap-2 text-sm text-slate-500">
-        <label htmlFor="datatable-page-size" className="whitespace-nowrap">Rows per page:</label>
-        <select id="datatable-page-size" value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))} className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700 outline-none focus:border-brand-400">
-          {[10, 20, 50, 100].map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <span className="ml-2 whitespace-nowrap">{from}–{to} of {totalItems}</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <button type="button" onClick={() => onPageChange(Math.max(1, page) - 1)} disabled={page <= 1} aria-label="Previous page" className="rounded-lg p-2 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40">←</button>
-        <span className="text-xs font-semibold text-slate-600">{page} / {totalPages}</span>
-        <button type="button" onClick={() => onPageChange(Math.min(totalPages, page) + 1)} disabled={page >= totalPages} aria-label="Next page" className="rounded-lg p-2 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40">→</button>
-      </div>
-    </nav>
   );
 }

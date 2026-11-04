@@ -322,7 +322,7 @@ export function UsersPage() {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-1 gap-5">
       <SectionCard
         title="User Management"
         subtitle="Manage and monitor platform users across schools."
