@@ -4,9 +4,6 @@
 @import '@fontsource/poppins/700.css';
 @import '@fontsource/poppins/800.css';
 @import '@fontsource/poppins/900.css';
-@import '@fontsource/geist-sans/400.css';
-@import '@fontsource/geist-sans/500.css';
-@import '@fontsource/geist-sans/600.css';
 
 @tailwind base;
 @tailwind components;
@@ -284,5 +281,5 @@ html.ss-low-bandwidth video {
 
 /* Signed-in workspace type: set on body so drawers and menus portaled there match. */
 body.ss-admin-ui {
-  font-family: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
 }

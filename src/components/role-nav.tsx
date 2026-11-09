@@ -588,7 +588,7 @@ export function RoleNav({ onNavigate, collapsed }: RoleNavProps) {
       {groupedItems.map((group) => (
         <div key={group.id} className="grid gap-0.5">
           {group.label && !collapsed ? (
-            <p className="px-3 pb-1 text-[11px] font-medium text-white/50">
+            <p className="px-3 pb-1 text-[11px] font-medium text-white/80">
               {t(`navGroup.${group.id}`, { defaultValue: group.label })}
             </p>
           ) : null}
@@ -619,8 +619,8 @@ export function RoleNav({ onNavigate, collapsed }: RoleNavProps) {
                       'group flex w-full items-center gap-2.5 whitespace-nowrap rounded-md py-1.5 text-[13px] font-medium transition duration-150',
                       collapsed ? 'justify-center px-2' : 'px-3',
                       itemIsActive
-                        ? 'bg-white/[0.14] text-white'
-                      : 'text-white/70 hover:bg-white/[0.07] hover:text-white'
+                        ? 'bg-white/[0.22] text-white'
+                      : 'text-white/90 hover:bg-white/[0.12] hover:text-white'
                     );
                   }}
                 >

@@ -6,10 +6,11 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        ui: ['"Geist Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        ui: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
         'dashboard-blue': '#173C7F',
+        sidebar: '#079DE8',
         'content-bg': '#F5F7FA',
         brand: {
           50: '#EFF4FB',

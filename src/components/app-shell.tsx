@@ -153,15 +153,15 @@ export function AppShell() {
         {isStudent ? null : (
           <aside
             className={clsx(
-              'fixed inset-y-0 left-0 z-40 flex w-64 max-w-[100vw] flex-col overflow-hidden bg-brand-900 text-white transition-[width] duration-200 md:sticky md:top-0 md:h-screen md:shrink-0',
+              'fixed inset-y-0 left-0 z-40 flex w-64 max-w-[100vw] flex-col overflow-hidden bg-sidebar text-white transition-[width] duration-200 md:sticky md:top-0 md:h-screen md:shrink-0',
               isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
               isDesktopSidebarVisible ? 'md:translate-x-0 md:w-64' : 'md:translate-x-0 md:w-16'
             )}
             aria-label="Sidebar"
           >
-            <div className={clsx('border-b border-white/10 py-4', sidebarCollapsed ? 'px-3' : 'px-4')}>
+            <div className={clsx('border-b border-white/20 py-4', sidebarCollapsed ? 'px-3' : 'px-4')}>
               <div className="mb-3 flex items-center justify-between md:hidden">
-                <span className="text-sm font-medium text-white/80">{t('shell.navigation')}</span>
+                <span className="text-sm font-medium text-white/90">{t('shell.navigation')}</span>
                 <button
                   type="button"
                   onClick={closeMobileNav}
@@ -182,7 +182,7 @@ export function AppShell() {
                     <p className="truncate text-base font-semibold tracking-tight text-white">
                       Smart School
                     </p>
-                    <p className="truncate text-xs text-white/60">{superAdmin
+                    <p className="truncate text-xs text-white/85">{superAdmin
                         ? 'Platform admin'
                         : schoolAdmin
                           ? 'School admin'
@@ -202,7 +202,7 @@ export function AppShell() {
                       <p className="max-w-40 truncate text-[13px] font-medium text-white">
                         {auth.me.school.displayName}
                       </p>
-                      <p className="mt-0.5 max-w-40 truncate text-[11px] text-white/70">
+                      <p className="mt-0.5 max-w-40 truncate text-[11px] text-white/90">
                         {auth.me.tenant.code}
                       </p>
                     </div>
@@ -212,7 +212,7 @@ export function AppShell() {
                       className={clsx(
                         'mt-3 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium',
                         invoiceStatus === undefined
-                          ? 'bg-white/10 text-white/70'
+                          ? 'bg-white/10 text-white/90'
                           : invoiceStatus === 'PAID'
                             ? 'bg-emerald-400/20 text-emerald-200'
                             : 'bg-amber-400/20 text-amber-200'
@@ -245,14 +245,14 @@ export function AppShell() {
               <RoleNav onNavigate={closeMobileNav} collapsed={sidebarCollapsed} />
             </div>
 
-            <div className={clsx('shrink-0 border-t border-white/10 py-3', sidebarCollapsed ? 'px-2' : 'px-3')}>
+            <div className={clsx('shrink-0 border-t border-white/20 py-3', sidebarCollapsed ? 'px-2' : 'px-3')}>
               <button
                 type="button"
                 onClick={() => void auth.logout()}
                 title={sidebarCollapsed ? t('shell.logout') : undefined}
                 aria-label={sidebarCollapsed ? t('shell.logout') : undefined}
                 className={clsx(
-                  'flex w-full items-center gap-3 whitespace-nowrap rounded-lg py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white',
+                  'flex w-full items-center gap-3 whitespace-nowrap rounded-lg py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white',
                   sidebarCollapsed ? 'justify-center px-2' : 'px-3'
                 )}
               >
