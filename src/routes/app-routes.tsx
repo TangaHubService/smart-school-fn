@@ -22,6 +22,7 @@ import { LoginPage } from '../pages/login-page';
 import { ForgotPasswordPage } from '../pages/forgot-password-page';
 import { ResetPasswordPage } from '../pages/reset-password-page';
 import { OtpVerificationPage } from '../pages/OtpVerificationPage';
+import { SetPasswordPage } from '../pages/set-password-page';
 import { ParentDashboardPage } from '../pages/parent-dashboard-page';
 import { ParentMyChildrenPage } from '../pages/parent-my-children-page';
 import { ParentReportCardsPage } from '../pages/parent-report-cards-page';
@@ -44,15 +45,11 @@ import { AnnouncementCreatePage } from '../pages/announcement-create-page';
 import { AnnouncementDetailPage } from '../pages/announcement-detail-page';
 import { StudentAnnouncementsPage } from '../pages/student-announcements-page';
 import { UnauthorizedPage } from '../pages/unauthorized-page';
-import { AccessControlPage } from '../pages/access-control-page';
 import { AuditLogsPage } from '../pages/audit-logs-page';
-import { NotificationsPage } from '../pages/notifications-page';
 import { ProfilePage } from '../pages/profile-page';
-import { ReportsAnalyticsPage } from '../pages/reports-analytics-page';
 import { SubscriptionManagementPage } from '../pages/subscription-management-page';
 import { SubscriptionInvoicePage } from '../pages/subscription-invoice-page';
 import { SupportCenterPage } from '../pages/support-center-page';
-import { SystemSettingsPage } from '../pages/system-settings-page';
 import { UsersPage } from '../pages/users-page';
 import { StudentAssignmentsPage } from '../pages/student-assignments-page';
 import { ClassChatPage } from '../pages/class-chat-page';
@@ -110,6 +107,7 @@ export function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/otp" element={<OtpVerificationPage />} />
+      <Route path="/set-password" element={<SetPasswordPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
       <Route path="/verify/report-cards/:snapshotId" element={<ReportCardVerificationPage />} />
@@ -129,13 +127,9 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="tenants.read" />}>
             <Route path="/super-admin/schools" element={<TenantsPage />} />
             <Route path="/super-admin/tenants" element={<TenantsPage />} />
-            <Route path="/super-admin/reports" element={<ReportsAnalyticsPage />} />
-            <Route path="/super-admin/settings" element={<SystemSettingsPage />} />
             <Route path="/super-admin/subscriptions" element={<SubscriptionManagementPage />} />
-            <Route path="/super-admin/notifications" element={<NotificationsPage />} />
             <Route path="/super-admin/support" element={<SupportCenterPage />} />
             <Route path="/super-admin/audit-logs" element={<AuditLogsPage />} />
-            <Route path="/super-admin/access-control" element={<AccessControlPage />} />
             <Route path="/super-admin/auditors" element={<AdminAuditorsPage />} />
           </Route>
 

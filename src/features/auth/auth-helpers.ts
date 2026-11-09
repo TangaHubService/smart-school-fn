@@ -56,3 +56,17 @@ export function getDefaultLandingPath(me: MeResponse | null | undefined): string
 
   return '/unauthorized';
 }
+
+/** Where to land after a completed sign-in (login, school choice, 2FA or password change). */
+export function resolvePostAuthPath(roles: string[], returnTo?: string | null): string {
+  if (returnTo) {
+    return returnTo;
+  }
+  if (roles.includes('STUDENT')) {
+    return '/student/dashboard';
+  }
+  if (roles.includes('PUBLIC_LEARNER')) {
+    return '/student/courses';
+  }
+  return '/dashboard';
+}

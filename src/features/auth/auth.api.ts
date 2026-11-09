@@ -1,6 +1,7 @@
 import { apiRequest } from '../../api/client';
 import {
   AmbiguousLoginResponse,
+  AuthStepResponse,
   ForgotPasswordInput,
   LoginFormValues,
   LoginResponse,
@@ -11,15 +12,17 @@ import {
   VerifyOtpInput,
 } from './auth.schema';
 
-export async function loginApi(payload: LoginFormValues): Promise<LoginResponse | AmbiguousLoginResponse> {
-  return apiRequest<LoginResponse | AmbiguousLoginResponse>('/auth/login', {
+export async function loginApi(
+  payload: LoginFormValues
+): Promise<AuthStepResponse | AmbiguousLoginResponse> {
+  return apiRequest<AuthStepResponse | AmbiguousLoginResponse>('/auth/login', {
     method: 'POST',
     body: payload,
   });
 }
 
-export async function selectSchoolApi(payload: SelectSchoolInput): Promise<LoginResponse> {
-  return apiRequest<LoginResponse>('/auth/select-school', {
+export async function selectSchoolApi(payload: SelectSchoolInput): Promise<AuthStepResponse> {
+  return apiRequest<AuthStepResponse>('/auth/select-school', {
     method: 'POST',
     body: payload,
   });
@@ -81,17 +84,35 @@ export async function verifyOtpApi(payload: VerifyOtpInput): Promise<{ message: 
   });
 }
 
-export async function verifyTwoFactorApi(payload: { email: string; otp: string }): Promise<LoginResponse> {
+export async function verifyTwoFactorApi(payload: {
+  challengeToken: string;
+  otp: string;
+}): Promise<LoginResponse> {
   return apiRequest<LoginResponse>('/auth/verify-two-factor', {
     method: 'POST',
     body: payload,
+    skipAuthRefresh: true,
   });
 }
 
-export async function resendTwoFactorOtpApi(payload: { email: string }): Promise<{ message: string }> {
-  return apiRequest<{ message: string }>('/auth/resend-two-factor-otp', {
+export async function resendTwoFactorOtpApi(payload: {
+  challengeToken: string;
+}): Promise<{ message: string; expiresAt: string }> {
+  return apiRequest<{ message: string; expiresAt: string }>('/auth/resend-two-factor-otp', {
     method: 'POST',
     body: payload,
+    skipAuthRefresh: true,
+  });
+}
+
+export async function completePasswordChangeApi(payload: {
+  challengeToken: string;
+  newPassword: string;
+}): Promise<AuthStepResponse> {
+  return apiRequest<AuthStepResponse>('/auth/complete-password-change', {
+    method: 'POST',
+    body: payload,
+    skipAuthRefresh: true,
   });
 }
 

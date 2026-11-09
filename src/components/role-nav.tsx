@@ -15,7 +15,6 @@ import {
   Home,
   LayoutTemplate,
   School,
-  Settings,
   Shapes,
   ShieldCheck,
   Users,
@@ -53,13 +52,13 @@ export const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
 
 /** Sidebar sections for staff roles. Items not listed stay in an unlabeled top section. */
 const NAV_GROUPS: Array<{ id: string; label: string; keys: string[] }> = [
-  { id: 'overview', label: '', keys: ['dashboard', 'reports-analytics'] },
+  { id: 'overview', label: '', keys: ['dashboard'] },
   { id: 'schools', label: 'Schools', keys: ['tenants', 'subscriptions'] },
   { id: 'academics', label: 'Academics', keys: ['years', 'class-management', 'subjects', 'timetable', 'learning-content', 'learning-insights'] },
   { id: 'assessment', label: 'Assessment', keys: ['continuous-assessment', 'exams', 'class-marks', 'conduct-marks-settings', 'report-cards'] },
-  { id: 'people', label: 'People', keys: ['students', 'attendance', 'parents', 'staff', 'users', 'auditor-management', 'access-control'] },
-  { id: 'communication', label: 'Communication', keys: ['announcements', 'notifications', 'support-center'] },
-  { id: 'administration', label: 'Administration', keys: ['setup', 'subscription', 'audit-reports', 'audit-logs', 'system-settings'] },
+  { id: 'people', label: 'People', keys: ['students', 'attendance', 'parents', 'staff', 'users', 'auditor-management'] },
+  { id: 'communication', label: 'Communication', keys: ['announcements', 'support-center'] },
+  { id: 'administration', label: 'Administration', keys: ['setup', 'subscription', 'audit-reports', 'audit-logs'] },
 ];
 
 export const NAV_ITEMS: NavItem[] = [
@@ -107,15 +106,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['school.setup.manage'],
     setupState: 'INCOMPLETE',
-  },
-  {
-    key: 'system-settings',
-    label: 'System Settings',
-    to: '/super-admin/settings',
-    icon: Settings,
-    roles: ['SUPER_ADMIN'],
-    requiredPermissions: ['tenants.read'],
-    setupState: 'ANY',
   },
   {
     key: 'subscription',
@@ -284,33 +274,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ClipboardList,
     roles: ['SCHOOL_ADMIN', 'SUPER_ADMIN'],
     requiredPermissions: ['academic_audit.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'access-control',
-    label: 'Access Control',
-    to: '/super-admin/access-control',
-    icon: ShieldCheck,
-    roles: ['SUPER_ADMIN'],
-    requiredPermissions: ['tenants.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'reports-analytics',
-    label: 'Reports & Analytics',
-    to: '/super-admin/reports',
-    icon: FileBarChart2,
-    roles: ['SUPER_ADMIN'],
-    requiredPermissions: ['tenants.read'],
-    setupState: 'ANY',
-  },
-  {
-    key: 'notifications',
-    label: 'Notifications',
-    to: '/super-admin/notifications',
-    icon: Bell,
-    roles: ['SUPER_ADMIN'],
-    requiredPermissions: ['tenants.read'],
     setupState: 'ANY',
   },
   {

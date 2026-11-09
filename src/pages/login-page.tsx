@@ -7,11 +7,15 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useAuth } from '../features/auth/auth.context';
-import { registerApi, selectSchoolApi } from '../features/auth/auth.api';
+import { registerApi } from '../features/auth/auth.api';
+import { resolvePostAuthPath as resolveLandingPath } from '../features/auth/auth-helpers';
 import {
   type AmbiguousLoginResponse,
+  type AuthStepResponse,
   type LoginFormValues,
   type LoginResponse,
+  isPasswordChangeChallenge,
+  isTwoFactorChallenge,
   type RegisterInput,
   loginFormSchema,
   registerFormSchema,
@@ -91,52 +95,46 @@ export function LoginPage() {
   }, [emailFromQuery, loginForm, registerForm]);
 
   function resolvePostAuthPath(roles: string[]) {
-    if (returnTo) {
-      return returnTo;
-    }
+    return resolveLandingPath(roles, returnTo);
+  }
 
-    if (roles.includes('STUDENT')) {
-      return '/student/dashboard';
+  /** Routes the user to whatever sign-in step the server asked for next. */
+  function goToNextAuthStep(data: AuthStepResponse) {
+    if (isPasswordChangeChallenge(data)) {
+      navigate('/set-password', { replace: true, state: { returnTo } });
+      return;
     }
-
-    if (roles.includes('PUBLIC_LEARNER')) {
-      return '/student/courses';
+    if (isTwoFactorChallenge(data)) {
+      navigate('/otp', { replace: true, state: { returnTo } });
+      return;
     }
-
-    return '/dashboard';
+    navigate(resolvePostAuthPath(data.roles), { replace: true });
   }
 
   const loginMutation = useMutation({
     mutationFn: (payload: LoginFormValues) => auth.login(payload),
     onSuccess: (data) => {
-      if ('requiresTwoFactor' in data && data.requiresTwoFactor) {
-        navigate('/otp', { replace: true });
-        return;
-      }
       if ('requiresSchoolSelection' in data && data.requiresSchoolSelection) {
+        // Keep the password: the school picker re-submits it with the chosen school.
         setMatchedSchools(data.matchedSchools);
-        loginForm.setValue('password', '');
         return;
       }
-      const loginData = data as LoginResponse;
-      navigate(resolvePostAuthPath(loginData.roles), { replace: true });
+      goToNextAuthStep(data as AuthStepResponse);
     },
   });
 
+  // Goes through the auth context so the session (or the next sign-in step) is
+  // actually stored; calling the API directly here used to drop the tokens.
   const selectSchoolMutation = useMutation({
     mutationFn: (payload: { tenantId: string }) =>
-      selectSchoolApi({
+      auth.selectSchool({
         identifier: loginForm.getValues('identifier'),
         password: loginForm.getValues('password'),
         tenantId: payload.tenantId,
       }),
-    onSuccess: (data: LoginResponse) => {
-      if ('requiresTwoFactor' in data && data.requiresTwoFactor) {
-        navigate('/otp', { replace: true });
-        return;
-      }
+    onSuccess: (data) => {
       setMatchedSchools(null);
-      navigate(resolvePostAuthPath(data.roles), { replace: true });
+      goToNextAuthStep(data);
     },
   });
 

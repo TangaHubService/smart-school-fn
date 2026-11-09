@@ -1,9 +1,10 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Mail, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../features/auth/auth.context';
+import { resolvePostAuthPath } from '../features/auth/auth-helpers';
 import { verifyTwoFactorSchema } from '../features/auth/auth.schema';
 import { ApiClientError } from '../types/api';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,8 +14,11 @@ import { useMutation } from '@tanstack/react-query';
 export function OtpVerificationPage() {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? null;
   const { pendingTwoFactor, verifyTwoFactor, resendTwoFactorOtp } = useAuth();
   const [resendTimer, setResendTimer] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(() => secondsUntil(pendingTwoFactor?.expiresAt));
 
   const {
     register,
@@ -35,6 +39,16 @@ export function OtpVerificationPage() {
     }
   }, [pendingTwoFactor, navigate]);
 
+  // Live countdown to the code's expiry (restarts when a new code is sent).
+  useEffect(() => {
+    setSecondsLeft(secondsUntil(pendingTwoFactor?.expiresAt));
+    const interval = setInterval(
+      () => setSecondsLeft(secondsUntil(pendingTwoFactor?.expiresAt)),
+      1000
+    );
+    return () => clearInterval(interval);
+  }, [pendingTwoFactor?.expiresAt]);
+
   useEffect(() => {
     if (resendTimer > 0) {
       const interval = setInterval(() => setResendTimer((rt) => rt - 1), 1000);
@@ -48,11 +62,7 @@ export function OtpVerificationPage() {
       return verifyTwoFactor(otp);
     },
     onSuccess: (data) => {
-      const role = data.roles?.[0] ?? 'USER';
-      if (role === 'SUPER_ADMIN') navigate('/super-admin-dashboard', { replace: true });
-      else if (role === 'ADMIN') navigate('/admin-dashboard', { replace: true });
-      else if (role === 'TEACHER') navigate('/teacher-dashboard', { replace: true });
-      else navigate('/dashboard', { replace: true });
+      navigate(resolvePostAuthPath(data.roles ?? [], returnTo), { replace: true });
     },
   });
 
@@ -160,6 +170,8 @@ export function OtpVerificationPage() {
                     id={`otp-${index}`}
                     type="text"
                     inputMode="numeric"
+                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                    aria-label={`Digit ${index + 1} of 6`}
                     maxLength={1}
                     value={otpDigits[index] || ''}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
@@ -176,9 +188,18 @@ export function OtpVerificationPage() {
               )}
             </div>
 
+            <p className="text-center text-sm text-slate-600" aria-live="polite">
+              {secondsLeft > 0
+                ? `Code expires in ${formatCountdown(secondsLeft)}`
+                : 'This code has expired. Request a new one below.'}
+            </p>
+
             {apiError && (
-              <p className="rounded-2xl border border-red-100 bg-red-50/50 px-4 py-3 text-sm text-red-700 font-medium text-center">
-                {apiError.message}
+              <p
+                role="alert"
+                className="rounded-2xl border border-red-100 bg-red-50/50 px-4 py-3 text-sm text-red-700 font-medium text-center"
+              >
+                {describeOtpError(apiError)}
               </p>
             )}
 
@@ -217,10 +238,10 @@ export function OtpVerificationPage() {
 
             <ul className="space-y-6">
               {[
-                pendingTwoFactor.email
-                  ? `A 6-digit code was sent to ${pendingTwoFactor.email}`
+                pendingTwoFactor.destination
+                  ? `A 6-digit code was sent to ${pendingTwoFactor.destination}`
                   : 'A 6-digit verification code has been sent to your email',
-                'Enter the code within the time limit displayed above',
+                'Enter the code before the timer on the left runs out',
                 'Do not share this code with anyone',
                 'If you did not receive the email, check your spam folder or request a new code',
               ].map((tip, i) => (
@@ -237,4 +258,30 @@ export function OtpVerificationPage() {
       </div>
     </main>
   );
+}
+
+function secondsUntil(iso: string | undefined): number {
+  if (!iso) return 0;
+  return Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 1000));
+}
+
+function formatCountdown(totalSeconds: number): string {
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
+}
+
+function describeOtpError(error: ApiClientError): string {
+  switch (error.code) {
+    case 'AUTH_INVALID_OTP':
+      return 'That code is not correct or has expired. Check the latest email and try again.';
+    case 'AUTH_OTP_ATTEMPT_LIMIT':
+      return 'Too many wrong codes. Request a new code, or sign in again.';
+    case 'AUTH_CHALLENGE_INVALID':
+      return 'This sign-in has expired. Go back and sign in again.';
+    case 'RATE_LIMITED':
+      return 'Too many attempts. Please wait a few minutes and try again.';
+    case 'VALIDATION_ERROR':
+      return 'Enter the 6-digit code from your email.';
+    default:
+      return error.message;
+  }
 }

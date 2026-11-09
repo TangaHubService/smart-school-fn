@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 export const loginFormSchema = z.object({
   identifier: z.string().trim().toLowerCase().min(1, 'Email or username is required'),
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  // Presence only: starter passwords (student codes) may be shorter than 8 characters.
+  password: z.string().min(1, 'Password is required').max(128),
 });
 
 export const registerFormSchema = z
@@ -87,6 +88,52 @@ export interface LoginResponse {
   permissions: string[];
 }
 
+/** Privileged accounts: a code was emailed; finish with verifyTwoFactor. */
+export interface TwoFactorChallengeResponse {
+  requiresTwoFactor: true;
+  challengeToken: string;
+  expiresAt: string;
+  destination: string;
+}
+
+/** Starter credential (password = username / student code): a new password must be set. */
+export interface PasswordChangeChallengeResponse {
+  requiresPasswordChange: true;
+  challengeToken: string;
+}
+
+export type AuthStepResponse =
+  | LoginResponse
+  | TwoFactorChallengeResponse
+  | PasswordChangeChallengeResponse;
+
+export function isTwoFactorChallenge(value: unknown): value is TwoFactorChallengeResponse {
+  return Boolean(value && typeof value === 'object' && 'requiresTwoFactor' in value);
+}
+
+export function isPasswordChangeChallenge(
+  value: unknown
+): value is PasswordChangeChallengeResponse {
+  return Boolean(value && typeof value === 'object' && 'requiresPasswordChange' in value);
+}
+
+export const completePasswordChangeSchema = z
+  .object({
+    newPassword: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(128)
+      .regex(/[A-Za-z]/, 'Include at least one letter')
+      .regex(/[0-9]/, 'Include at least one number'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+
+export type CompletePasswordChangeValues = z.infer<typeof completePasswordChangeSchema>;
+
 export interface AmbiguousLoginResponse {
   requiresSchoolSelection: true;
   matchedSchools: Array<{
@@ -98,7 +145,7 @@ export interface AmbiguousLoginResponse {
 
 export const selectSchoolSchema = z.object({
   identifier: z.string().trim().toLowerCase(),
-  password: z.string().min(8),
+  password: z.string().min(1),
   tenantId: z.string().uuid(),
 });
 
