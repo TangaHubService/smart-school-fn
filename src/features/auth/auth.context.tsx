@@ -6,12 +6,15 @@ import {
   loginApi,
   logoutApi,
   meApi,
+  resendTwoFactorOtpApi,
   selectSchoolApi,
+  verifyTwoFactorApi,
 } from './auth.api';
 import {
   AmbiguousLoginResponse,
   AuthStepResponse,
   isPasswordChangeChallenge,
+  isTwoFactorChallenge,
   LoginFormValues,
   LoginResponse,
   MeResponse,
@@ -27,6 +30,12 @@ import {
 } from './auth.session';
 
 /** A sign-in that still needs one more step before a session exists. */
+export interface PendingTwoFactor {
+  challengeToken: string;
+  expiresAt: string;
+  destination: string;
+}
+
 export interface PendingPasswordChange {
   challengeToken: string;
 }
@@ -37,12 +46,16 @@ interface AuthContextValue {
   me: MeResponse | null;
   isAuthenticated: boolean;
   isLoadingSession: boolean;
+  pendingTwoFactor: PendingTwoFactor | null;
   pendingPasswordChange: PendingPasswordChange | null;
   login: (payload: LoginFormValues) => Promise<AuthStepResponse | AmbiguousLoginResponse>;
   selectSchool: (payload: SelectSchoolInput) => Promise<AuthStepResponse>;
   completePasswordChange: (newPassword: string) => Promise<AuthStepResponse>;
   setSessionTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
   logout: () => Promise<void>;
+  setPendingTwoFactor: (pending: PendingTwoFactor | null) => void;
+  verifyTwoFactor: (otp: string) => Promise<LoginResponse>;
+  resendTwoFactorOtp: () => Promise<{ message: string; expiresAt: string }>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -53,6 +66,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [isBootstrappingSession, setIsBootstrappingSession] = useState(
     () => !getSessionTokens().accessToken && Boolean(getSessionTokens().refreshToken)
   );
+  const [pendingTwoFactor, setPendingTwoFactor] = useState<PendingTwoFactor | null>(null);
   const [pendingPasswordChange, setPendingPasswordChange] = useState<PendingPasswordChange | null>(
     null
   );
@@ -107,13 +121,24 @@ export function AuthProvider({ children }: PropsWithChildren) {
   function applyAuthStep<T extends AuthStepResponse | AmbiguousLoginResponse>(result: T): T {
     queryClient.removeQueries({ queryKey: ['me'] });
     if (isPasswordChangeChallenge(result)) {
+      setPendingTwoFactor(null);
       setPendingPasswordChange({ challengeToken: result.challengeToken });
+      return result;
+    }
+    if (isTwoFactorChallenge(result)) {
+      setPendingPasswordChange(null);
+      setPendingTwoFactor({
+        challengeToken: result.challengeToken,
+        expiresAt: result.expiresAt,
+        destination: result.destination,
+      });
       return result;
     }
     if ('requiresSchoolSelection' in result && result.requiresSchoolSelection) {
       return result;
     }
     const loginResult = result as LoginResponse;
+    setPendingTwoFactor(null);
     setPendingPasswordChange(null);
     setTokens({
       accessToken: loginResult.accessToken,
@@ -160,7 +185,24 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     clearSession();
+    setPendingTwoFactor(null);
     setPendingPasswordChange(null);
+  }
+
+  async function verifyTwoFactor(otp: string): Promise<LoginResponse> {
+    if (!pendingTwoFactor) throw new Error('No pending 2FA');
+    const result = await verifyTwoFactorApi({
+      challengeToken: pendingTwoFactor.challengeToken,
+      otp,
+    });
+    return applyAuthStep(result);
+  }
+
+  async function resendTwoFactorOtp(): Promise<{ message: string; expiresAt: string }> {
+    if (!pendingTwoFactor) throw new Error('No pending 2FA');
+    const result = await resendTwoFactorOtpApi({ challengeToken: pendingTwoFactor.challengeToken });
+    setPendingTwoFactor({ ...pendingTwoFactor, expiresAt: result.expiresAt });
+    return result;
   }
 
   const value = useMemo<AuthContextValue>(
@@ -170,12 +212,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
       me: meQuery.data ?? null,
       isAuthenticated: Boolean(accessToken && meQuery.data),
       isLoadingSession: (Boolean(accessToken) && meQuery.isLoading) || isBootstrappingSession,
+      pendingTwoFactor,
       pendingPasswordChange,
       login,
       selectSchool,
       completePasswordChange,
       setSessionTokens: handleSetSessionTokens,
       logout,
+      setPendingTwoFactor,
+      verifyTwoFactor,
+      resendTwoFactorOtp,
     }),
     [
       accessToken,
@@ -183,6 +229,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       meQuery.data,
       meQuery.isLoading,
       isBootstrappingSession,
+      pendingTwoFactor,
       pendingPasswordChange,
     ]
   );

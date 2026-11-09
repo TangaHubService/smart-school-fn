@@ -21,6 +21,7 @@ import { ExamsPage } from '../pages/exams-page';
 import { LoginPage } from '../pages/login-page';
 import { ForgotPasswordPage } from '../pages/forgot-password-page';
 import { ResetPasswordPage } from '../pages/reset-password-page';
+import { OtpVerificationPage } from '../pages/OtpVerificationPage';
 import { SetPasswordPage } from '../pages/set-password-page';
 import { ParentDashboardPage } from '../pages/parent-dashboard-page';
 import { ParentMyChildrenPage } from '../pages/parent-my-children-page';
@@ -105,6 +106,7 @@ export function AppRoutes() {
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/otp" element={<OtpVerificationPage />} />
       <Route path="/set-password" element={<SetPasswordPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />

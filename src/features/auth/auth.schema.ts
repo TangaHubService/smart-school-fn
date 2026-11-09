@@ -88,6 +88,14 @@ export interface LoginResponse {
   permissions: string[];
 }
 
+/** Everyone except students and parents: a code was emailed; finish with verifyTwoFactor. */
+export interface TwoFactorChallengeResponse {
+  requiresTwoFactor: true;
+  challengeToken: string;
+  expiresAt: string;
+  destination: string;
+}
+
 /** Starter credential (password = username / student code): a new password must be set. */
 export interface PasswordChangeChallengeResponse {
   requiresPasswordChange: true;
@@ -96,7 +104,12 @@ export interface PasswordChangeChallengeResponse {
 
 export type AuthStepResponse =
   | LoginResponse
+  | TwoFactorChallengeResponse
   | PasswordChangeChallengeResponse;
+
+export function isTwoFactorChallenge(value: unknown): value is TwoFactorChallengeResponse {
+  return Boolean(value && typeof value === 'object' && 'requiresTwoFactor' in value);
+}
 
 export function isPasswordChangeChallenge(
   value: unknown
@@ -142,6 +155,10 @@ export const forgotPasswordSchema = z.object({
 });
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const verifyTwoFactorSchema = z.object({
+  otp: z.string().length(6, 'OTP must be 6 digits'),
+});
 
 export const verifyOtpSchema = z.object({
   email: z.string().trim().email(),
