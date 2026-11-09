@@ -11,7 +11,6 @@ import { resolvePostAuthPath } from '../features/auth/auth-helpers';
 import {
   completePasswordChangeSchema,
   isPasswordChangeChallenge,
-  isTwoFactorChallenge,
   type CompletePasswordChangeValues,
 } from '../features/auth/auth.schema';
 import { ApiClientError } from '../types/api';
@@ -44,10 +43,6 @@ export function SetPasswordPage() {
       completePasswordChange(values.newPassword),
     onSuccess: (data) => {
       if (isPasswordChangeChallenge(data)) return;
-      if (isTwoFactorChallenge(data)) {
-        navigate('/otp', { replace: true, state: { returnTo } });
-        return;
-      }
       navigate(resolvePostAuthPath(data.roles, returnTo), { replace: true });
     },
   });

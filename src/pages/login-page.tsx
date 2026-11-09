@@ -15,7 +15,6 @@ import {
   type LoginFormValues,
   type LoginResponse,
   isPasswordChangeChallenge,
-  isTwoFactorChallenge,
   type RegisterInput,
   loginFormSchema,
   registerFormSchema,
@@ -102,10 +101,6 @@ export function LoginPage() {
   function goToNextAuthStep(data: AuthStepResponse) {
     if (isPasswordChangeChallenge(data)) {
       navigate('/set-password', { replace: true, state: { returnTo } });
-      return;
-    }
-    if (isTwoFactorChallenge(data)) {
-      navigate('/otp', { replace: true, state: { returnTo } });
       return;
     }
     navigate(resolvePostAuthPath(data.roles), { replace: true });
