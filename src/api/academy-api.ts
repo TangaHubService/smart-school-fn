@@ -24,7 +24,7 @@ export interface AcademyCatalogSubject {
   id: string;
   name: string;
   courseCount: number;
-  courses: Array<{ id: string; title: string }>;
+  courses?: Array<{ id: string; title: string }>;
 }
 
 export interface AcademyCatalogClassRoom {
