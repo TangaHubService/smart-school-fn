@@ -274,7 +274,14 @@ export function PublicClassPage() {
   }
 
   const courseTotal =
-    located?.room.subjects.reduce((sum, subject) => sum + subject.courseCount, 0) ?? 0;
+    located?.room.subjects.reduce(
+      (sum, subject) => sum + (subject.courseCount ?? subject.courses?.length ?? 0),
+      0
+    ) ?? 0;
+  // Older API responses may omit `courses` per subject; only list what was actually sent.
+  const listedCourseCount =
+    located?.room.subjects.reduce((sum, subject) => sum + (subject.courses?.length ?? 0), 0) ??
+    0;
 
   return (
     <main className="min-h-[60vh] bg-slate-50">
@@ -322,13 +329,13 @@ export function PublicClassPage() {
                 <span className="text-slate-500">{located.year.name}</span>
               </div>
               <h2 className="mt-8 text-xl font-semibold tracking-tight text-slate-900">Courses</h2>
-              {courseTotal ? (
+              {listedCourseCount ? (
                 <ul
                   className="mt-4 grid gap-4 sm:grid-cols-2"
                   aria-label={`Courses in ${located.room.name}`}
                 >
                   {located.room.subjects.flatMap((subject) =>
-                    subject.courses.map((course) => (
+                    (subject.courses ?? []).map((course) => (
                       <li
                         key={course.id}
                         className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-[0_1px_3px_rgba(15,39,72,0.08)]"
