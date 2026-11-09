@@ -112,6 +112,69 @@ export interface AcademyCatalogTree {
   academicYears: AcademyCatalogAcademicYear[];
 }
 
+/**
+ * The catalog API groups courses by academic year, but a public visitor
+ * browses classes, not years. Merge every year into one list of levels so no
+ * published course is hidden just because it belongs to a non-current year.
+ * Levels, classes and subjects are merged by id; courses are de-duplicated.
+ */
+export function mergeCatalogYears(
+  academicYears: AcademyCatalogAcademicYear[]
+): AcademyCatalogGradeLevel[] {
+  const grades = new Map<string, AcademyCatalogGradeLevel>();
+  const ordered = [
+    ...academicYears.filter((year) => year.isCurrent),
+    ...academicYears.filter((year) => !year.isCurrent),
+  ];
+
+  for (const year of ordered) {
+    for (const grade of year.gradeLevels) {
+      const gradeNode = grades.get(grade.id) ?? { ...grade, classRooms: [] };
+      grades.set(grade.id, gradeNode);
+
+      for (const room of grade.classRooms) {
+        let roomNode = gradeNode.classRooms.find((item) => item.id === room.id);
+        if (!roomNode) {
+          roomNode = { ...room, subjects: [] };
+          gradeNode.classRooms.push(roomNode);
+        }
+        roomNode.thumbnail = roomNode.thumbnail || room.thumbnail;
+        roomNode.enrolledCount = Math.max(roomNode.enrolledCount ?? 0, room.enrolledCount ?? 0);
+
+        for (const subject of room.subjects) {
+          let subjectNode = roomNode.subjects.find((item) => item.id === subject.id);
+          if (!subjectNode) {
+            subjectNode = { ...subject, courseCount: 0, courses: [] };
+            roomNode.subjects.push(subjectNode);
+          }
+          const known = new Set((subjectNode.courses ?? []).map((course) => course.id));
+          const added = (subject.courses ?? []).filter((course) => !known.has(course.id));
+          subjectNode.courses = [...(subjectNode.courses ?? []), ...added].sort((a, b) =>
+            a.title.localeCompare(b.title)
+          );
+          // Older API responses send only a count; keep the larger figure.
+          subjectNode.courseCount = Math.max(
+            subjectNode.courses.length,
+            subjectNode.courseCount + (subject.courses ? 0 : subject.courseCount)
+          );
+        }
+      }
+    }
+  }
+
+  return [...grades.values()]
+    .map((grade) => ({
+      ...grade,
+      classRooms: [...grade.classRooms]
+        .map((room) => ({
+          ...room,
+          subjects: [...room.subjects].sort((a, b) => a.name.localeCompare(b.name)),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => a.rank - b.rank);
+}
+
 export interface ClassEnrollment {
   id: string;
   classRoomId: string;

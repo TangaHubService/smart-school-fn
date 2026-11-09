@@ -76,6 +76,10 @@ const classRoomSchema = z.object({
   code: z.string().trim().min(1),
   name: z.string().trim().min(1),
   capacity: z.coerce.number().int().min(1).optional(),
+  // Public academy school only: how the class is sold in the public catalog.
+  price: z.coerce.number().min(0, 'Price cannot be negative').optional(),
+  thumbnail: z.union([z.string().trim().url('Enter a full image URL'), z.literal('')]).optional(),
+  listedInPublicCatalog: z.boolean().optional(),
 });
 
 const subjectSchema = z.object({
@@ -124,6 +128,9 @@ const classDefaults: ClassRoomForm = {
   code: 'G1-A',
   name: 'Grade 1 A',
   capacity: 40,
+  price: 0,
+  thumbnail: '',
+  listedInPublicCatalog: true,
 };
 
 const subjectDefaults: SubjectForm = {
@@ -143,6 +150,26 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const canManageSubjects = hasPermission(auth.me, 'subject.manage');
+  // Only the public academy school sells classes, so only it sees catalog fields.
+  const isAcademySchool = Boolean(auth.me?.tenant.isAcademyCatalog);
+
+  /** Request body for the class API; catalog fields are sent only by the academy school. */
+  function classPayload(values: ClassRoomForm) {
+    const base = {
+      gradeLevelId: values.gradeLevelId,
+      code: values.code,
+      name: values.name,
+      capacity: Number.isFinite(values.capacity) ? values.capacity : undefined,
+    };
+    if (!isAcademySchool) return base;
+    return {
+      ...base,
+      price: Number.isFinite(values.price) ? values.price : 0,
+      listedInPublicCatalog: values.listedInPublicCatalog ?? true,
+      // An empty field means "no picture" (cleared on edit, omitted on create).
+      thumbnail: values.thumbnail?.trim() || null,
+    };
+  }
 
   const [yearFilter, setYearFilter] = useState('');
   const [termFilter, setTermFilter] = useState('');
@@ -311,7 +338,12 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
   });
 
   const createClassMutation = useMutation({
-    mutationFn: (values: ClassRoomForm) => createClassRoomApi(auth.accessToken!, values),
+    mutationFn: (values: ClassRoomForm) => {
+      const { thumbnail, ...payload } = classPayload(values) as ReturnType<typeof classPayload> & {
+        thumbnail?: string | null;
+      };
+      return createClassRoomApi(auth.accessToken!, thumbnail ? { ...payload, thumbnail } : payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['class-rooms'] });
       showToast({ type: 'success', title: 'Class created' });
@@ -320,7 +352,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
 
   const updateClassMutation = useMutation({
     mutationFn: ({ id, values }: { id: string; values: ClassRoomForm }) =>
-      updateClassRoomApi(auth.accessToken!, id, values),
+      updateClassRoomApi(auth.accessToken!, id, classPayload(values)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['class-rooms'] });
       showToast({ type: 'success', title: 'Class updated' });
@@ -616,6 +648,9 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
       code: room.code,
       name: room.name,
       capacity: room.capacity ?? undefined,
+      price: Number(room.price ?? 0),
+      thumbnail: room.thumbnail ?? '',
+      listedInPublicCatalog: room.listedInPublicCatalog ?? true,
     });
     setIsClassModalOpen(true);
   }
@@ -1411,6 +1446,46 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             {...classForm.register('capacity', { valueAsNumber: true })}
           />
         </label>
+
+        {isAcademySchool ? (
+          <fieldset className="grid gap-3 rounded-lg border border-brand-100 bg-brand-50/50 p-4">
+            <legend className="px-1 text-sm font-semibold text-slate-900">Public academy</legend>
+            <label className="flex items-start gap-3 text-sm text-slate-800">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-brand-300 text-brand-600"
+                {...classForm.register('listedInPublicCatalog')}
+              />
+              <span>
+                <span className="block font-semibold">Show this class in the public academy</span>
+                <span className="block text-xs text-slate-500">
+                  Visitors can see its courses and enroll. Untick to keep it private.
+                </span>
+              </span>
+            </label>
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
+              Class price (RWF)
+              <input
+                type="number"
+                min={0}
+                step={100}
+                className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm"
+                {...classForm.register('price', { valueAsNumber: true })}
+              />
+            </label>
+            <FieldError message={classForm.formState.errors.price?.message} />
+            <label className="grid gap-1 text-sm font-semibold text-slate-800">
+              Picture URL <span className="font-normal text-slate-500">(optional)</span>
+              <input
+                type="url"
+                placeholder="https://…"
+                className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm"
+                {...classForm.register('thumbnail')}
+              />
+            </label>
+            <FieldError message={classForm.formState.errors.thumbnail?.message} />
+          </fieldset>
+        ) : null}
       </DrawerForm>
 
       <DrawerForm

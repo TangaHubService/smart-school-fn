@@ -8,6 +8,7 @@ import {
   ACADEMY_PLANS,
   isPurchasablePlanId,
   PLAN_DESCRIPTIONS,
+  mergeCatalogYears,
   splitCatalogGradesIntoBands,
   type AcademyPlanOption,
 } from '../api/academy-api';
@@ -193,22 +194,23 @@ export function PublicClassPage() {
     };
   }, [paypackRef, queryClient, showToast]);
 
-  const academicYears = catalogQuery.data?.academicYears ?? [];
+  const academicYears = catalogQuery.data?.academicYears;
 
+  // Courses for one class can be spread over several academic years; show them all.
   const located = useMemo(() => {
-    const orderedYears = [
-      ...academicYears.filter((year) => year.isCurrent),
-      ...academicYears.filter((year) => !year.isCurrent),
-    ];
-    for (const year of orderedYears) {
-      for (const grade of year.gradeLevels) {
-        const room = grade.classRooms.find((item) => item.id === classId);
-        if (room) {
-          const bands = splitCatalogGradesIntoBands(year.gradeLevels);
-          const band =
-            bands.find((item) => item.grades.some((g) => g.id === grade.id)) ?? null;
-          return { year, grade, band, room };
-        }
+    const years = academicYears ?? [];
+    const grades = mergeCatalogYears(years);
+    for (const grade of grades) {
+      const room = grade.classRooms.find((item) => item.id === classId);
+      if (room) {
+        const bands = splitCatalogGradesIntoBands(grades);
+        const band = bands.find((item) => item.grades.some((g) => g.id === grade.id)) ?? null;
+        const yearNames = years
+          .filter((year) =>
+            year.gradeLevels.some((g) => g.classRooms.some((item) => item.id === classId))
+          )
+          .map((year) => year.name);
+        return { grade, band, room, yearLabel: yearNames.join(' · ') };
       }
     }
     return null;
@@ -326,7 +328,7 @@ export function PublicClassPage() {
                   <Users className="h-4 w-4 text-brand-500" aria-hidden="true" />
                   {(located.room.enrolledCount ?? 0).toLocaleString()} enrolled
                 </span>
-                <span className="text-slate-500">{located.year.name}</span>
+                <span className="text-slate-500">{located.yearLabel}</span>
               </div>
               <h2 className="mt-8 text-xl font-semibold tracking-tight text-slate-900">Courses</h2>
               {listedCourseCount ? (

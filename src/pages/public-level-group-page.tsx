@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BookOpen, Users } from 'lucide-react';
 
-import { academyApi, splitCatalogGradesIntoBands } from '../api/academy-api';
+import { academyApi, mergeCatalogYears, splitCatalogGradesIntoBands } from '../api/academy-api';
 import { CardGridSkeleton } from '../components/skeleton-loader';
 import {
   CatalogMessage,
@@ -23,11 +23,10 @@ export function PublicLevelGroupPage() {
     staleTime: 60_000,
   });
 
-  const academicYears = catalogQuery.data?.academicYears ?? [];
-  const activeYear = academicYears.find((year) => year.isCurrent) ?? academicYears[0];
+  const academicYears = catalogQuery.data?.academicYears;
   const bands = useMemo(
-    () => splitCatalogGradesIntoBands(activeYear?.gradeLevels ?? []),
-    [activeYear]
+    () => splitCatalogGradesIntoBands(mergeCatalogYears(academicYears ?? [])),
+    [academicYears]
   );
   const band = bands.find((item) => item.key === bandKey) ?? null;
 

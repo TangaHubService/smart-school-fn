@@ -3,7 +3,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BookOpen, Users } from 'lucide-react';
 
-import { academyApi, splitCatalogGradesIntoBands } from '../api/academy-api';
+import { academyApi, mergeCatalogYears, splitCatalogGradesIntoBands } from '../api/academy-api';
 import { CardGridSkeleton } from '../components/skeleton-loader';
 import {
   CatalogMessage,
@@ -23,22 +23,15 @@ export function PublicGradePage() {
     staleTime: 60_000,
   });
 
-  const academicYears = catalogQuery.data?.academicYears ?? [];
+  const academicYears = catalogQuery.data?.academicYears;
 
   const located = useMemo(() => {
-    const orderedYears = [
-      ...academicYears.filter((year) => year.isCurrent),
-      ...academicYears.filter((year) => !year.isCurrent),
-    ];
-    for (const year of orderedYears) {
-      const grade = year.gradeLevels.find((item) => item.id === gradeId);
-      if (grade) {
-        const bands = splitCatalogGradesIntoBands(year.gradeLevels);
-        const band = bands.find((item) => item.grades.some((g) => g.id === gradeId)) ?? null;
-        return { year, grade, band };
-      }
-    }
-    return null;
+    const grades = mergeCatalogYears(academicYears ?? []);
+    const grade = grades.find((item) => item.id === gradeId);
+    if (!grade) return null;
+    const bands = splitCatalogGradesIntoBands(grades);
+    const band = bands.find((item) => item.grades.some((g) => g.id === gradeId)) ?? null;
+    return { grade, band };
   }, [academicYears, gradeId]);
 
   if (located?.grade.classRooms.length === 1) {
