@@ -480,7 +480,7 @@ export function listGradeLevelsApi(accessToken: string) {
 
 export function createGradeLevelApi(
   accessToken: string,
-  payload: { code: string; name: string; rank: number }
+  payload: { code: string; name: string; rank: number; levelGroupId?: string | null }
 ) {
   return apiRequest('/grade-levels', {
     method: 'POST',
@@ -499,13 +499,60 @@ export function deleteGradeLevelApi(accessToken: string, id: string) {
 export function updateGradeLevelApi(
   accessToken: string,
   id: string,
-  payload: { code?: string; name?: string; rank?: number; isActive?: boolean }
+  payload: {
+    code?: string;
+    name?: string;
+    rank?: number;
+    levelGroupId?: string | null;
+    isActive?: boolean;
+  }
 ) {
   return apiRequest(`/grade-levels/${id}`, {
     method: 'PATCH',
     accessToken,
     body: payload,
   });
+}
+
+/** A school-defined group of grade levels, e.g. "Lower Primary". */
+export interface LevelGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  thumbnail: string | null;
+  rank: number;
+  gradeLevels?: Array<{ id: string; name: string; rank: number }>;
+}
+
+export interface LevelGroupPayload {
+  name: string;
+  description?: string | null;
+  thumbnail?: string | null;
+  rank?: number;
+}
+
+export function listLevelGroupsApi(accessToken: string) {
+  return apiRequest<LevelGroup[]>('/level-groups', { method: 'GET', accessToken });
+}
+
+export function createLevelGroupApi(accessToken: string, payload: LevelGroupPayload) {
+  return apiRequest<LevelGroup>('/level-groups', { method: 'POST', accessToken, body: payload });
+}
+
+export function updateLevelGroupApi(
+  accessToken: string,
+  id: string,
+  payload: Partial<LevelGroupPayload>
+) {
+  return apiRequest<LevelGroup>(`/level-groups/${id}`, {
+    method: 'PATCH',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function deleteLevelGroupApi(accessToken: string, id: string) {
+  return apiRequest(`/level-groups/${id}`, { method: 'DELETE', accessToken });
 }
 
 export function listClassRoomsApi(accessToken: string) {

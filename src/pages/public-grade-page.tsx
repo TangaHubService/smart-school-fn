@@ -24,15 +24,16 @@ export function PublicGradePage() {
   });
 
   const academicYears = catalogQuery.data?.academicYears;
+  const levelGroups = catalogQuery.data?.levelGroups;
 
   const located = useMemo(() => {
     const grades = mergeCatalogYears(academicYears ?? []);
     const grade = grades.find((item) => item.id === gradeId);
     if (!grade) return null;
-    const bands = splitCatalogGradesIntoBands(grades);
+    const bands = splitCatalogGradesIntoBands(grades, levelGroups);
     const band = bands.find((item) => item.grades.some((g) => g.id === gradeId)) ?? null;
     return { grade, band };
-  }, [academicYears, gradeId]);
+  }, [academicYears, levelGroups, gradeId]);
 
   if (located?.grade.classRooms.length === 1) {
     return <Navigate to={`/programs/class/${located.grade.classRooms[0].id}`} replace />;

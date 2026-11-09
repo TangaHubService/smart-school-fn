@@ -195,6 +195,7 @@ export function PublicClassPage() {
   }, [paypackRef, queryClient, showToast]);
 
   const academicYears = catalogQuery.data?.academicYears;
+  const levelGroups = catalogQuery.data?.levelGroups;
 
   // Courses for one class can be spread over several academic years; show them all.
   const located = useMemo(() => {
@@ -203,7 +204,7 @@ export function PublicClassPage() {
     for (const grade of grades) {
       const room = grade.classRooms.find((item) => item.id === classId);
       if (room) {
-        const bands = splitCatalogGradesIntoBands(grades);
+        const bands = splitCatalogGradesIntoBands(grades, levelGroups);
         const band = bands.find((item) => item.grades.some((g) => g.id === grade.id)) ?? null;
         const yearNames = years
           .filter((year) =>
@@ -214,7 +215,7 @@ export function PublicClassPage() {
       }
     }
     return null;
-  }, [academicYears, classId]);
+  }, [academicYears, levelGroups, classId]);
 
   const currentSubscription = subscriptionQuery.data?.subscription ?? null;
   const hasActivePlan =

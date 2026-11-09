@@ -24,9 +24,10 @@ export function PublicLevelGroupPage() {
   });
 
   const academicYears = catalogQuery.data?.academicYears;
+  const levelGroups = catalogQuery.data?.levelGroups;
   const bands = useMemo(
-    () => splitCatalogGradesIntoBands(mergeCatalogYears(academicYears ?? [])),
-    [academicYears]
+    () => splitCatalogGradesIntoBands(mergeCatalogYears(academicYears ?? []), levelGroups),
+    [academicYears, levelGroups]
   );
   const band = bands.find((item) => item.key === bandKey) ?? null;
 

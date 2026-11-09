@@ -12,11 +12,12 @@ import {
   Search,
   Sparkles,
 } from 'lucide-react';
-import { ReactNode, useMemo, useRef, useState } from 'react';
+import { KeyboardEvent, ReactNode, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 
+import { LevelGroupsPanel, useLevelGroups } from '../components/academics/level-groups-panel';
 import { ConfirmDrawer } from '../components/confirm-drawer';
 import { AppDrawer } from '../components/drawer';
 import { DrawerForm } from '../components/drawer-form';
@@ -69,6 +70,8 @@ const gradeLevelSchema = z.object({
   code: z.string().trim().min(1),
   name: z.string().trim().min(2),
   rank: z.coerce.number().int().min(1),
+  // Public academy school only: the group ("Lower Primary"…) this grade belongs to.
+  levelGroupId: z.string().optional(),
 });
 
 const classRoomSchema = z.object({
@@ -121,6 +124,7 @@ const gradeLevelDefaults: GradeLevelForm = {
   code: 'G1',
   name: 'Grade 1',
   rank: 1,
+  levelGroupId: '',
 };
 
 const classDefaults: ClassRoomForm = {
@@ -152,6 +156,15 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
   const canManageSubjects = hasPermission(auth.me, 'subject.manage');
   // Only the public academy school sells classes, so only it sees catalog fields.
   const isAcademySchool = Boolean(auth.me?.tenant.isAcademyCatalog);
+  const levelGroupsQuery = useLevelGroups(isAcademySchool);
+  const levelGroups = levelGroupsQuery.data ?? [];
+  const [classTab, setClassTab] = useState<ClassTab>('grades');
+
+  function gradePayload(values: GradeLevelForm) {
+    const base = { code: values.code, name: values.name, rank: values.rank };
+    if (!isAcademySchool) return base;
+    return { ...base, levelGroupId: values.levelGroupId || null };
+  }
 
   /** Request body for the class API; catalog fields are sent only by the academy school. */
   function classPayload(values: ClassRoomForm) {
@@ -321,7 +334,8 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
   });
 
   const createGradeMutation = useMutation({
-    mutationFn: (values: GradeLevelForm) => createGradeLevelApi(auth.accessToken!, values),
+    mutationFn: (values: GradeLevelForm) =>
+      createGradeLevelApi(auth.accessToken!, gradePayload(values)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grade-levels'] });
       showToast({ type: 'success', title: 'Grade level created' });
@@ -330,7 +344,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
 
   const updateGradeMutation = useMutation({
     mutationFn: ({ id, values }: { id: string; values: GradeLevelForm }) =>
-      updateGradeLevelApi(auth.accessToken!, id, values),
+      updateGradeLevelApi(auth.accessToken!, id, gradePayload(values)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grade-levels'] });
       showToast({ type: 'success', title: 'Grade level updated' });
@@ -608,6 +622,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
       code: level.code,
       name: level.name,
       rank: Number(level.rank),
+      levelGroupId: level.levelGroupId ?? '',
     });
     setIsGradeModalOpen(true);
   }
@@ -788,7 +803,22 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
           </>
       ) : null}
 
-      {showClasses ? (
+      {showClasses && isAcademySchool ? (
+        <ClassManagementTabs value={classTab} onChange={setClassTab} />
+      ) : null}
+
+      {showClasses && isAcademySchool && classTab === 'groups' ? (
+        <div role="tabpanel" id="class-tab-panel-groups" aria-labelledby="class-tab-groups">
+          <LevelGroupsPanel />
+        </div>
+      ) : null}
+
+      {showClasses && (!isAcademySchool || classTab === 'grades') ? (
+        <div
+          id="class-tab-panel-grades"
+          role={isAcademySchool ? 'tabpanel' : undefined}
+          aria-labelledby={isAcademySchool ? 'class-tab-grades' : undefined}
+        >
         <SectionCard
           title="Grades and classes"
           subtitle="Browse grade levels, open a grade to see its classes, then open a class to see subjects and courses."
@@ -870,7 +900,11 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
                             key={level.id}
                             iconIndex={index}
                             title={level.name}
-                            code={level.code}
+                            code={
+                              level.levelGroup?.name
+                                ? `${level.code} · ${level.levelGroup.name}`
+                                : level.code
+                            }
                             countLabel={`${rooms.length} ${rooms.length === 1 ? 'class' : 'classes'}`}
                             emptyHint={
                               rooms.length
@@ -1094,6 +1128,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             </>
           ) : null}
         </SectionCard>
+        </div>
       ) : null}
 
       {showSubjects ? (
@@ -1362,6 +1397,27 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             {...gradeForm.register('rank', { valueAsNumber: true })}
           />
         </label>
+        {isAcademySchool ? (
+          <label className="grid gap-1 text-sm font-semibold text-slate-800">
+            Level group
+            <select
+              className="rounded-lg border border-brand-200 px-3 py-2 text-sm font-normal"
+              {...gradeForm.register('levelGroupId')}
+            >
+              <option value="">No group</option>
+              {levelGroups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs font-normal text-slate-500">
+              {levelGroups.length
+                ? 'The public academy page lists this grade under the group you pick.'
+                : 'Create groups such as Lower Primary on the Level groups tab first.'}
+            </span>
+          </label>
+        ) : null}
       </DrawerForm>
 
       <DrawerForm
@@ -1716,6 +1772,64 @@ function HierarchyBreadcrumbs({
         })}
       </ol>
     </nav>
+  );
+}
+
+type ClassTab = 'grades' | 'groups';
+
+const CLASS_TABS: Array<{ value: ClassTab; label: string }> = [
+  { value: 'grades', label: 'Grades and classes' },
+  { value: 'groups', label: 'Level groups' },
+];
+
+/** Tabs for the academy school's Class Management page. */
+function ClassManagementTabs({
+  value,
+  onChange,
+}: {
+  value: ClassTab;
+  onChange: (tab: ClassTab) => void;
+}) {
+  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    event.preventDefault();
+    const index = CLASS_TABS.findIndex((tab) => tab.value === value);
+    const step = event.key === 'ArrowRight' ? 1 : -1;
+    const next = CLASS_TABS[(index + step + CLASS_TABS.length) % CLASS_TABS.length];
+    onChange(next.value);
+    document.getElementById(`class-tab-${next.value}`)?.focus();
+  }
+
+  return (
+    <div
+      role="tablist"
+      aria-label="Class management"
+      className="flex gap-1 overflow-x-auto border-b border-slate-200"
+    >
+      {CLASS_TABS.map((tab) => {
+        const selected = tab.value === value;
+        return (
+          <button
+            key={tab.value}
+            id={`class-tab-${tab.value}`}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            aria-controls={`class-tab-panel-${tab.value}`}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(tab.value)}
+            onKeyDown={onKeyDown}
+            className={
+              selected
+                ? '-mb-px whitespace-nowrap border-b-2 border-brand-500 px-4 py-2.5 text-sm font-semibold text-brand-600'
+                : '-mb-px whitespace-nowrap border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900'
+            }
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

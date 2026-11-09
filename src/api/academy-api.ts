@@ -40,7 +40,18 @@ export interface AcademyCatalogGradeLevel {
   id: string;
   name: string;
   rank: number;
+  /** The admin-defined level group ("Lower Primary"…) this grade is in, if any. */
+  levelGroupId?: string | null;
   classRooms: AcademyCatalogClassRoom[];
+}
+
+/** A level group the academy admin created, e.g. "Lower Primary". */
+export interface AcademyCatalogLevelGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  thumbnail: string | null;
+  rank: number;
 }
 
 export interface CatalogLevelBand {
@@ -54,51 +65,84 @@ export interface CatalogLevelBand {
   thumbnail: string | null;
 }
 
-/**
- * Split catalog grades (already scoped to one academic year) into lower/upper
- * level bands by rank. Titles adapt to primary naming, with a generic fallback.
- */
-export function splitCatalogGradesIntoBands(
-  grades: AcademyCatalogGradeLevel[]
-): CatalogLevelBand[] {
-  const sorted = [...grades].sort((a, b) => a.rank - b.rank);
-  if (!sorted.length) return [];
+function buildBand(
+  key: string,
+  title: string,
+  bandGrades: AcademyCatalogGradeLevel[],
+  extra: { subtitle?: string | null; thumbnail?: string | null } = {}
+): CatalogLevelBand {
+  const rooms = bandGrades.flatMap((grade) => grade.classRooms);
+  const courses = rooms.reduce(
+    (sum, room) => sum + room.subjects.reduce((total, subject) => total + subject.courseCount, 0),
+    0
+  );
+  const enrolled = rooms.reduce((sum, room) => sum + (room.enrolledCount ?? 0), 0);
+  const roomThumbnail = rooms.find((room) => room.thumbnail?.trim())?.thumbnail ?? null;
+  return {
+    key,
+    title,
+    subtitle: extra.subtitle?.trim() || bandGrades.map((grade) => grade.name).join(' · '),
+    grades: bandGrades,
+    classes: rooms.length,
+    courses,
+    enrolled,
+    thumbnail: extra.thumbnail?.trim() || roomThumbnail,
+  };
+}
+
+/** Old behaviour: split grades into two halves by rank. */
+function splitInHalves(sorted: AcademyCatalogGradeLevel[]): CatalogLevelBand[] {
   const mid = Math.ceil(sorted.length / 2);
   const groups = [sorted.slice(0, mid), sorted.slice(mid)].filter((list) => list.length > 0);
   const isPrimary = sorted.every((grade) => /primary/i.test(grade.name));
   return groups.map((bandGrades, index) => {
     const first = bandGrades[0].name;
     const last = bandGrades[bandGrades.length - 1].name;
-    const classes = bandGrades.reduce((sum, grade) => sum + grade.classRooms.length, 0);
-    const courses = bandGrades.reduce(
-      (sum, grade) =>
-        sum +
-        grade.classRooms.reduce(
-          (inner, room) =>
-            inner + room.subjects.reduce((total, subject) => total + subject.courseCount, 0),
-          0
-        ),
-      0
+    return buildBand(
+      index === 0 ? 'lower' : 'upper',
+      isPrimary ? (index === 0 ? 'Lower Primary' : 'Upper Primary') : `Levels ${first} – ${last}`,
+      bandGrades
     );
-    const enrolled = bandGrades.reduce(
-      (sum, grade) =>
-        sum + grade.classRooms.reduce((inner, room) => inner + (room.enrolledCount ?? 0), 0),
-      0
-    );
-    const thumbnail =
-      bandGrades.flatMap((grade) => grade.classRooms).find((room) => room.thumbnail?.trim())
-        ?.thumbnail ?? null;
-    return {
-      key: index === 0 ? 'lower' : 'upper',
-      title: isPrimary ? (index === 0 ? 'Lower Primary' : 'Upper Primary') : `Levels ${first} – ${last}`,
-      subtitle: bandGrades.map((grade) => grade.name).join(' · '),
-      grades: bandGrades,
-      classes,
-      courses,
-      enrolled,
-      thumbnail,
-    };
   });
+}
+
+export const UNGROUPED_BAND_KEY = 'other';
+
+/**
+ * Group catalog grades into the level groups the academy admin created
+ * (e.g. "Lower Primary", "Upper Primary"), in the admin's order. Grades not
+ * in any group go to a final "Other levels" group. Until the admin creates
+ * groups, grades are split into two halves by rank as before.
+ */
+export function splitCatalogGradesIntoBands(
+  grades: AcademyCatalogGradeLevel[],
+  levelGroups: AcademyCatalogLevelGroup[] = []
+): CatalogLevelBand[] {
+  const sorted = [...grades].sort((a, b) => a.rank - b.rank);
+  if (!sorted.length) return [];
+
+  const known = new Set(levelGroups.map((group) => group.id));
+  const usesGroups = sorted.some((grade) => grade.levelGroupId && known.has(grade.levelGroupId));
+  if (!usesGroups) return splitInHalves(sorted);
+
+  const bands = [...levelGroups]
+    .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name))
+    .map((group) => {
+      const bandGrades = sorted.filter((grade) => grade.levelGroupId === group.id);
+      return bandGrades.length
+        ? buildBand(group.id, group.name, bandGrades, {
+            subtitle: group.description,
+            thumbnail: group.thumbnail,
+          })
+        : null;
+    })
+    .filter((band): band is CatalogLevelBand => band !== null);
+
+  const ungrouped = sorted.filter(
+    (grade) => !grade.levelGroupId || !known.has(grade.levelGroupId)
+  );
+  if (ungrouped.length) bands.push(buildBand(UNGROUPED_BAND_KEY, 'Other levels', ungrouped));
+  return bands;
 }
 
 export interface AcademyCatalogAcademicYear {
@@ -110,6 +154,8 @@ export interface AcademyCatalogAcademicYear {
 
 export interface AcademyCatalogTree {
   academicYears: AcademyCatalogAcademicYear[];
+  /** Admin-defined level groups; older API responses leave this out. */
+  levelGroups?: AcademyCatalogLevelGroup[];
 }
 
 /**

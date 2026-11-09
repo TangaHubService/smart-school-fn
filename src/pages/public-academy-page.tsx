@@ -29,8 +29,12 @@ export function PublicAcademyPage() {
   });
 
   const academicYears = catalogQuery.data?.academicYears;
+  const levelGroups = catalogQuery.data?.levelGroups;
   const grades = useMemo(() => mergeCatalogYears(academicYears ?? []), [academicYears]);
-  const bands = useMemo(() => splitCatalogGradesIntoBands(grades), [grades]);
+  const bands = useMemo(
+    () => splitCatalogGradesIntoBands(grades, levelGroups),
+    [grades, levelGroups]
+  );
 
   // Older shared links (?level=, ?band=) now have dedicated pages.
   const levelParam = searchParams.get('level');
