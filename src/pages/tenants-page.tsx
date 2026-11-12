@@ -19,6 +19,7 @@ import {
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../features/auth/auth.context';
 import { LocationPicker, type LocationPickerValue } from '../features/location/location-picker';
+import { LocationFilter, type LocationFilterValue } from '../features/location/location-filter';
 import {
   createTenantApi,
   deleteTenantApi,
@@ -153,11 +154,9 @@ export function TenantsPage() {
     id: string;
     name: string;
   } | null>(null);
-  const [countryFilter, setCountryFilter] = useState('');
-  const [provinceFilter, setProvinceFilter] = useState('');
-  const [districtFilter, setDistrictFilter] = useState('');
-  const [sectorFilter, setSectorFilter] = useState('');
-  const [cellFilter, setCellFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState<LocationFilterValue>({});
+  // Bumped to remount (and so clear) the location dropdowns on reset.
+  const [locationFilterKey, setLocationFilterKey] = useState(0);
   const [villageFilter, setVillageFilter] = useState('');
 
   const isCreateModalOpen = searchParams.get('create') === '1';
@@ -200,11 +199,7 @@ export function TenantsPage() {
     queryKey: [
       'super-admin-tenants',
       search,
-      countryFilter,
-      provinceFilter,
-      districtFilter,
-      sectorFilter,
-      cellFilter,
+      locationFilter,
       villageFilter,
     ],
     queryFn: () =>
@@ -212,14 +207,13 @@ export function TenantsPage() {
         page: 1,
         pageSize: 50,
         search: search.trim() || undefined,
-        country: countryFilter.trim() || undefined,
-        province: provinceFilter.trim() || undefined,
-        district: districtFilter.trim() || undefined,
-        sector: sectorFilter.trim() || undefined,
-        cell: cellFilter.trim() || undefined,
+        ...locationFilter,
         village: villageFilter.trim() || undefined,
       }),
   });
+
+  const hasSchoolFilters =
+    Boolean(search.trim()) || Object.keys(locationFilter).length > 0 || Boolean(villageFilter.trim());
 
   const activeDetailSchoolId = viewSchoolId ?? editSchoolId;
 
@@ -416,11 +410,8 @@ export function TenantsPage() {
   }
 
   function resetAddressFilters() {
-    setCountryFilter('');
-    setProvinceFilter('');
-    setDistrictFilter('');
-    setSectorFilter('');
-    setCellFilter('');
+    setLocationFilter({});
+    setLocationFilterKey((key) => key + 1);
     setVillageFilter('');
   }
 
@@ -491,24 +482,17 @@ export function TenantsPage() {
         />
 
         <div className="grid gap-2 border-b border-slate-200/80 px-4 py-3 sm:grid-cols-2 lg:grid-cols-6">
-          {[
-            { label: 'Country', value: countryFilter, set: setCountryFilter },
-            { label: 'Province', value: provinceFilter, set: setProvinceFilter },
-            { label: 'District', value: districtFilter, set: setDistrictFilter },
-            { label: 'Sector', value: sectorFilter, set: setSectorFilter },
-            { label: 'Cell', value: cellFilter, set: setCellFilter },
-            { label: 'Village', value: villageFilter, set: setVillageFilter },
-          ].map((f) => (
-            <label key={f.label} className="grid gap-1 text-xs font-medium text-slate-600">
-              {f.label}
-              <input
-                value={f.value}
-                onChange={(e) => f.set(e.target.value)}
-                placeholder={`Filter by ${f.label.toLowerCase()}`}
-                className="h-9 rounded-lg border border-slate-300 px-2 text-sm"
-              />
-            </label>
-          ))}
+          <LocationFilter key={locationFilterKey} onChange={setLocationFilter} />
+          <label className="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
+            <span>Village</span>
+            <input
+              value={villageFilter}
+              onChange={(e) => setVillageFilter(e.target.value)}
+              placeholder="Filter by village"
+              aria-label="Filter by village"
+              className="w-full rounded-xl border border-brand-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400"
+            />
+          </label>
         </div>
 
         <div className="p-4">
@@ -529,8 +513,12 @@ export function TenantsPage() {
                 : null
             }
             onRetry={() => void tenantsQuery.refetch()}
-            emptyTitle="No schools yet"
-            emptyDescription="Create your first school to start onboarding administrators and setup."
+            emptyTitle={hasSchoolFilters ? 'No matching schools' : 'No schools yet'}
+            emptyDescription={
+              hasSchoolFilters
+                ? 'No schools match the current search or location filters.'
+                : 'Create your first school to start onboarding administrators and setup.'
+            }
             minWidth={980}
             className="border-0 shadow-none"
             rowActions={(tenant) => (
