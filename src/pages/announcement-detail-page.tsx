@@ -15,6 +15,7 @@ import {
   type AnnouncementAudience,
   type AnnouncementItem,
   type AnnouncementPriority,
+  listAnnouncementResponsesApi,
 } from '../features/announcements/announcements.api';
 import { listClassRoomsApi, listSubjectsApi } from '../features/sprint1/sprint1.api';
 
@@ -377,8 +378,70 @@ export function AnnouncementDetailPage() {
           >
             Back to list
           </button>
+          {id ? <AnnouncementResponsesPanel announcementId={id} /> : null}
         </div>
       )}
     </SectionCard>
+  );
+}
+
+/** Who acknowledged the announcement and what parents/students replied. */
+function AnnouncementResponsesPanel({ announcementId }: { announcementId: string }) {
+  const auth = useAuth();
+  const responsesQuery = useQuery({
+    queryKey: ['announcement-responses', announcementId],
+    queryFn: () => listAnnouncementResponsesApi(auth.accessToken!, announcementId),
+    enabled: Boolean(auth.accessToken),
+    refetchInterval: 30000,
+  });
+  const data = responsesQuery.data;
+  if (!data) return null;
+  const replies = data.items.filter((r) => r.type === 'REPLY');
+  const acknowledged = data.items.filter((r) => r.type === 'ACKNOWLEDGE');
+
+  return (
+    <div className="mt-6 border-t border-slate-200 pt-5">
+      <h3 className="text-sm font-semibold text-slate-800">Responses</h3>
+      <div className="mt-2 grid grid-cols-3 gap-2 text-center sm:max-w-md">
+        {[
+          ['Read', data.readCount],
+          ['Acknowledged', data.acknowledgedCount],
+          ['Replies', data.replyCount],
+        ].map(([label, value]) => (
+          <div key={label as string} className="rounded-lg bg-slate-50 px-3 py-2">
+            <p className="text-lg font-semibold tabular-nums text-slate-900">{value}</p>
+            <p className="text-xs text-slate-500">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {replies.length ? (
+        <ul className="mt-4 space-y-3">
+          {replies.map((r) => (
+            <li key={r.id} className="rounded-lg border border-slate-200 p-3">
+              <p className="text-sm font-medium text-slate-900">
+                {r.user.firstName} {r.user.lastName}
+                <span className="ml-2 text-xs font-normal text-slate-500">
+                  {r.user.roles.includes('PARENT')
+                    ? `Parent${r.user.children.length ? ` of ${r.user.children.join(', ')}` : ''}`
+                    : r.user.roles[0]?.toLowerCase() ?? ''}
+                  {' · '}
+                  {new Date(r.createdAt).toLocaleString()}
+                </span>
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{r.message}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-sm text-slate-500">No replies yet.</p>
+      )}
+
+      {acknowledged.length ? (
+        <p className="mt-3 text-xs text-slate-500">
+          Acknowledged by {acknowledged.map((r) => `${r.user.firstName} ${r.user.lastName}`).join(', ')}
+        </p>
+      ) : null}
+    </div>
   );
 }

@@ -8,18 +8,47 @@ export interface ChatRosterMember {
   role: 'STUDENT' | 'TEACHER';
 }
 
+export type ChatType = 'CLASS' | 'GROUP' | 'DIRECT';
+
 export interface ChatRoom {
   id: string;
-  classRoom: { id: string; code: string; name: string };
-  academicYear: { id: string; name: string };
+  type?: ChatType;
+  classRoom: { id: string; code: string; name: string } | null;
+  academicYear: { id: string; name: string } | null;
   title: string;
+  description?: string | null;
   createdAt: string;
   roster: ChatRosterMember[];
+  members?: Array<ChatRosterMember & { isAdmin: boolean }>;
   permissions: {
     canSend: boolean;
     canModerate: boolean;
     canPin: boolean;
+    canManageMembers?: boolean;
+    canLeave?: boolean;
   };
+}
+
+export interface ChatPerson {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
+/** One row of the WhatsApp-style chat list. */
+export interface ChatListItem {
+  id: string;
+  type: ChatType;
+  title: string;
+  memberCount: number | null;
+  otherUser: ChatPerson | null;
+  lastMessage: { id: string; preview: string; createdAt: string; sender: ChatPerson } | null;
+  unreadCount: number;
+  sortAt: string;
+}
+
+export interface ChatContact extends ChatPerson {
+  className: string | null;
 }
 
 export interface ChatAttachment {
@@ -161,6 +190,53 @@ export function markChatReadApi(accessToken: string, chatId: string) {
 export function getReadReceiptsApi(accessToken: string, chatId: string) {
   return apiRequest<ChatReadReceipt[]>(`/chats/${chatId}/read-receipts`, {
     method: 'GET',
+    accessToken,
+  });
+}
+
+export function listMyChatsApi(accessToken: string) {
+  return apiRequest<ChatListItem[]>('/chats', { method: 'GET', accessToken });
+}
+
+export function getChatApi(accessToken: string, chatId: string) {
+  return apiRequest<ChatRoom>(`/chats/${chatId}`, { method: 'GET', accessToken });
+}
+
+export function listChatContactsApi(accessToken: string, q?: string) {
+  const query = q ? `?q=${encodeURIComponent(q)}` : '';
+  return apiRequest<ChatContact[]>(`/chats/contacts${query}`, { method: 'GET', accessToken });
+}
+
+export function createGroupChatApi(
+  accessToken: string,
+  payload: { title: string; description?: string; memberUserIds: string[] }
+) {
+  return apiRequest<{ id: string }>('/chats/groups', { method: 'POST', accessToken, body: payload });
+}
+
+export function openDirectChatApi(accessToken: string, userId: string) {
+  return apiRequest<{ id: string }>('/chats/direct', { method: 'POST', accessToken, body: { userId } });
+}
+
+export function updateGroupChatApi(
+  accessToken: string,
+  chatId: string,
+  payload: { title?: string; description?: string | null }
+) {
+  return apiRequest<ChatRoom>(`/chats/${chatId}`, { method: 'PATCH', accessToken, body: payload });
+}
+
+export function addGroupMembersApi(accessToken: string, chatId: string, userIds: string[]) {
+  return apiRequest<ChatRoom>(`/chats/${chatId}/members`, {
+    method: 'POST',
+    accessToken,
+    body: { userIds },
+  });
+}
+
+export function removeGroupMemberApi(accessToken: string, chatId: string, userId: string) {
+  return apiRequest<{ removed: boolean }>(`/chats/${chatId}/members/${userId}`, {
+    method: 'DELETE',
     accessToken,
   });
 }

@@ -119,24 +119,22 @@ export function splitCatalogGradesIntoBands(
   levelGroups: AcademyCatalogLevelGroup[] = []
 ): CatalogLevelBand[] {
   const sorted = [...grades].sort((a, b) => a.rank - b.rank);
-  if (!sorted.length) return [];
+  if (!sorted.length && !levelGroups.length) return [];
 
   const known = new Set(levelGroups.map((group) => group.id));
-  const usesGroups = sorted.some((grade) => grade.levelGroupId && known.has(grade.levelGroupId));
-  if (!usesGroups) return splitInHalves(sorted);
+  // Once the admin has created level groups, every group is shown, even one
+  // whose levels have no classes yet.
+  if (!levelGroups.length) return splitInHalves(sorted);
 
   const bands = [...levelGroups]
     .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name))
     .map((group) => {
       const bandGrades = sorted.filter((grade) => grade.levelGroupId === group.id);
-      return bandGrades.length
-        ? buildBand(group.id, group.name, bandGrades, {
-            subtitle: group.description,
-            thumbnail: group.thumbnail,
-          })
-        : null;
-    })
-    .filter((band): band is CatalogLevelBand => band !== null);
+      return buildBand(group.id, group.name, bandGrades, {
+        subtitle: group.description,
+        thumbnail: group.thumbnail,
+      });
+    });
 
   const ungrouped = sorted.filter(
     (grade) => !grade.levelGroupId || !known.has(grade.levelGroupId)

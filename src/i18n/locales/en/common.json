@@ -46,7 +46,8 @@
     "news": "News",
     "reportCards": "Report cards",
     "announcements": "Announcements",
-    "chat": "Chat"
+    "chat": "Chat",
+    "aiAssistant": "AI Tutor"
   },
   "nav": {
     "dashboard": "Dashboard",

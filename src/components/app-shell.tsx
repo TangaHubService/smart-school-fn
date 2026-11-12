@@ -124,6 +124,9 @@ export function AppShell() {
     hasPermission(auth.me, 'chat.read')
       ? { to: '/student/chat', label: t('studentHeader.chat') }
       : null,
+    hasPermission(auth.me, 'students.my_courses.read')
+      ? { to: '/student/ai-assistant', label: t('studentHeader.aiAssistant') }
+      : null,
   ].filter(Boolean) as Array<{ to: string; label: string; title?: string }>;
 
   const sidebarCollapsed = !isDesktopSidebarVisible && !isMobileNavOpen;
@@ -496,7 +499,10 @@ export function AppShell() {
           </section>
         </SetStudentHeaderActionsContext.Provider>
       </div>
-      {isStudent ? (
+      {/* Hidden on the chat and AI tutor pages, where it would cover the Send button. */}
+      {isStudent &&
+      !location.pathname.startsWith('/student/chat') &&
+      !location.pathname.startsWith('/student/ai-assistant') ? (
         <Link
           to="/student/chat"
           className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-brand-600 text-white shadow-lg transition hover:bg-brand-700 active:scale-95"

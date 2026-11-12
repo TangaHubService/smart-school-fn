@@ -47,6 +47,12 @@ export function PublicLevelGroupPage() {
             message="This level group is not available right now. Go back to programs to pick another group."
             action={{ label: 'Back to programs', to: '/programs#academy-levels' }}
           />
+        ) : band.grades.length === 0 ? (
+          <CatalogMessage
+            title="No levels yet"
+            message="Levels in this group will appear here soon."
+            action={{ label: 'Back to programs', to: '/programs#academy-levels' }}
+          />
         ) : (
           <ProgramGrid count={band.grades.length} label={`Levels in ${band.title}`}>
             {band.grades.map((grade) => {

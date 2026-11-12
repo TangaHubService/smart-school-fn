@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ClipboardList,
   CreditCard,
+  Sparkles,
   FileBarChart2,
   GraduationCap,
   HelpCircle,
@@ -54,11 +55,11 @@ export const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
 const NAV_GROUPS: Array<{ id: string; label: string; keys: string[] }> = [
   { id: 'overview', label: '', keys: ['dashboard'] },
   { id: 'schools', label: 'Schools', keys: ['tenants', 'subscriptions'] },
-  { id: 'academics', label: 'Academics', keys: ['years', 'class-management', 'subjects', 'timetable', 'learning-content', 'learning-insights'] },
+  { id: 'academics', label: 'Academics', keys: ['years', 'class-management', 'subjects', 'timetable', 'attendance', 'learning-content', 'learning-insights'] },
   { id: 'assessment', label: 'Assessment', keys: ['continuous-assessment', 'exams', 'class-marks', 'conduct-marks-settings', 'report-cards'] },
-  { id: 'people', label: 'People', keys: ['students', 'attendance', 'parents', 'staff', 'users', 'auditor-management'] },
+  { id: 'people', label: 'People', keys: ['students', 'parents', 'staff', 'users', 'auditor-management'] },
   { id: 'communication', label: 'Communication', keys: ['announcements', 'support-center'] },
-  { id: 'administration', label: 'Administration', keys: ['setup', 'subscription', 'audit-reports', 'audit-logs'] },
+  { id: 'administration', label: 'Administration', keys: ['setup', 'subscription', 'ai-assistant', 'audit-reports', 'audit-logs'] },
 ];
 
 export const NAV_ITEMS: NavItem[] = [
@@ -114,6 +115,15 @@ export const NAV_ITEMS: NavItem[] = [
     icon: CreditCard,
     roles: ['SCHOOL_ADMIN'],
     requiredPermissions: ['billing.read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'ai-assistant',
+    label: 'AI Assistant',
+    to: '/admin/ai-assistant',
+    icon: Sparkles,
+    roles: ['SCHOOL_ADMIN'],
+    requiredPermissions: ['school.setup.manage'],
     setupState: 'ANY',
   },
   {
@@ -328,6 +338,15 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FileBarChart2,
     roles: ['PARENT'],
     requiredPermissions: ['report_cards.my_read'],
+    setupState: 'ANY',
+  },
+  {
+    key: 'parent-announcements',
+    label: 'Announcements',
+    to: '/parent/announcements',
+    icon: Bell,
+    roles: ['PARENT'],
+    requiredPermissions: ['announcements.my_read'],
     setupState: 'ANY',
   },
 

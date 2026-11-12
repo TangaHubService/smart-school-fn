@@ -35,6 +35,7 @@ import {
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
 import { getAttendanceDashboardSummaryApi } from '../features/sprint3/attendance.api';
 import { listCoursesApi } from '../features/sprint4/lms.api';
+import { percentOf } from '../utils/format-number';
 
 /**
  * Role-aware dashboard entry point. The active dashboard is selected through
@@ -269,7 +270,7 @@ function GenericRoleDashboard() {
     }
 
     const total = summary.present + summary.absent + summary.late + summary.excused;
-    const safePercent = (value: number) => (total > 0 ? Math.round((value / total) * 100) : 0);
+    const safePercent = (value: number) => (total > 0 ? percentOf(value, total) : 0);
 
     return [
       {

@@ -69,6 +69,7 @@ import {
   CHART_TOOLTIP_STYLE,
 } from '../components/ui/chart-theme';
 import { DashboardQuickActionsDropdown, type DashboardQuickActionItem } from '../components/dashboard/quick-actions-dropdown';
+import { formatExact, formatPercentOf } from '../utils/format-number';
 
 
 function formatPercent(value: number | null): string {
@@ -263,7 +264,7 @@ export function SchoolAdminDashboardPage() {
           {
             key: 'invoice',
             title: 'Subscription payment due',
-            detail: `${invoice.amountDue.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${invoice.currency} by ${formatDate(invoice.dueDate)}`,
+            detail: `${formatExact(invoice.amountDue)} ${invoice.currency} by ${formatDate(invoice.dueDate)}`,
             to: '/admin/subscription',
             tone: 'warning' as const,
           },
@@ -533,7 +534,7 @@ function StudentEnrollmentCard({
   const girls = data?.totalGirls ?? 0;
   const disabilityCount = data?.studentsWithDisabilities ?? 0;
   const pct = (value: number) =>
-    total > 0 ? `${Math.round((value / total) * 100)}%` : '';
+    total > 0 ? formatPercentOf(value, total) : '';
 
   const breakdown = [
     { label: 'Boys', value: boys },
@@ -962,7 +963,7 @@ function SubscriptionCard({
             </Badge>
           </div>
           <p className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
-            {data.invoice.amountDue.toLocaleString(undefined, { maximumFractionDigits: 0 })}{' '}
+            {formatExact(data.invoice.amountDue)}{' '}
             <span className="text-sm font-medium text-slate-500">{data.invoice.currency}</span>
           </p>
           <p className="mt-1 text-[13px] text-slate-500">

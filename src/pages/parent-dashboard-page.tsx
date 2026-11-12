@@ -20,6 +20,7 @@ import {
 import { Avatar } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
 import { DataTable, type DataTableColumn } from '../components/ui/data-table';
+import { percentOf } from '../utils/format-number';
 
 interface ChildRow {
   id: string;
@@ -80,7 +81,7 @@ const childColumns: DataTableColumn<ChildRow>[] = [
     render: (child) => {
       // No records is not the same as 0% attendance.
       if (child.total === 0) return <span className="text-slate-500">No records</span>;
-      const percentage = Math.round((child.present / child.total) * 100);
+      const percentage = percentOf(child.present, child.total);
       return (
         <Badge tone={percentage >= 90 ? 'success' : percentage >= 75 ? 'warning' : 'danger'}>
           {percentage}%
@@ -198,7 +199,7 @@ export function ParentDashboardPage() {
     0
   );
   const attendancePct =
-    attendanceTotal > 0 ? Math.round((totalPresent / attendanceTotal) * 100) : null;
+    attendanceTotal > 0 ? percentOf(totalPresent, attendanceTotal) : null;
 
   if (isError) {
     return (
@@ -330,7 +331,7 @@ export function ParentDashboardPage() {
                     key={child.id}
                     label={`${child.firstName} ${child.lastName}`}
                     value={
-                      child.total > 0 ? `${Math.round((child.present / child.total) * 100)}%` : '—'
+                      child.total > 0 ? `${percentOf(child.present, child.total)}%` : '—'
                     }
                     percent={child.total > 0 ? (child.present / child.total) * 100 : 0}
                     hint={

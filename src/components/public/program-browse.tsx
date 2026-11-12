@@ -219,68 +219,58 @@ export function CatalogMessage({
   );
 }
 
-/** Split hero: copy on the left, organic photo shape with a small inset on the right. */
+/**
+ * Full-width hero shared by the public pages: the photo fills the whole
+ * background under a brand-blue overlay, with copy and actions on the left
+ * (optional `extra`, e.g. stats, underneath) and a wave below.
+ */
 export function PublicHero({
   title,
   description,
   image,
-  insetImage,
   children,
+  extra,
+  waveClassName = 'text-white',
 }: {
   title: string;
   description: string;
   image: string;
-  insetImage: string;
   children: ReactNode;
+  extra?: ReactNode;
+  /** Text colour class for the wave; match the next section's background. */
+  waveClassName?: string;
 }) {
-  const dots = {
-    backgroundImage: 'radial-gradient(#93B4DF 1.5px, transparent 1.5px)',
-    backgroundSize: '12px 12px',
-  };
   return (
-    <section className="relative overflow-hidden bg-white">
+    <section className="relative isolate overflow-hidden bg-brand-800 text-white">
+      <img
+        src={image}
+        alt=""
+        className="absolute inset-0 -z-10 h-full w-full object-cover object-center"
+      />
       <div
-        className="pointer-events-none absolute left-6 top-4 hidden h-16 w-16 opacity-60 lg:block"
-        style={dots}
+        className="absolute inset-0 -z-10 bg-gradient-to-r from-brand-900/95 via-brand-800/80 to-brand-700/30"
         aria-hidden="true"
       />
-      <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-14 lg:px-8 lg:py-16">
-        <div className="relative">
-          <h1 className="text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl lg:text-[2.6rem]">
+      <div className="mx-auto flex w-full max-w-7xl items-center px-4 pb-24 pt-14 sm:px-6 sm:pb-28 lg:min-h-[560px] lg:px-8 lg:pb-36 lg:pt-20">
+        <div className="max-w-2xl">
+          <h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-[2.6rem]">
             {title}
           </h1>
-          <p className="mt-5 max-w-xl text-[15px] leading-7 text-slate-600 sm:text-base">
+          <p className="mt-5 max-w-xl text-[15px] leading-7 text-white/85 sm:text-base">
             {description}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">{children}</div>
-        </div>
-        <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
-          <div
-            className="pointer-events-none absolute -right-6 -top-5 h-24 w-24 opacity-70"
-            style={dots}
-            aria-hidden="true"
-          />
-          <div
-            className="pointer-events-none absolute -bottom-10 right-4 h-44 w-44 rounded-full bg-accent-100/70"
-            aria-hidden="true"
-          />
-          <div
-            className="pointer-events-none absolute -left-4 top-6 h-24 w-24 rounded-full bg-brand-100"
-            aria-hidden="true"
-          />
-          <img
-            src={image}
-            alt=""
-            className="relative aspect-[4/3] w-full rounded-[56%_44%_48%_52%/52%_46%_54%_48%] object-cover shadow-[0_24px_60px_rgba(15,39,72,0.18)]"
-          />
-          <img
-            src={insetImage}
-            alt=""
-            loading="lazy"
-            className="absolute bottom-[6%] left-[2%] h-[26%] w-auto aspect-square rounded-full border-4 border-white object-cover shadow-[0_12px_28px_rgba(15,39,72,0.25)]"
-          />
+          {extra}
         </div>
       </div>
+      <svg
+        className={`absolute inset-x-0 -bottom-px h-14 w-full sm:h-20 lg:h-24 ${waveClassName}`}
+        viewBox="0 0 1440 120"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path fill="currentColor" d="M0,64 C240,120 480,120 760,84 C1040,48 1240,10 1440,40 L1440,120 L0,120 Z" />
+      </svg>
     </section>
   );
 }

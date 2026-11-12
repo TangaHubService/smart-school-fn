@@ -44,6 +44,29 @@ export interface AnnouncementItem {
   attachments: AnnouncementAttachment[];
   isRead?: boolean;
   readAt?: string | null;
+  /** Viewer list only: whether you acknowledged it, and your replies. */
+  acknowledged?: boolean;
+  myReplies?: AnnouncementReply[];
+}
+
+export interface AnnouncementReply {
+  id: string;
+  type: 'REPLY';
+  message: string | null;
+  createdAt: string;
+}
+
+export interface AnnouncementResponsesSummary {
+  readCount: number;
+  acknowledgedCount: number;
+  replyCount: number;
+  items: Array<{
+    id: string;
+    type: 'ACKNOWLEDGE' | 'REPLY';
+    message: string | null;
+    createdAt: string;
+    user: { id: string; firstName: string; lastName: string; roles: string[]; children: string[] };
+  }>;
 }
 
 export interface AnnouncementListResponse {
@@ -155,6 +178,25 @@ export function updateAnnouncementApi(
 export function deleteAnnouncementApi(accessToken: string, id: string) {
   return apiRequest<{ deleted: boolean }>(`/announcements/${id}`, {
     method: 'DELETE',
+    accessToken,
+  });
+}
+
+export function respondToAnnouncementApi(
+  accessToken: string,
+  id: string,
+  payload: { type: 'ACKNOWLEDGE' } | { type: 'REPLY'; message: string }
+) {
+  return apiRequest<{ acknowledged: boolean; myReplies: AnnouncementReply[] }>(`/announcements/${id}/responses`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export function listAnnouncementResponsesApi(accessToken: string, id: string) {
+  return apiRequest<AnnouncementResponsesSummary>(`/announcements/${id}/responses`, {
+    method: 'GET',
     accessToken,
   });
 }

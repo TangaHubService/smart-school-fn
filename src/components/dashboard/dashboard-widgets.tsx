@@ -1,6 +1,7 @@
 import { BarChart3, DollarSign, GraduationCap, TrendingUp, Users } from 'lucide-react';
 
 import { BarChart } from './bar-chart';
+import { formatExact } from '../../utils/format-number';
 
 interface RevenueWidgetProps {
   totalRevenue: number;
@@ -24,13 +25,13 @@ export function RevenueWidget({ totalRevenue, monthlyRevenue, revenueThisMonth, 
         <div className="rounded-lg bg-slate-50 p-2">
           <p className="text-[11px] font-medium text-slate-500">Total</p>
           <p className="text-sm font-bold text-slate-900">
-            {totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+            {formatExact(totalRevenue)}
           </p>
         </div>
         <div className="rounded-lg bg-slate-50 p-2">
           <p className="text-[11px] font-medium text-slate-500">This Month</p>
           <p className="text-sm font-bold text-slate-900">
-            {revenueThisMonth.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+            {formatExact(revenueThisMonth)}
           </p>
         </div>
         <div className="rounded-lg bg-slate-50 p-2">

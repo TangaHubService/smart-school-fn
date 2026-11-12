@@ -44,6 +44,7 @@ import { AnnouncementsPage } from '../pages/announcements-page';
 import { AnnouncementCreatePage } from '../pages/announcement-create-page';
 import { AnnouncementDetailPage } from '../pages/announcement-detail-page';
 import { StudentAnnouncementsPage } from '../pages/student-announcements-page';
+import { ParentAnnouncementsPage } from '../pages/parent-announcements-page';
 import { UnauthorizedPage } from '../pages/unauthorized-page';
 import { AuditLogsPage } from '../pages/audit-logs-page';
 import { ProfilePage } from '../pages/profile-page';
@@ -53,6 +54,9 @@ import { SupportCenterPage } from '../pages/support-center-page';
 import { UsersPage } from '../pages/users-page';
 import { StudentAssignmentsPage } from '../pages/student-assignments-page';
 import { ClassChatPage } from '../pages/class-chat-page';
+import { StudentMessengerPage } from '../pages/student-messenger-page';
+import { StudentAiAssistantPage } from '../pages/student-ai-assistant-page';
+import { AdminAiSettingsPage } from '../pages/admin-ai-settings-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
 import { StudentAcademicYearSelectPage } from '../pages/student-academic-year-select-page';
@@ -251,6 +255,9 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="billing.read" />}>
             <Route path="/admin/subscription" element={<SubscriptionInvoicePage />} />
           </Route>
+          <Route element={<RequirePermission permission="school.setup.manage" />}>
+            <Route path="/admin/ai-assistant" element={<AdminAiSettingsPage />} />
+          </Route>
 
           <Route element={<RequirePermission permission="parents.my_children.read" />}>
             <Route path="/parent" element={<Navigate to="/parent/dashboard" replace />} />
@@ -260,10 +267,17 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="report_cards.my_read" />}>
             <Route path="/parent/report-cards" element={<ParentReportCardsPage />} />
           </Route>
+          <Route element={<RequirePermission permission="announcements.my_read" />}>
+            <Route path="/parent/announcements" element={<ParentAnnouncementsPage />} />
+          </Route>
 
           <Route element={<RequirePermission permission="chat.read" />}>
-            <Route path="/student/chat" element={<ClassChatPage />} />
-            <Route path="/student/chat/:classRoomId" element={<ClassChatPage />} />
+            <Route path="/student/chat" element={<StudentMessengerPage />} />
+            <Route path="/student/chat/:chatId" element={<StudentMessengerPage />} />
+          </Route>
+          <Route element={<RequirePermission permission="students.my_courses.read" />}>
+            <Route path="/student/ai-assistant" element={<StudentAiAssistantPage />} />
+            <Route path="/student/ai-assistant/:conversationId" element={<StudentAiAssistantPage />} />
           </Route>
           <Route element={<RequirePermission permission="students.my_courses.read" />}>
             <Route path="/student/courses" element={<StudentCoursesPage />} />

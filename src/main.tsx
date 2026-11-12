@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
 import { queryClient } from './app/query-client';
+import { ScrollToTop } from './components/scroll-to-top';
 import { ToastProvider } from './components/toast';
 import { AuthProvider } from './features/auth/auth.context';
 import { AcademicYearProvider } from './contexts/academic-year-context';
@@ -19,6 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <AuthProvider>
             <AcademicYearProvider>
               <AppRoutes />

@@ -316,6 +316,7 @@ export function AuditLogsPage() {
 
           <div className="p-4">
             <DataTable<ActivityLog>
+              exportable={false}
               ariaLabel="Activity log"
               columns={logColumns}
               data={logs}

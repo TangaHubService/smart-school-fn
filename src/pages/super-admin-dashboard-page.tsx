@@ -39,6 +39,7 @@ import {
   TextLink,
   type AttentionItem,
 } from '../components/ui/dashboard-kit';
+import { formatExact } from '../utils/format-number';
 
 const DEFAULT_FILTERS: SuperAdminDashboardFilters = {
   academicYear: '',
@@ -297,7 +298,7 @@ export function SuperAdminDashboardPage() {
             <DashboardCard>
               <CardHeader
                 title="Academy revenue"
-                subtitle={`${(data.revenue?.revenueThisMonth ?? 0).toLocaleString()} RWF this month`}
+                subtitle={`${formatExact(data.revenue?.revenueThisMonth ?? 0)} RWF this month`}
               />
               <div className="px-5 pb-5 pt-3">
                 {hasRevenue ? (
@@ -315,7 +316,7 @@ export function SuperAdminDashboardPage() {
                         <Tooltip
                           contentStyle={CHART_TOOLTIP_STYLE}
                           cursor={{ fill: '#F1F5F9' }}
-                          formatter={(value) => `${Number(value).toLocaleString()} RWF`}
+                          formatter={(value) => `${formatExact(Number(value))} RWF`}
                         />
                         <Bar
                           dataKey="amount"

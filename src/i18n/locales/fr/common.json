@@ -46,7 +46,8 @@
     "news": "Actualités",
     "reportCards": "Bulletins",
     "announcements": "Annonces",
-    "chat": "Discussion"
+    "chat": "Discussion",
+    "aiAssistant": "Tuteur IA"
   },
   "nav": {
     "dashboard": "Tableau de bord",

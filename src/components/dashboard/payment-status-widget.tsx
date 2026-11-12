@@ -1,5 +1,6 @@
 import { CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatExact, percentOf } from '../../utils/format-number';
 
 interface PaymentStatusWidgetProps {
   totalFees: number;
@@ -15,7 +16,7 @@ export function PaymentStatusWidget({
   isLoading,
 }: PaymentStatusWidgetProps) {
   const remaining = Math.max(totalFees - paidFees, 0);
-  const paidPct = totalFees > 0 ? Math.round((paidFees / totalFees) * 100) : 0;
+  const paidPct = totalFees > 0 ? percentOf(paidFees, totalFees) : 0;
 
   if (isLoading) {
     return (
@@ -40,17 +41,13 @@ export function PaymentStatusWidget({
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-slate-600">Total Fees</span>
             <span className="font-bold text-slate-900">
-              {totalFees.toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-              })}
+              {formatExact(totalFees)}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-slate-600">Paid</span>
             <span className="font-bold text-emerald-700">
-              {paidFees.toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-              })}
+              {formatExact(paidFees)}
             </span>
           </div>
 
@@ -64,9 +61,7 @@ export function PaymentStatusWidget({
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-slate-600">Remaining</span>
             <span className="font-bold text-amber-700">
-              {remaining.toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-              })}
+              {formatExact(remaining)}
             </span>
           </div>
 

@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
-import heroInset from '../asset/hero-inset.jpg';
 import backgroundImage from '../asset/background.jpg';
 import { PublicCommunityCTA } from '../components/public/public-community-cta';
 import { PublicHero } from '../components/public/program-browse';
@@ -30,11 +29,11 @@ export function PublicProgramsAdvertPage() {
         title="Smart School Academy"
         description="Browse every public class, activate a plan, then enroll in up to 3 classes. Each enrolled class unlocks every subject, course, and lesson inside it."
         image={backgroundImage}
-        insetImage={heroInset}
+          waveClassName="text-slate-50"
       >
         <a
           href="#enroll"
-          className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-brand-600"
+          className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-medium text-brand-700 transition hover:bg-brand-50"
         >
           Explore programs
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -45,7 +44,7 @@ export function PublicProgramsAdvertPage() {
         <PublicAcademyPage />
       </div>
 
-      <PublicCommunityCTA />
+      <PublicCommunityCTA layout="carousel" />
     </main>
   );
 }

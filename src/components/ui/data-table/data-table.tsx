@@ -3,6 +3,7 @@ import { ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import type { RowData } from '@tanstack/react-table';
 import { Fragment, useMemo, type ReactNode } from 'react';
 
+import { DataTableExport } from './data-table-export';
 import { DataTablePagination } from './data-table-pagination';
 import type { DataTableColumn, DataTableProps, DataTableSort } from './types';
 import { useDataTable, type DataTableColumnDef } from './use-data-table';
@@ -47,6 +48,9 @@ export function DataTable<TData extends RowData>({
   sort = null,
   onSortChange,
   pagination,
+  exportable = true,
+  exportTitle,
+  onExportAll,
 }: DataTableProps<TData>) {
   const hasActions = Boolean(rowActions);
   const colSpan = columns.length + (showIndex ? 1 : 0) + (hasActions ? 1 : 0);
@@ -86,6 +90,18 @@ export function DataTable<TData extends RowData>({
         className
       )}
     >
+      {exportable && !loading && !error && data.length > 0 ? (
+        <div className="flex justify-end border-b border-slate-100 px-3 py-2">
+          <DataTableExport
+            title={exportTitle ?? (ariaLabel !== 'Data table' ? ariaLabel : 'Export')}
+            columns={columns}
+            rows={data}
+            isPaginated={Boolean(pagination && (pagination.totalItems ?? 0) > data.length)}
+            onExportAll={onExportAll}
+          />
+        </div>
+      ) : null}
+
       {/* Mobile stacked cards */}
       <ul role="list" className="divide-y divide-slate-100 md:hidden">
         {loading ? (

@@ -31,6 +31,10 @@ export interface DataTableColumn<T> {
    * - hidden on mobile by default unless primary/secondary
    */
   mobile?: 'primary' | 'secondary' | 'hidden';
+  /** Value written to exports. Defaults to the cell's text, or row[key]. */
+  exportValue?: (row: T) => string | number | null | undefined;
+  /** Set false to leave this column out of exports (e.g. avatars, buttons). */
+  exportable?: boolean;
 }
 
 export interface DataTableFilterConfig {
@@ -79,4 +83,14 @@ export interface DataTableProps<T> {
 
   className?: string;
   ariaLabel?: string;
+
+  /** Shows an Export (Excel / CSV / PDF) menu above the table. Default: true. */
+  exportable?: boolean;
+  /** Title printed on exported files and used for the file name. Defaults to ariaLabel. */
+  exportTitle?: string;
+  /**
+   * Loads every row (all pages) for export. Without it, the rows currently shown are
+   * exported, and the menu says so when the table is paginated.
+   */
+  onExportAll?: () => Promise<T[]>;
 }

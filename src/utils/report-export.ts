@@ -107,3 +107,20 @@ export function exportToPDF(data: ExportData, filename?: string) {
   const exportFilename = filename || `${data.title.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.pdf`;
   downloadBlob(blob, exportFilename);
 }
+function csvCell(value: unknown) {
+  const text = value === undefined || value === null ? '' : String(value);
+  // Quote when needed; prefix formula-like values so spreadsheets don't execute them.
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+}
+
+export function exportToCSV(data: ExportData, filename?: string) {
+  const lines = [
+    data.columns.map((col) => csvCell(col.header)).join(','),
+    ...data.rows.map((row) => data.columns.map((col) => csvCell(row[col.key])).join(',')),
+  ];
+  // BOM so Excel opens UTF-8 (accents, Kinyarwanda names) correctly.
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const exportFilename = filename || `${data.title.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.csv`;
+  downloadBlob(blob, exportFilename);
+}

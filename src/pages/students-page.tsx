@@ -822,6 +822,7 @@ export function StudentsPage() {
 
           <div className="p-4">
         <DataTable
+          exportable={false}
           ariaLabel="Students"
           columns={studentColumns}
           data={students}

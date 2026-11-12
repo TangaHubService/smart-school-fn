@@ -33,6 +33,7 @@ import {
   PageHeader,
   type AttentionItem,
 } from '../components/ui/dashboard-kit';
+import { percentOf } from '../utils/format-number';
 
 const MODULE_ICONS: Record<AcademicAuditModule, typeof ClipboardList> = {
   ATTENDANCE: ClipboardList,
@@ -324,7 +325,7 @@ export function AuditorDashboardPage() {
                     {Object.entries(reportQuery.data.report.moduleDistribution).map(
                       ([module, count]) => {
                         const total = reportQuery.data.report.totalAudits;
-                        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                        const pct = total > 0 ? percentOf(count, total) : 0;
                         return (
                           <MeterRow
                             key={module}

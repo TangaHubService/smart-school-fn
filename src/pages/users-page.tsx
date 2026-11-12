@@ -410,6 +410,7 @@ export function UsersPage() {
 
         <div className="p-4">
           <DataTable<UserListItem>
+            exportable={false}
             ariaLabel="Platform users"
             columns={columns}
             data={rows}
