@@ -52,9 +52,9 @@ export function ReportCardsPage() {
     setPage(1);
   }, [catalogAcademicYearId, termId, classRoomId, studentFilterId, debouncedSearch]);
 
+  // Terms and the student list depend on the year; classes do not, so keep the class.
   useEffect(() => {
     setTermId('');
-    setClassRoomId('');
     setStudentFilterId('');
   }, [catalogAcademicYearId]);
 
@@ -79,10 +79,11 @@ export function ReportCardsPage() {
   });
 
   const studentsFilterQuery = useQuery({
-    queryKey: ['students-report-filter', catalogAcademicYearId || 'all'],
+    queryKey: ['students-report-filter', catalogAcademicYearId || 'all', classRoomId || 'all'],
     queryFn: () =>
       listStudentsApi(auth.accessToken!, {
         ...(catalogAcademicYearId ? { academicYearId: catalogAcademicYearId } : {}),
+        ...(classRoomId ? { classId: classRoomId } : {}),
         page: 1,
         pageSize: 500,
       }),
@@ -255,7 +256,10 @@ export function ReportCardsPage() {
           Class
           <select
             value={classRoomId}
-            onChange={(e) => setClassRoomId(e.target.value)}
+            onChange={(e) => {
+              setClassRoomId(e.target.value);
+              setStudentFilterId('');
+            }}
             className="h-10 w-full rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400"
           >
             <option value="">All classes</option>

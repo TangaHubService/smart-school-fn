@@ -543,6 +543,11 @@ export function ExamsPage() {
   const exams = examsQuery.data?.items ?? [];
   const pagination = examsQuery.data?.pagination;
   const terms = (termsQuery.data as any[]) ?? [];
+  // The term filter only offers terms of the selected year; with "All years" the year
+  // name is shown so identical names like "Term 1" can be told apart.
+  const filterTerms = academicYearFilter
+    ? terms.filter((term) => term.academicYearId === academicYearFilter)
+    : terms;
   const classRooms = (classesQuery.data as any[]) ?? [];
   const subjects = (subjectsQuery.data as any[]) ?? [];
   const selectedExamSubjectId = examForm.watch('subjectId');
@@ -672,9 +677,11 @@ export function ExamsPage() {
                 className={inputClassName}
               >
                 <option value="">All terms</option>
-                {terms.map((term) => (
+                {filterTerms.map((term) => (
                   <option key={term.id} value={term.id}>
-                    {term.name}
+                    {academicYearFilter || !term.academicYear?.name
+                      ? term.name
+                      : `${term.name} (${term.academicYear.name})`}
                   </option>
                 ))}
               </select>
@@ -723,8 +730,17 @@ export function ExamsPage() {
               <select
                 value={academicYearFilter}
                 onChange={(event) => {
+                  const nextYearId = event.target.value;
                   setPage(1);
-                  setAcademicYearFilter(event.target.value);
+                  setAcademicYearFilter(nextYearId);
+                  // Drop a term that belongs to a different year, otherwise the list is always empty.
+                  if (
+                    termFilter &&
+                    nextYearId &&
+                    terms.find((term) => term.id === termFilter)?.academicYearId !== nextYearId
+                  ) {
+                    setTermFilter('');
+                  }
                 }}
                 className={inputClassName}
               >

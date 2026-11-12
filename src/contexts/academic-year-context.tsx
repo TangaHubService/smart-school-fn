@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from '../features/auth/auth.context';
 import {
@@ -28,8 +29,20 @@ const AcademicYearContext = createContext<AcademicYearContextValue>({
   isLoading: true,
 });
 
+/**
+ * Sent as `academicYearId` when the user explicitly picks "All years". If the param is
+ * left out, the backend falls back to the saved year, so "All years" would show one year.
+ */
+export const ALL_ACADEMIC_YEARS = 'all';
+
+/** Maps a year filter ('' = "All years") to the value list endpoints expect. */
+export function toAcademicYearParam(yearFilter: string): string {
+  return yearFilter || ALL_ACADEMIC_YEARS;
+}
+
 export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
+  const queryClient = useQueryClient();
   const [pref, setPref] = useState<AcademicYearPreference | null>(null);
   const [availableYears, setAvailableYears] = useState<AcademicYearSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +78,9 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
     try {
       const updated = await setAcademicYearPreferenceApi(auth.accessToken, { academicYearId });
       setPref(updated);
+      // Many list endpoints fall back to the saved year when a request has no year, and
+      // their query keys don't include it. Refetch so nothing keeps showing the old year.
+      void queryClient.invalidateQueries();
     } catch {
       // handle error silently
     }
@@ -78,6 +94,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         ...(termId ? { termId } : {}),
       });
       setPref(updated);
+      void queryClient.invalidateQueries();
     } catch {
       // handle error silently
     }

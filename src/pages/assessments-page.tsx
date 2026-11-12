@@ -13,7 +13,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
-import { useAcademicYear } from '../contexts/academic-year-context';
+import { useAcademicYear, toAcademicYearParam } from '../contexts/academic-year-context';
 import {
   createAssessmentApi,
   deleteAssessmentApi,
@@ -58,6 +58,8 @@ export function AssessmentsPage() {
 
   useEffect(() => {
     setYearFilter(globalAcademicYearId ?? '');
+    setCourseFilter('');
+    setPage(1);
   }, [globalAcademicYearId]);
   const [page, setPage] = useState(1);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -90,7 +92,7 @@ export function AssessmentsPage() {
     queryKey: ['assessment-course-options', yearFilter || null, classFilter || null],
     queryFn: () =>
       listCoursesApi(auth.accessToken!, {
-        academicYearId: yearFilter || undefined,
+        academicYearId: toAcademicYearParam(yearFilter),
         classId: classFilter || undefined,
         page: 1,
         pageSize: 50,
@@ -109,7 +111,7 @@ export function AssessmentsPage() {
       listAssessmentsApi(auth.accessToken!, {
         q: search || undefined,
         classId: classFilter || undefined,
-        academicYearId: yearFilter || undefined,
+        academicYearId: toAcademicYearParam(yearFilter),
         courseId: courseFilter || undefined,
         page,
         pageSize: 20,
@@ -242,6 +244,7 @@ export function AssessmentsPage() {
                 onChange={(event) => {
                   setPage(1);
                   setYearFilter(event.target.value);
+                  setCourseFilter('');
                 }}
                 className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               >
@@ -261,6 +264,7 @@ export function AssessmentsPage() {
                 onChange={(event) => {
                   setPage(1);
                   setClassFilter(event.target.value);
+                  setCourseFilter('');
                 }}
                 className="h-11 rounded-xl border border-brand-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-brand-400"
               >

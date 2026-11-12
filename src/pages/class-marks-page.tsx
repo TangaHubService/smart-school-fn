@@ -87,9 +87,9 @@ export function ClassMarksPage() {
     ledgerSortDir,
   ]);
 
+  // Terms and the student list depend on the year; classes do not, so keep the class.
   useEffect(() => {
     setLedgerTermId('');
-    setLedgerClassId('');
     setLedgerStudentId('');
   }, [ledgerAcademicYearId]);
 
@@ -253,10 +253,11 @@ export function ClassMarksPage() {
   });
 
   const studentsForLedgerQuery = useQuery({
-    queryKey: ['students-ledger-filter', ledgerAcademicYearId || 'all'],
+    queryKey: ['students-ledger-filter', ledgerAcademicYearId || 'all', ledgerClassId || 'all'],
     queryFn: () =>
       listStudentsApi(auth.accessToken!, {
         ...(ledgerAcademicYearId ? { academicYearId: ledgerAcademicYearId } : {}),
+        ...(ledgerClassId ? { classId: ledgerClassId } : {}),
         pageSize: 500,
         page: 1,
       }),
@@ -332,6 +333,8 @@ export function ClassMarksPage() {
   useEffect(() => {
     if (globalAcademicYearId) {
       setAcademicYearId(globalAcademicYearId);
+      // A term belongs to one year: keep the grid from mixing the new year with an old term.
+      setTermId('');
     }
   }, [globalAcademicYearId]);
 
@@ -558,7 +561,10 @@ export function ClassMarksPage() {
                   Class
                   <select
                     value={ledgerClassId}
-                    onChange={(e) => setLedgerClassId(e.target.value)}
+                    onChange={(e) => {
+                      setLedgerClassId(e.target.value);
+                      setLedgerStudentId('');
+                    }}
                     className="h-10 min-w-[11rem] rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400"
                   >
                     <option value="">All classes</option>

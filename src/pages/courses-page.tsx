@@ -78,6 +78,8 @@ interface SubjectOption {
   name: string;
 }
 
+const COURSES_PAGE_SIZE = 12;
+
 const COURSE_CARD_BACKGROUNDS = [
   {
     backgroundColor: '#6c5ce7',
@@ -410,6 +412,7 @@ export function CoursesPage() {
     classIdFromHierarchy ? classIdFromHierarchy : 'ALL'
   );
   const [page, setPage] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedLessonId, setSelectedLessonId] = useState('');
 
@@ -449,16 +452,41 @@ export function CoursesPage() {
     queryFn: () => listCourseSubjectOptionsApi(auth.accessToken!),
   });
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  // A new academic year means a different result set: go back to page 1.
+  useEffect(() => {
+    setPage(1);
+  }, [academicYearId]);
+
   const coursesQuery = useQuery({
-    queryKey: ['lms', 'courses', page, academicYearId, classFilter],
+    queryKey: [
+      'lms',
+      'courses',
+      page,
+      academicYearId,
+      classFilter,
+      subjectFilter,
+      debouncedSearch,
+    ],
     queryFn: () =>
       listCoursesApi(auth.accessToken!, {
         page,
-        pageSize: 12,
+        pageSize: COURSES_PAGE_SIZE,
         academicYearId: academicYearId ?? undefined,
         classId: classFilter !== 'ALL' ? classFilter : undefined,
+        subjectId: subjectFilter !== 'ALL' ? subjectFilter : undefined,
+        search: debouncedSearch || undefined,
       }),
+    placeholderData: (previous) => previous,
   });
+  const coursesTotalPages = coursesQuery.data?.pagination.totalPages ?? 1;
+  const hasCourseFilters =
+    Boolean(debouncedSearch) || subjectFilter !== 'ALL' || classFilter !== 'ALL';
+  const coursesTotalItems = coursesQuery.data?.pagination.totalItems ?? 0;
 
   const courseDetailQuery = useQuery({
     queryKey: ['lms', 'course-detail', selectedCourseId],
@@ -810,22 +838,8 @@ export function CoursesPage() {
   const isCourseSetupMissing =
     !academicYears.length || !classRooms.length || (isTeacherOnly && !subjects.length);
 
-  const visibleCourses = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const items = coursesQuery.data?.items ?? [];
-    return items.filter((course) => {
-      const subjectName = course.subject?.name ?? '';
-      const matchesSearch = q
-        ? [course.title, course.classRoom.name, course.academicYear.name, subjectName]
-          .join(' ')
-          .toLowerCase()
-          .includes(q)
-        : true;
-      const matchesSubject = subjectFilter === 'ALL' ? true : course.subject?.id === subjectFilter;
-
-      return matchesSearch && matchesSubject;
-    });
-  }, [coursesQuery.data?.items, search, subjectFilter]);
+  // Class, subject and search are filtered on the server so every page is reachable.
+  const visibleCourses = useMemo(() => coursesQuery.data?.items ?? [], [coursesQuery.data?.items]);
 
   useEffect(() => {
     if (selectedCourseId && !visibleCourses.some((course) => course.id === selectedCourseId)) {
@@ -841,12 +855,14 @@ export function CoursesPage() {
     }
   }, [courseDetailQuery.data?.lessons.items, selectedLessonId]);
 
+  // Apply ?classId= from the Academics hierarchy when it changes, not on every
+  // class-list refetch (that would overwrite a class the user picked by hand).
   useEffect(() => {
-    if (!classIdFromHierarchy || !classRooms.length) return;
-    if (classRooms.some((item) => item.id === classIdFromHierarchy)) {
+    if (classIdFromHierarchy) {
       setClassFilter(classIdFromHierarchy);
+      setPage(1);
     }
-  }, [classIdFromHierarchy, classRooms]);
+  }, [classIdFromHierarchy]);
 
   function openCreateCourse() {
     setCourseModalMode('create');
@@ -1140,6 +1156,7 @@ export function CoursesPage() {
 
                 {!coursesQuery.isPending && !coursesQuery.isError ? (
                   visibleCourses.length ? (
+                    <>
                     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                       {visibleCourses.map((course, courseIndex) => {
                         const cover =
@@ -1242,15 +1259,51 @@ export function CoursesPage() {
                         );
                       })}
                     </div>
-
-
+                    {coursesTotalPages > 1 ? (
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-white px-4 py-3 text-sm text-slate-600">
+                        <span>
+                          {(page - 1) * COURSES_PAGE_SIZE + 1}-
+                          {Math.min(page * COURSES_PAGE_SIZE, coursesTotalItems)} of {coursesTotalItems} courses
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPage((current) => Math.max(1, current - 1))}
+                            disabled={page <= 1 || coursesQuery.isFetching}
+                            className="inline-flex items-center gap-1 rounded-xl border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label="Previous page of courses"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                            Previous
+                          </button>
+                          <span>
+                            Page {page} of {coursesTotalPages}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPage((current) => Math.min(coursesTotalPages, current + 1))
+                            }
+                            disabled={page >= coursesTotalPages || coursesQuery.isFetching}
+                            className="inline-flex items-center gap-1 rounded-xl border border-brand-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label="Next page of courses"
+                          >
+                            Next
+                            <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    </>
                   ) : (
                     <EmptyState
-                      title="No courses yet"
+                      title={hasCourseFilters ? 'No matching courses' : 'No courses yet'}
                       message={
-                        canManageCourses
-                          ? 'Create the first class course to start publishing lessons.'
-                          : 'No courses match the current filters.'
+                        hasCourseFilters
+                          ? 'No courses match the current search, subject or class filters.'
+                          : canManageCourses
+                            ? 'Create the first class course to start publishing lessons.'
+                            : 'No courses have been set up yet.'
                       }
                       action={
                         canManageCourses ? (

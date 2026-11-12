@@ -28,49 +28,16 @@ import { StateView } from '../components/state-view';
 import { InsightGrid, InsightCard } from '../components/ui/insight-card';
 import { ChartCard } from '../components/ui/chart-card';
 import { useAuth } from '../features/auth/auth.context';
-import { listCoursesApi, listTeacherLearningInsightsApi } from '../features/sprint4/lms.api';
-
-/** TEMPORARY SEED DATA — for design review only. Remove before production. */
-const SEED_INSIGHTS = [
-  {
-    courseId: 'seed-1',courseTitle: 'Mathematics Fundamentals',
-    classRoomId: 'c1',classRoomName: 'S2A',
-    enrolledStudents: 28,publishedLessons: 12,
-    avgCompletionPercent: 78,atRiskCount: 4,
-    avgQuizScorePercent: 82,
-  },
-  {
-    courseId: 'seed-2',courseTitle: 'English Literature',
-    classRoomId: 'c1',classRoomName: 'S2A',
-    enrolledStudents: 32,publishedLessons: 9,
-    avgCompletionPercent: 65,atRiskCount: 7,
-    avgQuizScorePercent: 71,
-  },
-  {
-    courseId: 'seed-3',courseTitle: 'Physics & Chemistry',
-    classRoomId: 'c2',classRoomName: 'S3B',
-    enrolledStudents: 24,publishedLessons: 15,
-    avgCompletionPercent: 91,atRiskCount: 1,
-    avgQuizScorePercent: 88,
-  },
-  {
-    courseId: 'seed-4',courseTitle: 'Biology Basics',
-    classRoomId: 'c2',classRoomName: 'S3B',
-    enrolledStudents: 20,publishedLessons: 10,
-    avgCompletionPercent: 54,atRiskCount: 9,
-    avgQuizScorePercent: 62,
-  },
-  {
-    courseId: 'seed-5',courseTitle: 'History of Rwanda',
-    classRoomId: 'c3',classRoomName: 'S1A',
-    enrolledStudents: 35,publishedLessons: 8,
-    avgCompletionPercent: 88,atRiskCount: 2,
-    avgQuizScorePercent: 79,
-  },
-];
+import { useAcademicYear } from '../contexts/academic-year-context';
+import {
+  listCoursesApi,
+  listTeacherLearningInsightsApi,
+  type TeacherLearningInsightRow,
+} from '../features/sprint4/lms.api';
 
 export function TeacherLearningInsightsPage() {
   const auth = useAuth();
+  const { academicYearId } = useAcademicYear();
   const [classFilter, setClassFilter] = useState('ALL');
   const [courseFilter, setCourseFilter] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -88,9 +55,14 @@ export function TeacherLearningInsightsPage() {
   });
 
   const coursesQuery = useQuery({
-    queryKey: ['lms', 'teacher-courses-options'],
+    queryKey: ['lms', 'teacher-courses-options', academicYearId],
     enabled: Boolean(auth.accessToken),
-    queryFn: () => listCoursesApi(auth.accessToken!, { page: 1, pageSize: 100 }),
+    queryFn: () =>
+      listCoursesApi(auth.accessToken!, {
+        page: 1,
+        pageSize: 100,
+        academicYearId: academicYearId ?? undefined,
+      }),
   });
 
   const classOptions = useMemo(() => {
@@ -107,7 +79,7 @@ export function TeacherLearningInsightsPage() {
       .map((c) => ({ id: c.id, label: c.title }));
   }, [coursesQuery.data, classFilter]);
 
-  const rows = (q.data?.items?.length ? q.data.items : SEED_INSIGHTS) as typeof SEED_INSIGHTS;
+  const rows: TeacherLearningInsightRow[] = useMemo(() => q.data?.items ?? [], [q.data?.items]);
 
   const totalStudents = useMemo(() => {
     return rows.reduce((sum, r) => sum + (r.enrolledStudents ?? 0), 0);

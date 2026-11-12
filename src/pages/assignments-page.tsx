@@ -15,7 +15,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
-import { useAcademicYear } from '../contexts/academic-year-context';
+import { useAcademicYear, toAcademicYearParam } from '../contexts/academic-year-context';
 import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
 import {
@@ -145,6 +145,8 @@ export function AssignmentsPage() {
 
   useEffect(() => {
     setYearFilter(globalAcademicYearId ?? '');
+    setCourseFilter('');
+    setPage(1);
   }, [globalAcademicYearId]);
   const [page, setPage] = useState(1);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -177,7 +179,7 @@ export function AssignmentsPage() {
     queryKey: ['lms', 'course-options', yearFilter || null, classFilter || null],
     queryFn: () =>
       listCoursesApi(auth.accessToken!, {
-        academicYearId: yearFilter || undefined,
+        academicYearId: toAcademicYearParam(yearFilter),
         classId: classFilter || undefined,
         page: 1,
         pageSize: 50,
@@ -190,7 +192,7 @@ export function AssignmentsPage() {
       listAssignmentsApi(auth.accessToken!, {
         q: search || undefined,
         classId: classFilter || undefined,
-        academicYearId: yearFilter || undefined,
+        academicYearId: toAcademicYearParam(yearFilter),
         courseId: courseFilter || undefined,
         page,
         pageSize: 20,

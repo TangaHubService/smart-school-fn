@@ -290,6 +290,8 @@ export function listCoursesApi(
     classId?: string;
     academicYearId?: string;
     teacherUserId?: string;
+    subjectId?: string;
+    search?: string;
     page?: number;
     pageSize?: number;
   } = {}
@@ -297,6 +299,12 @@ export function listCoursesApi(
   const query = new URLSearchParams();
   if (params.classId) {
     query.set('classId', params.classId);
+  }
+  if (params.subjectId) {
+    query.set('subjectId', params.subjectId);
+  }
+  if (params.search?.trim()) {
+    query.set('search', params.search.trim());
   }
   if (params.academicYearId) {
     query.set('academicYearId', params.academicYearId);
