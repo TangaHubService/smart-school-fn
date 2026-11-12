@@ -37,7 +37,7 @@ import { SectionCard } from '../components/section-card';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
-import { useAcademicYear } from '../contexts/academic-year-context';
+import { ALL_ACADEMIC_YEARS, useAcademicYear } from '../contexts/academic-year-context';
 import { hasPermission, hasRole } from '../features/auth/auth-helpers';
 import { listAcademicYearsApi, listClassRoomsApi } from '../features/sprint1/sprint1.api';
 import { uploadFileToCloudinary } from '../features/sprint4/cloudinary-upload';
@@ -388,7 +388,7 @@ function StatusPill({ label, tone }: { label: string; tone: 'draft' | 'published
 export function CoursesPage() {
   const auth = useAuth();
   const { t } = useTranslation('teacher');
-  const { academicYearId } = useAcademicYear();
+  const { academicYearId, setAcademicYear, availableYears } = useAcademicYear();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const isTeacherOnly =
@@ -487,6 +487,21 @@ export function CoursesPage() {
   const hasCourseFilters =
     Boolean(debouncedSearch) || subjectFilter !== 'ALL' || classFilter !== 'ALL';
   const coursesTotalItems = coursesQuery.data?.pagination.totalItems ?? 0;
+
+  // When the selected year has no courses, look across all years so the page can say
+  // where the courses are instead of looking empty (the header year is a saved
+  // per-user preference and may differ from the year courses were created in).
+  const selectedYearIsEmpty =
+    Boolean(academicYearId) && !hasCourseFilters && coursesQuery.isSuccess && coursesTotalItems === 0;
+  const otherYearsQuery = useQuery({
+    queryKey: ['lms', 'courses', 'other-years', academicYearId],
+    queryFn: () =>
+      listCoursesApi(auth.accessToken!, { page: 1, pageSize: 1, academicYearId: ALL_ACADEMIC_YEARS }),
+    enabled: selectedYearIsEmpty,
+  });
+  const otherYearsCount = selectedYearIsEmpty ? (otherYearsQuery.data?.pagination.totalItems ?? 0) : 0;
+  const otherYear = otherYearsQuery.data?.items[0]?.academicYear ?? null;
+  const selectedYearName = availableYears.find((y) => y.id === academicYearId)?.name ?? null;
 
   const courseDetailQuery = useQuery({
     queryKey: ['lms', 'course-detail', selectedCourseId],
@@ -867,7 +882,12 @@ export function CoursesPage() {
   function openCreateCourse() {
     setCourseModalMode('create');
     setCourseModalCourseId('');
-    const currentAcademicYear = academicYears.find((item) => item.isCurrent) ?? academicYears[0];
+    // Default to the year selected in the header, so the new course shows up in this
+    // list right away; fall back to the school's current year.
+    const currentAcademicYear =
+      academicYears.find((item) => item.id === academicYearId) ??
+      academicYears.find((item) => item.isCurrent) ??
+      academicYears[0];
     // Keep creation consistent with the hierarchy entry point.
     const preferredClassId =
       classFilter !== 'ALL' && classRooms.some((item) => item.id === classFilter)
@@ -1297,16 +1317,43 @@ export function CoursesPage() {
                     </>
                   ) : (
                     <EmptyState
-                      title={hasCourseFilters ? 'No matching courses' : 'No courses yet'}
+                      title={
+                        hasCourseFilters
+                          ? 'No matching courses'
+                          : otherYearsCount > 0
+                            ? `No courses in ${selectedYearName ?? 'this academic year'}`
+                            : 'No courses yet'
+                      }
                       message={
                         hasCourseFilters
                           ? 'No courses match the current search, subject or class filters.'
-                          : canManageCourses
-                            ? 'Create the first class course to start publishing lessons.'
-                            : 'No courses have been set up yet.'
+                          : otherYearsCount > 0
+                            ? `Your school has ${otherYearsCount} ${otherYearsCount === 1 ? 'course' : 'courses'} in other academic years${otherYear ? `, for example ${otherYear.name}` : ''}. Change the academic year at the top of the page to see them.`
+                            : canManageCourses
+                              ? 'Create the first class course to start publishing lessons.'
+                              : 'No courses have been set up yet.'
                       }
                       action={
-                        canManageCourses ? (
+                        otherYearsCount > 0 && otherYear ? (
+                          <div className="flex flex-wrap justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void setAcademicYear(otherYear.id)}
+                              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+                            >
+                              Switch to {otherYear.name}
+                            </button>
+                            {canManageCourses ? (
+                              <button
+                                type="button"
+                                onClick={openCreateCourse}
+                                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                              >
+                                Create course
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : canManageCourses ? (
                           <button
                             type="button"
                             onClick={openCreateCourse}
