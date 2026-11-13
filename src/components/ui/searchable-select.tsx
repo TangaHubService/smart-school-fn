@@ -42,30 +42,42 @@ export function SearchableSelect({
   onOptionSelect,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // Text typed since the list was opened. null = nothing typed yet, so show every
+  // option instead of filtering by the currently selected label.
+  const [query, setQuery] = useState<string | null>(null);
+
+  const open = () => {
+    setQuery(null);
+    setIsOpen(true);
+  };
 
   const filtered = useMemo(() => {
-    const query = value.trim().toLowerCase();
-    if (!query) {
+    const normalized = (query ?? '').trim().toLowerCase();
+    if (!normalized) {
       return options;
     }
 
-    return options.filter((item) => item.label.toLowerCase().includes(query));
-  }, [options, value]);
+    return options.filter((item) => item.label.toLowerCase().includes(normalized));
+  }, [options, query]);
 
   return (
     <label className="grid min-w-0 gap-1 text-sm font-medium text-slate-700">
       <span>{label}</span>
       <div className="relative">
         <input
-          value={value}
+          value={query ?? value}
           disabled={disabled}
           onChange={(event) => {
+            setQuery(event.target.value);
             onInputChange(event.target.value);
             setIsOpen(true);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={open}
           onBlur={() => {
-            setTimeout(() => setIsOpen(false), 120);
+            setTimeout(() => {
+              setIsOpen(false);
+              setQuery(null);
+            }, 120);
           }}
           placeholder={placeholder}
           className="w-full rounded-xl border border-brand-200 bg-white px-3 py-2.5 pr-10 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 disabled:bg-slate-50 disabled:text-slate-400"
@@ -76,7 +88,7 @@ export function SearchableSelect({
           tabIndex={-1}
           disabled={disabled}
           onMouseDown={(event) => event.preventDefault()}
-          onClick={() => setIsOpen((current) => !current)}
+          onClick={() => (isOpen ? setIsOpen(false) : open())}
           className="absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-md p-1 text-slate-500 hover:bg-brand-50 disabled:hover:bg-transparent"
           aria-label={`Toggle ${label} options`}
         >
@@ -93,6 +105,7 @@ export function SearchableSelect({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     onOptionSelect(item);
+                    setQuery(null);
                     setIsOpen(false);
                   }}
                   className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-brand-50"
