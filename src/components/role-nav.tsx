@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bell,
   ClipboardCheck,
+  NotebookPen,
   BookOpen,
   Building2,
   CalendarDays,
@@ -55,7 +56,7 @@ export const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
 const NAV_GROUPS: Array<{ id: string; label: string; keys: string[] }> = [
   { id: 'overview', label: '', keys: ['dashboard'] },
   { id: 'schools', label: 'Schools', keys: ['tenants', 'subscriptions'] },
-  { id: 'academics', label: 'Academics', keys: ['years', 'class-management', 'subjects', 'timetable', 'attendance', 'learning-content', 'learning-insights'] },
+  { id: 'academics', label: 'Academics', keys: ['years', 'class-management', 'subjects', 'timetable', 'attendance', 'learning-content', 'lesson-plans', 'learning-insights'] },
   { id: 'assessment', label: 'Assessment', keys: ['continuous-assessment', 'exams', 'class-marks', 'conduct-marks-settings', 'report-cards'] },
   { id: 'people', label: 'People', keys: ['students', 'parents', 'staff', 'users', 'auditor-management'] },
   { id: 'communication', label: 'Communication', keys: ['announcements', 'support-center'] },
@@ -181,6 +182,15 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'GOV_AUDITOR'],
     requiredPermissionsOr: ['courses.read', 'subject.manage'],
     requiredPermissions: [],
+    setupState: 'COMPLETE',
+  },
+  {
+    key: 'lesson-plans',
+    label: 'Lesson Plans',
+    to: '/teacher/lesson-plans',
+    icon: NotebookPen,
+    roles: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'GOV_AUDITOR'],
+    requiredPermissions: ['courses.read'],
     setupState: 'COMPLETE',
   },
   {

@@ -11,6 +11,7 @@ import {
   ImagePlus,
   Pencil,
   Plus,
+  Sparkles,
   Trash2,
   Upload,
   X,
@@ -45,6 +46,8 @@ import {
   updateAssessmentQuestionApi,
 } from '../features/assessments/assessments.api';
 import { AssessmentQuestionImage } from '../features/assessments/assessment-question-image';
+import { AiQuestionGenerator } from '../features/assessments/ai-question-generator';
+import { getAiTeacherStatusApi } from '../features/ai-assistant/ai-teacher.api';
 import {
   AssessmentEditFormValues,
   AssessmentStatusPill,
@@ -100,6 +103,7 @@ export function AssessmentDetailPage() {
   const [regradeFeedback, setRegradeFeedback] = useState('');
   const [isUploadingQuestionImage, setIsUploadingQuestionImage] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [isAiGeneratorOpen, setIsAiGeneratorOpen] = useState(false);
   const [isReadingBulkFile, setIsReadingBulkFile] = useState(false);
   const [bulkImportFileName, setBulkImportFileName] = useState('');
   const [bulkImportRows, setBulkImportRows] = useState<ParsedAssessmentQuestionImportRow[]>([]);
@@ -135,6 +139,15 @@ export function AssessmentDetailPage() {
     enabled: Boolean(assessment?.course.id),
     queryFn: () => getCourseDetailApi(auth.accessToken!, assessment!.course.id),
   });
+
+  const aiStatusQuery = useQuery({
+    queryKey: ['ai-teacher-status'],
+    queryFn: () => getAiTeacherStatusApi(auth.accessToken!),
+    enabled: Boolean(auth.accessToken),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const aiEnabled = Boolean(aiStatusQuery.data?.enabled);
 
   const reviewAttemptQuery = useQuery({
     queryKey: ['assessment-attempt-review', reviewAttemptId || null],
@@ -721,6 +734,22 @@ export function AssessmentDetailPage() {
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Add question
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAiGeneratorOpen(true)}
+              disabled={questionEditingLocked || !aiEnabled}
+              title={
+                questionEditingLocked
+                  ? 'Questions are locked after publish or after students start attempting'
+                  : !aiEnabled
+                    ? 'Ask your school admin to switch on AI in AI settings'
+                    : 'Let AI write questions from your lessons, then edit them'
+              }
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Generate with AI
             </button>
             <button
               type="button"
@@ -1595,6 +1624,15 @@ export function AssessmentDetailPage() {
           <EmptyState title="No attempt selected" message="Choose a submitted attempt to review." />
         )}
       </AppDrawer>
+
+      <AiQuestionGenerator
+        open={isAiGeneratorOpen}
+        onClose={() => setIsAiGeneratorOpen(false)}
+        accessToken={auth.accessToken!}
+        assessmentId={assessmentId}
+        lessons={lessonOptions.map((lesson) => ({ id: lesson.id, title: lesson.title }))}
+        defaultLessonId={assessment.lesson?.id ?? null}
+      />
     </div>
   );
 }

@@ -162,3 +162,18 @@ export function listLessonPlanRevisionsApi(accessToken: string, planId: string) 
     accessToken,
   });
 }
+
+export interface TeachingOption {
+  academicYearId: string;
+  classRoom: { id: string; code: string; name: string };
+  subject: { id: string; code: string; name: string };
+}
+
+/** The class + subject pairs the signed-in teacher teaches (from their active courses). */
+export function listTeachingOptionsApi(accessToken: string, academicYearId?: string) {
+  const query = academicYearId ? `?academicYearId=${encodeURIComponent(academicYearId)}` : '';
+  return apiRequest<TeachingOption[]>(`/lesson-plans/teaching-options${query}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
