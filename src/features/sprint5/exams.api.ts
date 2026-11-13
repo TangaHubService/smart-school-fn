@@ -446,6 +446,14 @@ export interface AllMarksLedgerSubjectScore {
   subjectScore: number;
   grade: string;
   remark: string;
+  /** CAT and EXAM parts of subjectScore (0–100 scale): catShare + examShare = subjectScore. */
+  catShare?: number | null;
+  examShare?: number | null;
+  /** Raw marks behind the shares, e.g. 25 of 30. */
+  catObtained?: number;
+  catMax?: number;
+  examObtained?: number;
+  examMax?: number;
 }
 
 /** One row per student per class per term — subjects spread horizontally (combined marks sheet). */

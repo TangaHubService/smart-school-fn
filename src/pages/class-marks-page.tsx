@@ -16,6 +16,7 @@ import {
   getMarksGridApi,
   listAllMarksLedgerApi,
   saveMarksGridApi,
+  type AllMarksLedgerSubjectScore,
   type AllMarksLedgerWideRow,
   type MarksGridStudentRow,
 } from '../features/sprint5/exams.api';
@@ -41,6 +42,23 @@ const FULL_YEAR_TERM_ID = '__full_year__';
 const LEDGER_PAGE_SIZE = 25;
 
 type MarksTab = 'overview' | 'entry';
+
+/**
+ * CAT / EXAM as their part of the subject total, so CAT + EXAM = TOT on every row.
+ * Falls back to the old percentages if the server has not sent the parts yet.
+ */
+function ledgerPart(score: AllMarksLedgerSubjectScore, part: 'cat' | 'exam'): number | null {
+  const share = part === 'cat' ? score.catShare : score.examShare;
+  if (share !== undefined) return share;
+  return part === 'cat' ? score.testPercent : score.examPercent;
+}
+
+function ledgerRawLabel(score: AllMarksLedgerSubjectScore, part: 'cat' | 'exam'): string | undefined {
+  const obtained = part === 'cat' ? score.catObtained : score.examObtained;
+  const max = part === 'cat' ? score.catMax : score.examMax;
+  if (obtained === undefined || !max) return undefined;
+  return `${part === 'cat' ? 'CAT' : 'Exam'} marks: ${Number(obtained.toFixed(2))} / ${max}`;
+}
 
 export function ClassMarksPage() {
   const auth = useAuth();
@@ -107,8 +125,8 @@ export function ClassMarksPage() {
 
     const subjectColumns = ledgerSubjects.flatMap(
       (sub: { id: string; name: string; code: string }) => [
-        { header: `${sub.code} CAT %`, key: `${sub.id}_cat` },
-        { header: `${sub.code} Exam %`, key: `${sub.id}_exam` },
+        { header: `${sub.code} CAT`, key: `${sub.id}_cat` },
+        { header: `${sub.code} Exam`, key: `${sub.id}_exam` },
         { header: `${sub.code} Total`, key: `${sub.id}_total` },
       ]
     );
@@ -139,9 +157,10 @@ export function ClassMarksPage() {
       ledgerSubjects.forEach((sub: { id: string; name: string; code: string }) => {
         const score = row.scores[sub.id];
         if (score) {
-          rowData[`${sub.id}_cat`] = score.testPercent != null ? score.testPercent.toFixed(1) : '—';
-          rowData[`${sub.id}_exam`] =
-            score.examPercent != null ? score.examPercent.toFixed(1) : '—';
+          const cat = ledgerPart(score, 'cat');
+          const exam = ledgerPart(score, 'exam');
+          rowData[`${sub.id}_cat`] = cat != null ? cat.toFixed(1) : '—';
+          rowData[`${sub.id}_exam`] = exam != null ? exam.toFixed(1) : '—';
           rowData[`${sub.id}_total`] = score.subjectScore.toFixed(1);
         } else {
           rowData[`${sub.id}_cat`] = '—';
@@ -204,9 +223,10 @@ export function ClassMarksPage() {
       ledgerSubjects.forEach((sub: { id: string; name: string; code: string }) => {
         const score = row.scores[sub.id];
         if (score) {
-          rowData[`${sub.id}_cat`] = score.testPercent != null ? score.testPercent.toFixed(1) : '—';
-          rowData[`${sub.id}_exam`] =
-            score.examPercent != null ? score.examPercent.toFixed(1) : '—';
+          const cat = ledgerPart(score, 'cat');
+          const exam = ledgerPart(score, 'exam');
+          rowData[`${sub.id}_cat`] = cat != null ? cat.toFixed(1) : '—';
+          rowData[`${sub.id}_exam`] = exam != null ? exam.toFixed(1) : '—';
           rowData[`${sub.id}_total`] = score.subjectScore.toFixed(1);
         } else {
           rowData[`${sub.id}_cat`] = '—';
@@ -468,7 +488,7 @@ export function ClassMarksPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid gap-6 overflow-hidden">
+        <div className="grid min-w-0 grid-cols-1 gap-6">
       <SectionCard
         title="Marks"
         subtitle=""
@@ -521,7 +541,7 @@ export function ClassMarksPage() {
         </div>
 
         {tab === 'overview' ? (
-          <div className="grid gap-4">
+          <div className="grid min-w-0 grid-cols-1 gap-4">
             <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-3">
               <div className="flex flex-nowrap items-end gap-2 overflow-x-auto pb-0.5 [scrollbar-width:thin]">
                 <label className="flex shrink-0 flex-col gap-1 text-sm font-medium text-slate-800">
@@ -634,7 +654,7 @@ export function ClassMarksPage() {
             <p className="text-xs text-slate-600">
               By default, marks from <strong>all academic years</strong> are included (with
               pagination). Each row is one student in a class and term; the <strong>Year</strong>{' '}
-              column shows which academic year. Subjects are columns (CAT, EXAM, total). Rank uses
+              column shows which academic year. Subjects are columns: CAT + EXAM = TOT (out of 100; hover a mark to see the raw score). Rank uses
               the sum of subject scores (same rules as the class grid).
             </p>
 
@@ -666,7 +686,7 @@ export function ClassMarksPage() {
 
             {!ledgerQuery.isPending && !ledgerQuery.isError && ledgerItems.length > 0 ? (
               <>
-                <div className="overflow-x-auto rounded-xl border border-brand-100">
+                <div className="min-w-0 max-w-full overflow-x-auto rounded-xl border border-brand-100">
                   <table className="min-w-[1200px] w-full table-auto border-collapse text-left text-sm">
                     <thead>
                       <tr className="border-b border-brand-200 bg-brand-50">
@@ -790,11 +810,15 @@ export function ClassMarksPage() {
                               <React.Fragment key={sub.id}>
                                 <td
                                   className={`border-r border-brand-50 px-1 py-1.5 text-center text-xs tabular-nums text-slate-800 ${sep}`}
+                                  title={has && score ? ledgerRawLabel(score, 'cat') : undefined}
                                 >
-                                  {has && score ? (score.testPercent?.toFixed(1) ?? '—') : '—'}
+                                  {has && score ? (ledgerPart(score, 'cat')?.toFixed(1) ?? '—') : '—'}
                                 </td>
-                                <td className="border-r border-brand-50 px-1 py-1.5 text-center text-xs tabular-nums text-slate-800">
-                                  {has && score ? (score.examPercent?.toFixed(1) ?? '—') : '—'}
+                                <td
+                                  className="border-r border-brand-50 px-1 py-1.5 text-center text-xs tabular-nums text-slate-800"
+                                  title={has && score ? ledgerRawLabel(score, 'exam') : undefined}
+                                >
+                                  {has && score ? (ledgerPart(score, 'exam')?.toFixed(1) ?? '—') : '—'}
                                 </td>
                                 <td className="border-r border-brand-50 bg-slate-50/70 px-1 py-1.5 text-center text-xs font-medium tabular-nums text-slate-800">
                                   {has && score ? score.subjectScore.toFixed(1) : '—'}
@@ -864,7 +888,7 @@ export function ClassMarksPage() {
         ) : null}
 
         {tab === 'entry' ? (
-          <div className="grid gap-4 rounded-xl border border-brand-100 bg-white/80 p-4 shadow-sm sm:p-5">
+          <div className="grid min-w-0 grid-cols-1 gap-4 rounded-xl border border-brand-100 bg-white/80 p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-slate-950">
@@ -1016,7 +1040,7 @@ export function ClassMarksPage() {
               hasGrid &&
               grid &&
               !isFullYearSelected ? (
-                <div className="w-full overflow-x-auto rounded-xl border border-brand-100">
+                <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-xl border border-brand-100">
                   <table className="w-full min-w-full table-auto border-collapse text-left text-sm">
                     <thead>
                       <tr className="border-b border-brand-200 bg-brand-50">
