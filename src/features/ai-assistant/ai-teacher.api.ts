@@ -22,7 +22,7 @@ export interface GeneratedQuestion {
 }
 
 export function getAiTeacherStatusApi(accessToken: string) {
-  return apiRequest<AiStatus>('/ai/teacher/status', { method: 'GET', accessToken });
+  return apiRequest<AiStatus & { remainingToday?: number }>('/ai/teacher/status', { method: 'GET', accessToken });
 }
 
 /** Returns a draft only; nothing is saved until the teacher saves the lesson plan form. */
@@ -63,4 +63,79 @@ export function generateAssessmentQuestionsWithAiApi(
     '/ai/teacher/assessment-questions',
     { method: 'POST', accessToken, body: payload }
   );
+}
+
+// ---- Knowledge base tools (study material + assessment preparation) -------------
+
+export type StudyMaterialFormat = 'summary' | 'revision-notes' | 'key-terms' | 'study-guide';
+
+export interface KnowledgeBaseLesson {
+  id: string;
+  title: string;
+  contentType: 'TEXT' | 'PDF' | 'VIDEO' | 'LINK';
+  sectionId: string | null;
+  isPublished: boolean;
+  /** The lesson has written text the AI can read (otherwise only its title is used). */
+  hasText: boolean;
+}
+
+export interface KnowledgeBaseCourse {
+  id: string;
+  title: string;
+  subjectName: string | null;
+  classRoomName: string | null;
+  academicYearName: string | null;
+  sections: Array<{ id: string; title: string }>;
+  lessons: KnowledgeBaseLesson[];
+}
+
+export interface StudyMaterialResult {
+  title: string;
+  format: StudyMaterialFormat;
+  content: string;
+  basedOnLessons: string[];
+  usedWrittenContent: boolean;
+  contentShortened: boolean;
+}
+
+export interface AssessmentPrepResult {
+  title: string;
+  instructions: string;
+  questions: GeneratedQuestion[];
+  totalPoints: number;
+  basedOnLessons: string[];
+  usedWrittenContent: boolean;
+  contentShortened: boolean;
+}
+
+export function getAiKnowledgeBaseApi(accessToken: string) {
+  return apiRequest<KnowledgeBaseCourse[]>('/ai/teacher/knowledge-base', { method: 'GET', accessToken });
+}
+
+export function generateStudyMaterialApi(
+  accessToken: string,
+  payload: {
+    courseId: string;
+    lessonIds: string[];
+    format: StudyMaterialFormat;
+    instructions?: string;
+    language: AiLanguage;
+  }
+) {
+  return apiRequest<StudyMaterialResult>('/ai/teacher/study-material', { method: 'POST', accessToken, body: payload });
+}
+
+export function prepareAssessmentWithAiApi(
+  accessToken: string,
+  payload: {
+    courseId: string;
+    lessonIds: string[];
+    count: number;
+    types: AiQuestionType[];
+    difficulty: AiDifficulty;
+    instructions?: string;
+    language: AiLanguage;
+  }
+) {
+  return apiRequest<AssessmentPrepResult>('/ai/teacher/assessment-prep', { method: 'POST', accessToken, body: payload });
 }

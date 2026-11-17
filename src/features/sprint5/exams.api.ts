@@ -724,6 +724,34 @@ async function fetchPdfBlob(accessToken: string, path: string) {
   return response.blob();
 }
 
+/**
+ * Mid-term report cards (progress so far this term) as one PDF: the whole class,
+ * one page per student, or a single student when `studentId` is given.
+ */
+export async function downloadMidTermReportCardsPdfApi(
+  accessToken: string,
+  params: { termId: string; classRoomId: string; studentId?: string; upTo?: string }
+) {
+  const query = new URLSearchParams({ termId: params.termId, classRoomId: params.classRoomId });
+  if (params.studentId) query.set('studentId', params.studentId);
+  if (params.upTo) query.set('upTo', params.upTo);
+  const response = await fetch(`${API_BASE_URL}/report-cards/mid-term/pdf?${query.toString()}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    let message = 'Could not create the mid-term report cards';
+    try {
+      const body = (await response.json()) as { error?: { message?: string } };
+      message = body.error?.message ?? message;
+    } catch {
+      // not JSON: keep the default message
+    }
+    throw new Error(message);
+  }
+  return response.blob();
+}
+
 export function downloadMyReportCardPdfApi(accessToken: string, snapshotId: string) {
   return fetchPdfBlob(accessToken, `/students/me/report-cards/${snapshotId}/pdf`);
 }

@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '../components/app-shell';
 import { PublicLayout } from '../components/public/public-layout';
 import { ProtectedRoute } from '../components/protected-route';
-import { RequireAnyPermission, RequirePermission } from '../components/require-permission';
+import { RequireAnyPermission, RequirePermission, RequireRole } from '../components/require-permission';
 import { RequireSetupComplete } from '../components/require-setup-complete';
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
 import { AcademicYearsPage } from '../pages/academic-years-page';
@@ -56,7 +56,8 @@ import { StudentAssignmentsPage } from '../pages/student-assignments-page';
 import { ClassChatPage } from '../pages/class-chat-page';
 import { StudentMessengerPage } from '../pages/student-messenger-page';
 import { StudentAiAssistantPage } from '../pages/student-ai-assistant-page';
-import { AdminAiSettingsPage } from '../pages/admin-ai-settings-page';
+import { SuperAdminAiSettingsPage } from '../pages/super-admin-ai-settings-page';
+import { TeacherAiAssistantPage } from '../pages/teacher-ai-assistant-page';
 import { StudentCoursesPage } from '../pages/student-courses-page';
 import { StudentReportCardsPage } from '../pages/student-report-cards-page';
 import { StudentAcademicYearSelectPage } from '../pages/student-academic-year-select-page';
@@ -136,6 +137,9 @@ export function AppRoutes() {
             <Route path="/super-admin/audit-logs" element={<AuditLogsPage />} />
             <Route path="/super-admin/auditors" element={<AdminAuditorsPage />} />
           </Route>
+          <Route element={<RequireRole role="SUPER_ADMIN" />}>
+            <Route path="/super-admin/ai-settings" element={<SuperAdminAiSettingsPage />} />
+          </Route>
 
           <Route element={<RequirePermission permission="tenants.create" />}>
             <Route
@@ -211,6 +215,7 @@ export function AppRoutes() {
               <Route path="/admin/my-classes" element={<TeacherMyClassesPage />} />
               <Route path="/admin/subjects" element={<SubjectsPage />} />
               <Route path="/teacher/lesson-plans" element={<TeacherLessonPlansPage />} />
+              <Route path="/teacher/ai-assistant" element={<TeacherAiAssistantPage />} />
             </Route>
             <Route element={<RequirePermission permission="chat.read" />}>
               <Route path="/admin/chat/:classRoomId" element={<ClassChatPage />} />
@@ -255,9 +260,8 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="billing.read" />}>
             <Route path="/admin/subscription" element={<SubscriptionInvoicePage />} />
           </Route>
-          <Route element={<RequirePermission permission="school.setup.manage" />}>
-            <Route path="/admin/ai-assistant" element={<AdminAiSettingsPage />} />
-          </Route>
+          {/* AI settings moved to the super admin; old school-admin link goes to the dashboard. */}
+          <Route path="/admin/ai-assistant" element={<Navigate to="/admin" replace />} />
 
           <Route element={<RequirePermission permission="parents.my_children.read" />}>
             <Route path="/parent" element={<Navigate to="/parent/dashboard" replace />} />

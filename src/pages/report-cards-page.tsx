@@ -11,6 +11,7 @@ import { Badge } from '../components/ui/badge';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
+  downloadMidTermReportCardsPdfApi,
   downloadStudentReportCardPdfApi,
   listReportCardsCatalogApi,
   type ReportCardCatalogRow,
@@ -42,6 +43,8 @@ export function ReportCardsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
+  const [midTermUpTo, setMidTermUpTo] = useState('');
+  const [loadingMidTerm, setLoadingMidTerm] = useState<'view' | 'download' | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchInput.trim()), 350);
@@ -157,6 +160,31 @@ export function ReportCardsPage() {
       setLoadingPdf(null);
     }
   };
+
+  const runMidTermPdf = async (mode: 'view' | 'download') => {
+    setLoadingMidTerm(mode);
+    try {
+      const blob = await downloadMidTermReportCardsPdfApi(auth.accessToken!, {
+        termId,
+        classRoomId,
+        studentId: studentFilterId || undefined,
+        upTo: midTermUpTo || undefined,
+      });
+      const term = catalogTerms.find((t: { id: string; name: string }) => t.id === termId);
+      const cls = classRooms.find((c: { id: string; code: string }) => c.id === classRoomId);
+      const fileName = `${cls?.code ?? 'class'}-${(term?.name ?? 'term').replace(/\s+/g, '-')}-mid-term-report${studentFilterId ? '' : 's'}.pdf`;
+      openPdfBlob(blob, mode, fileName);
+    } catch (e) {
+      showToast({
+        type: 'error',
+        title: 'Could not create mid-term report cards',
+        message: e instanceof Error ? e.message : 'Unknown error',
+      });
+    } finally {
+      setLoadingMidTerm(null);
+    }
+  };
+  const midTermReady = Boolean(termId && classRoomId);
 
   const noResults =
     !catalogQuery.isPending && !catalogQuery.isError && (pagination?.totalItems ?? 0) === 0;
@@ -296,6 +324,44 @@ export function ReportCardsPage() {
             className="h-10 w-full rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400"
           />
         </label>
+      </div>
+
+      <div className="mb-6 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-slate-900">Mid-term report cards</h3>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {midTermReady
+              ? `Progress so far this term from the marks already entered, one page per ${studentFilterId ? 'student' : 'student in the class'}. Subjects without marks show "-".`
+              : 'Pick a term and a class above (and a student for a single report).'}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="grid gap-1 text-xs font-medium text-slate-700">
+            Marks up to (optional)
+            <input
+              type="date"
+              value={midTermUpTo}
+              onChange={(e) => setMidTermUpTo(e.target.value)}
+              className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm outline-none focus:border-brand-400"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={!midTermReady || loadingMidTerm !== null}
+            onClick={() => void runMidTermPdf('view')}
+            className="h-9 rounded-lg border border-brand-200 bg-white px-3 text-sm font-semibold text-brand-700 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingMidTerm === 'view' ? 'Preparing…' : 'View'}
+          </button>
+          <button
+            type="button"
+            disabled={!midTermReady || loadingMidTerm !== null}
+            onClick={() => void runMidTermPdf('download')}
+            className="h-9 rounded-lg bg-brand-500 px-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingMidTerm === 'download' ? 'Preparing…' : 'Download PDF'}
+          </button>
+        </div>
       </div>
 
       {catalogQuery.isError ? (

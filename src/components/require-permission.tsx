@@ -46,3 +46,16 @@ export function RequireAnyPermission({ permissions }: RequireAnyPermissionProps)
 
   return <Outlet />;
 }
+
+interface RequireRoleProps {
+  role: string;
+}
+
+/** Only users with this exact role (no super admin / auditor bypass). */
+export function RequireRole({ role }: RequireRoleProps) {
+  const auth = useAuth();
+  if (!hasRole(auth.me, role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+  return <Outlet />;
+}

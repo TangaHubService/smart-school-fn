@@ -54,27 +54,38 @@ export function sendAiMessageApi(accessToken: string, id: string, payload: { con
   );
 }
 
+/** Platform-wide AI settings (super admin only): one OpenAI key shared by all schools. */
 export interface AiSettings {
   hasKey: boolean;
   keyLast4: string | null;
   model: string;
   enabled: boolean;
   dailyLimitPerStudent: number;
-  usingPlatformKey: boolean;
+  dailyLimitPerTeacher: number;
+  /** No key saved in the app; the server's environment key is being used. */
+  usingEnvKey: boolean;
+  /** True when schools can actually use AI right now (switched on and a key is available). */
+  active: boolean;
   updatedAt: string | null;
 }
 
 export function getAiSettingsApi(accessToken: string) {
-  return apiRequest<AiSettings>('/ai/settings', { method: 'GET', accessToken });
+  return apiRequest<AiSettings>('/platform/ai/settings', { method: 'GET', accessToken });
 }
 
 export function updateAiSettingsApi(
   accessToken: string,
-  payload: { apiKey?: string; model?: string; enabled?: boolean; dailyLimitPerStudent?: number }
+  payload: {
+    apiKey?: string;
+    model?: string;
+    enabled?: boolean;
+    dailyLimitPerStudent?: number;
+    dailyLimitPerTeacher?: number;
+  }
 ) {
-  return apiRequest<AiSettings>('/ai/settings', { method: 'PUT', accessToken, body: payload });
+  return apiRequest<AiSettings>('/platform/ai/settings', { method: 'PUT', accessToken, body: payload });
 }
 
 export function removeAiKeyApi(accessToken: string) {
-  return apiRequest<AiSettings>('/ai/settings/key', { method: 'DELETE', accessToken });
+  return apiRequest<AiSettings>('/platform/ai/settings/key', { method: 'DELETE', accessToken });
 }

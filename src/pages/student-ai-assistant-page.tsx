@@ -278,7 +278,7 @@ export function StudentAiAssistantPage() {
 
         {!enabled ? (
           <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
-            The AI assistant is not switched on for your school yet. Ask your school administrator to add an OpenAI key in AI Assistant settings.
+            The AI assistant is not switched on yet. It is managed by the platform administrator for all schools.
           </div>
         ) : null}
 

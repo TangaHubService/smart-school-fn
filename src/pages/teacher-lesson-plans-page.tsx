@@ -1210,7 +1210,7 @@ function AiLessonPlanAssistant({
     return (
       <p className="rounded-xl border border-dashed border-brand-200 px-3 py-2 text-xs text-slate-500">
         <Sparkles className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
-        AI planning help appears here once your school admin switches on AI in AI settings.
+        AI planning help appears here once the platform administrator switches on AI.
       </p>
     );
   }

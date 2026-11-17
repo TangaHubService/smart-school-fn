@@ -743,7 +743,7 @@ export function AssessmentDetailPage() {
                 questionEditingLocked
                   ? 'Questions are locked after publish or after students start attempting'
                   : !aiEnabled
-                    ? 'Ask your school admin to switch on AI in AI settings'
+                    ? 'AI is not switched on yet (managed by the platform administrator)'
                     : 'Let AI write questions from your lessons, then edit them'
               }
               className="inline-flex items-center gap-2 rounded-xl border border-brand-300 bg-white px-4 py-2 text-sm font-semibold text-brand-700 disabled:cursor-not-allowed disabled:opacity-60"

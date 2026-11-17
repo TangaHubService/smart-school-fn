@@ -56,11 +56,11 @@ export const SUPER_ADMIN_NAV_OVERRIDES: Record<string, string> = {
 const NAV_GROUPS: Array<{ id: string; label: string; keys: string[] }> = [
   { id: 'overview', label: '', keys: ['dashboard'] },
   { id: 'schools', label: 'Schools', keys: ['tenants', 'subscriptions'] },
-  { id: 'academics', label: 'Academics', keys: ['years', 'class-management', 'subjects', 'timetable', 'attendance', 'learning-content', 'lesson-plans', 'learning-insights'] },
+  { id: 'academics', label: 'Academics', keys: ['years', 'class-management', 'subjects', 'timetable', 'attendance', 'learning-content', 'lesson-plans', 'teacher-ai-assistant', 'learning-insights'] },
   { id: 'assessment', label: 'Assessment', keys: ['continuous-assessment', 'exams', 'class-marks', 'conduct-marks-settings', 'report-cards'] },
   { id: 'people', label: 'People', keys: ['students', 'parents', 'staff', 'users', 'auditor-management'] },
   { id: 'communication', label: 'Communication', keys: ['announcements', 'support-center'] },
-  { id: 'administration', label: 'Administration', keys: ['setup', 'subscription', 'ai-assistant', 'audit-reports', 'audit-logs'] },
+  { id: 'administration', label: 'Administration', keys: ['setup', 'subscription', 'ai-settings', 'audit-reports', 'audit-logs'] },
 ];
 
 export const NAV_ITEMS: NavItem[] = [
@@ -119,13 +119,22 @@ export const NAV_ITEMS: NavItem[] = [
     setupState: 'ANY',
   },
   {
-    key: 'ai-assistant',
-    label: 'AI Assistant',
-    to: '/admin/ai-assistant',
+    key: 'ai-settings',
+    label: 'AI Settings',
+    to: '/super-admin/ai-settings',
     icon: Sparkles,
-    roles: ['SCHOOL_ADMIN'],
-    requiredPermissions: ['school.setup.manage'],
+    roles: ['SUPER_ADMIN'],
+    requiredPermissions: [],
     setupState: 'ANY',
+  },
+  {
+    key: 'teacher-ai-assistant',
+    label: 'AI Assistant',
+    to: '/teacher/ai-assistant',
+    icon: Sparkles,
+    roles: ['TEACHER'],
+    requiredPermissions: ['courses.read'],
+    setupState: 'COMPLETE',
   },
   {
     key: 'years',
@@ -519,6 +528,7 @@ export function RoleNav({ onNavigate, collapsed }: RoleNavProps) {
     'announcements',
     'audit-logs',
     'subscriptions',
+    'ai-settings',
     'auditor-management',
     'audit-reports',
   ]);
