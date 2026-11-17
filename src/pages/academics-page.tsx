@@ -1551,6 +1551,19 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         title={editingSubjectId ? 'Update Subject' : 'Add Subject'}
         description="Configure subject code, name, and whether it is core."
         onSubmit={subjectForm.handleSubmit(async (values) => {
+          const code = values.code.trim().toLowerCase();
+          const duplicate = subjects.find(
+            (subject) =>
+              subject.id !== editingSubjectId && String(subject.code).trim().toLowerCase() === code
+          );
+          if (duplicate) {
+            subjectForm.setError('code', {
+              type: 'duplicate',
+              message: `Code "${duplicate.code}" is already used by "${duplicate.name}"`,
+            });
+            return;
+          }
+
           try {
             if (editingSubjectId) {
               await updateSubjectMutation.mutateAsync({ id: editingSubjectId, values });
@@ -1578,8 +1591,17 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
             Code
             <input
               className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
+              aria-invalid={Boolean(subjectForm.formState.errors.code)}
               {...subjectForm.register('code')}
             />
+            {subjectForm.formState.errors.code ? (
+              <span className="text-xs font-normal text-red-700">
+                {subjectForm.formState.errors.code.message === 'Required' ||
+                subjectForm.formState.errors.code.type === 'too_small'
+                  ? 'Code is required'
+                  : subjectForm.formState.errors.code.message}
+              </span>
+            ) : null}
           </label>
           <label className="grid gap-1 text-sm font-semibold text-slate-800">
             Name
