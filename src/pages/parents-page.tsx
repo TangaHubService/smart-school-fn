@@ -28,6 +28,7 @@ import {
   deleteParentApi,
   type ParentListItem,
 } from '../features/sprint2/sprint2.api';
+import { ParentImportDrawer } from '../features/sprint2/parent-import-drawer';
 import { ApiClientError } from '../types/api';
 
 const parentColumns: DataTableColumn<ParentListItem>[] = [
@@ -38,26 +39,30 @@ const parentColumns: DataTableColumn<ParentListItem>[] = [
     render: (parent) => (
       <span className="flex items-center gap-3">
         <Avatar name={`${parent.firstName} ${parent.lastName}`} size="sm" />
-        <span className="min-w-0">
-          <span className="block font-semibold text-slate-900">
-            {parent.firstName} {parent.lastName}
-          </span>
-          {parent.parentCode ? (
-            <span className="block text-xs text-slate-500">{parent.parentCode}</span>
-          ) : null}
+        <span className="min-w-0 font-semibold text-slate-900">
+          {parent.firstName} {parent.lastName}
         </span>
       </span>
     ),
   },
   {
-    key: 'contact',
-    header: 'Contact',
+    key: 'email',
+    header: 'Email',
     mobile: 'secondary',
+    render: (parent) => <span className="text-slate-700">{parent.email ?? '—'}</span>,
+  },
+  {
+    key: 'phone',
+    header: 'Phone',
     render: (parent) => (
-      <span className="min-w-0">
-        <span className="block truncate text-slate-700">{parent.email ?? '—'}</span>
-        <span className="block text-xs text-slate-500">{parent.phone ?? '—'}</span>
-      </span>
+      <span className="whitespace-nowrap tabular-nums text-slate-700">{parent.phone ?? '—'}</span>
+    ),
+  },
+  {
+    key: 'parentCode',
+    header: 'Code',
+    render: (parent) => (
+      <span className="whitespace-nowrap text-slate-700">{parent.parentCode ?? '—'}</span>
     ),
   },
   {
@@ -152,6 +157,7 @@ export function ParentsPage() {
   const [pageSize, setPageSize] = useState(20);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingParent, setEditingParent] = useState<any | null>(null);
   const [linkTarget, setLinkTarget] = useState<{ id: string; name: string } | null>(null);
   const [linkSearch, setLinkSearch] = useState('');
@@ -360,13 +366,22 @@ export function ParentsPage() {
       title="Parents"
       subtitle="Create parent contacts and link students for secure parent portal access."
       action={
-        <button
-          type="button"
-          onClick={openCreateModal}
-          className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
-        >
-          Add parent
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setIsImportOpen(true)}
+            className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-brand-50"
+          >
+            Import Excel
+          </button>
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white"
+          >
+            Add parent
+          </button>
+        </div>
       }
     >
       <div className="mb-4 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_18px_rgba(15,23,42,0.055)]">
@@ -443,7 +458,7 @@ export function ParentsPage() {
                 </button>
               </div>
             )}
-            minWidth={820}
+            minWidth={1000}
             className="border-0 shadow-none"
           />
         </div>
@@ -675,6 +690,8 @@ export function ParentsPage() {
           <p className="text-xs text-red-700">{(linkMutation.error as ApiClientError).message}</p>
         ) : null}
       </DrawerForm>
+
+      <ParentImportDrawer open={isImportOpen} onClose={() => setIsImportOpen(false)} />
 
       <ConfirmDrawer
         open={Boolean(deletingParent)}

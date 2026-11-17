@@ -418,6 +418,32 @@ export function createParentApi(
   });
 }
 
+export interface BulkCreateParentsResponse {
+  total: number;
+  created: number;
+  failed: number;
+  linked: number;
+  results: Array<{
+    row: number;
+    status: 'created' | 'failed';
+    parent?: { id: string; firstName: string; lastName: string; email: string | null };
+    linkedStudentCode?: string;
+    warning?: string;
+    error?: string;
+  }>;
+}
+
+export function bulkCreateParentsApi(
+  accessToken: string,
+  parents: import('./parent-import').BulkParentInput[]
+) {
+  return apiRequest<BulkCreateParentsResponse>('/parents/bulk', {
+    method: 'POST',
+    accessToken,
+    body: { parents },
+  });
+}
+
 export function updateParentApi(
   accessToken: string,
   parentId: string,
