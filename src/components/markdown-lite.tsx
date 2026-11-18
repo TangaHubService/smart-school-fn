@@ -1,5 +1,14 @@
 import { Fragment, type ReactNode } from 'react';
 
+import { splitTableRow } from '../utils/markdown-blocks';
+
+const TABLE_ROW = /^\s*\|.*\|\s*$/;
+const TABLE_DIVIDER = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+
+function isTableStart(lines: string[], i: number) {
+  return TABLE_ROW.test(lines[i]) && i + 1 < lines.length && TABLE_DIVIDER.test(lines[i + 1]);
+}
+
 /**
  * Small, safe Markdown renderer for AI answers. It builds React elements (no
  * innerHTML), so model output can never inject HTML or scripts. Supports headings,
@@ -79,6 +88,44 @@ export function MarkdownLite({ content }: { content: string }) {
       continue;
     }
 
+    if (isTableStart(lines, i)) {
+      const header = splitTableRow(line);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length && TABLE_ROW.test(lines[i])) {
+        rows.push(splitTableRow(lines[i]));
+        i += 1;
+      }
+      const tableKey = key++;
+      blocks.push(
+        <div key={tableKey} className="overflow-x-auto rounded-lg border border-slate-200">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50">
+              <tr>
+                {header.map((cell, c) => (
+                  <th key={c} className="border-b border-slate-200 px-3 py-2 font-semibold text-slate-800">
+                    {renderInline(cell, `th${tableKey}-${c}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, r) => (
+                <tr key={r} className="border-b border-slate-100 last:border-0">
+                  {header.map((_, c) => (
+                    <td key={c} className="px-3 py-2 align-top">
+                      {renderInline(row[c] ?? '', `td${tableKey}-${r}-${c}`)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
     if (/^\s*([-*•]|\d+[.)])\s+/.test(line)) {
       const ordered = /^\s*\d+[.)]\s+/.test(line);
       const itemsList: string[] = [];
@@ -129,7 +176,8 @@ export function MarkdownLite({ content }: { content: string }) {
       !/^(#{1,4})\s+/.test(lines[i]) &&
       !/^\s*([-*•]|\d+[.)])\s+/.test(lines[i]) &&
       !lines[i].trim().startsWith('```') &&
-      !lines[i].startsWith('>')
+      !lines[i].startsWith('>') &&
+      !isTableStart(lines, i)
     ) {
       para.push(lines[i]);
       i += 1;

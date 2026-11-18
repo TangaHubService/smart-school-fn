@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpenText,
   CheckCircle2,
@@ -9,8 +9,10 @@ import {
   Loader2,
   Save,
   Sparkles,
+  Trash2,
+  Upload,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { MarkdownLite } from '../components/markdown-lite';
@@ -23,6 +25,12 @@ import {
   type AiQuestionType,
   type AssessmentPrepResult,
   type KnowledgeBaseCourse,
+  type KnowledgeDocument,
+  MAX_AI_QUESTIONS,
+  deleteKnowledgeDocumentApi,
+  generateQuestionsInParts,
+  listKnowledgeDocumentsApi,
+  uploadKnowledgeDocumentApi,
   type StudyMaterialFormat,
   type StudyMaterialResult,
   generateStudyMaterialApi,
@@ -33,6 +41,15 @@ import {
 import { assessmentsFeatureEnabled } from '../features/assessments/feature';
 import { bulkAddAssessmentQuestionsApi, createAssessmentApi } from '../features/assessments/assessments.api';
 import { ApiClientError } from '../types/api';
+import {
+  buildAssessmentPdf,
+  buildAssessmentWorkbook,
+  buildStudyMaterialPdf,
+  buildStudyMaterialWorkbook,
+  downloadPdf,
+  downloadWorkbook,
+} from '../utils/ai-material-export';
+import { markdownToPlainText } from '../utils/markdown-blocks';
 
 type Tab = 'study' | 'prep';
 
@@ -41,7 +58,30 @@ const FORMATS: Array<{ id: StudyMaterialFormat; label: string; hint: string }> =
   { id: 'revision-notes', label: 'Revision notes', hint: 'Short notes to study before a test' },
   { id: 'key-terms', label: 'Key terms', hint: 'Glossary: term, meaning, example' },
   { id: 'study-guide', label: 'Study guide', hint: 'Objectives, examples, practice and answers' },
+  { id: 'custom', label: 'Custom', hint: 'Describe exactly what you want' },
 ];
+
+/** Ready-made requests the teacher can start from and then edit. */
+const PROMPT_EXAMPLES: Record<'study' | 'prep', string[]> = {
+  study: [
+    'Make one-page summary notes for a Senior 2 class: short paragraphs, key definitions in bold, and 5 quick check questions at the end.',
+    'Summarize chapter 3 of the book as bullet-point notes learners can copy into their exercise books, with a simple diagram described in words.',
+    'Write revision notes comparing the main ideas in a table, then list the common mistakes learners make on this topic.',
+    'Explain this topic in simple language for weaker learners, with everyday examples from Rwanda and a short activity they can do at home.',
+  ],
+  prep: [
+    'End-of-term exam: cover every unit evenly, start easy and get harder, and include questions that test application, not just recall.',
+    'Short quiz on the first two lessons only, with real-life word problems from the market or the farm.',
+    'Questions in the style of the national exam, with a marking guide for each written answer.',
+  ],
+};
+
+const DOCUMENT_ACCEPT = '.pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown';
+
+function fileSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const LANGUAGES: Array<{ id: AiLanguage; label: string }> = [
   { id: 'en', label: 'English' },
@@ -56,40 +96,29 @@ function errorMessage(e: unknown) {
   return e instanceof ApiClientError ? e.message : 'Something went wrong. Please try again.';
 }
 
-function downloadText(filename: string, text: string) {
-  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'ai-material';
 }
 
-function prepToMarkdown(prep: AssessmentPrepResult, withAnswers: boolean) {
-  let md = `# ${prep.title}\n\n`;
-  if (prep.instructions) md += `${prep.instructions}\n\n`;
-  md += `Total: ${prep.totalPoints} points\n\n`;
+/** Plain text (no Markdown symbols) for the Copy button. */
+function prepToPlainText(prep: AssessmentPrepResult) {
+  let text = `${prep.title}\n\n`;
+  if (prep.instructions) text += `${prep.instructions}\n\n`;
+  text += `Total: ${prep.totalPoints} points\n\n`;
   prep.questions.forEach((q, i) => {
-    md += `**${i + 1}. ${q.prompt}** (${q.points} pt${q.points === 1 ? '' : 's'})\n\n`;
+    text += `${i + 1}. ${q.prompt} (${q.points} pt${q.points === 1 ? '' : 's'})\n`;
     q.options.forEach((o, j) => {
-      md += `- ${String.fromCharCode(65 + j)}. ${o.label}\n`;
+      text += `   ${String.fromCharCode(65 + j)}. ${o.label}\n`;
     });
-    if (q.options.length) md += '\n';
+    text += '\n';
   });
-  if (withAnswers) {
-    md += `## Answer key\n\n`;
-    prep.questions.forEach((q, i) => {
-      const correct = q.options.findIndex((o) => o.isCorrect);
-      const answer = correct >= 0 ? `${String.fromCharCode(65 + correct)}. ${q.options[correct].label}` : '';
-      md += `${i + 1}. ${answer}${answer && q.explanation ? ' — ' : ''}${q.explanation ?? ''}\n`;
-    });
-  }
-  return md;
+  text += `ANSWER KEY\n\n`;
+  prep.questions.forEach((q, i) => {
+    const correct = q.options.findIndex((o) => o.isCorrect);
+    const answer = correct >= 0 ? `${String.fromCharCode(65 + correct)}. ${q.options[correct].label}` : '';
+    text += `${i + 1}. ${answer}${answer && q.explanation ? ' - ' : ''}${q.explanation ?? ''}\n`;
+  });
+  return text;
 }
 
 /**
@@ -103,6 +132,11 @@ export function TeacherAiAssistantPage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const canPrep = assessmentsFeatureEnabled && hasPermission(auth.me, 'assessments.manage');
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [documentIds, setDocumentIds] = useState<string[]>([]);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [prepProgress, setPrepProgress] = useState<{ done: number; total: number } | null>(null);
 
   const [tab, setTab] = useState<Tab>('study');
   const [courseId, setCourseId] = useState('');
@@ -127,13 +161,55 @@ export function TeacherAiAssistantPage() {
     enabled: Boolean(token),
   });
 
+  const documentsQuery = useQuery({
+    queryKey: ['ai-teacher-documents'],
+    queryFn: () => listKnowledgeDocumentsApi(token),
+    enabled: Boolean(token),
+  });
+
   const courses = kbQuery.data ?? [];
+  const documents: KnowledgeDocument[] = documentsQuery.data ?? [];
   const course: KnowledgeBaseCourse | undefined = courses.find((c) => c.id === courseId);
+  const [courseTouched, setCourseTouched] = useState(false);
 
   useEffect(() => {
-    if (!courseId && courses.length) setCourseId(courses[0].id);
-  }, [courseId, courses]);
+    if (!courseTouched && !courseId && courses.length) setCourseId(courses[0].id);
+  }, [courseTouched, courseId, courses]);
   useEffect(() => setLessonIds([]), [courseId]);
+  // Forget selections for documents that were removed.
+  useEffect(() => {
+    setDocumentIds((prev) => prev.filter((id) => documents.some((d) => d.id === id)));
+  }, [documents]);
+
+  const uploadFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    for (const file of Array.from(files)) {
+      setUploading(file.name);
+      try {
+        const doc = await uploadKnowledgeDocumentApi(token, file);
+        setDocumentIds((prev) => [...prev, doc.id]);
+        showToast({
+          type: 'success',
+          title: 'Document added',
+          message: `${doc.title}${doc.pageCount ? ` (${doc.pageCount} pages)` : ''} is ready for the AI to read.`,
+        });
+      } catch (e) {
+        showToast({ type: 'error', title: `Could not add ${file.name}`, message: errorMessage(e) });
+      }
+    }
+    setUploading(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    await queryClient.invalidateQueries({ queryKey: ['ai-teacher-documents'] });
+  };
+
+  const deleteDocMutation = useMutation({
+    mutationFn: (id: string) => deleteKnowledgeDocumentApi(token, id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['ai-teacher-documents'] }),
+    onError: (e) => showToast({ type: 'error', title: 'Could not remove document', message: errorMessage(e) }),
+  });
+
+  const toggleDocument = (id: string) =>
+    setDocumentIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const groupedLessons = useMemo(() => {
     if (!course) return [];
@@ -155,8 +231,9 @@ export function TeacherAiAssistantPage() {
   const studyMutation = useMutation({
     mutationFn: () =>
       generateStudyMaterialApi(token, {
-        courseId,
-        lessonIds,
+        ...(courseId ? { courseId } : {}),
+        lessonIds: courseId ? lessonIds : [],
+        documentIds,
         format,
         language,
         ...(instructions.trim() ? { instructions: instructions.trim() } : {}),
@@ -169,16 +246,38 @@ export function TeacherAiAssistantPage() {
   });
 
   const prepMutation = useMutation({
-    mutationFn: () =>
-      prepareAssessmentWithAiApi(token, {
-        courseId,
-        lessonIds,
+    mutationFn: async () => {
+      const result = await generateQuestionsInParts(
         count,
-        types,
-        difficulty,
-        language,
-        ...(instructions.trim() ? { instructions: instructions.trim() } : {}),
-      }),
+        (partCount, avoidPrompts) =>
+          prepareAssessmentWithAiApi(token, {
+            ...(courseId ? { courseId } : {}),
+            lessonIds: courseId ? lessonIds : [],
+            documentIds,
+            avoidPrompts,
+            count: partCount,
+            types,
+            difficulty,
+            language,
+            ...(instructions.trim() ? { instructions: instructions.trim() } : {}),
+          }),
+        (done, total) => setPrepProgress({ done, total })
+      );
+      if (result.partialError) {
+        showToast({
+          type: 'error',
+          title: `Only ${result.questions.length} of ${count} questions were written`,
+          message: errorMessage(result.partialError),
+        });
+      }
+      const first = result.first!;
+      return {
+        ...first,
+        questions: result.questions,
+        totalPoints: result.questions.reduce((sum, q) => sum + q.points, 0),
+      };
+    },
+    onSettled: () => setPrepProgress(null),
     onSuccess: (data) => {
       setPrep(data);
       afterGenerate();
@@ -226,6 +325,14 @@ export function TeacherAiAssistantPage() {
   const aiOff = status && !status.enabled;
   const busy = studyMutation.isPending || prepMutation.isPending;
   const selectedCount = lessonIds.length || course?.lessons.length || 0;
+  const hasSource = Boolean((courseId && course?.lessons.length) || documentIds.length);
+  const needsPrompt = tab === 'study' && format === 'custom' && instructions.trim().length < 5;
+  const sourceLabel = [
+    course ? `${selectedCount} lesson${selectedCount === 1 ? '' : 's'}` : null,
+    documentIds.length ? `${documentIds.length} document${documentIds.length === 1 ? '' : 's'}` : null,
+  ]
+    .filter(Boolean)
+    .join(' + ');
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -294,13 +401,21 @@ export function TeacherAiAssistantPage() {
             <p className="text-sm text-red-600">{errorMessage(kbQuery.error)}</p>
           ) : !courses.length ? (
             <p className="text-sm text-slate-500">
-              You have no courses yet. Create a course and add lessons, then come back here.
+              You have no courses yet. You can still upload documents below, or create a course with lessons.
             </p>
           ) : (
             <>
               <label className="block text-sm font-medium text-slate-700">
                 Course
-                <select value={courseId} onChange={(e) => setCourseId(e.target.value)} className={inputClass}>
+                <select
+                  value={courseId}
+                  onChange={(e) => {
+                    setCourseTouched(true);
+                    setCourseId(e.target.value);
+                  }}
+                  className={inputClass}
+                >
+                  <option value="">No course — use documents only</option>
                   {courses.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.title}
@@ -311,6 +426,7 @@ export function TeacherAiAssistantPage() {
                 </select>
               </label>
 
+              {course ? (
               <div>
                 <div className="flex items-center justify-between text-sm font-medium text-slate-700">
                   <span>Lessons</span>
@@ -350,8 +466,73 @@ export function TeacherAiAssistantPage() {
                   )}
                 </div>
               </div>
+              ) : null}
             </>
           )}
+
+          <div>
+            <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+              <span>Documents &amp; books</span>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={Boolean(uploading)}
+                className="inline-flex items-center gap-1 rounded-md border border-brand-200 px-2 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                {uploading ? 'Reading…' : 'Upload'}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept={DOCUMENT_ACCEPT}
+                className="hidden"
+                onChange={(e) => void uploadFiles(e.target.files)}
+              />
+            </div>
+            <p className="mt-0.5 text-xs text-slate-500">
+              PDF, Word or text, up to 25 MB. The AI reads the ticked documents before answering.
+            </p>
+            <div className="mt-1 max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-2">
+              {documentsQuery.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+              ) : !documents.length ? (
+                <p className="p-1 text-sm text-slate-500">
+                  No documents yet. Upload a textbook, your notes or the syllabus.
+                </p>
+              ) : (
+                documents.map((d) => (
+                  <div key={d.id} className="flex items-start gap-2 rounded px-1 py-1 text-sm hover:bg-slate-50">
+                    <input
+                      id={`doc-${d.id}`}
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={documentIds.includes(d.id)}
+                      onChange={() => toggleDocument(d.id)}
+                    />
+                    <label htmlFor={`doc-${d.id}`} className="min-w-0 flex-1 cursor-pointer">
+                      <span className="block truncate text-slate-700">{d.title}</span>
+                      <span className="block text-xs text-slate-400">
+                        {d.pageCount ? `${d.pageCount} pages · ` : ''}
+                        {fileSize(d.sizeBytes)}
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${d.title}`}
+                      onClick={() => {
+                        if (window.confirm(`Remove "${d.title}" from your knowledge base?`)) deleteDocMutation.mutate(d.id);
+                      }}
+                      className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
           {tab === 'study' ? (
             <fieldset>
@@ -380,9 +561,11 @@ export function TeacherAiAssistantPage() {
                   <input
                     type="number"
                     min={1}
-                    max={20}
+                    max={MAX_AI_QUESTIONS}
                     value={count}
-                    onChange={(e) => setCount(Math.min(Math.max(Number(e.target.value) || 1, 1), 20))}
+                    onChange={(e) =>
+                      setCount(Math.min(Math.max(Number(e.target.value) || 1, 1), MAX_AI_QUESTIONS))
+                    }
                     className={inputClass}
                   />
                 </label>
@@ -432,28 +615,56 @@ export function TeacherAiAssistantPage() {
             </select>
           </label>
 
-          <label className="block text-sm font-medium text-slate-700">
-            Extra instructions <span className="font-normal text-slate-400">(optional)</span>
+          <div>
+            <label className="block text-sm font-medium text-slate-700" htmlFor="ai-prompt">
+              {tab === 'study' && format === 'custom' ? (
+                'Describe what you want'
+              ) : (
+                <>
+                  Describe what you want <span className="font-normal text-slate-400">(optional)</span>
+                </>
+              )}
+            </label>
             <textarea
-              rows={3}
-              maxLength={1000}
+              id="ai-prompt"
+              rows={6}
+              maxLength={4000}
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               placeholder={
-                tab === 'study' ? 'e.g. Keep it to one page, focus on fractions' : 'e.g. Include two questions on real-life problems'
+                tab === 'study'
+                  ? 'e.g. Make summary notes on photosynthesis from chapter 4 for Senior 1: one page, simple words, key terms in bold, a labelled-diagram description and 5 practice questions with answers.'
+                  : 'e.g. 40 questions for the end-of-term exam: cover all units evenly, half application questions, include a marking guide for written answers.'
               }
               className={inputClass}
             />
-          </label>
+            <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
+              <span>Topic, class level, length, style, what to include or leave out.</span>
+              <span>{instructions.length}/4000</span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {PROMPT_EXAMPLES[tab].map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  title={example}
+                  onClick={() => setInstructions(example)}
+                  className="max-w-full truncate rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 hover:border-brand-300 hover:bg-brand-50"
+                >
+                  {example.length > 48 ? `${example.slice(0, 48)}…` : example}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <button
             type="submit"
-            disabled={busy || !courseId || !course?.lessons.length || aiOff}
+            disabled={busy || !hasSource || needsPrompt || aiOff}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {tab === 'study' ? 'Generate study material' : 'Prepare assessment'}
-            {course ? ` (${selectedCount} lesson${selectedCount === 1 ? '' : 's'})` : ''}
+            {sourceLabel ? ` (${sourceLabel})` : ''}
           </button>
         </form>
 
@@ -462,38 +673,51 @@ export function TeacherAiAssistantPage() {
           {busy ? (
             <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-2 text-sm text-slate-500">
               <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
-              Reading your lessons and writing… this can take up to a minute.
+              {prepProgress && prepProgress.total > 40
+                ? `Writing questions… ${prepProgress.done} of ${prepProgress.total} done`
+                : documentIds.length
+                  ? 'Reading your documents and lessons, then writing… this can take up to a minute.'
+                  : 'Reading your lessons and writing… this can take up to a minute.'}
             </div>
           ) : tab === 'study' ? (
             study ? (
               <div className="space-y-4">
                 <ResultToolbar
                   meta={study.basedOnLessons}
+                  documents={study.basedOnDocuments ?? []}
                   shortened={study.contentShortened}
                   noText={!study.usedWrittenContent}
-                  onCopy={() => copy(study.content)}
-                  onDownload={() => downloadText(`${slug(study.title)}.md`, study.content)}
+                  onCopy={() => copy(markdownToPlainText(study.content))}
+                  onPdf={() =>
+                    downloadPdf(buildStudyMaterialPdf(study.title, study.content), slug(study.title))
+                  }
+                  onExcel={() =>
+                    downloadWorkbook(buildStudyMaterialWorkbook(study.title, study.content), slug(study.title))
+                  }
                 />
                 <article className="prose-sm max-w-none text-slate-800">
                   <MarkdownLite content={study.content} />
                 </article>
               </div>
             ) : (
-              <EmptyResult icon={<FileText className="h-8 w-8" />} text="Pick a course and the type of material, then generate. The result appears here for you to copy or download and share with learners." />
+              <EmptyResult icon={<FileText className="h-8 w-8" />} text="Pick a course or upload documents, choose the type of material (or Custom and describe what you want), then generate. The result appears here for you to copy or download and share with learners." />
             )
           ) : prep ? (
             <div className="space-y-4">
               <ResultToolbar
                 meta={prep.basedOnLessons}
+                documents={prep.basedOnDocuments ?? []}
                 shortened={prep.contentShortened}
                 noText={!prep.usedWrittenContent}
-                onCopy={() => copy(prepToMarkdown(prep, true))}
-                onDownload={() => downloadText(`${slug(prep.title)}.md`, prepToMarkdown(prep, true))}
+                onCopy={() => copy(prepToPlainText(prep))}
+                onPdf={() => downloadPdf(buildAssessmentPdf(prep), slug(prep.title))}
+                onExcel={() => downloadWorkbook(buildAssessmentWorkbook(prep), slug(prep.title))}
               >
                 <button
                   type="button"
                   onClick={() => saveMutation.mutate()}
-                  disabled={saveMutation.isPending}
+                  disabled={saveMutation.isPending || !courseId}
+                  title={courseId ? undefined : 'Pick a course to save this as an assessment in it'}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
                 >
                   {saveMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
@@ -545,7 +769,7 @@ export function TeacherAiAssistantPage() {
               </ol>
             </div>
           ) : (
-            <EmptyResult icon={<ClipboardCheck className="h-8 w-8" />} text="Pick a course, how many questions and the difficulty, then prepare. You get draft questions with an answer key; review them and save as a draft assessment." />
+            <EmptyResult icon={<ClipboardCheck className="h-8 w-8" />} text="Pick a course or documents, how many questions (up to 200) and the difficulty, then prepare. You get draft questions with an answer key; review them and save as a draft assessment." />
           )}
         </section>
       </div>
@@ -567,17 +791,21 @@ function EmptyResult({ icon, text }: { icon: React.ReactNode; text: string }) {
 
 function ResultToolbar({
   meta,
+  documents,
   shortened,
   noText,
   onCopy,
-  onDownload,
+  onPdf,
+  onExcel,
   children,
 }: {
   meta: string[];
+  documents: string[];
   shortened: boolean;
   noText: boolean;
   onCopy: () => void;
-  onDownload: () => void;
+  onPdf: () => void;
+  onExcel: () => void;
   children?: React.ReactNode;
 }) {
   return (
@@ -592,18 +820,30 @@ function ResultToolbar({
         </button>
         <button
           type="button"
-          onClick={onDownload}
+          onClick={onPdf}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
         >
-          <Download className="h-3.5 w-3.5" /> Download (.md)
+          <Download className="h-3.5 w-3.5" /> PDF
+        </button>
+        <button
+          type="button"
+          onClick={onExcel}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          <Download className="h-3.5 w-3.5" /> Excel
         </button>
         {children}
       </div>
       <p className="text-xs text-slate-500">
-        Based on {meta.length} lesson{meta.length === 1 ? '' : 's'}: {meta.slice(0, 6).join(', ')}
-        {meta.length > 6 ? ` and ${meta.length - 6} more` : ''}.
-        {noText ? ' These lessons have little written text, so the AI also used the standard curriculum.' : ''}
-        {shortened ? ' The course is long, so only the first part of its content was used.' : ''}
+        {meta.length ? (
+          <>
+            Based on {meta.length} lesson{meta.length === 1 ? '' : 's'}: {meta.slice(0, 6).join(', ')}
+            {meta.length > 6 ? ` and ${meta.length - 6} more` : ''}.
+          </>
+        ) : null}
+        {documents.length ? ` Documents read: ${documents.join(', ')}.` : ''}
+        {noText ? ' The sources have little written text, so the AI also used the standard curriculum.' : ''}
+        {shortened ? ' The material is long, so the passages most relevant to your request were used.' : ''}
       </p>
     </div>
   );

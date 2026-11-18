@@ -6,7 +6,9 @@ import { AppDrawer } from '../../components/drawer';
 import { useToast } from '../../components/toast';
 import { ApiClientError } from '../../types/api';
 import {
+  MAX_AI_QUESTIONS,
   generateAssessmentQuestionsWithAiApi,
+  generateQuestionsInParts,
   type AiDifficulty,
   type AiLanguage,
   type AiQuestionType,
@@ -65,6 +67,7 @@ export function AiQuestionGenerator({
   const [instructions, setInstructions] = useState('');
   const [drafts, setDrafts] = useState<DraftQuestion[]>([]);
   const [basedOn, setBasedOn] = useState<string[]>([]);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -74,16 +77,30 @@ export function AiQuestionGenerator({
 
   const generateMutation = useMutation({
     mutationFn: () =>
-      generateAssessmentQuestionsWithAiApi(accessToken, {
-        assessmentId,
-        lessonIds,
+      generateQuestionsInParts(
         count,
-        types,
-        difficulty,
-        language,
-        instructions: instructions.trim() || undefined,
-      }),
+        (partCount, avoidPrompts) =>
+          generateAssessmentQuestionsWithAiApi(accessToken, {
+            assessmentId,
+            lessonIds,
+            count: partCount,
+            avoidPrompts: [...drafts.map((d) => d.prompt.slice(0, 280)), ...avoidPrompts].slice(-400),
+            types,
+            difficulty,
+            language,
+            instructions: instructions.trim() || undefined,
+          }),
+        (done, total) => setProgress({ done, total })
+      ),
+    onSettled: () => setProgress(null),
     onSuccess: (result) => {
+      if (result.partialError) {
+        showToast({
+          type: 'error',
+          title: `Only ${result.questions.length} of ${count} questions were written`,
+          message: (result.partialError as ApiClientError).message,
+        });
+      }
       setDrafts((current) => [
         ...current,
         ...result.questions.map((q) => ({
@@ -92,7 +109,7 @@ export function AiQuestionGenerator({
           key: nextKey(),
         })),
       ]);
-      setBasedOn(result.basedOnLessons);
+      setBasedOn(result.first?.basedOnLessons ?? []);
     },
     onError: (e) =>
       showToast({
@@ -240,9 +257,11 @@ export function AiQuestionGenerator({
               <input
                 type="number"
                 min={1}
-                max={20}
+                max={MAX_AI_QUESTIONS}
                 value={count}
-                onChange={(e) => setCount(Math.min(Math.max(Number(e.target.value) || 1, 1), 20))}
+                onChange={(e) =>
+                  setCount(Math.min(Math.max(Number(e.target.value) || 1, 1), MAX_AI_QUESTIONS))
+                }
                 className={inputClass}
               />
             </label>
@@ -296,15 +315,16 @@ export function AiQuestionGenerator({
           </fieldset>
 
           <label className="grid gap-1 text-sm font-medium text-slate-700">
-            Extra instructions (optional)
+            Describe what you want (optional)
             <textarea
-              rows={2}
-              maxLength={1000}
+              rows={4}
+              maxLength={4000}
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              placeholder="e.g. focus on word problems; use examples from the market"
+              placeholder="e.g. Focus on word problems with examples from the market. Half the questions should test application, not recall. Avoid trick questions."
               className={inputClass}
             />
+            <span className="text-xs font-normal text-slate-400">{instructions.length}/4000</span>
           </label>
 
           <button
@@ -319,7 +339,9 @@ export function AiQuestionGenerator({
               <Sparkles className="h-4 w-4" aria-hidden="true" />
             )}
             {generateMutation.isPending
-              ? 'Writing questions… (up to a minute)'
+              ? progress && progress.total > 40
+                ? `Writing questions… ${progress.done} of ${progress.total}`
+                : 'Writing questions… (up to a minute)'
               : drafts.length
                 ? 'Generate more'
                 : 'Generate questions'}
