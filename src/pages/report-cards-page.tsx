@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 import { SectionCard } from '../components/section-card';
@@ -9,10 +9,12 @@ import {
 } from '../components/ui/data-table';
 import { Badge } from '../components/ui/badge';
 import { useToast } from '../components/toast';
+import { hasRole } from '../features/auth/auth-helpers';
 import { useAuth } from '../features/auth/auth.context';
 import {
   downloadMidTermReportCardsPdfApi,
   downloadStudentReportCardPdfApi,
+  generateYearlyReportCardsApi,
   listReportCardsCatalogApi,
   type ReportCardCatalogRow,
 } from '../features/sprint5/exams.api';
@@ -45,6 +47,12 @@ export function ReportCardsPage() {
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
   const [midTermUpTo, setMidTermUpTo] = useState('');
   const [loadingMidTerm, setLoadingMidTerm] = useState<'view' | 'download' | null>(null);
+  const queryClient = useQueryClient();
+  const [yearlyPublish, setYearlyPublish] = useState(true);
+  const [yearlyRegenerate, setYearlyRegenerate] = useState(false);
+  const [generatingYearly, setGeneratingYearly] = useState(false);
+  const canGenerateYearly =
+    hasRole(auth.me, 'SCHOOL_ADMIN') || hasRole(auth.me, 'SUPER_ADMIN');
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchInput.trim()), 350);
@@ -185,6 +193,38 @@ export function ReportCardsPage() {
     }
   };
   const midTermReady = Boolean(termId && classRoomId);
+  const yearlyReady = Boolean(catalogAcademicYearId && classRoomId);
+
+  const runGenerateYearly = async () => {
+    setGeneratingYearly(true);
+    try {
+      const result = await generateYearlyReportCardsApi(auth.accessToken!, {
+        academicYearId: catalogAcademicYearId,
+        classRoomId,
+        publish: yearlyPublish,
+        regenerate: yearlyRegenerate,
+      });
+      showToast({
+        type: 'success',
+        title: result.regenerated ? 'Yearly report cards rebuilt' : 'Yearly report cards created',
+        message: `${result.snapshotsCreated} report card${result.snapshotsCreated === 1 ? '' : 's'} ${
+          result.status === 'PUBLISHED' ? 'published' : 'locked (not yet published)'
+        } under "${result.term.name}".`,
+      });
+      setYearlyRegenerate(false);
+      await queryClient.invalidateQueries({ queryKey: ['terms'] });
+      await queryClient.invalidateQueries({ queryKey: ['report-cards-catalog'] });
+      setTermId(result.term.id);
+    } catch (e) {
+      showToast({
+        type: 'error',
+        title: 'Could not generate yearly report cards',
+        message: e instanceof Error ? e.message : 'Unknown error',
+      });
+    } finally {
+      setGeneratingYearly(false);
+    }
+  };
 
   const noResults =
     !catalogQuery.isPending && !catalogQuery.isError && (pagination?.totalItems ?? 0) === 0;
@@ -363,6 +403,47 @@ export function ReportCardsPage() {
           </button>
         </div>
       </div>
+
+      {canGenerateYearly ? (
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-slate-900">Yearly report cards</h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {yearlyReady
+                ? 'Combines Term 1, Term 2 and Term 3 marks into one annual report card per student, with yearly average, position and pass/fail decision. All three terms need complete marks.'
+                : 'Pick an academic year and a class above to generate annual report cards.'}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={yearlyPublish}
+                onChange={(e) => setYearlyPublish(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Publish to students &amp; parents
+            </label>
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={yearlyRegenerate}
+                onChange={(e) => setYearlyRegenerate(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Regenerate if already created
+            </label>
+            <button
+              type="button"
+              disabled={!yearlyReady || generatingYearly}
+              onClick={() => void runGenerateYearly()}
+              className="h-9 rounded-lg bg-brand-500 px-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {generatingYearly ? 'Generating…' : 'Generate yearly report cards'}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {catalogQuery.isError ? (
         <StateView

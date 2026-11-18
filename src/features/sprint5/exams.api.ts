@@ -636,6 +636,32 @@ export function unlockResultsApi(
   });
 }
 
+export interface GenerateYearlyReportCardsResult {
+  term: { id: string; name: string; created: boolean };
+  status: 'LOCKED' | 'PUBLISHED';
+  snapshotsCreated: number;
+  classSize: number;
+  regenerated: boolean;
+}
+
+/** Builds annual report cards (Term 1–3 roll-up) for one class in one academic year. */
+export function generateYearlyReportCardsApi(
+  accessToken: string,
+  payload: {
+    academicYearId: string;
+    classRoomId: string;
+    gradingSchemeId?: string;
+    publish?: boolean;
+    regenerate?: boolean;
+  }
+) {
+  return apiRequest<GenerateYearlyReportCardsResult>('/results/yearly/generate', {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
 export function publishResultsApi(
   accessToken: string,
   payload: { termId: string; classRoomId: string; gradingSchemeId?: string }
