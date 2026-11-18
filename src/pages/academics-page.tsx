@@ -1551,19 +1551,7 @@ export function AcademicsPage({ focus = 'all' }: AcademicsPageProps) {
         title={editingSubjectId ? 'Update Subject' : 'Add Subject'}
         description="Configure subject code, name, and whether it is core."
         onSubmit={subjectForm.handleSubmit(async (values) => {
-          const code = values.code.trim().toLowerCase();
-          const duplicate = subjects.find(
-            (subject) =>
-              subject.id !== editingSubjectId && String(subject.code).trim().toLowerCase() === code
-          );
-          if (duplicate) {
-            subjectForm.setError('code', {
-              type: 'duplicate',
-              message: `Code "${duplicate.code}" is already used by "${duplicate.name}"`,
-            });
-            return;
-          }
-
+          // Subjects may share a code and a name.
           try {
             if (editingSubjectId) {
               await updateSubjectMutation.mutateAsync({ id: editingSubjectId, values });
