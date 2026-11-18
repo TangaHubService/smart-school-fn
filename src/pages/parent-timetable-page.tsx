@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { useState } from 'react';
 
 import { EmptyState } from '../components/empty-state';
@@ -8,6 +9,7 @@ import { useAuth } from '../features/auth/auth.context';
 import { listMyChildrenApi } from '../features/sprint2/sprint2.api';
 import { listAcademicYearsApi } from '../features/sprint1/sprint1.api';
 import { listTimetableSlotsApi } from '../features/timetable/timetable.api';
+import { exportTimetablePdf, timetableFileSlug } from '../utils/timetable-pdf';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -42,6 +44,23 @@ export function ParentTimetablePage() {
 
   const slots = timetableQuery.data?.slots ?? [];
 
+  const selectedChild = children.find(c => c.id === selectedChildId);
+
+  const handleExportPdf = () => {
+    const childName = selectedChild ? `${selectedChild.firstName} ${selectedChild.lastName}` : '';
+    const className = selectedChild?.currentEnrollment?.classRoom.name;
+    exportTimetablePdf({
+      slots,
+      schoolName: auth.me?.school?.displayName ?? auth.me?.tenant?.name,
+      title: `Timetable: ${childName}`,
+      details: [[className && `Class ${className}`, currentYear?.name]
+        .filter(Boolean)
+        .join('  ·  ')],
+      cellDetail: 'teacher',
+      fileName: `${timetableFileSlug('timetable', childName, currentYear?.name)}.pdf`,
+    });
+  };
+
   const getSlotsForDay = (dayIndex: number) => {
     return slots.filter(s => s.dayOfWeek === dayIndex + 1).sort((a, b) => a.periodNumber - b.periodNumber);
   };
@@ -62,6 +81,16 @@ export function ParentTimetablePage() {
           ))}
         </select>
         {currentYear && <span className="self-center text-sm text-slate-600">Year: {currentYear.name}</span>}
+        {slots.length > 0 && !timetableQuery.isPending && !timetableQuery.isError ? (
+          <button
+            type="button"
+            onClick={handleExportPdf}
+            className="ml-auto inline-flex h-10 items-center gap-2 rounded-lg border border-brand-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-brand-50"
+          >
+            <Download className="h-4 w-4" />
+            Export PDF
+          </button>
+        ) : null}
       </div>
 
       {!selectedChildId ? (

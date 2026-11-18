@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Pencil, Save, X } from 'lucide-react';
+import { Download, Pencil, Save, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { EmptyState } from '../components/empty-state';
@@ -20,6 +20,7 @@ import {
   listSubjectsApi,
   listTermsApi,
 } from '../features/sprint1/sprint1.api';
+import { exportTimetablePdf, timetableFileSlug } from '../utils/timetable-pdf';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const DEFAULT_PERIODS = [
@@ -200,6 +201,40 @@ export function TimetablePage() {
     saveMutation.mutate();
   };
 
+  const canExport = !isEditMode && !slotsQuery.isPending && !slotsQuery.isError && slots.length > 0;
+
+  const handleExportPdf = () => {
+    const yearName = years.find((y) => y.id === academicYearId)?.name;
+    const termName = termId ? terms.find((t) => t.id === termId)?.name : 'All terms';
+    const classRoom = classes.find((c) => c.id === classRoomId);
+    const teacherName = `${auth.me?.firstName ?? ''} ${auth.me?.lastName ?? ''}`.trim();
+    const isClassView = viewMode === 'class';
+    const title = isClassView
+      ? `Class timetable: ${classRoom ? `${classRoom.code} - ${classRoom.name}` : ''}`
+      : `Teaching timetable: ${teacherName || 'My schedule'}`;
+    try {
+      exportTimetablePdf({
+        slots,
+        schoolName: auth.me?.school?.displayName ?? auth.me?.tenant?.name,
+        title,
+        details: [[yearName, termName].filter(Boolean).join('  ·  ')],
+        cellDetail: isClassView ? 'teacher' : 'class',
+        fileName: `${timetableFileSlug(
+          'timetable',
+          isClassView ? classRoom?.code ?? classRoom?.name : teacherName,
+          yearName,
+          termId ? termName : undefined
+        )}.pdf`,
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Could not export timetable',
+        message: error instanceof Error ? error.message : 'PDF generation failed',
+      });
+    }
+  };
+
   const setEditCell = (day: number, period: number, subjectId: string) => {
     const key = `${day}-${period}`;
     setEditGrid((prev) =>
@@ -244,6 +279,16 @@ export function TimetablePage() {
               </button>
             </div>
           )}
+          {canExport ? (
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-brand-50"
+            >
+              <Download className="h-4 w-4" />
+              Export PDF
+            </button>
+          ) : null}
           {canEdit && !isEditMode && viewMode === 'class' ? (
             <button
               type="button"
