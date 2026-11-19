@@ -23,6 +23,7 @@ import { useAuth } from '../features/auth/auth.context';
 import {
   deleteStaffMemberApi,
   getStaffMemberApi,
+  grantSchoolAdminApi,
   inviteStaffApi,
   listAcademicYearsApi,
   listClassRoomsApi,
@@ -30,6 +31,7 @@ import {
   listSubjectsApi,
   listStaffMembersApi,
   revokeInviteApi,
+  revokeSchoolAdminApi,
   StaffMember,
   updateStaffMemberApi,
 } from '../features/sprint1/sprint1.api';
@@ -156,9 +158,14 @@ const staffColumns: DataTableColumn<StaffTableRow>[] = [
   },
 ];
 
+const STAFF_INVITE_ROLES = [
+  { value: 'TEACHER', label: 'Teacher' },
+  { value: 'SCHOOL_ADMIN', label: 'School admin' },
+] as const;
+
 const inviteSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
-  roleName: z.string().trim().min(2).max(60),
+  roleName: z.enum(['TEACHER', 'SCHOOL_ADMIN']),
   expiresInDays: z.coerce.number().int().min(1).max(14).default(7),
 });
 
@@ -191,6 +198,10 @@ function formatMemberName(member: Pick<StaffMember, 'firstName' | 'lastName'>) {
 
 function isTeacher(member: Pick<StaffMember, 'roles'>) {
   return member.roles.includes('TEACHER');
+}
+
+function isSchoolAdmin(member: Pick<StaffMember, 'roles'>) {
+  return member.roles.includes('SCHOOL_ADMIN');
 }
 
 interface SearchableSelectProps {
@@ -303,6 +314,10 @@ export function StaffPage() {
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [adminRoleTarget, setAdminRoleTarget] = useState<{
+    member: StaffMember;
+    makeAdmin: boolean;
+  } | null>(null);
   const [openMenuRow, setOpenMenuRow] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<StaffMember | null>(null);
@@ -492,6 +507,34 @@ export function StaffPage() {
         type: 'error',
         title: 'Could not update account status',
         message: error instanceof Error ? error.message : 'Status update failed',
+      });
+    },
+  });
+
+  const schoolAdminMutation = useMutation({
+    mutationFn: (input: { member: StaffMember; makeAdmin: boolean }) =>
+      input.makeAdmin
+        ? grantSchoolAdminApi(auth.accessToken!, input.member.id)
+        : revokeSchoolAdminApi(auth.accessToken!, input.member.id),
+    onSuccess: (updatedMember, input) => {
+      void queryClient.invalidateQueries({ queryKey: ['staff-members'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['staff-member-detail', input.member.id],
+      });
+      setAdminRoleTarget(null);
+      showToast({
+        type: 'success',
+        title: input.makeAdmin ? 'School admin added' : 'School admin removed',
+        message: input.makeAdmin
+          ? `${formatMemberName(updatedMember)} is now a school administrator.`
+          : `${formatMemberName(updatedMember)} is no longer a school administrator.`,
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        title: 'Could not update admin access',
+        message: error instanceof Error ? error.message : 'Request failed',
       });
     },
   });
@@ -788,6 +831,8 @@ export function StaffPage() {
                             else if (v === 'edit') { setSelectedMemberForEdit(row.member); }
                             else if (v === 'status') { toggleMemberStatusMutation.mutate({ member: row.member, status: nextStatus }); }
                             else if (v === 'assign') { openAssignCourses(row.member); }
+                            else if (v === 'make-admin') { setAdminRoleTarget({ member: row.member, makeAdmin: true }); }
+                            else if (v === 'remove-admin') { setAdminRoleTarget({ member: row.member, makeAdmin: false }); }
                             else if (v === 'delete') { setDeleteTarget({ kind: 'MEMBER', id: row.member.id, label: formatMemberName(row.member) }); }
                             e.target.value = '';
                           }}
@@ -797,6 +842,11 @@ export function StaffPage() {
                           <option value="edit">Edit</option>
                           <option value="status">{isUpdatingThisMember ? 'Updating...' : statusActionLabel}</option>
                           {isTeacher(row.member) ? <option value="assign">Assign subject</option> : null}
+                          {isSchoolAdmin(row.member) ? (
+                            isSelfMember ? null : <option value="remove-admin">Remove school admin</option>
+                          ) : row.member.status === 'ACTIVE' ? (
+                            <option value="make-admin">Make school admin</option>
+                          ) : null}
                           <option value="delete">Delete</option>
                         </select>
                       </div>
@@ -850,12 +900,20 @@ export function StaffPage() {
         ) : null}
 
         <label className="grid gap-1 text-sm font-semibold text-slate-800">
-          Role name
-          <input
-            className="rounded-lg border border-brand-200 px-3 py-2 text-sm"
-            placeholder="TEACHER"
+          Role
+          <select
+            className="rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm"
             {...inviteForm.register('roleName')}
-          />
+          >
+            {STAFF_INVITE_ROLES.map((role) => (
+              <option key={role.value} value={role.value}>
+                {role.label}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs font-normal text-slate-500">
+            School admins get full access to manage this school. A school can have several admins.
+          </span>
         </label>
         {inviteForm.formState.errors.roleName ? (
           <p className="text-xs text-red-700">{inviteForm.formState.errors.roleName.message}</p>
@@ -950,6 +1008,28 @@ export function StaffPage() {
         }}
         isDestructive
         isLoading={deleteMutation.isPending}
+      />
+
+      <ConfirmDrawer
+        open={Boolean(adminRoleTarget)}
+        onCancel={() => setAdminRoleTarget(null)}
+        title={adminRoleTarget?.makeAdmin ? 'Make school admin' : 'Remove school admin'}
+        message={
+          adminRoleTarget
+            ? adminRoleTarget.makeAdmin
+              ? `Give ${formatMemberName(adminRoleTarget.member)} full school administrator access? They will be able to manage staff, students, academics and settings for this school.`
+              : `Remove school administrator access from ${formatMemberName(adminRoleTarget.member)}? They keep their other roles and will need to sign in again.`
+            : ''
+        }
+        confirmLabel={adminRoleTarget?.makeAdmin ? 'Make admin' : 'Remove admin'}
+        onConfirm={async () => {
+          if (!adminRoleTarget) {
+            return;
+          }
+          await schoolAdminMutation.mutateAsync(adminRoleTarget).catch(() => undefined);
+        }}
+        isDestructive={adminRoleTarget ? !adminRoleTarget.makeAdmin : false}
+        isLoading={schoolAdminMutation.isPending}
       />
 
       <AppDrawer

@@ -362,6 +362,20 @@ export function deleteStaffMemberApi(accessToken: string, memberId: string) {
   });
 }
 
+export function grantSchoolAdminApi(accessToken: string, memberId: string) {
+  return apiRequest<StaffMember>(`/staff/members/${memberId}/school-admin`, {
+    method: 'POST',
+    accessToken,
+  });
+}
+
+export function revokeSchoolAdminApi(accessToken: string, memberId: string) {
+  return apiRequest<StaffMember>(`/staff/members/${memberId}/school-admin`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}
+
 export function acceptInviteApi(payload: {
   token: string;
   firstName: string;
