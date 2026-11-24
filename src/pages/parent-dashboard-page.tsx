@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { Users } from 'lucide-react';
+import { Bell, ClipboardCheck, ShieldCheck, Users, type LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
 import { StateView } from '../components/state-view';
 import { useAuth } from '../features/auth/auth.context';
@@ -21,6 +22,13 @@ import { Avatar } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
 import { DataTable, type DataTableColumn } from '../components/ui/data-table';
 import { percentOf } from '../utils/format-number';
+import { hasPermission } from '../features/auth/auth-helpers';
+
+const QUICK_LINKS: Array<{ label: string; to: string; icon: LucideIcon; permission: string }> = [
+  { label: 'Attendance', to: '/parent/attendance', icon: ClipboardCheck, permission: 'parents.my_children.read' },
+  { label: 'Conduct', to: '/parent/conduct', icon: ShieldCheck, permission: 'parents.my_children.read' },
+  { label: 'Announcements', to: '/parent/announcements', icon: Bell, permission: 'announcements.my_read' },
+];
 
 interface ChildRow {
   id: string;
@@ -250,6 +258,18 @@ export function ParentDashboardPage() {
       <PageHeader
         title={`Welcome${parent ? `, ${parent.firstName}` : ''}`}
         subtitle="Your children's attendance and results."
+        actions={QUICK_LINKS.filter((link) => hasPermission(auth.me, link.permission)).map(
+          ({ label, to, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {label}
+            </Link>
+          )
+        )}
       />
 
       <KpiStrip

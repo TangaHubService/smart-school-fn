@@ -1,4 +1,5 @@
 import { apiRequest } from '../../api/client';
+import type { StudentConductProfileResponse } from '../conduct/conduct.api';
 
 export type StudentGender = 'MALE' | 'FEMALE' | 'OTHER' | 'UNDISCLOSED';
 
@@ -574,4 +575,22 @@ export function deleteParentApi(accessToken: string, parentId: string) {
     method: 'DELETE',
     accessToken,
   });
+}
+
+export function getMyChildConductApi(
+  accessToken: string,
+  studentId: string,
+  params?: { page?: number; pageSize?: number }
+) {
+  const query = new URLSearchParams();
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+
+  return apiRequest<StudentConductProfileResponse>(
+    `/parents/me/students/${studentId}/conduct${query.toString() ? `?${query.toString()}` : ''}`,
+    {
+      method: 'GET',
+      accessToken,
+    }
+  );
 }
