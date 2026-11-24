@@ -231,9 +231,11 @@ export function listReportCardsCatalogApi(
 
 export interface PublicReportCardVerificationResponse {
   valid: boolean;
+  /** Set for mid-term progress reports, which have no stored PDF. */
+  reportKind?: 'MID_TERM';
   verificationCode: string;
   verificationUrl: string;
-  pdfDownloadUrl: string;
+  pdfDownloadUrl: string | null;
   school: {
     name: string;
     code: string | null;
@@ -260,11 +262,8 @@ export interface PublicReportCardVerificationResponse {
     name: string;
   };
   totals: {
-    totalMarksObtained: number;
-    totalMarksPossible: number;
-    averagePercentage: number;
+    averagePercentage: number | null;
     grade: string;
-    remark: string;
     position: number;
     classSize: number;
   };

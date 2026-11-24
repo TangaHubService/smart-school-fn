@@ -98,7 +98,9 @@ export function ReportCardVerificationPage() {
                     Verified
                   </p>
                   <h2 className="text-2xl font-black text-slate-950">
-                    This report card is authentic
+                    {data.reportKind === 'MID_TERM'
+                      ? 'This mid-term report is authentic'
+                      : 'This report card is authentic'}
                   </h2>
                 </div>
               </div>
@@ -124,7 +126,10 @@ export function ReportCardVerificationPage() {
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
                     Scope
                   </p>
-                  <p className="mt-2 text-lg font-bold text-slate-950">{data.term.name}</p>
+                  <p className="mt-2 text-lg font-bold text-slate-950">
+                    {data.term.name}
+                    {data.reportKind === 'MID_TERM' ? ' · Mid-term' : ''}
+                  </p>
                   <p className="text-sm text-slate-700">
                     {data.classRoom.name} · {data.academicYear.name}
                   </p>
@@ -134,23 +139,27 @@ export function ReportCardVerificationPage() {
                     Result
                   </p>
                   <p className="mt-2 text-lg font-bold text-slate-950">
-                    {data.totals.averagePercentage.toFixed(1)}% · {data.totals.grade}
+                    {data.totals.averagePercentage == null
+                      ? 'No marks yet'
+                      : `${data.totals.averagePercentage.toFixed(1)}% · ${data.totals.grade}`}
                   </p>
                   <p className="text-sm text-slate-700">
-                    Position {data.totals.position} / {data.totals.classSize}
+                    Position {data.totals.position || '-'} / {data.totals.classSize}
                   </p>
                 </div>
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <button
-                  onClick={handleDownloadPdf}
-                  disabled={isDownloading}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  <Download className="h-4 w-4" aria-hidden="true" />
-                  {isDownloading ? 'Downloading...' : 'Download PDF'}
-                </button>
+                {data.pdfDownloadUrl ? (
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={isDownloading}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    <Download className="h-4 w-4" aria-hidden="true" />
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
+                  </button>
+                ) : null}
                 <a
                   href={data.verificationUrl}
                   target="_blank"
