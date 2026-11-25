@@ -1,3 +1,4 @@
+import { languageHeader } from '../../i18n/language-header';
 import { apiRequest } from '../../api/client';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
@@ -698,7 +699,7 @@ export function downloadStudentReportCardPdfApi(
   const url = `${base}/report-cards/students/${studentId}/pdf?termId=${encodeURIComponent(termId)}`;
   return fetch(url, {
     method: 'GET',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${accessToken}`, ...languageHeader() },
   }).then((res) => {
     if (!res.ok) throw new Error('Could not load report card PDF');
     return res.blob();
@@ -736,9 +737,7 @@ export function getParentReportCardsApi(
 async function fetchPdfBlob(accessToken: string, path: string) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'GET',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: { Authorization: `Bearer ${accessToken}`, ...languageHeader() },
   });
 
   if (!response.ok) {
@@ -762,7 +761,7 @@ export async function downloadMidTermReportCardsPdfApi(
   if (params.upTo) query.set('upTo', params.upTo);
   const response = await fetch(`${API_BASE_URL}/report-cards/mid-term/pdf?${query.toString()}`, {
     method: 'GET',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${accessToken}`, ...languageHeader() },
   });
   if (!response.ok) {
     let message = 'Could not create the mid-term report cards';

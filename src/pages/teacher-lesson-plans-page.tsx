@@ -935,8 +935,8 @@ function LessonPlanDetails({ plan, showTeacher }: { plan: LessonPlan; showTeache
     { label: 'Activities', value: plan.activities },
     { label: 'Assessment', value: plan.assessment },
   ];
-  const facts: Array<{ label: string; value: string }> = [
-    { label: 'Status', value: plan.status },
+  const facts: Array<{ label: string; value: string; isStatus?: boolean }> = [
+    { label: 'Status', value: plan.status, isStatus: true },
     { label: 'Academic year', value: plan.academicYear.name },
     { label: 'Week', value: plan.weekNumber ? String(plan.weekNumber) : '—' },
     { label: 'Duration', value: plan.durationMinutes ? `${plan.durationMinutes} min` : '—' },
@@ -953,7 +953,7 @@ function LessonPlanDetails({ plan, showTeacher }: { plan: LessonPlan; showTeache
           <div key={fact.label} className="min-w-0">
             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{fact.label}</dt>
             <dd className="mt-0.5 truncate text-sm text-slate-900">
-              {fact.label === 'Status' ? (
+              {fact.isStatus ? (
                 <Badge tone={LESSON_PLAN_STATUS_TONES[plan.status]}>{plan.status}</Badge>
               ) : (
                 fact.value

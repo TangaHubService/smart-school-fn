@@ -1,3 +1,4 @@
+import { languageHeader } from '../../i18n/language-header';
 import { apiRequest } from '../../api/client';
 
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
@@ -258,7 +259,7 @@ export async function downloadAttendanceReportPdfApi(
   const qs = query.toString() ? `?${query.toString()}` : '';
   const { API_BASE_URL } = await import('../../api/client');
   const response = await fetch(`${API_BASE_URL}/attendance/report/pdf${qs}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${accessToken}`, ...languageHeader() },
   });
   if (!response.ok) throw new Error('Could not download attendance PDF');
   return response.blob();

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, Download, FileBadge2, ShieldAlert, ShieldCheck, QrCode } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
+import { languageHeader } from '../i18n/language-header';
 import { verifyReportCardPublicApi } from '../features/sprint5/exams.api';
 
 export function ReportCardVerificationPage() {
@@ -22,7 +23,7 @@ export function ReportCardVerificationPage() {
     if (!data?.pdfDownloadUrl) return;
     setIsDownloading(true);
     try {
-      const response = await fetch(data.pdfDownloadUrl);
+      const response = await fetch(data.pdfDownloadUrl, { headers: languageHeader() });
       if (!response.ok) throw new Error('Failed to download');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);

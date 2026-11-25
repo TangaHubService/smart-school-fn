@@ -1,3 +1,4 @@
+import { tx } from '../i18n/tx';
 import { PageSkeleton, type PageSkeletonVariant } from './skeleton-loader';
 
 interface StateViewProps {
@@ -36,8 +37,8 @@ export function StateView({
         role="status"
         aria-live="polite"
       >
-        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-        {resolvedMessage ? <p className="mt-2 text-sm text-slate-700">{resolvedMessage}</p> : null}
+        <h2 className="text-lg font-bold text-slate-900">{tx(title)}</h2>
+        {resolvedMessage ? <p className="mt-2 text-sm text-slate-700">{tx(resolvedMessage)}</p> : null}
         {action ? <div className="mt-4">{action}</div> : null}
       </section>
     </div>

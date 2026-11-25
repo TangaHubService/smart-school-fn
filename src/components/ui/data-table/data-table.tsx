@@ -44,7 +44,7 @@ export function DataTable<TData extends RowData>({
   stickyHeader = false,
   minWidth = 760,
   className,
-  ariaLabel = 'Data table',
+  ariaLabel,
   sort = null,
   onSortChange,
   pagination,
@@ -93,7 +93,7 @@ export function DataTable<TData extends RowData>({
       {exportable && !loading && !error && data.length > 0 ? (
         <div className="flex justify-end border-b border-slate-100 px-3 py-2">
           <DataTableExport
-            title={exportTitle ?? (ariaLabel !== 'Data table' ? ariaLabel : 'Export')}
+            title={exportTitle ?? ariaLabel ?? 'Export'}
             columns={columns}
             rows={data}
             isPaginated={Boolean(pagination && (pagination.totalItems ?? 0) > data.length)}
@@ -176,7 +176,7 @@ export function DataTable<TData extends RowData>({
       {/* Desktop / tablet semantic table */}
       <div className="hidden overflow-x-auto md:block">
         <table
-          aria-label={ariaLabel}
+          aria-label={ariaLabel ?? 'Data table'}
           className="w-full border-separate border-spacing-0 text-sm"
           style={{ minWidth }}
         >

@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
+import { tx } from '../../i18n/tx';
+
 export type BadgeTone =
   | 'brand'
   | 'success'
@@ -52,7 +54,7 @@ export function Badge({
       {withDot ? (
         <span className={clsx('h-1.5 w-1.5 rounded-full', DOT_TONES[tone])} aria-hidden="true" />
       ) : null}
-      {children}
+      {typeof children === 'string' ? tx(children) : children}
     </span>
   );
 }

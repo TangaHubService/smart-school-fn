@@ -8,6 +8,8 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { tx } from '../i18n/tx';
+
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 interface ToastInput {
@@ -82,8 +84,8 @@ function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: () => void }
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-bold">{toast.title}</p>
-          {toast.message ? <p className="mt-1 text-sm opacity-90">{toast.message}</p> : null}
+          <p className="text-sm font-bold">{tx(toast.title)}</p>
+          {toast.message ? <p className="mt-1 text-sm opacity-90">{tx(toast.message)}</p> : null}
         </div>
         <button
           type="button"

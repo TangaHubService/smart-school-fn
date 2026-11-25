@@ -88,7 +88,10 @@
     "student-assignments": "Imikoro",
     "student-report-cards": "Ikarita y'amanota",
     "student-assessments": "Ibizamini",
-    "student-announcements": "Amatangazo"
+    "student-announcements": "Amatangazo",
+    "auditor-dashboard": "Imbonerahamwe",
+    "auditor-schools": "Igenzura ry'ibigo",
+    "auditor-audits": "Amateka y'igenzura"
   },
   "connection": {
     "offlineTitle": "Nta internet mufite. Ongera uhuze kugira ngo wohereze ibizamini kandi usincronize iterambere.",

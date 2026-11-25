@@ -12,12 +12,15 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
         value={i18n.language.startsWith('rw') ? 'rw' : i18n.language.startsWith('fr') ? 'fr' : 'en'}
         onChange={(e) => {
           const lng = e.target.value as (typeof LANGS)[number];
-          void i18n.changeLanguage(lng);
           try {
             localStorage.setItem('ss_lang', lng);
           } catch {
-            // ignore
+            // Cannot remember the choice, so a reload would lose it.
+            void i18n.changeLanguage(lng);
+            return;
           }
+          // Text is resolved while pages load, so start again in the new language.
+          window.location.reload();
         }}
         className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-slate-800"
       >

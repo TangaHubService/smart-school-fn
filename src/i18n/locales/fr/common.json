@@ -88,7 +88,10 @@
     "student-assignments": "Devoirs",
     "student-report-cards": "Bulletins",
     "student-assessments": "Tests",
-    "student-announcements": "Annonces"
+    "student-announcements": "Annonces",
+    "auditor-dashboard": "Tableau de bord",
+    "auditor-schools": "Audit des écoles",
+    "auditor-audits": "Historique des audits"
   },
   "connection": {
     "offlineTitle": "Vous êtes hors ligne. Reconnectez-vous pour envoyer les quiz et synchroniser la progression.",

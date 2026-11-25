@@ -1,3 +1,4 @@
+import { languageHeader } from '../../i18n/language-header';
 import { apiRequest, API_BASE_URL } from '../../api/client';
 import type { UploadedAssetPayload } from '../sprint4/lms.api';
 
@@ -410,7 +411,7 @@ export async function reopenAuditApi(
 export async function downloadAuditReportPdfApi(accessToken: string, auditId: string): Promise<Blob> {
   const response = await fetch(`${API_BASE_URL}/gov/audits/${auditId}/pdf`, {
     method: 'GET',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${accessToken}`, ...languageHeader() },
   });
   if (!response.ok) {
     throw new Error('Could not load audit report PDF');
