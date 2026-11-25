@@ -34,12 +34,12 @@ function reportCardFileName(row: ReportCardCatalogRow): string {
 }
 
 const ICON_CIRCLE =
-  'flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-500 sm:h-24 sm:w-24';
+  'flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-500 sm:h-16 sm:w-16';
 
 function MidTermIcon() {
   return (
     <div className={ICON_CIRCLE}>
-      <svg viewBox="0 0 48 48" className="h-11 w-11 sm:h-16 sm:w-16" aria-hidden="true">
+      <svg viewBox="0 0 48 48" className="h-9 w-9 sm:h-11 sm:w-11" aria-hidden="true">
         <path fill="currentColor" d="M11 4h18v9a3 3 0 0 0 3 3h9v25a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z" />
         <path fill="currentColor" d="m32 4 9 9h-9Z" />
         <path
@@ -58,7 +58,7 @@ function MidTermIcon() {
 function YearlyIcon() {
   return (
     <div className={ICON_CIRCLE}>
-      <svg viewBox="0 0 48 48" className="h-11 w-11 sm:h-16 sm:w-16" aria-hidden="true">
+      <svg viewBox="0 0 48 48" className="h-9 w-9 sm:h-11 sm:w-11" aria-hidden="true">
         <path
           d="M8 18V11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v7M8 18v19a3 3 0 0 0 3 3h26a3 3 0 0 0 3-3V18"
           fill="none"
@@ -421,30 +421,30 @@ export function ReportCardsPage() {
           <div className="flex items-start gap-4 sm:gap-6">
             <MidTermIcon />
             <div className="min-w-0 pt-1">
-              <h3 className="text-lg font-bold text-slate-950 sm:text-xl">Mid-term report cards</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+              <h3 className="text-sm font-semibold text-slate-950">Mid-term report cards</h3>
+              <p className="mt-1 text-xs leading-relaxed text-slate-600">
                 {midTermReady
                   ? `Progress so far this term from the marks already entered, one page per ${studentFilterId ? 'student' : 'student in the class'}. Subjects without marks show "-".`
                   : 'Pick a term and a class above (and a student for a single report).'}
               </p>
             </div>
           </div>
-          <div className="mt-6 grid max-w-md gap-4">
+          <div className="mt-4 grid max-w-sm gap-4">
             <div className="flex flex-wrap items-end gap-3">
-              <label className="grid min-w-0 flex-1 basis-44 gap-2 text-sm font-medium text-slate-900">
+              <label className="grid min-w-0 flex-1 basis-44 gap-2 text-xs font-medium text-slate-900">
                 Marks up to (optional)
                 <input
                   type="date"
                   value={midTermUpTo}
                   onChange={(e) => setMidTermUpTo(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-base outline-none focus:border-brand-400"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-brand-400"
                 />
               </label>
               <button
                 type="button"
                 disabled={!midTermReady || loadingMidTerm !== null}
                 onClick={() => void runMidTermPdf('view')}
-                className="h-12 min-w-28 rounded-xl border border-brand-200 bg-brand-50 px-6 text-base font-semibold text-brand-700 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-10 min-w-24 rounded-xl border border-brand-200 bg-brand-50 px-6 text-sm font-semibold text-brand-700 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loadingMidTerm === 'view' ? 'Preparing…' : 'View'}
               </button>
@@ -453,9 +453,9 @@ export function ReportCardsPage() {
               type="button"
               disabled={!midTermReady || loadingMidTerm !== null}
               onClick={() => void runMidTermPdf('download')}
-              className="ml-auto inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-brand-500 px-6 text-base font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-72"
+              className="ml-auto inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 text-sm font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-60"
             >
-              <Download className="h-5 w-5" aria-hidden="true" />
+              <Download className="h-4 w-4" aria-hidden="true" />
               {loadingMidTerm === 'download' ? 'Preparing…' : 'Download PDF'}
             </button>
           </div>
@@ -466,30 +466,30 @@ export function ReportCardsPage() {
             <div className="flex items-start gap-4 sm:gap-6">
               <YearlyIcon />
               <div className="min-w-0 pt-1">
-                <h3 className="text-lg font-bold text-slate-950 sm:text-xl">Yearly report cards</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                <h3 className="text-sm font-semibold text-slate-950">Yearly report cards</h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">
                   {yearlyReady
                     ? 'Combine Term 1, Term 2 and Term 3 marks into one annual report card per student, with yearly average, position and pass/fail decision. All three terms need complete marks.'
                     : 'Pick an academic year and a class above to generate annual report cards.'}
                 </p>
               </div>
             </div>
-            <div className="mt-6 grid gap-3 sm:pl-2">
-              <label className="flex items-center gap-4 text-sm font-medium text-slate-900">
+            <div className="mt-4 grid gap-3 sm:pl-2">
+              <label className="flex items-center gap-3 text-xs font-medium text-slate-900">
                 <input
                   type="checkbox"
                   checked={yearlyPublish}
                   onChange={(e) => setYearlyPublish(e.target.checked)}
-                  className="h-5 w-5 shrink-0 rounded border-slate-300 accent-brand-500"
+                  className="h-4 w-4 shrink-0 rounded border-slate-300 accent-brand-500"
                 />
                 Publish to students &amp; parents
               </label>
-              <label className="flex items-center gap-4 text-sm font-medium text-slate-900">
+              <label className="flex items-center gap-3 text-xs font-medium text-slate-900">
                 <input
                   type="checkbox"
                   checked={yearlyRegenerate}
                   onChange={(e) => setYearlyRegenerate(e.target.checked)}
-                  className="h-5 w-5 shrink-0 rounded border-slate-300 accent-brand-500"
+                  className="h-4 w-4 shrink-0 rounded border-slate-300 accent-brand-500"
                 />
                 Regenerate if already created
               </label>
@@ -499,9 +499,9 @@ export function ReportCardsPage() {
                 type="button"
                 disabled={!yearlyReady || generatingYearly}
                 onClick={() => void runGenerateYearly()}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-brand-500 px-6 py-2 text-base font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
-                <Settings className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <Settings className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {generatingYearly ? 'Generating…' : 'Generate yearly report cards'}
               </button>
             </div>
