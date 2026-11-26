@@ -43,6 +43,7 @@ import {
   updateExamApi,
   type ExamSummary,
 } from '../features/sprint5/exams.api';
+import { isYearlyTerm, termLabel, type TermOption } from '../utils/terms';
 import { listAcademicYearsApi, listClassRoomsApi, listTermsApi } from '../features/sprint1/sprint1.api';
 
 const examSchema = z.object({
@@ -542,12 +543,17 @@ export function ExamsPage() {
 
   const exams = examsQuery.data?.items ?? [];
   const pagination = examsQuery.data?.pagination;
-  const terms = (termsQuery.data as any[]) ?? [];
+  const terms = (termsQuery.data as TermOption[] | undefined) ?? [];
   // The term filter only offers terms of the selected year; with "All years" the year
   // name is shown so identical names like "Term 1" can be told apart.
   const filterTerms = academicYearFilter
     ? terms.filter((term) => term.academicYearId === academicYearFilter)
     : terms;
+  // Exams belong to Term 1-3 (the Yearly term only holds annual report cards); an exam
+  // being edited keeps its own term listed.
+  const examFormTerms = filterTerms.filter(
+    (term) => !isYearlyTerm(term) || term.id === examModalExam?.term?.id
+  );
   const classRooms = (classesQuery.data as any[]) ?? [];
   const subjects = (subjectsQuery.data as any[]) ?? [];
   const selectedExamSubjectId = examForm.watch('subjectId');
@@ -565,7 +571,9 @@ export function ExamsPage() {
     setExamModalExam(null);
     examForm.reset({
       ...defaultExamForm,
-      termId: termFilter || terms[0]?.id || '',
+      termId:
+        (termFilter && examFormTerms.some((term) => term.id === termFilter) ? termFilter : examFormTerms[0]?.id) ||
+        '',
       classRoomId: classFilter || classRooms[0]?.id || '',
       subjectId: subjectFilter || subjects[0]?.id || '',
       gradingSchemeId: schemes.find((scheme) => scheme.isDefault)?.id ?? schemes[0]?.id ?? '',
@@ -679,9 +687,7 @@ export function ExamsPage() {
                 <option value="">All terms</option>
                 {filterTerms.map((term) => (
                   <option key={term.id} value={term.id}>
-                    {academicYearFilter || !term.academicYear?.name
-                      ? term.name
-                      : `${term.name} (${term.academicYear.name})`}
+                    {termLabel(term, filterTerms)}
                   </option>
                 ))}
               </select>
@@ -921,9 +927,9 @@ export function ExamsPage() {
               className={inputClassName}
             >
               <option value="">Select term</option>
-              {terms.map((term) => (
+              {examFormTerms.map((term) => (
                 <option key={term.id} value={term.id}>
-                  {term.name}
+                  {termLabel(term, examFormTerms)}
                 </option>
               ))}
             </select>

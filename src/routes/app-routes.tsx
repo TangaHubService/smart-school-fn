@@ -46,7 +46,7 @@ import { AnnouncementsPage } from '../pages/announcements-page';
 import { AnnouncementCreatePage } from '../pages/announcement-create-page';
 import { AnnouncementDetailPage } from '../pages/announcement-detail-page';
 import { StudentAnnouncementsPage } from '../pages/student-announcements-page';
-import { ParentAnnouncementsPage } from '../pages/parent-announcements-page';
+import { ParentAnnouncementDetailPage, ParentAnnouncementsPage } from '../pages/parent-announcements-page';
 import { UnauthorizedPage } from '../pages/unauthorized-page';
 import { AuditLogsPage } from '../pages/audit-logs-page';
 import { ProfilePage } from '../pages/profile-page';
@@ -277,6 +277,7 @@ export function AppRoutes() {
           </Route>
           <Route element={<RequirePermission permission="announcements.my_read" />}>
             <Route path="/parent/announcements" element={<ParentAnnouncementsPage />} />
+            <Route path="/parent/announcements/:id" element={<ParentAnnouncementDetailPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="chat.read" />}>

@@ -1,3 +1,4 @@
+import { isYearlyTerm } from '../utils/terms';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
@@ -134,7 +135,10 @@ export function ConductDeductionForm({
     enabled: Boolean(accessToken && !isLocked && yearId && classId),
   });
 
-  const terms = Array.isArray(termsQuery.data) ? termsQuery.data : [];
+  // Conduct is deducted in Term 1-3, not the Yearly report-card term.
+  const terms = (Array.isArray(termsQuery.data) ? termsQuery.data : []).filter(
+    (term: { name: string; sequence?: number }) => !isYearlyTerm(term)
+  );
   const classes = Array.isArray(classesQuery.data) ? classesQuery.data : [];
   const scopeStudents = scopeStudentsQuery.data?.items ?? [];
   const studentOptions: ConductDeductionStudentOption[] = isLocked

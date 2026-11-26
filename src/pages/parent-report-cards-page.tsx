@@ -14,6 +14,7 @@ import {
 } from '../features/sprint5/exams.api';
 import { listMyChildrenApi } from '../features/sprint2/sprint2.api';
 import { listTermsApi } from '../features/sprint1/sprint1.api';
+import { termLabel, type TermOption } from '../utils/terms';
 
 export function ParentReportCardsPage() {
   const auth = useAuth();
@@ -91,7 +92,7 @@ export function ParentReportCardsPage() {
 
   const reportCards = reportCardsQuery.data?.items ?? [];
   const parent = reportCardsQuery.data?.parent;
-  const terms = (termsQuery.data as any[]) ?? [];
+  const terms = (termsQuery.data as TermOption[] | undefined) ?? [];
   const studentOptions = childrenQuery.data?.students ?? [];
 
   return (
@@ -127,7 +128,7 @@ export function ParentReportCardsPage() {
                 <option value="">All terms</option>
                 {terms.map((term) => (
                   <option key={term.id} value={term.id}>
-                    {term.name}
+                    {termLabel(term, terms)}
                   </option>
                 ))}
               </select>

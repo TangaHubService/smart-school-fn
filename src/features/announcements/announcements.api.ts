@@ -119,6 +119,11 @@ export function listMyAnnouncementsApi(
   );
 }
 
+/** One announcement as the signed-in reader sees it (only if it was sent to them). */
+export function getMyAnnouncementApi(accessToken: string, id: string) {
+  return apiRequest<AnnouncementItem>(`/announcements/me/${id}`, { method: 'GET', accessToken });
+}
+
 export function markAnnouncementReadApi(accessToken: string, id: string) {
   return apiRequest<{ read: boolean }>(`/announcements/${id}/read`, {
     method: 'POST',

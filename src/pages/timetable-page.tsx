@@ -1,3 +1,4 @@
+import { isYearlyTerm } from '../utils/terms';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, Pencil, Save, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -106,11 +107,13 @@ export function TimetablePage() {
   });
 
   const years = (yearsQuery.data ?? []) as Array<{ id: string; name: string }>;
-  const terms = (termsQuery.data ?? []) as Array<{
+  // No timetable for the Yearly term: it only holds annual report cards.
+  const terms = ((termsQuery.data ?? []) as Array<{
     id: string;
     name: string;
+    sequence?: number;
     academicYearId?: string;
-  }>;
+  }>).filter((term) => !isYearlyTerm(term));
   const classes = (classesQuery.data ?? []) as Array<{ id: string; code: string; name: string }>;
   const slots = slotsQuery.data?.slots ?? [];
   const subjects = (subjectsQuery.data ?? []) as Array<{

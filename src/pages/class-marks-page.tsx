@@ -1,3 +1,4 @@
+import { isYearlyTerm } from '../utils/terms';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FileDown, FileSpreadsheet } from 'lucide-react';
@@ -334,7 +335,10 @@ export function ClassMarksPage() {
   });
 
   const years = Array.isArray(yearsQuery.data) ? yearsQuery.data : [];
-  const terms = Array.isArray(termsQuery.data) ? termsQuery.data : [];
+  // Marks are entered per term; the Yearly term is covered by "Full academic year".
+  const terms = (Array.isArray(termsQuery.data) ? termsQuery.data : []).filter(
+    (term: { name: string; sequence?: number }) => !isYearlyTerm(term)
+  );
   const ledgerTerms = Array.isArray(ledgerTermsQuery.data) ? ledgerTermsQuery.data : [];
   const classRooms = Array.isArray(classesQuery.data) ? classesQuery.data : [];
   const grid = gridQuery.data;

@@ -24,6 +24,7 @@ import {
   listClassRoomsApi,
   listTermsApi,
 } from '../features/sprint1/sprint1.api';
+import { termLabel, type TermOption } from '../utils/terms';
 import { listStudentsApi } from '../features/sprint2/sprint2.api';
 
 const PAGE_SIZE = 25;
@@ -363,9 +364,9 @@ export function ReportCardsPage() {
             className="h-10 w-full rounded-lg border border-brand-200 bg-white px-3 text-sm outline-none focus:border-brand-400 disabled:opacity-60"
           >
             <option value="">All terms</option>
-            {catalogTerms.map((t: { id: string; name: string }) => (
+            {catalogTerms.map((t: TermOption) => (
               <option key={t.id} value={t.id}>
-                {t.name}
+                {termLabel(t, catalogTerms)}
               </option>
             ))}
           </select>

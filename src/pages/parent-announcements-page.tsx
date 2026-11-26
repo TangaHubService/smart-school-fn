@@ -1,13 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Loader2, MessageSquareReply, Paperclip, SendHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
 
 import { EmptyState } from '../components/empty-state';
 import { SectionCard } from '../components/section-card';
+import { SecurePdfViewer } from '../components/secure-pdf-viewer';
 import { StateView } from '../components/state-view';
 import { useToast } from '../components/toast';
 import { useAuth } from '../features/auth/auth.context';
 import {
+  getMyAnnouncementApi,
   listMyAnnouncementsApi,
   markAnnouncementReadApi,
   respondToAnnouncementApi,
@@ -106,11 +110,62 @@ export function ParentAnnouncementsPage() {
   );
 }
 
-function AnnouncementCard({ item }: { item: AnnouncementItem }) {
+/** Parent portal: one announcement on its own page, opened from the list. */
+export function ParentAnnouncementDetailPage() {
+  const { id = '' } = useParams();
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: ['parent', 'announcements', 'detail', id],
+    queryFn: () => getMyAnnouncementApi(auth.accessToken!, id),
+    enabled: !!auth.accessToken && !!id,
+    retry: false,
+  });
+
+  // Opening the announcement counts as reading it.
+  const isRead = data?.isRead;
+  useEffect(() => {
+    if (!data || isRead) return;
+    void markAnnouncementReadApi(auth.accessToken!, data.id).then(() =>
+      queryClient.invalidateQueries({ queryKey: ['parent', 'announcements'] })
+    );
+  }, [data, isRead, auth.accessToken, queryClient]);
+
+  return (
+    <SectionCard title="Announcement">
+      <Link
+        to="/parent/announcements"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to announcements
+      </Link>
+      {isPending ? (
+        <div className="h-48 animate-pulse rounded-xl bg-slate-100" />
+      ) : isError || !data ? (
+        <StateView
+          centered={false}
+          title="Announcement not found"
+          message="It may have expired, or it was not sent to you."
+          action={
+            <button onClick={() => refetch()} className="btn-primary">
+              Retry
+            </button>
+          }
+        />
+      ) : (
+        <ul>
+          <AnnouncementCard item={data} detail />
+        </ul>
+      )}
+    </SectionCard>
+  );
+}
+
+function AnnouncementCard({ item, detail = false }: { item: AnnouncementItem; detail?: boolean }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const [expanded, setExpanded] = useState(!item.isRead);
+  const [expanded, setExpanded] = useState(detail || !item.isRead);
   const [replying, setReplying] = useState(false);
   const [reply, setReply] = useState('');
 
@@ -141,10 +196,11 @@ function AnnouncementCard({ item }: { item: AnnouncementItem }) {
       <button
         type="button"
         onClick={() => {
+          if (detail) return;
           setExpanded((v) => !v);
           if (!item.isRead && !readMutation.isPending) readMutation.mutate();
         }}
-        className="w-full text-left"
+        className={`w-full text-left ${detail ? 'cursor-default' : ''}`}
       >
         <div className="flex flex-wrap items-center gap-2">
           {!item.isRead ? <span className="h-2 w-2 rounded-full bg-brand-600" aria-label="Unread" /> : null}
@@ -164,21 +220,43 @@ function AnnouncementCard({ item }: { item: AnnouncementItem }) {
         <p className={`mt-2 whitespace-pre-wrap text-sm text-slate-700 ${expanded ? '' : 'line-clamp-2'}`}>{item.body}</p>
       </button>
 
+      {!detail ? (
+        <Link
+          to={`/parent/announcements/${item.id}`}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100"
+        >
+          Open announcement
+        </Link>
+      ) : null}
+
       {expanded ? (
         <div className="mt-3 space-y-3">
           {item.attachments.length ? (
-            <div className="flex flex-wrap gap-2">
-              {item.attachments.map((a) => (
-                <a
-                  key={a.id}
-                  href={a.secureUrl ?? undefined}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-brand-700"
-                >
-                  <Paperclip className="h-3.5 w-3.5" /> {a.originalName}
-                </a>
-              ))}
+            <div className="grid gap-2">
+              {item.attachments.map((a) =>
+                a.secureUrl ? (
+                  <a
+                    key={a.id}
+                    href={a.secureUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex w-fit items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-brand-700"
+                  >
+                    <Paperclip className="h-3.5 w-3.5" /> {a.originalName}
+                  </a>
+                ) : detail ? (
+                  // PDFs are protected: shown in the secure viewer, never as a shareable link.
+                  <SecurePdfViewer key={a.id} assetId={a.id} accessToken={auth.accessToken!} title={a.originalName} />
+                ) : (
+                  <Link
+                    key={a.id}
+                    to={`/parent/announcements/${item.id}`}
+                    className="inline-flex w-fit items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-brand-700"
+                  >
+                    <Paperclip className="h-3.5 w-3.5" /> {a.originalName}
+                  </Link>
+                )
+              )}
             </div>
           ) : null}
 
